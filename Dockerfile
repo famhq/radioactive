@@ -1,4 +1,4 @@
-FROM node:4.2.2
+FROM node:6.7.0
 
 # Cache dependencies
 COPY npm-shrinkwrap.json /tmp/npm-shrinkwrap.json

@@ -4,14 +4,20 @@ log = require 'loga'
 cors = require 'cors'
 express = require 'express'
 Promise = require 'bluebird'
+multer = require 'multer'
 bodyParser = require 'body-parser'
 
 config = require './config'
 routes = require './routes'
 r = require './services/rethinkdb'
 AuthService = require './services/auth'
+CronService = require './services/cron'
+KueRunnerService = require './services/kue_runner'
 
 HEALTHCHECK_TIMEOUT = 1000
+MAX_FILE_SIZE_BYTES = 20 * 1000 * 1000 # 20MB
+MAX_FIELD_SIZE_BYTES = 100 * 1000 # 100KB
+
 
 # Setup rethinkdb
 createDatabaseIfNotExist = (dbName) ->
@@ -62,12 +68,70 @@ setup = ->
             createIndexIfNotExist table.name, name, fn, options
         .then ->
           r.table(table.name).indexWait().run()
+  .tap ->
+    CronService.start()
+    KueRunnerService.listen()
+
+    null
 
 app = express()
 
 app.set 'x-powered-by', false
 
 app.use cors()
+
+# Before BodyParser middleware to preserve file stream
+upload = multer
+  limits:
+    fields: 10
+    fieldSize: MAX_FIELD_SIZE_BYTES
+    fileSize: MAX_FILE_SIZE_BYTES
+    files: 1
+
+app.post '/upload', (req, res, next) ->
+  schema = Joi.object().keys
+    path: Joi.string()
+    body: Joi.string().optional()
+  .unknown()
+
+  valid = Joi.validate req.query, schema, {presence: 'required', convert: false}
+
+  if valid.error?
+    log.error
+      event: 'error'
+      status: 400
+      info: 'invalid /upload parameters'
+      error: valid.error
+    return res.status(400).json {status: 400, info: 'invalid upload parameters'}
+
+  try
+    path = req.query.path
+    body = JSON.parse req.query.body or '{}'
+  catch err
+    log.error
+      event: 'error'
+      status: 400
+      info: 'invalid /upload parameters'
+      error: err
+    return res.status(400).json {status: 400, info: 'invalid upload parameters'}
+
+  new Promise (resolve, reject) ->
+    upload.single('file') req, res, (err) ->
+      if err
+        return reject err
+      resolve()
+  .then ->
+    routes.resolve path, body, req
+  .then ({result, error, cache}) ->
+    if error?
+      res.status(error.status or 500).json error
+    else
+      res.json result
+  .catch (err) ->
+    log.error err
+    next err
+
+
 app.use bodyParser.json()
 # Avoid CORS preflight
 app.use bodyParser.json({type: 'text/plain'})
