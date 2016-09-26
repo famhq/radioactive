@@ -8,7 +8,10 @@ auth =
 
 user =
   id: id
-  username: Joi.string().allow(null)
+  username: Joi.string().min(1).max(100).allow(null).regex /^[a-zA-Z0-9-_]+$/
+  flags: Joi.object()
+  avatarImage: Joi.object()
+  embedded: Joi.array().allow(null).optional()
 
 module.exports = {
   id
