@@ -6,6 +6,7 @@ AuthCtrl = require './controllers/auth'
 ChatMessageCtrl = require './controllers/chat_message'
 ConversationCtrl = require './controllers/conversation'
 TheadCtrl = require './controllers/thread'
+ThreadMessageCtrl = require './controllers/thread_message'
 
 authed = (handler) ->
   unless handler?
@@ -48,5 +49,8 @@ module.exports = router
 
 .on 'threads.create', authed TheadCtrl.create
 .on 'threads.getAll', authed TheadCtrl.getAll
+.on 'threads.getById', authed TheadCtrl.getById
+
+.on 'threadMessages.create', authed ThreadMessageCtrl.create
 
 .on 'conversation.getAll', authed ConversationCtrl.getAll

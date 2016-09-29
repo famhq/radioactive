@@ -63,7 +63,7 @@ class ThreadMessageModel
   getAllByThreadId: (threadId) ->
     r.table THREAD_MESSAGES_TABLE
     .getAll threadId, {index: THREAD_ID_INDEX}
-    .orderBy r.desc(TIME_INDEX)
+    .orderBy r.asc(TIME_INDEX)
     .run()
     .map defaultThreadMessage
 

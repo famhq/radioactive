@@ -47,6 +47,7 @@
     "multer": "^1.2.0",
     "node-gcm": "^0.14.4",
     "node-uuid": "^1.4.7",
+    "pcg-random": "^1.0.0",
     "redis": "^2.6.2",
     "redlock": "^2.0.0",
     "rethinkdbdash": "^2.2.1",

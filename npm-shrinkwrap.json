@@ -2434,6 +2434,11 @@
       "from": "path-type@>=1.0.0 <2.0.0",
       "resolved": "https://registry.npmjs.org/path-type/-/path-type-1.1.0.tgz"
     },
+    "pcg-random": {
+      "version": "1.0.0",
+      "from": "pcg-random@latest",
+      "resolved": "https://registry.npmjs.org/pcg-random/-/pcg-random-1.0.0.tgz"
+    },
     "pify": {
       "version": "2.3.0",
       "from": "pify@>=2.0.0 <3.0.0",

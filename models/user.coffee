@@ -2,13 +2,16 @@ _ = require 'lodash'
 Promise = require 'bluebird'
 uuid = require 'node-uuid'
 jwt = require 'jsonwebtoken'
+PcgRandom = require 'pcg-random'
 
 r = require '../services/rethinkdb'
 UserData = require './user_data'
 schemas = require '../schemas'
+config = require '../config'
 
 USERS_TABLE = 'users'
 USERNAME_INDEX = 'username'
+NUMERIC_ID_INDEX = 'numericId'
 FACEBOOK_ID_INDEX = 'facebookId'
 IS_MEMBER_INDEX = 'isMember'
 LAST_ACTIVE_TIME_INDEX = 'lastActiveTime'
@@ -19,6 +22,7 @@ defaultUser = (user) ->
 
   _.assign {
     id: uuid.v4()
+    numericId: null
     joinTime: new Date()
     facebookId: null
     username: null
@@ -36,6 +40,7 @@ class UserModel
       name: USERS_TABLE
       indexes: [
         {name: USERNAME_INDEX}
+        {name: NUMERIC_ID_INDEX}
         {name: FACEBOOK_ID_INDEX}
         {name: IS_MEMBER_INDEX}
         {name: LAST_ACTIVE_TIME_INDEX}
@@ -75,6 +80,14 @@ class UserModel
     .run()
     .map defaultUser
 
+  getCardCode: (user) ->
+    random = new PcgRandom config.PCG_SEED
+    i = 1
+    while i < user.numericId
+      random.integer config.CARD_CODE_MAX_LENGTH
+      i += 1
+    random.integer config.CARD_CODE_MAX_LENGTH
+
   updateById: (id, diff) ->
     r.table USERS_TABLE
     .get id
@@ -87,6 +100,20 @@ class UserModel
 
     r.table USERS_TABLE
     .insert user
+    .run()
+    .then ->
+      user
+
+  convertToMember: (user) ->
+    r.table USERS_TABLE
+    .orderBy r.desc {index: NUMERIC_ID_INDEX}
+    .nth 0
+    .default null
+    .pluck ['numericId']
+    .do ({numericId}) ->
+      r.table USERS_TABLE
+      .get user.id
+      .update {numericId: r.add(numericId, 1)}
     .run()
     .then ->
       user

@@ -11,6 +11,9 @@ defaultEmbed = [
   EmbedService.TYPES.THREAD.FIRST_MESSAGE
   EmbedService.TYPES.THREAD.MESSAGE_COUNT
 ]
+messagesEmbed = [
+  EmbedService.TYPES.THREAD.MESSAGES
+]
 
 class ThreadCtrl
   create: ({title, body}, {user}) ->
@@ -30,8 +33,9 @@ class ThreadCtrl
     .map Thread.sanitize null
 
   getById: ({id}, {user}) ->
+    console.log 'gbid'
     Thread.getById id
-    .then EmbedService.embed defaultEmbed
-    .then Thread.sanitize
+    .then EmbedService.embed messagesEmbed
+    .then Thread.sanitize null
 
 module.exports = new ThreadCtrl()
