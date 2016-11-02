@@ -2,6 +2,7 @@ _ = require 'lodash'
 router = require 'exoid-router'
 
 User = require '../models/user'
+UserData = require '../models/user_data'
 Thread = require '../models/thread'
 ThreadMessage = require '../models/thread_message'
 EmbedService = require '../services/embed'
@@ -27,14 +28,23 @@ class ThreadCtrl
         threadId: thread.id
       }
 
-  getAll: ->
+  getAll: ({}, {user}) ->
     Thread.getAll()
     .map EmbedService.embed defaultEmbed
     .map Thread.sanitize null
 
   getById: ({id}, {user}) ->
-    Thread.getById id
-    .then EmbedService.embed messagesEmbed
-    .then Thread.sanitize null
+    UserData.getByUserId user.id
+    .then (userData) ->
+      Thread.getById id
+      .then EmbedService.embed messagesEmbed
+      .then (thread) ->
+        thread?.messages = _.filter thread.messages, (message) ->
+          userId = message.user?.id or 0
+          (
+            not message.user?.flags?.isChatBanned or user.flags.isModerator
+          ) and userData.blockedUserIds?.indexOf(userId) is -1
+        thread
+      .then Thread.sanitize null
 
 module.exports = new ThreadCtrl()

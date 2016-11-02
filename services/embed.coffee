@@ -10,6 +10,7 @@ UserData = require '../models/user_data'
 ChatMessage = require '../models/chat_message'
 ThreadMessage = require '../models/thread_message'
 ClashRoyaleCard = require '../models/clash_royale_card'
+ClashRoyaleUserDeck = require '../models/clash_royale_user_deck'
 ClashRoyaleDeck = require '../models/clash_royale_deck'
 CacheService = require './cache'
 
@@ -21,6 +22,7 @@ TYPES =
     FOLLOWERS: 'userData:followers'
     FOLLOWING: 'userData:following'
     BLOCKED_USERS: 'userData:blockedUsers'
+    CLASH_ROYALE_DECK_IDS: 'userData:clashRoyaleDeckIds'
   CHAT_MESSAGE:
     USER: 'chatMessage:user'
   CONVERSATION:
@@ -66,7 +68,12 @@ embedFn = _.curry (embed, object) ->
     switch key
       when TYPES.USER.DATA
         embedded.data = UserData.getByUserId(embedded.id)
-                        .then embedFn [TYPES.USER_DATA.CONVERSATION_USERS]
+        .then (userData) ->
+          _.defaults {userId: embedded.id}, userData
+        .then embedFn [
+          TYPES.USER_DATA.CONVERSATION_USERS
+          TYPES.USER_DATA.CLASH_ROYALE_DECK_IDS
+        ]
 
       when TYPES.USER_DATA.CONVERSATION_USERS
         key = CacheService.PREFIXES.USER_DATA_CONVERSATION_USERS +
@@ -78,6 +85,18 @@ embedFn = _.curry (embed, object) ->
                 User.getById userId
                 .then User.sanitizePublic null
             else Promise.resolve []
+          , {expireSeconds: TEN_DAYS_SECONDS}
+
+      when TYPES.USER_DATA.CLASH_ROYALE_DECK_IDS
+        key = CacheService.PREFIXES.USER_DATA_CLASH_ROYALE_DECK_IDS +
+              ':' + embedded.userId
+        embedded.clashRoyaleDeckIds =
+          CacheService.preferCache key, ->
+            if embedded.userId
+              ClashRoyaleUserDeck.getAllFavoritedByUserId embedded.userId
+              .map (deck) -> deck?.deckId
+            else
+              Promise.resolve null
           , {expireSeconds: TEN_DAYS_SECONDS}
 
       when TYPES.USER_DATA.FOLLOWING

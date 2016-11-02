@@ -6,6 +6,7 @@ AuthCtrl = require './controllers/auth'
 ChatMessageCtrl = require './controllers/chat_message'
 ConversationCtrl = require './controllers/conversation'
 ClashRoyaleDeckCtrl = require './controllers/clash_royale_deck'
+ClashRoyaleUserDeckCtrl = require './controllers/clash_royale_user_deck'
 ClashRoyaleCardCtrl = require './controllers/clash_royale_card'
 PushTokenCtrl = require './controllers/push_token'
 PaymentCtrl = require './controllers/payment'
@@ -18,7 +19,7 @@ authed = (handler) ->
 
   (body, req, rest...) ->
     unless req.user?
-      router.throw status: 401, detail: 'Unauthorized'
+      router.throw status: 401, info: 'Unauthorized'
 
     handler body, req, rest...
 
@@ -27,21 +28,27 @@ module.exports = router
 # Public Routes   #
 ###################
 .on 'auth.login', AuthCtrl.login
+.on 'auth.loginUsername', AuthCtrl.loginUsername
+.on 'auth.loginCode', AuthCtrl.loginCode
 
 ###################
 # Authed Routes   #
 ###################
 .on 'users.getMe', authed UserCtrl.getMe
 .on 'users.getById', authed UserCtrl.getById
-# .on 'users.updateMe', authed UserCtrl.updateMe
+.on 'users.getByCode', authed UserCtrl.getByCode
+.on 'users.makeMember', authed UserCtrl.makeMember
 .on 'users.updateById', authed UserCtrl.updateById
 .on 'users.searchByUsername', authed UserCtrl.searchByUsername
 .on 'users.setUsername', authed UserCtrl.setUsername
 .on 'users.setAvatarImage', authed UserCtrl.setAvatarImage
+.on 'users.setFlags', authed UserCtrl.setFlags
 .on 'users.requestInvite', authed UserCtrl.requestInvite
 
 .on 'userData.getMe', authed UserDataCtrl.getMe
 .on 'userData.getByUserId', authed UserDataCtrl.getByUserId
+.on 'userData.setAddress', authed UserDataCtrl.setAddress
+.on 'userData.setClashRoyaleDeckId', authed UserDataCtrl.setClashRoyaleDeckId
 .on 'userData.updateMe', authed UserDataCtrl.updateMe
 .on 'userData.followByUserId', authed UserDataCtrl.followByUserId
 .on 'userData.unfollowByUserId', authed UserDataCtrl.unfollowByUserId
@@ -59,6 +66,7 @@ module.exports = router
 .on 'threads.getById', authed TheadCtrl.getById
 
 .on 'threadMessages.create', authed ThreadMessageCtrl.create
+.on 'threadMessages.flag', authed ThreadMessageCtrl.flag
 
 .on 'payments.verify', authed PaymentCtrl.verify
 .on 'payments.purchase', authed PaymentCtrl.purchase
@@ -67,8 +75,12 @@ module.exports = router
 
 .on 'clashRoyaleDeck.getAll', authed ClashRoyaleDeckCtrl.getAll
 .on 'clashRoyaleDeck.getById', authed ClashRoyaleDeckCtrl.getById
-.on 'clashRoyaleDeck.favorite', authed ClashRoyaleDeckCtrl.favorite
-.on 'clashRoyaleDeck.unfavorite', authed ClashRoyaleDeckCtrl.unfavorite
+
+.on 'clashRoyaleUserDeck.create', authed ClashRoyaleUserDeckCtrl.create
+.on 'clashRoyaleUserDeck.favorite', authed ClashRoyaleUserDeckCtrl.favorite
+.on 'clashRoyaleUserDeck.unfavorite', authed ClashRoyaleUserDeckCtrl.unfavorite
+.on 'clashRoyaleUserDeck.incrementByDeckId',
+  authed ClashRoyaleUserDeckCtrl.incrementByDeckId
 
 .on 'clashRoyaleCard.getAll', authed ClashRoyaleCardCtrl.getAll
 .on 'clashRoyaleCard.getById', authed ClashRoyaleCardCtrl.getById

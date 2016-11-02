@@ -13,6 +13,7 @@ r = require './services/rethinkdb'
 AuthService = require './services/auth'
 CronService = require './services/cron'
 KueRunnerService = require './services/kue_runner'
+ClashTvService = require './services/clash_tv'
 
 HEALTHCHECK_TIMEOUT = 1000
 MAX_FILE_SIZE_BYTES = 20 * 1000 * 1000 # 20MB
@@ -161,6 +162,7 @@ app.post '/log', (req, res) ->
   res.status(204).send()
 
 app.post '/exoid', routes.asMiddleware()
+app.get '/clashTv', (req, res) -> ClashTvService.process()
 
 module.exports = {
   app

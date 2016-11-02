@@ -30,22 +30,53 @@ class UserCtrl
     User.getById id
     .then User.sanitize(null)
 
-  requestInvite: ({clanTag, username, email}, {user}) ->
-    JoinRequest.create {
-      gameClan: clanTag
-      gameUsername: username
-      email: email
-      userId: user.id
-    }
+  getByCode: ({code}) ->
+    User.getByCode code
+    .then User.sanitize(null)
+
+  requestInvite: ({clanTag, username, email, referrerId}, {user}) ->
+    code = User.generateCode()
+    Promise.all [
+      JoinRequest.create {
+        gameClan: clanTag
+        gameUsername: username
+        email: email
+        userId: user.id
+        referrerId: referrerId
+      }
+      User.updateById user.id, {code}
+    ]
     .then ->
-      EmailService.send
-        to: EmailService.EMAILS.OPS
-        subject: 'New Join Request'
-        text: """
+      (if referrerId
+      then User.getById referrerId
+      else Promise.resolve null)
+      .then (referrer) ->
+        EmailService.send
+          to: EmailService.EMAILS.OPS
+          subject: 'New Join Request'
+          text: """
 Clan Tag: #{clanTag}
 Username: #{username}
 Email: #{email}
+Referrer: #{User.getDisplayName referrer}
+Referrer ID: #{referrerId}
+Code: #{code}
 """
+
+  makeMember: ({}, {user}) ->
+    if user.flags.isFeeWaived
+      User.updateById user.id, {isMember: true}
+
+  setFlags: (flags, {user}) ->
+    flagsSchema =
+      isAddressSkipped: Joi.boolean().optional()
+
+    updateValid = Joi.validate flags, flagsSchema
+
+    if updateValid.error
+      router.throw status: 400, info: updateValid.error.message
+
+    User.updateById user.id, {flags}
 
   updateById: ({id, diff}, {user}) ->
     flagsSchema =
@@ -60,7 +91,7 @@ Email: #{email}
     updateValid = Joi.validate diff, userUpdateSchema
 
     if updateValid.error
-      router.throw status: 400, detail: updateValid.error.message
+      router.throw status: 400, info: updateValid.error.message
 
     if diff.flags?.isChatBanned and not user.flags.isModerator
       router.throw
@@ -78,7 +109,7 @@ Email: #{email}
 
   searchByUsername: ({username}) ->
     unless username
-      router.throw status: 400, detail: 'must enter a username'
+      router.throw status: 400, info: 'must enter a username'
 
     username = username.toLowerCase()
 

@@ -64,6 +64,7 @@ class ClashRoyaleCardModel
             else 'name'
 
     r.table CLASH_ROYALE_CARD_TABLE
+    .filter r.row('key').ne('blank')
     .orderBy sortQ
     .run()
     .map defaultClashRoyaleCard

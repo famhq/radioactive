@@ -16,6 +16,9 @@ class ClashRoyaleDeckCtrl
   getAll: ({sort, filter}, {user}) ->
     if filter is 'mine'
       decks = UserData.getByUserId user.id
+      .then EmbedService.embed [
+        EmbedService.TYPES.USER_DATA.CLASH_ROYALE_DECK_IDS
+      ]
       .then (userData) ->
         ClashRoyaleDeck.getByIds userData.clashRoyaleDeckIds
     else
@@ -29,20 +32,5 @@ class ClashRoyaleDeckCtrl
     ClashRoyaleDeck.getById id
     .then EmbedService.embed defaultEmbed
     .then ClashRoyaleDeck.sanitize null
-
-  favorite: ({id}, {user}) ->
-    UserData.getByUserId user.id
-    .then (userData) ->
-      UserData.upsertByUserId user.id, {
-        clashRoyaleDeckIds: _.uniq userData.clashRoyaleDeckIds.concat [id]
-      }
-
-  unfavorite: ({id}, {user}) ->
-    UserData.getByUserId user.id
-    .then (userData) ->
-      UserData.upsertByUserId user.id, {
-        clashRoyaleDeckIds: _.filter userData.clashRoyaleDeckIds, (deckId) ->
-          deckId isnt id
-      }
 
 module.exports = new ClashRoyaleDeckCtrl()

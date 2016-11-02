@@ -52,6 +52,12 @@ class ThreadMessageModel
     .then ->
       threadMessage
 
+  updateById: (id, diff) ->
+    r.table THREAD_MESSAGES_TABLE
+    .get id
+    .update diff
+    .run()
+
   getAll: ->
     r.table THREAD_MESSAGES_TABLE
     .orderBy {index: r.desc(TIME_INDEX)}

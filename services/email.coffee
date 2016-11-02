@@ -4,7 +4,7 @@ log = require 'loga'
 
 config = require '../config'
 
-FROM_EMAIL = 'Clay-Mobile-Api <reply@clay.io>'
+FROM_EMAIL = 'Red Tritium <noreply@redtritium.com>'
 
 server = email.server.connect
   user: config.GMAIL.USER
@@ -34,7 +34,7 @@ class EmailService
 
     Promise.promisify(server.send, server)
       text: text
-      from: 'Clay-Mobile-Api <reply@clay.io>'
+      from: 'Red Tritium <noreply@redtritium.com>'
       to: to
       subject: subject
 

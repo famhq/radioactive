@@ -25,7 +25,7 @@ class ChatMessageCtrl
     msPlayed = Date.now() - user.joinTime?.getTime()
 
     if user.flags.isChatBanned
-      router.throw status: 400, detail: 'unable to post...'
+      router.throw status: 400, info: 'unable to post...'
 
     EmbedService.embed defaultUserEmbed, user
     .then (user) ->
@@ -34,7 +34,7 @@ class ChatMessageCtrl
                else Promise.resolve null
       toUser.then (toUser) ->
         if toUser and toUser.data.blockedUserIds.indexOf(user.id) isnt -1
-          router.throw status: 400, detail: 'block by user'
+          router.throw status: 400, info: 'block by user'
 
         ChatMessage.create
           userId: user.id

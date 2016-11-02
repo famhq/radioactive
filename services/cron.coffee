@@ -4,6 +4,7 @@ Promise = require 'bluebird'
 
 CacheService = require './cache'
 KueCreateService = require './kue_create'
+ClashTvService = require './clash_tv'
 r = require './rethinkdb'
 config = require '../config'
 
@@ -16,8 +17,6 @@ class CronService
   constructor: ->
     @crons = []
 
-    console.log new Date()
-
     # every hour, 1st second
     # @addCron 'addNewCards', '1 0 * * * *', ->
     #   console.log 'addNewCards'
@@ -27,6 +26,9 @@ class CronService
     #   ]
     @addCron 'daily', '0 0 7 * * *', ->
       r.table('user_daily_data').delete()
+
+    # @addCron 'hourly', '0 0 * * * *', ->
+    #   ClashTvService.process()
 
   addCron: (key, time, fn) =>
     @crons.push new CronJob time, ->

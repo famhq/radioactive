@@ -19,7 +19,7 @@ class ConversationCtrl
     .then (conversation) ->
       {messages, userId1, userId2} = conversation
       unless userId1 is user.id or userId2 is user.id
-        router.throw status: 400, detail: 'no permission'
+        router.throw status: 400, info: 'no permission'
 
         Conversation.sanitize conversation
 

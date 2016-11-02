@@ -3,3 +3,8 @@
 ./coverage
 ./test
 ./npm-debug.log
+./resources/clashtv_done
+./resources/generated_codes
+./resources/generated_backs
+./resources/barcodes
+./resources/grive

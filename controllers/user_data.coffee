@@ -27,6 +27,12 @@ class UserDataCtrl
     UserData.getByUserId userId
     .then EmbedService.embed embed
 
+  setAddress: ({country, address, city, zip}, {user}) ->
+    UserData.upsertByUserId user.id, {address: {country, address, city, zip}}
+
+  setClashRoyaleDeckId: ({clashRoyaleDeckId}, {user}) ->
+    UserData.upsertByUserId user.id, {clashRoyaleDeckId}
+
   updateMe: (diff, {user}) ->
     UserData.upsertByUserId user.id, _.pick diff, ['presetAvatarId']
 
@@ -37,7 +43,7 @@ class UserDataCtrl
     }, {presence: 'required'}
 
     if valid.error
-      router.throw status: 400, detail: valid.error.message
+      router.throw status: 400, info: valid.error.message
 
     Promise.all [
       UserData.getByUserId user.id
@@ -46,11 +52,11 @@ class UserDataCtrl
     ]
     .then ([userData, otherUserData, otherUser]) ->
       if userData.followingIds.indexOf(otherUserId) isnt -1
-        router.throw status: 400, detail: 'already following'
+        router.throw status: 400, info: 'already following'
       unless otherUserData
-        router.throw status: 404, detail: 'user not found'
+        router.throw status: 404, info: 'user not found'
       if otherUserData.followerIds.indexOf(user.id) isnt -1
-        router.throw status: 400, detail: 'already following'
+        router.throw status: 400, info: 'already following'
 
       Promise.all [
         UserData.upsertByUserId user.id, {
@@ -83,7 +89,7 @@ class UserDataCtrl
     }, {presence: 'required'}
 
     if valid.error
-      router.throw status: 400, detail: valid.error.message
+      router.throw status: 400, info: valid.error.message
 
     Promise.all [
       UserData.getByUserId user.id
@@ -91,7 +97,7 @@ class UserDataCtrl
     ]
     .then ([userData, otherUserData]) ->
       if userData.followingIds.indexOf(otherUserId) is -1
-        router.throw status: 400, detail: 'not following'
+        router.throw status: 400, info: 'not following'
 
       if otherUserData and otherUserData.followerIds.indexOf(user.id) isnt -1
         UserData.upsertByUserId otherUserId, {
@@ -119,7 +125,7 @@ class UserDataCtrl
     }, {presence: 'required'}
 
     if valid.error
-      router.throw status: 400, detail: valid.error.message
+      router.throw status: 400, info: valid.error.message
 
     UserData.getByUserId user.id
     .then (userData) ->
@@ -139,12 +145,12 @@ class UserDataCtrl
     }, {presence: 'required'}
 
     if valid.error
-      router.throw status: 400, detail: valid.error.message
+      router.throw status: 400, info: valid.error.message
 
     UserData.getByUserId user.id
     .then (userData) ->
       if userData.blockedUserIds.indexOf(otherUserId) is -1
-        router.throw status: 400, detail: 'not blocked'
+        router.throw status: 400, info: 'not blocked'
 
       UserData.upsertByUserId user.id, {
         blockedUserIds: _.filter userData.blockedUserIds, (blockedUserId) ->
@@ -163,7 +169,7 @@ class UserDataCtrl
     }, {presence: 'required'}
 
     if valid.error
-      router.throw status: 400, detail: valid.error.message
+      router.throw status: 400, info: valid.error.message
 
     UserData.getByUserId user.id
     .then (userData) ->

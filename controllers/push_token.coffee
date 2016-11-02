@@ -50,7 +50,7 @@ class PushTokensCtrl
     updateValid = Joi.validate diff, updateSchema
 
     if updateValid.error
-      throw new router.Error status: 400, detail: updateValid.error.message
+      throw new router.Error status: 400, info: updateValid.error.message
 
     Promise.all [
       User.updateSelf userId, {

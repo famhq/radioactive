@@ -22,7 +22,6 @@ defaultUserData = (userData) ->
     followingIds: []
     followerIds: []
     blockedUserIds: []
-    clashRoyaleDeckIds: []
   }, userData
 
 class UserDataModel
@@ -48,6 +47,8 @@ class UserDataModel
     .default null
     .run()
     .then defaultUserData
+    .then (userData) ->
+      _.defaults {userId}, userData
 
   upsertByUserId: (userId, diff) ->
     r.table USER_DATA_TABLE

@@ -77,6 +77,7 @@ class ThreadModel
       'messages'
       'messageCount'
       'lastUpdateTime'
+      'embedded'
     ]
 
 module.exports = new ThreadModel()

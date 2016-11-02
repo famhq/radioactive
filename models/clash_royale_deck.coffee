@@ -53,6 +53,7 @@ defaultClashRoyaleDeck = (clashRoyaleDeck) ->
     verifiedWins: 0
     verifiedLosses: 0
     verifiedDraws: 0
+    createdByUserId: null
     addTime: new Date()
   }, clashRoyaleDeck
 
@@ -145,22 +146,25 @@ class ClashRoyaleDeckModel
     .run()
     .map defaultClashRoyaleDeck
 
-  incrementById: (id, state) ->
+  incrementById: (id, state, {isUnverified} = {}) ->
     if state is 'win'
       diff = {
         wins: r.row('wins').add(1)
-        verifiedWins: r.row('verifiedWins').add(1)
       }
+      unless isUnverified
+        diff.verifiedWins = r.row('verifiedWins').add(1)
     else if state is 'loss'
       diff = {
         losses: r.row('losses').add(1)
-        verifiedLosses: r.row('verifiedLosses').add(1)
       }
+      unless isUnverified
+        diff.verifiedLosses = r.row('verifiedLosses').add(1)
     else if state is 'draw'
       diff = {
         draws: r.row('draws').add(1)
-        verifiedDraws: r.row('verifiedDraws').add(1)
       }
+      unless isUnverified
+        diff.verifiedDraws = r.row('verifiedDraws').add(1)
     else
       diff = {}
 

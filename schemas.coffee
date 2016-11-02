@@ -10,12 +10,21 @@ user =
   id: id
   username: Joi.string().min(1).max(100).allow(null).regex /^[a-zA-Z0-9-_]+$/
   flags: Joi.object()
+  isMember: Joi.boolean()
   data: Joi.object()
   avatarImage: Joi.object()
   embedded: Joi.array().allow(null).optional()
+
+pushToken =
+  id: id
+  userId: id
+  token: Joi.string()
+  sourceType: Joi.string()
+
 
 module.exports = {
   id
   auth
   user
+  pushToken
 }
