@@ -18,6 +18,8 @@ defaultClashRoyaleMatch = (clashRoyaleMatch) ->
     arena: null
     deck1Id: null
     deck2Id: null
+    deck1CardIds: null
+    deck2CardIds: null
     deck1Score: null
     deck2Score: null
     time: new Date()

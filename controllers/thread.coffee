@@ -21,7 +21,7 @@ class ThreadCtrl
     userId = user.id
 
     Thread.create {title, userId}
-    .then (thread) ->
+    .tap (thread) ->
       ThreadMessage.create {
         body
         userId

@@ -9,8 +9,7 @@ EmbedService = require '../services/embed'
 schemas = require '../schemas'
 
 defaultEmbed = [
-  EmbedService.TYPES.CLASH_ROYALE_DECK.CARDS
-  EmbedService.TYPES.CLASH_ROYALE_DECK.POPULARITY
+  EmbedService.TYPES.CLASH_ROYALE_USER_DECK.DECK
 ]
 
 class ClashRoyaleUserDeckCtrl
@@ -19,15 +18,15 @@ class ClashRoyaleUserDeckCtrl
     .map EmbedService.embed defaultEmbed
     .map ClashRoyaleUserDeck.sanitize null
 
-  getById: ({id}, {user}) ->
-    ClashRoyaleUserDeck.getById id
+  getByDeckId: ({deckId}, {user}) ->
+    ClashRoyaleUserDeck.getByDeckIdAndUserId deckId, user.id
     .then EmbedService.embed defaultEmbed
     .then ClashRoyaleUserDeck.sanitize null
 
   incrementByDeckId: ({deckId, state}, {user}) ->
     Promise.all [
       ClashRoyaleUserDeck.incrementByDeckIdAndUserId deckId, user.id, state
-      ClashRoyaleDeck.incrementById deckId, state, {isUnverified: true}
+      ClashRoyaleDeck.incrementById deckId, state
     ]
 
   favorite: ({deckId}, {user}) ->

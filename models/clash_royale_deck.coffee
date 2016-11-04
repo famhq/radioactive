@@ -2,11 +2,13 @@ _ = require 'lodash'
 Promise = require 'bluebird'
 uuid = require 'node-uuid'
 
+ClashRoyaleWinTrackerModel = require './clash_royale_win_tracker'
 r = require '../services/rethinkdb'
 config = require '../config'
 
 CLASH_ROYALE_DECK_TABLE = 'clash_royale_decks'
 ADD_TIME_INDEX = 'addTime'
+POPULARITY_INDEX = 'thisWeekPopularity'
 CARD_KEYS_INDEX = 'cardKeys'
 # coffeelint: disable=max_line_length
 # for naming
@@ -50,14 +52,12 @@ defaultClashRoyaleDeck = (clashRoyaleDeck) ->
     wins: 0
     losses: 0
     draws: 0
-    verifiedWins: 0
-    verifiedLosses: 0
-    verifiedDraws: 0
+    timePeriods: {}
     createdByUserId: null
     addTime: new Date()
   }, clashRoyaleDeck
 
-class ClashRoyaleDeckModel
+class ClashRoyaleDeckModel extends ClashRoyaleWinTrackerModel
   RETHINK_TABLES: [
     {
       name: CLASH_ROYALE_DECK_TABLE
@@ -65,6 +65,7 @@ class ClashRoyaleDeckModel
       indexes: [
         {name: ADD_TIME_INDEX}
         {name: CARD_KEYS_INDEX}
+        {name: POPULARITY_INDEX}
       ]
     }
   ]
@@ -137,51 +138,15 @@ class ClashRoyaleDeckModel
     sortQ = if sort is 'recent' \
             then {index: r.desc(ADD_TIME_INDEX)}
             else if sort is 'popular'
-            then r.desc(r.row('wins').add(r.row('losses')))
-            else r.row('wins').add(r.row('losses'))
+            then {index: r.desc(POPULARITY_INDEX)}
+            else POPULARITY_INDEX
 
-    r.table CLASH_ROYALE_DECK_TABLE
+    q = r.table CLASH_ROYALE_DECK_TABLE
     .orderBy sortQ
-    .limit limit
-    .run()
+    if limit
+      q = q.limit limit
+    q.run()
     .map defaultClashRoyaleDeck
-
-  incrementById: (id, state, {isUnverified} = {}) ->
-    if state is 'win'
-      diff = {
-        wins: r.row('wins').add(1)
-      }
-      unless isUnverified
-        diff.verifiedWins = r.row('verifiedWins').add(1)
-    else if state is 'loss'
-      diff = {
-        losses: r.row('losses').add(1)
-      }
-      unless isUnverified
-        diff.verifiedLosses = r.row('verifiedLosses').add(1)
-    else if state is 'draw'
-      diff = {
-        draws: r.row('draws').add(1)
-      }
-      unless isUnverified
-        diff.verifiedDraws = r.row('verifiedDraws').add(1)
-    else
-      diff = {}
-
-    r.table CLASH_ROYALE_DECK_TABLE
-    .get id
-    .update diff
-    .run()
-
-  getRank: (deck) ->
-    r.table CLASH_ROYALE_DECK_TABLE
-    .filter(
-      r.row('wins').add(r.row('losses'))
-      .gt(deck.wins + deck.losses)
-    )
-    .count()
-    .run()
-    .then (rank) -> rank + 1
 
   updateById: (id, diff) ->
     r.table CLASH_ROYALE_DECK_TABLE
@@ -202,7 +167,8 @@ class ClashRoyaleDeckModel
       'cardIds'
       'cards'
       'averageElixirCost'
-      'popularity'
+      'thisWeekPopularity'
+      'timeRanges'
       'wins'
       'losses'
       'draws'

@@ -27,11 +27,10 @@ TYPES =
     USER: 'chatMessage:user'
   CONVERSATION:
     MESSAGES: 'conversation:messages'
+  CLASH_ROYALE_USER_DECK:
+    DECK: 'clashRoyaleUserDeck:deck'
   CLASH_ROYALE_DECK:
     CARDS: 'clashRoyaleDeck:cards'
-    POPULARITY: 'clashRoyaleDeck:popularity'
-  CLASH_ROYALE_CARD:
-    POPULARITY: 'clashRoyaleCard:popularity'
   THREAD_MESSAGE:
     USER: 'threadMessage:user'
   THREAD:
@@ -201,21 +200,9 @@ embedFn = _.curry (embed, object) ->
             card.data?.elixirCost
           Math.round(mean * 10) / 10
 
-      when TYPES.CLASH_ROYALE_DECK.POPULARITY
-        key = CacheService.PREFIXES.CLASH_ROYALE_DECK_POPULARITY +
-                ':' + embedded.id
-        embedded.popularity =
-          CacheService.preferCache key, ->
-            ClashRoyaleDeck.getRank embedded
-          , {expireSeconds: ONE_DAY_SECONDS}
-
-      when TYPES.CLASH_ROYALE_CARD.POPULARITY
-        key = CacheService.PREFIXES.CLASH_ROYALE_CARD_POPULARITY +
-                ':' + embedded.id
-        embedded.popularity =
-          CacheService.preferCache key, ->
-            ClashRoyaleCard.getRank embedded
-          , {expireSeconds: ONE_DAY_SECONDS}
+      when TYPES.CLASH_ROYALE_USER_DECK.DECK
+        embedded.deck = ClashRoyaleDeck.getById embedded.deckId
+        .then embedFn [TYPES.CLASH_ROYALE_DECK.CARDS]
 
   return Promise.props embedded
 

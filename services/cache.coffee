@@ -21,7 +21,8 @@ class CacheService
     USER_DATA_BLOCKED_USERS: 'user_data:blocked_users'
     USER_DATA_CLASH_ROYALE_DECK_IDS: 'user_data:clash_royale_deck_ids'
     CLASH_ROYALE_CARD: 'clash_royale_card7'
-    CLASH_ROYALE_DECK_POPULARITY: 'clash_royal_deck:popularity1'
+    CLASH_ROYALE_CARD_RANK: 'clash_royal_card:rank'
+    CLASH_ROYALE_DECK_RANK: 'clash_royal_deck:rank'
     USERNAME_SEARCH: 'username:search'
 
   constructor: ->

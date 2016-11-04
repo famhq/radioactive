@@ -12,7 +12,7 @@ DECK_ID_INDEX = 'deckId'
 USER_ID_IS_FAVORITED_INDEX = 'userIdIsFavorited'
 USER_ID_INDEX = 'userId'
 
-defaultClashRoyaleDeck = (clashRoyaleUserDeck) ->
+defaultClashRoyaleUserDeck = (clashRoyaleUserDeck) ->
   unless clashRoyaleUserDeck?
     return null
 
@@ -24,9 +24,7 @@ defaultClashRoyaleDeck = (clashRoyaleUserDeck) ->
     wins: 0
     losses: 0
     draws: 0
-    verifiedWins: 0
-    verifiedLosses: 0
-    verifiedDraws: 0
+    timePeriods: {}
     addTime: new Date()
   }, clashRoyaleUserDeck
 
@@ -49,7 +47,7 @@ class ClashRoyaleUserDeckModel
   ]
 
   create: (clashRoyaleUserDeck) ->
-    clashRoyaleUserDeck = defaultClashRoyaleDeck clashRoyaleUserDeck
+    clashRoyaleUserDeck = defaultClashRoyaleUserDeck clashRoyaleUserDeck
 
     r.table CLASH_ROYALE_USER_DECK_TABLE
     .insert clashRoyaleUserDeck
@@ -61,7 +59,16 @@ class ClashRoyaleUserDeckModel
     r.table CLASH_ROYALE_USER_DECK_TABLE
     .get id
     .run()
-    .then defaultClashRoyaleDeck
+    .then defaultClashRoyaleUserDeck
+
+  getByDeckIdAndUserId: (deckId, userId) ->
+    r.table CLASH_ROYALE_USER_DECK_TABLE
+    .getAll userId, {index: USER_ID_INDEX}
+    .filter {deckId}
+    .nth 0
+    .default null
+    .run()
+    .then defaultClashRoyaleUserDeck
 
   getAll: ({limit, sort} = {}) ->
     limit ?= 10
@@ -76,7 +83,7 @@ class ClashRoyaleUserDeckModel
     .orderBy sortQ
     .limit limit
     .run()
-    .map defaultClashRoyaleDeck
+    .map defaultClashRoyaleUserDeck
 
   getAllByUserId: (userId, {limit} = {}) ->
     limit ?= 10
@@ -84,7 +91,7 @@ class ClashRoyaleUserDeckModel
     .getAll userId, {index: USER_ID_INDEX}
     .limit limit
     .run()
-    .map defaultClashRoyaleDeck
+    .map defaultClashRoyaleUserDeck
 
   getAllFavoritedByUserId: (userId, {limit} = {}) ->
     limit ?= 10
@@ -92,7 +99,7 @@ class ClashRoyaleUserDeckModel
     .getAll [userId, true], {index: USER_ID_IS_FAVORITED_INDEX}
     .limit limit
     .run()
-    .map defaultClashRoyaleDeck
+    .map defaultClashRoyaleUserDeck
 
   processUpdate: (userId) ->
     key = CacheService.PREFIXES.USER_DATA_CLASH_ROYALE_DECK_IDS + ':' + userId
@@ -131,7 +138,7 @@ class ClashRoyaleUserDeckModel
         userDeck.eq null
 
         r.table CLASH_ROYALE_USER_DECK_TABLE
-        .insert defaultClashRoyaleDeck _.defaults(diff, {userId, deckId})
+        .insert defaultClashRoyaleUserDeck _.defaults(diff, {userId, deckId})
 
         r.table CLASH_ROYALE_USER_DECK_TABLE
         .getAll userId, {index: USER_ID_INDEX}
@@ -155,6 +162,7 @@ class ClashRoyaleUserDeckModel
     _.pick clashRoyaleUserDeck, [
       'id'
       'deckId'
+      'deck'
       'name'
       'wins'
       'losses'

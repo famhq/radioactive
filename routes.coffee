@@ -77,6 +77,8 @@ module.exports = router
 .on 'clashRoyaleDeck.getById', authed ClashRoyaleDeckCtrl.getById
 
 .on 'clashRoyaleUserDeck.create', authed ClashRoyaleUserDeckCtrl.create
+.on 'clashRoyaleUserDeck.getByDeckId',
+  authed ClashRoyaleUserDeckCtrl.getByDeckId
 .on 'clashRoyaleUserDeck.favorite', authed ClashRoyaleUserDeckCtrl.favorite
 .on 'clashRoyaleUserDeck.unfavorite', authed ClashRoyaleUserDeckCtrl.unfavorite
 .on 'clashRoyaleUserDeck.incrementByDeckId',

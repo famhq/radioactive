@@ -6,9 +6,7 @@ EmbedService = require '../services/embed'
 
 schemas = require '../schemas'
 
-defaultEmbed = [
-  EmbedService.TYPES.CLASH_ROYALE_CARD.POPULARITY
-]
+defaultEmbed = []
 
 class ClashRoyaleCardCtrl
   getAll: ({sort}) ->

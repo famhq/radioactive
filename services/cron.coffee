@@ -5,6 +5,8 @@ Promise = require 'bluebird'
 CacheService = require './cache'
 KueCreateService = require './kue_create'
 ClashTvService = require './clash_tv'
+ClashRoyaleDeck = require '../models/clash_royale_deck'
+ClashRoyaleCard = require '../models/clash_royale_card'
 r = require './rethinkdb'
 config = require '../config'
 
@@ -27,8 +29,15 @@ class CronService
     @addCron 'daily', '0 0 7 * * *', ->
       r.table('user_daily_data').delete()
 
-    # @addCron 'hourly', '0 0 * * * *', ->
-    #   ClashTvService.process()
+    @addCron 'hourly', '0 0 * * * *', ->
+      ClashTvService.process()
+
+    # hourly on half hour
+    @addCron 'winRates', '0 19 * * * *', ->
+      Promise.all [
+        ClashRoyaleDeck.updateWinsAndLosses()
+        ClashRoyaleCard.updateWinsAndLosses()
+      ]
 
   addCron: (key, time, fn) =>
     @crons.push new CronJob time, ->

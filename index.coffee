@@ -14,6 +14,8 @@ AuthService = require './services/auth'
 CronService = require './services/cron'
 KueRunnerService = require './services/kue_runner'
 ClashTvService = require './services/clash_tv'
+ClashRoyaleDeck = require './models/clash_royale_deck'
+ClashRoyaleCard = require './models/clash_royale_card'
 
 HEALTHCHECK_TIMEOUT = 1000
 MAX_FILE_SIZE_BYTES = 20 * 1000 * 1000 # 20MB
@@ -163,6 +165,11 @@ app.post '/log', (req, res) ->
 
 app.post '/exoid', routes.asMiddleware()
 app.get '/clashTv', (req, res) -> ClashTvService.process()
+app.get '/updateCards', (req, res) ->
+  Promise.all [
+    # ClashRoyaleCard.updateWinsAndLosses()
+    ClashRoyaleDeck.updateWinsAndLosses()
+  ]
 
 module.exports = {
   app

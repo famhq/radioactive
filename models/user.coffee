@@ -114,6 +114,13 @@ class UserModel
     .run()
     .then -> null
 
+  updateSelf: (id, diff) ->
+    r.table USERS_TABLE
+    .get id
+    .update diff
+    .run()
+    .then -> null
+
   create: (user) ->
     user = defaultUser user
 

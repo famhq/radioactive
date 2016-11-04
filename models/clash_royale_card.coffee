@@ -2,11 +2,13 @@ _ = require 'lodash'
 Promise = require 'bluebird'
 uuid = require 'node-uuid'
 
+ClashRoyaleWinTrackerModel = require './clash_royale_win_tracker'
 r = require '../services/rethinkdb'
 config = require '../config'
 
 CLASH_ROYALE_CARD_TABLE = 'clash_royale_cards'
 KEY_INDEX = 'key'
+POPULARITY_INDEX = 'thisWeekPopularity'
 
 defaultClashRoyaleCard = (clashRoyaleCard) ->
   unless clashRoyaleCard?
@@ -19,18 +21,17 @@ defaultClashRoyaleCard = (clashRoyaleCard) ->
     wins: 0
     losses: 0
     draws: 0
-    verifiedWins: 0
-    verifiedLosses: 0
-    verifiedDraws: 0
+    timePeriods: {}
   }, clashRoyaleCard
 
-class ClashRoyaleCardModel
+class ClashRoyaleCardModel extends ClashRoyaleWinTrackerModel
   RETHINK_TABLES: [
     {
       name: CLASH_ROYALE_CARD_TABLE
       options: {}
       indexes: [
         {name: KEY_INDEX}
+        {name: POPULARITY_INDEX}
       ]
     }
   ]
@@ -58,50 +59,16 @@ class ClashRoyaleCardModel
     .run()
     .then defaultClashRoyaleCard
 
-  getAll: ({sort}) ->
+  getAll: ({sort} = {}) ->
     sortQ = if sort is 'popular' \
-            then r.desc(r.row('wins').add(r.row('losses')))
+            then {index: r.desc(POPULARITY_INDEX)}
             else 'name'
 
     r.table CLASH_ROYALE_CARD_TABLE
-    .filter r.row('key').ne('blank')
     .orderBy sortQ
+    .filter r.row('key').ne('blank')
     .run()
     .map defaultClashRoyaleCard
-
-  getRank: (deck) ->
-    r.table CLASH_ROYALE_CARD_TABLE
-    .filter(
-      r.row('wins').add(r.row('losses'))
-      .gt(deck.wins + deck.losses)
-    )
-    .count()
-    .run()
-    .then (rank) -> rank + 1
-
-  incrementById: (id, state) ->
-    if state is 'win'
-      diff = {
-        wins: r.row('wins').add(1)
-        verifiedWins: r.row('verifiedWins').add(1)
-      }
-    else if state is 'loss'
-      diff = {
-        losses: r.row('losses').add(1)
-        verifiedLosses: r.row('verifiedLosses').add(1)
-      }
-    else if state is 'draw'
-      diff = {
-        draws: r.row('draws').add(1)
-        verifiedDraws: r.row('verifiedDraws').add(1)
-      }
-    else
-      diff = {}
-
-    r.table CLASH_ROYALE_CARD_TABLE
-    .get id
-    .update diff
-    .run()
 
   updateById: (id, diff) ->
     r.table CLASH_ROYALE_CARD_TABLE
@@ -130,7 +97,8 @@ class ClashRoyaleCardModel
       'key'
       'cardIds'
       'data'
-      'popularity'
+      'thisWeekPopularity'
+      'timeRanges'
       'wins'
       'losses'
       'draws'

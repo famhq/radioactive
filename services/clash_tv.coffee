@@ -43,6 +43,7 @@ TEXT_MATCHES =
   'lvl .2': 2
   'lvll': 2
   'lvl.3': 3
+  'lvl53': 3
   'lvl3': 3
   'lvvl': 4
   'lvl.4': 4
@@ -173,7 +174,7 @@ class ClashTvService
   process: ->
     if config.IS_STAGING or config.ENV is config.ENVS.DEV
       console.log 'skipping process'
-      return
+      # return
     Promise.promisify(drive.files.list)(options)
     .then (response) ->
       files = _.map response[0].files, (obj) ->
@@ -214,8 +215,8 @@ class ClashTvService
           console.log "#{cur} / #{files.length}"
 
           Promise.all [
-            matchImage score1Canvas, SCORE_IMAGES, {maxMismatch: 70}
-            matchImage score2Canvas, SCORE_IMAGES, {maxMismatch: 70}
+            matchImage score1Canvas, SCORE_IMAGES, {maxMismatch: 40}
+            matchImage score2Canvas, SCORE_IMAGES, {maxMismatch: 40}
             extractText arenaCanvas, {removeLineBreaks: true}
             Promise.map player1Deck, getCardAndLevel, {concurrency: 1}
             .then (player1Deck) ->
@@ -286,6 +287,8 @@ class ClashTvService
                         arena: arena
                         deck1Id: deck1.id
                         deck2Id: deck2.id
+                        deck1CardIds: deck1.cardIds
+                        deck2CardIds: deck2.cardIds
                         deck1Score: score1
                         deck2Score: score2
                         time: time
@@ -402,13 +405,23 @@ matchImage = (canvas, imagePaths, {maxMismatch} = {}) ->
   mainImage = canvas.toBuffer()
 
   Promise.map imagePaths, ({path, value}) ->
-    if cachedImages[path]
-      cachedImages[path]
+    key = "#{path}:#{canvas.width}:#{canvas.height}"
+    if cachedImages[key]
+      cachedImages[key]
     else
       Promise.promisify(fs.readFile) path
       .then (image) ->
-        cachedImages[path] = {image, value}
-        cachedImages[path]
+        resizedCanvas = new Canvas canvas.width, canvas.height
+        resizedCanvasCtx = resizedCanvas.getContext '2d'
+        img = new Image()
+        img.src = image
+        resizedCanvasCtx.drawImage(
+          img, 0, 0, img.width, img.height, 0, 0,
+          resizedCanvas.width, resizedCanvas.height
+        )
+
+        cachedImages[key] = {image: resizedCanvas.toBuffer(), value}
+        cachedImages[key]
   .then (images) ->
     Promise.map images, (otherImage) ->
       compareImage mainImage, otherImage
