@@ -50,7 +50,7 @@ class ClashRoyaleUserDeckCtrl
         deck
       else
         ClashRoyaleDeck.create {
-          cardIds, name, cardKeys, createdByUserId: user.id
+          cardIds, name, cardKeys, creatorId: user.id
         }
     .then (deck) ->
       ClashRoyaleUserDeck.upsertByDeckIdAndUserId deck.id, user.id, {

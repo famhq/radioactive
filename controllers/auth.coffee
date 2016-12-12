@@ -16,9 +16,36 @@ class AuthCtrl
     .then (user) ->
       Auth.fromUserId user.id
 
+  join: ({email, username, password}, {user}) ->
+    insecurePassword = password
+    username = username?.toLowerCase()
+
+    valid = Joi.validate {insecurePassword, email, username},
+      insecurePassword: Joi.string().min(6).max(1000)
+      email: schemas.user.email
+      username: schemas.user.username
+    , {presence: 'required'}
+
+    if valid.error
+      router.throw {status: 400, info: valid.error.message}
+
+    if user and user.password
+      router.throw {status: 401, info: 'Password already set'}
+    else if user
+      User.getByUsername username
+      .then (existingUser) ->
+        if existingUser
+          router.throw {status: 401, info: 'Username is taken'}
+
+        Promise.promisify(bcrypt.hash)(insecurePassword, BCRYPT_ROUNDS)
+        .then (password) ->
+          User.updateById user.id, {username, password, isMember: true}
+      .then ->
+        Auth.fromUserId user.id
   # Transform or Create user with email and password
   loginCode: ({code, username, password}) ->
     insecurePassword = password
+    username = username?.toLowerCase()
 
     valid = Joi.validate {insecurePassword, code, username},
       insecurePassword: Joi.string().min(6).max(1000)
@@ -41,7 +68,7 @@ class AuthCtrl
 
           Promise.promisify(bcrypt.hash)(insecurePassword, BCRYPT_ROUNDS)
           .then (password) ->
-            User.updateById user.id, {username, password}
+            User.updateById user.id, {username, password, isMember: true}
       else
         router.throw {status: 401, info: 'Invalid code'}
 
@@ -50,6 +77,7 @@ class AuthCtrl
 
   loginUsername: ({username, password}) ->
     insecurePassword = password
+    username = username?.toLowerCase()
 
     valid = Joi.validate {insecurePassword, username},
       insecurePassword: Joi.string().min(6).max(1000)
@@ -59,8 +87,10 @@ class AuthCtrl
     if valid.error
       router.throw {status: 400, info: valid.error.message}
 
+    console.log 'get', username
     User.getByUsername username
     .then (user) ->
+      console.log 'got', user
       if user and user.password
         return Promise.promisify(bcrypt.compare)(
           insecurePassword
@@ -80,6 +110,7 @@ class AuthCtrl
         router.throw {status: 401, info: 'Username not found'}
 
     .then (user) ->
+      console.log user
       Auth.fromUserId user.id
 
 

@@ -63,9 +63,9 @@ Referrer ID: #{referrerId}
 Code: #{code}
 """
 
-  makeMember: ({}, {user}) ->
-    if user.flags.isFeeWaived
-      User.updateById user.id, {isMember: true}
+  # makeMember: ({}, {user}) ->
+  #   if user.flags.isFeeWaived
+  #     User.updateById user.id, {isMember: true}
 
   setFlags: (flags, {user}) ->
     flagsSchema =

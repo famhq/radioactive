@@ -19,21 +19,14 @@ class CronService
   constructor: ->
     @crons = []
 
-    # every hour, 1st second
-    # @addCron 'addNewCards', '1 0 * * * *', ->
-    #   console.log 'addNewCards'
-    #   Promise.all [
-    #     SyncService.addNewItems()
-    #     SyncService.marksoldOutItems()
-    #   ]
     @addCron 'daily', '0 0 7 * * *', ->
       r.table('user_daily_data').delete()
 
     @addCron 'hourly', '0 0 * * * *', ->
       ClashTvService.process()
 
-    # hourly on half hour
-    @addCron 'winRates', '0 19 * * * *', ->
+    # daily 6pm PT
+    @addCron 'winRates', '0 0 2 * * *', ->
       Promise.all [
         ClashRoyaleDeck.updateWinsAndLosses()
         ClashRoyaleCard.updateWinsAndLosses()

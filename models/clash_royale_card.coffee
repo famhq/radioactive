@@ -14,7 +14,7 @@ defaultClashRoyaleCard = (clashRoyaleCard) ->
   unless clashRoyaleCard?
     return null
 
-  _.assign {
+  _.defaults clashRoyaleCard, {
     id: uuid.v4()
     name: null
     key: null
@@ -22,7 +22,7 @@ defaultClashRoyaleCard = (clashRoyaleCard) ->
     losses: 0
     draws: 0
     timePeriods: {}
-  }, clashRoyaleCard
+  }
 
 class ClashRoyaleCardModel extends ClashRoyaleWinTrackerModel
   RETHINK_TABLES: [

@@ -5,79 +5,82 @@ Promise = require 'bluebird'
 User = require '../models/user'
 UserData = require '../models/user_data'
 ChatMessage = require '../models/chat_message'
+Conversation = require '../models/conversation'
 CacheService = require '../services/cache'
 PushNotificationService = require '../services/push_notification'
+ProfanityService = require '../services/profanity'
 EmbedService = require '../services/embed'
+StreamService = require '../services/stream'
 config = require '../config'
 
 defaultEmbed = [EmbedService.TYPES.CHAT_MESSAGE.USER]
 
 MAX_CONVERSATION_USER_IDS = 20
 
-defaultUserEmbed = [EmbedService.TYPES.USER.DATA]
+defaultConversationEmbed = [EmbedService.TYPES.CONVERSATION.USERS]
 
 class ChatMessageCtrl
-  create: ({body, toId}, {user, headers, connection}) ->
+  create: ({body, conversationId}, {user, headers, connection}) ->
     userAgent = headers['user-agent']
     ip = headers['x-forwarded-for'] or
           connection.remoteAddress
 
+    isProfane = ProfanityService.isProfane body
     msPlayed = Date.now() - user.joinTime?.getTime()
 
-    if user.flags.isChatBanned
-      router.throw status: 400, info: 'unable to post...'
+    if isProfane or user.flags.isChatBanned
+      router.throw status: 400, detail: 'unable to post...'
 
-    EmbedService.embed defaultUserEmbed, user
-    .then (user) ->
-      toUser = if toId \
-               then User.getById(toId).then EmbedService.embed defaultUserEmbed
-               else Promise.resolve null
-      toUser.then (toUser) ->
-        if toUser and toUser.data.blockedUserIds.indexOf(user.id) isnt -1
-          router.throw status: 400, info: 'block by user'
+    Conversation.getById conversationId
+    .then EmbedService.embed defaultConversationEmbed
+    .then (conversation) ->
+      Conversation.hasPermission conversation, user.id
+      .then (hasPermission) ->
+        unless hasPermission
+          router.throw status: 401, detail: 'unauthorized'
 
         ChatMessage.create
           userId: user.id
           body: body
-          toId: toId
+          conversationId: conversationId
         .tap ->
-          if toUser
-            PushNotificationService.send(toUser, {
-              title: 'New private message'
+          userIds = conversation.userIds
+          Conversation.updateById conversation.id, {
+            lastUpdateTime: new Date()
+            userData: _.zipObject userIds, _.map userIds, (userId) ->
+              {isRead: userId isnt user.id}
+          }
+          PushNotificationService.sendToConversation(
+            conversation, {
+              title: if conversation.groupId \
+                    then 'New group message'
+                    else 'New private message'
               type: PushNotificationService.TYPES.PRIVATE_MESSAGE
-              text: "#{User.getDisplayName(user)} sent you a private message."
-              url: "https://#{config.RED_TRITIUM_HOST}"
-              data: {path: "/conversations/#{user.id}"}
-            }).catch -> null
+              text: "#{User.getDisplayName(user)} sent a message."
+              url: "https://#{config.SUPERNOVA_HOST}"
+              data:
+                path: if conversation.groupId \
+                      then "/group/#{conversation.groupId}"
+                      else "/conversation/#{conversationId}"
+          }, {skipMe: true, meUserId: user.id}).catch -> null
 
-            meConversationUserIds = user.data.conversationUserIds
-
-            meNewConversationUserIds = _.uniq [toUser.id].concat(
-              _.filter meConversationUserIds, (id) -> id isnt toUser.id
-            )
-            if not _.isEqual meNewConversationUserIds, meConversationUserIds
-              UserData.upsertByUserId user.id, {
-                conversationUserIds: meNewConversationUserIds
-              }
-              key = "#{CacheService.PREFIXES.USER_DATA_CONVERSATION_USERS}:" +
-                    "#{user.id}"
-              CacheService.deleteByKey key
-
-            toUserConversationIds = toUser.data.conversationUserIds
-            toUserNewConversationIds = _.uniq [user.id].concat(
-              _.filter toUserConversationIds, (id) -> id isnt user.id
-            )
-            toUserNewConversationIds = _.take(
-              toUserNewConversationIds, MAX_CONVERSATION_USER_IDS
-            )
-            if not _.isEqual toUserNewConversationIds, meConversationUserIds
-              UserData.upsertByUserId toUser.id, {
-                conversationUserIds: toUserNewConversationIds
-              }
-              key = "#{CacheService.PREFIXES.USER_DATA_CONVERSATION_USERS}:" +
-                    "#{toUser.id}"
-              CacheService.deleteByKey key
-
-          null
+  getAllByConversationId: ({conversationId}, {user}, {emit, socket, route}) ->
+    console.log 'get', conversationId
+    StreamService.stream {
+      emit
+      socket
+      route
+      limit: 30
+      promise: ChatMessage.getAllByConversationId conversationId, {
+        isStreamed: true
+      }
+      postFn: (item) ->
+        EmbedService.embed defaultEmbed, ChatMessage.default(item)
+        .then (item) ->
+          if item.user?.flags?.isChatBanned isnt true
+            item
+    }
+    .then (results) ->
+      results.reverse()
 
 module.exports = new ChatMessageCtrl()

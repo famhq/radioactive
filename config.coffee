@@ -20,6 +20,8 @@ config =
   GOOGLE_API_KEY: env.GOOGLE_API_KEY
   CARD_CODE_MAX_LENGTH: 9999999999
   PCG_SEED: env.RADIOACTIVE_PCG_SEED
+  PT_UTC_OFFSET: -8
+  IOS_BUNDLE_ID: 'com.clay.redtritium'
   GOOGLE:
     CLIENT_ID: env.GOOGLE_CLIENT_ID
     CLIENT_SECRET: env.GOOGLE_CLIENT_SECRET
@@ -37,6 +39,7 @@ config =
     NODES: if env.REDIS_CLUSTER_HOSTS \
            then _.map env.REDIS_CLUSTER_HOSTS.split(','), (host) -> {host, port: REDIS_PORT}
            else [env.REDIS_HOST]
+  CDN_HOST: env.CDN_HOST
   AWS:
     REGION: 'us-west-2'
     CDN_BUCKET: env.AWS_CDN_BUCKET

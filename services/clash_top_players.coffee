@@ -6,13 +6,15 @@ Canvas = require 'canvas'
 Image = Canvas.Image
 resemble = require 'node-resemble-js'
 tesseract = require 'node-tesseract'
+google = require 'googleapis'
+OAuth2 = google.auth.OAuth2
+request = require 'request-promise'
 
 config = require '../config'
 CanvasToTIFF = require '../lib/canvastotiff.min.js'
 Card = require '../models/clash_royale_card'
 Match = require '../models/clash_royale_match'
 Deck = require '../models/clash_royale_deck'
-GoogleDriveService = require './google_drive'
 
 IS_TEST_RUN = false
 
@@ -40,10 +42,8 @@ TEXT_MATCHES =
   'lvl3': 3
   'lvvl': 4
   'lvl.4': 4
-  '5.  l  4 0': 4
   'lvl.5': 5
   'lvl5': 5
-  'l 9l.5.': 5
   'lvl.6': 6
   'lvl.7': 7
   'lvl.8': 8
@@ -55,9 +55,6 @@ TEXT_MATCHES =
   'vl.llll': 10
   'lvl.ll1l': 10
   'lvl.ll1': 10
-  '1vl.l0': 10
-  '113 l.l0': 10
-  '1 1.11.': 11
   'lvl.11': 11
   'lvl.ll': 11
   'lvl.l1': 11
@@ -133,26 +130,66 @@ LEVEL_COLORS =
     colors: [[255, 204, 102]]#, [230, 184, 92]]
 RGB_TOLERANCE = 0
 COLOR_DETECT_RGB_TOLERANCE = 20
+CLASH_TV_PROCESSED_FOLDER_ID = '0B3-QIPiIHJh2WE5TTXhaNVIzeUU'
+CLASH_TV_SCREENSHOTS_FOLDER_ID = '0B3-QIPiIHJh2THFSTmJYcDBsdTQ'
 cachedImages = []
 
-class ClashTvService
+
+oauth2Client = new OAuth2(
+  config.GOOGLE.CLIENT_ID
+  config.GOOGLE.CLIENT_SECRET
+  config.GOOGLE.REDIRECT_URL
+)
+# scopes = [
+#   'https://www.googleapis.com/auth/drive'
+# ]
+# url = oauth2Client.generateAuthUrl {
+#   access_type: 'offline'
+#   scope: scopes
+# }
+# if you need a new refresh_token, get a code (url above), put into var below
+# and get token
+# code = '4/vJLyVVM20Y45blJbMTv3gM5kP8dMQwxCjHXjJd1xPNk'
+# oauth2Client.getToken code, (err, token) ->
+#   console.log err, token
+oauth2Client.setCredentials {refresh_token: config.GOOGLE.REFRESH_TOKEN}
+drive = google.drive {
+  version: 'v3',
+  auth: oauth2Client
+}
+
+
+options =
+  pageSize: 100
+  fields: 'files(id, name)'
+  q: "'#{CLASH_TV_SCREENSHOTS_FOLDER_ID}' in parents"
+
+
+class ClashTopPlayersService
   process: ->
     if config.IS_STAGING or config.ENV is config.ENVS.DEV
       console.log 'skipping process'
-      IS_TEST_RUN = true
-      return
+      # return
+    Promise.promisify(drive.files.list)(options)
+    .then (response) ->
+      files = _.map response[0].files, (obj) ->
+        _.pick obj, ['id', 'name']
 
-    folder = GoogleDriveService.FOLDERS.CLASH_TV_SCREENSHOTS
-    GoogleDriveService.getFilesByFolder folder
-    .then (files) ->
-      Promise.each files, ({id, name}, cur) ->
+      Promise.each files, ({id, name, downloadUrl}, cur) ->
         ssFileName = name
         fileId = id
-
-        GoogleDriveService.getFileBufferByFileId fileId
-        .then (ssFile) ->
+        Promise.promisify(drive.files.get) {
+          fileId: id
+          alt: 'media'
+        }, {encoding: null}
+        .then ([ssFile]) ->
           image = new Image()
           image.src = ssFile
+
+          # c = new Canvas image.width, image.height
+          # ctx = c.getContext '2d'
+          # ctx.drawImage image, 0, 0
+          # console.log c.toDataURL()
 
           arenaCanvas = new Canvas 320, 55
           arenaCtx = arenaCanvas.getContext '2d'
@@ -257,17 +294,31 @@ class ClashTvService
             console.log 'bad image', err
           .then ->
             unless IS_TEST_RUN
-              GoogleDriveService.moveFile {
-                fileId
-                from: GoogleDriveService.FOLDERS.CLASH_TV_SCREENSHOTS
-                to: GoogleDriveService.FOLDERS.CLASH_TV_PROCESSED
+              Promise.promisify(drive.files.update) {
+                fileId: fileId
+                addParents: [CLASH_TV_PROCESSED_FOLDER_ID]
+                removeParents: [CLASH_TV_SCREENSHOTS_FOLDER_ID]
+                fields: 'id, parents'
               }
         .catch (err) ->
           console.log 'bad image', err
     .then ->
       console.log 'done'
 
-module.exports = new ClashTvService()
+module.exports = new ClashTopPlayersService()
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -439,6 +490,8 @@ focusText = (canvas, ctx, card) ->
       data[i] = data[i + 1] = data[i + 2] = 255
     i += 4
   ctx.putImageData imageData, 0, 0
+  # if colors is 'legendary'
+  #   console.log canvas.toDataURL()
   canvas
 
 getCardImages = (image, startX, startY) ->
@@ -466,11 +519,13 @@ getCardAndLevel = (canvas) ->
     focusText(levelCanvas, levelCtx, card)
     levelScaledCanvas = new Canvas 360, 140
     levelScaledCtx = levelScaledCanvas.getContext '2d'
+    # levelScaledCtx.imageSmoothingEnabled = false
     levelScaledCtx.drawImage(
       levelCanvas, 0, 0, levelCanvas.width, levelCanvas.height
       0, 0, levelScaledCanvas.width, levelScaledCanvas.height
     )
     extractText levelScaledCanvas, {
+      # isWord: true, removeLineBreaks: true, isLevel: true
       isLevel: true
     }
     .then (text) ->
@@ -478,12 +533,10 @@ getCardAndLevel = (canvas) ->
       unless level
         console.log '****'
         console.log 'MISSING:', card, text
-        GoogleDriveService.uploadFile(
-          folder: GoogleDriveService.FOLDERS.CLASH_TV_UNKNOWN
-          name: card + Date.now()
-          file: canvas.toBuffer()
-        )
+        console.log canvas.toDataURL()
         console.log '****'
+      # else
+      #   console.log card, level, text
 
       {card, level}
 

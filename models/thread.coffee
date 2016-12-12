@@ -13,12 +13,13 @@ defaultThread = (thread) ->
   unless thread?
     return null
 
-  _.assign {
+  _.defaults thread, {
     id: uuid.v4()
     userId: null
     title: null
+    creatorId: null
     lastUpdateTime: new Date()
-  }, thread
+  }
 
 class ThreadModel
   RETHINK_TABLES: [

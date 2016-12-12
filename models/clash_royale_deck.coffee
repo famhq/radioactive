@@ -9,6 +9,7 @@ config = require '../config'
 CLASH_ROYALE_DECK_TABLE = 'clash_royale_decks'
 ADD_TIME_INDEX = 'addTime'
 POPULARITY_INDEX = 'thisWeekPopularity'
+NAME_INDEX = 'name'
 CARD_KEYS_INDEX = 'cardKeys'
 # coffeelint: disable=max_line_length
 # for naming
@@ -44,7 +45,7 @@ defaultClashRoyaleDeck = (clashRoyaleDeck) ->
   unless clashRoyaleDeck?
     return null
 
-  _.assign {
+  _.defaults clashRoyaleDeck, {
     id: uuid.v4()
     name: null
     cardKeys: null # all card keys alphabetized and joined with `|`
@@ -55,7 +56,8 @@ defaultClashRoyaleDeck = (clashRoyaleDeck) ->
     timePeriods: {}
     createdByUserId: null
     addTime: new Date()
-  }, clashRoyaleDeck
+    lastUpdateTime: new Date()
+  }
 
 class ClashRoyaleDeckModel extends ClashRoyaleWinTrackerModel
   RETHINK_TABLES: [
@@ -64,6 +66,7 @@ class ClashRoyaleDeckModel extends ClashRoyaleWinTrackerModel
       options: {}
       indexes: [
         {name: ADD_TIME_INDEX}
+        {name: NAME_INDEX}
         {name: CARD_KEYS_INDEX}
         {name: POPULARITY_INDEX}
       ]
@@ -103,7 +106,7 @@ class ClashRoyaleDeckModel extends ClashRoyaleWinTrackerModel
 
   getByName: (name) ->
     r.table CLASH_ROYALE_DECK_TABLE
-    .filter {name}
+    .getAll name, {index: 'name'}
     .nth 0
     .default null
     .run()
@@ -132,7 +135,7 @@ class ClashRoyaleDeckModel extends ClashRoyaleWinTrackerModel
     .run()
     .then defaultClashRoyaleDeck
 
-  getAll: ({limit, sort} = {}) ->
+  getAll: ({limit, sort, timeFrame} = {}) ->
     limit ?= 10
 
     sortQ = if sort is 'recent' \
@@ -142,7 +145,10 @@ class ClashRoyaleDeckModel extends ClashRoyaleWinTrackerModel
             else POPULARITY_INDEX
 
     q = r.table CLASH_ROYALE_DECK_TABLE
-    .orderBy sortQ
+    if timeFrame
+      q = q.filter r.row('lastUpdateTime').gt(timeFrame)
+
+    q = q.orderBy sortQ
     if limit
       q = q.limit limit
     q.run()

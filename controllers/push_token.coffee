@@ -32,10 +32,11 @@ class PushTokensCtrl
         User.updateSelf userId, {
           hasPushToken: true
         }
-        PushToken.create
+        PushToken.create {
           userId: userId
           token: token
           sourceType: sourceType
+        }
         .then PushToken.sanitizePublic
       ]
 
@@ -46,7 +47,7 @@ class PushTokensCtrl
     updateSchema =
       userId: schemas.user.id
 
-    diff = _.pick diff, _.keys(updateSchema)
+    diff = {userId}
     updateValid = Joi.validate diff, updateSchema
 
     if updateValid.error

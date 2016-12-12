@@ -6,9 +6,11 @@ Promise = require 'bluebird'
 uuid = require 'node-uuid'
 
 config = require '../config'
+EmbedService = require './embed'
 User = require '../models/user'
 Notification = require '../models/notification'
 PushToken = require '../models/push_token'
+Group = require '../models/group'
 
 ONE_DAY_SECONDS = 3600 * 24
 RETRY_COUNT = 10
@@ -23,8 +25,10 @@ TYPES =
   PRIVATE_MESSAGE: 'privateMessage'
   NEW_FRIEND: 'newFriend'
   GIFT: 'gift'
-  CREW: 'crew'
+  GROUP: 'group'
   STATUS: 'status'
+
+defaultUserEmbed = [EmbedService.TYPES.USER.DATA]
 
 class PushNotificationService
   constructor: ->
@@ -55,16 +59,19 @@ class PushNotificationService
   sendIos: (token, {title, text, type, data}) =>
     data ?= {}
 
-    device = new apn.Device token
-    notification = new apn.Notification()
-    notification.expiry = Math.floor(Date.now() / 1000) + ONE_DAY_SECONDS
-    notification.badge = 1
-    notification.sound = 'ping.aiff'
-    notification.alert = "#{title}: #{text}"
-    notification.payload = {data, type, title, message: text}
-    notification.contentAvailable = true
-    @apnConnection.pushNotification notification, device
-    Promise.resolve true
+    notification = new apn.Notification {
+      expiry: Math.floor(Date.now() / 1000) + ONE_DAY_SECONDS
+      badge: 1
+      sound: 'ping.aiff'
+      alert: "#{title}: #{text}"
+      topic: config.IOS_BUNDLE_ID
+      payload: {data, type, title, message: text}
+      contentAvailable: true
+    }
+    @apnConnection.send notification, token
+    .then (response) ->
+      if _.isEmpty response?.sent
+        throw new Error 'message not sent'
 
   sendAndroid: (token, {title, text, type, data}) =>
     new Promise (resolve, reject) =>
@@ -85,6 +92,29 @@ class PushNotificationService
           reject err
         else
           resolve true
+
+  sendToConversation: (conversation, message, {skipMe, meUserId}) =>
+    (if conversation.groupId
+      Group.getById conversation.groupId
+      .then ({userIds}) ->
+        userIds
+    else
+      Promise.resolve conversation.userIds
+    ).then (users) =>
+      @sendToUserIds users, message, {skipMe, meUserId}
+
+  sendToGroup: (group, message, {skipMe, meUserId}) =>
+    @sendToUserIds group.userIds, message
+
+  sendToUserIds: (userIds, message, {skipMe, meUserId} = {}) ->
+    Promise.each userIds, (userId) =>
+      unless userId is meUserId
+        User.getById userId
+        .then EmbedService.embed defaultUserEmbed
+        .then (user) =>
+          if user and user.data.blockedUserIds.indexOf(meUserId) isnt -1
+            return
+          @send user, message
 
   send: (user, message) =>
     unless message and (message.title or message.text)
@@ -108,6 +138,7 @@ class PushNotificationService
 
     PushToken.getAllByUserId user.id
     .map ({id, sourceType, token, errorCount}) =>
+      console.log sourceType, token
       if sourceType is 'android'
         @sendAndroid token, message
         .then ->

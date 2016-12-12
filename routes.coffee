@@ -11,7 +11,9 @@ ClashRoyaleCardCtrl = require './controllers/clash_royale_card'
 PushTokenCtrl = require './controllers/push_token'
 PaymentCtrl = require './controllers/payment'
 TheadCtrl = require './controllers/thread'
+GroupCtrl = require './controllers/group'
 ThreadMessageCtrl = require './controllers/thread_message'
+StreamService = require './services/stream'
 
 authed = (handler) ->
   unless handler?
@@ -27,6 +29,7 @@ module.exports = router
 ###################
 # Public Routes   #
 ###################
+.on 'auth.join', AuthCtrl.join
 .on 'auth.login', AuthCtrl.login
 .on 'auth.loginUsername', AuthCtrl.loginUsername
 .on 'auth.loginCode', AuthCtrl.loginCode
@@ -37,7 +40,7 @@ module.exports = router
 .on 'users.getMe', authed UserCtrl.getMe
 .on 'users.getById', authed UserCtrl.getById
 .on 'users.getByCode', authed UserCtrl.getByCode
-.on 'users.makeMember', authed UserCtrl.makeMember
+# .on 'users.makeMember', authed UserCtrl.makeMember
 .on 'users.updateById', authed UserCtrl.updateById
 .on 'users.searchByUsername', authed UserCtrl.searchByUsername
 .on 'users.setUsername', authed UserCtrl.setUsername
@@ -58,12 +61,21 @@ module.exports = router
   authed UserDataCtrl.deleteConversationByUserId
 
 .on 'chatMessages.create', authed ChatMessageCtrl.create
+.on 'chatMessages.getAllByConversationId',
+  authed ChatMessageCtrl.getAllByConversationId
 
 .on 'pushTokens.create', authed PushTokenCtrl.create
+.on 'pushTokens.updateByToken', authed PushTokenCtrl.updateByToken
 
 .on 'threads.create', authed TheadCtrl.create
 .on 'threads.getAll', authed TheadCtrl.getAll
 .on 'threads.getById', authed TheadCtrl.getById
+
+.on 'groups.create', authed GroupCtrl.create
+.on 'groups.updateById', authed GroupCtrl.updateById
+.on 'groups.joinById', authed GroupCtrl.joinById
+.on 'groups.getAll', authed GroupCtrl.getAll
+.on 'groups.getById', authed GroupCtrl.getById
 
 .on 'threadMessages.create', authed ThreadMessageCtrl.create
 .on 'threadMessages.flag', authed ThreadMessageCtrl.flag
@@ -71,7 +83,10 @@ module.exports = router
 .on 'payments.verify', authed PaymentCtrl.verify
 .on 'payments.purchase', authed PaymentCtrl.purchase
 
-.on 'conversation.getAll', authed ConversationCtrl.getAll
+.on 'conversations.create', authed ConversationCtrl.create
+.on 'conversations.getAll', authed ConversationCtrl.getAll
+.on 'conversations.getByGroupId', authed ConversationCtrl.getByGroupId
+.on 'conversations.getById', authed ConversationCtrl.getById
 
 .on 'clashRoyaleDeck.getAll', authed ClashRoyaleDeckCtrl.getAll
 .on 'clashRoyaleDeck.getById', authed ClashRoyaleDeckCtrl.getById

@@ -3,23 +3,25 @@ Promise = require 'bluebird'
 uuid = require 'node-uuid'
 
 r = require '../services/rethinkdb'
+Group = require './group'
 config = require '../config'
 
 CONVERSATIONS_TABLE = 'conversations'
-USER_ID_1_INDEX = 'userId1'
-USER_ID_2_INDEX = 'userId2'
+USER_IDS_INDEX = 'userIds'
+GROUP_ID_INDEX = 'groupId'
 LAST_UPDATE_TIME_INDEX = 'lastUpdateTime'
 
 defaultConversation = (conversation) ->
   unless conversation?
     return null
 
-  _.assign {
+  _.defaults conversation, {
     id: uuid.v4()
-    userId1: null
-    userId2: null
+    userIds: []
+    groupId: null
+    userData: {}
     lastUpdateTime: new Date()
-  }, conversation
+  }
 
 class ConversationModel
   RETHINK_TABLES: [
@@ -27,8 +29,8 @@ class ConversationModel
       name: CONVERSATIONS_TABLE
       options: {}
       indexes: [
-        {name: USER_ID_1_INDEX}
-        {name: USER_ID_2_INDEX}
+        {name: USER_IDS_INDEX, options: {multi: true}}
+        {name: GROUP_ID_INDEX}
         {name: LAST_UPDATE_TIME_INDEX}
       ]
     }
@@ -49,25 +51,51 @@ class ConversationModel
     .run()
     .then defaultConversation
 
+  getByGroupId: (groupId) ->
+    r.table CONVERSATIONS_TABLE
+    .getAll groupId, {index: GROUP_ID_INDEX}
+    .nth 0
+    .default null
+    .run()
+    .then defaultConversation
+
   getAllByUserId: (userId, {limit} = {}) ->
     limit ?= 10
 
-    r.union(
-      r.table CONVERSATIONS_TABLE
-      .getAll userId, {index: USER_ID_1_INDEX}
-      .orderBy r.desc(LAST_UPDATE_TIME_INDEX)
-      .limit limit
-
-      r.table CONVERSATIONS_TABLE
-      .getAll userId, {index: USER_ID_2_INDEX}
-      .orderBy r.desc(LAST_UPDATE_TIME_INDEX)
-      .limit limit
-    )
-    .distinct()
+    r.table CONVERSATIONS_TABLE
+    .getAll userId, {index: USER_IDS_INDEX}
     .orderBy r.desc(LAST_UPDATE_TIME_INDEX)
     .limit limit
     .run()
     .map defaultConversation
+
+  getByUserIds: (checkUserIds, {limit} = {}) ->
+    q = r.table CONVERSATIONS_TABLE
+    .getAll checkUserIds[0], {index: USER_IDS_INDEX}
+    .filter (conversation) ->
+      r.expr(checkUserIds).filter (userId) ->
+        conversation('userIds').contains(userId)
+      .count()
+      .eq(conversation('userIds').count())
+
+    .nth 0
+    .default null
+    .run()
+    .then defaultConversation
+
+  hasPermission: (conversation, userId) ->
+    if conversation.groupId
+      Group.getById conversation.groupId
+      .then (group) ->
+        group and group.userIds.indexOf(userId) isnt -1
+    else
+      Promise.resolve userId and conversation.userIds.indexOf(userId) isnt -1
+
+  markRead: ({id, userIds}, userId) =>
+    @updateById id, {
+      userData:
+        "#{userId}": {isRead: true}
+    }
 
   updateById: (id, diff) ->
     r.table CONVERSATIONS_TABLE
@@ -84,9 +112,13 @@ class ConversationModel
   sanitize: _.curry (requesterId, conversation) ->
     _.pick conversation, [
       'id'
-      'userId1'
-      'userId2'
-      'messages'
+      'userIds'
+      'userData'
+      'users'
+      'groupId'
+      'lastUpdateTime'
+      'lastMessage'
+      'embedded'
     ]
 
 module.exports = new ConversationModel()

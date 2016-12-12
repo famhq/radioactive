@@ -1,5 +1,6 @@
 _ = require 'lodash'
 Promise = require 'bluebird'
+Rx = require 'rx-lite'
 
 uuid = require 'node-uuid'
 
@@ -14,15 +15,15 @@ defaultChatMessage = (chatMessage) ->
   _.defaults chatMessage, {
     id: uuid.v4()
     userId: null
+    conversationId: null
     time: new Date()
     body: ''
-    toId: null
   }
 
 CHAT_MESSAGES_TABLE = 'chat_messages'
 TIME_INDEX = 'time'
-USER_ID_INDEX = 'userId'
-TO_ID_INDEX = 'toId'
+CONVERSATION_ID_INDEX = 'conversationId'
+CONVERSATION_ID_TIME_INDEX = 'conversationIdTime'
 MAX_MESSAGES = 30
 FIVE_MINUTES_SECONDS = 60 * 5
 TWELVE_HOURS_SECONDS = 3600 * 12
@@ -34,18 +35,15 @@ class ChatMessageModel
     {
       name: CHAT_MESSAGES_TABLE
       indexes: [
-        {
-          name: TIME_INDEX
-        }
-        {
-          name: USER_ID_INDEX
-        }
-        {
-          name: TO_ID_INDEX
-        }
+        {name: TIME_INDEX}
+        {name: CONVERSATION_ID_INDEX}
+        {name: CONVERSATION_ID_TIME_INDEX, fn: (row) ->
+          [row('conversationId'), row('time')]}
       ]
     }
   ]
+
+  default: defaultChatMessage
 
   create: (chatMessage) ->
     chatMessage = defaultChatMessage chatMessage
@@ -64,29 +62,34 @@ class ChatMessageModel
     .run()
     .map defaultChatMessage
 
-  getAllByUserIds: ({user1, user2}) ->
-    r.union(
-      r.table CHAT_MESSAGES_TABLE
-      .getAll user1, {index: USER_ID_INDEX}
-      .filter {toId: user2}
-      .orderBy r.desc(TIME_INDEX)
-      .limit MAX_MESSAGES
-
-      r.table CHAT_MESSAGES_TABLE
-      .getAll user2, {index: USER_ID_INDEX}
-      .filter {toId: user1}
-      .orderBy r.desc(TIME_INDEX)
-      .limit MAX_MESSAGES
-    )
-    .distinct()
-    .orderBy r.desc(TIME_INDEX)
+  getAllByConversationId: (conversationId, {isStreamed}) ->
+    q = r.table CHAT_MESSAGES_TABLE
+    # HACK to get sorting to work
+    .between [conversationId], [conversationId + 'z'], {
+      index: CONVERSATION_ID_TIME_INDEX
+    }
+    .orderBy {index: r.desc(CONVERSATION_ID_TIME_INDEX)}
     .limit MAX_MESSAGES
-    .run()
-    .map defaultChatMessage
+
+    if isStreamed
+      q = q.changes({includeInitial: true, squash: true})
+
+    q.run()
 
   getById: (id) ->
     r.table CHAT_MESSAGES_TABLE
     .get id
+    .run()
+    .then defaultChatMessage
+
+  getLastByConversationId: (conversationId) ->
+    r.table CHAT_MESSAGES_TABLE
+    .between [conversationId], [conversationId + 'z'], {
+      index: CONVERSATION_ID_TIME_INDEX
+    }
+    .orderBy {index: r.desc(CONVERSATION_ID_TIME_INDEX)}
+    .nth 0
+    .default null
     .run()
     .then defaultChatMessage
 
@@ -95,7 +98,7 @@ class ChatMessageModel
       r.table CHAT_MESSAGES_TABLE
       .between 0, r.now().sub(TWELVE_HOURS_SECONDS), {index: TIME_INDEX}
       .filter(
-        r.row('toId').default(null).eq(null)
+        r.row('channelId').default(null).eq(null)
       )
       .delete()
 

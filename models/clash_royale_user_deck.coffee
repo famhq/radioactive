@@ -16,7 +16,7 @@ defaultClashRoyaleUserDeck = (clashRoyaleUserDeck) ->
   unless clashRoyaleUserDeck?
     return null
 
-  _.assign {
+  _.defaults clashRoyaleUserDeck, {
     id: uuid.v4()
     name: null
     isFavorited: true
@@ -24,9 +24,10 @@ defaultClashRoyaleUserDeck = (clashRoyaleUserDeck) ->
     wins: 0
     losses: 0
     draws: 0
+    creatorId: null
     timePeriods: {}
     addTime: new Date()
-  }, clashRoyaleUserDeck
+  }
 
 class ClashRoyaleUserDeckModel
   RETHINK_TABLES: [
@@ -138,7 +139,9 @@ class ClashRoyaleUserDeckModel
         userDeck.eq null
 
         r.table CLASH_ROYALE_USER_DECK_TABLE
-        .insert defaultClashRoyaleUserDeck _.defaults(diff, {userId, deckId})
+        .insert defaultClashRoyaleUserDeck _.defaults(_.clone(diff), {
+          userId, deckId
+        })
 
         r.table CLASH_ROYALE_USER_DECK_TABLE
         .getAll userId, {index: USER_ID_INDEX}

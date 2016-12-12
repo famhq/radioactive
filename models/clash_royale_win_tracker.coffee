@@ -5,13 +5,16 @@ uuid = require 'node-uuid'
 r = require '../services/rethinkdb'
 config = require '../config'
 
+TWO_WEEKS_S = 3600 * 24 * 14
+ONE_WEEK_S = 3600 * 24 * 7
+
 module.exports = class ClashRoyaleWinTrackerModel
   constructor: ->
     table = @RETHINK_TABLES[0].name
     if table is 'clash_royale_decks'
-      @timeFrame = 3600 * 24 * 14
+      @timeFrame = TWO_WEEKS_S
     else
-      @timeFrame = 3600 * 24 * 7
+      @timeFrame = ONE_WEEK_S
 
   getRank: ({thisWeekPopularity, lastWeekPopularity}) =>
     r.table @RETHINK_TABLES[0].name
@@ -33,7 +36,7 @@ module.exports = class ClashRoyaleWinTrackerModel
 
   updateWinsAndLosses: =>
     Promise.all [
-      @getAll {limit: false}
+      @getAll {timeFrame: @timeFrame + ONE_WEEK_S, limit: false}
       @getWinsAndLosses()
       @getWinsAndLosses({timeOffset: @timeFrame})
     ]
@@ -64,21 +67,22 @@ module.exports = class ClashRoyaleWinTrackerModel
         .then ->
           {id: item.id, thisWeekPopularity, lastWeekPopularity}
       , {concurrency: 10}
-      .then (updates) =>
-        Promise.map items, ({id}) =>
-          {thisWeekPopularity, lastWeekPopularity} = _.find updates, {id}
-          Promise.all [
-            @getRank {thisWeekPopularity}
-            @getRank {lastWeekPopularity}
-          ]
-          .then ([thisWeekRank, lastWeekRank]) =>
-            @updateById id,
-              timeRanges:
-                thisWeek:
-                  rank: thisWeekRank
-                lastWeek:
-                  rank: lastWeekRank
-        , {concurrency: 10}
+      # FIXME: this is *insanely* slow for decks on prod
+      # .then (updates) =>
+      #   Promise.map items, ({id}) =>
+      #     {thisWeekPopularity, lastWeekPopularity} = _.find updates, {id}
+      #     Promise.all [
+      #       @getRank {thisWeekPopularity}
+      #       @getRank {lastWeekPopularity}
+      #     ]
+      #     .then ([thisWeekRank, lastWeekRank]) =>
+      #       @updateById id,
+      #         timeRanges:
+      #           thisWeek:
+      #             rank: thisWeekRank
+      #           lastWeek:
+      #             rank: lastWeekRank
+      #   , {concurrency: 10}
 
   getWinsAndLosses: ({timeOffset} = {}) =>
     timeOffset ?= 0
@@ -150,6 +154,9 @@ module.exports = class ClashRoyaleWinTrackerModel
     .map ({group, reduction}) -> {id: group, count: reduction}
 
   incrementById: (id, state) =>
+    unless id
+      console.log 'no id'
+      return
     if state is 'win'
       diff = {
         wins: r.row('wins').add(1)
@@ -165,7 +172,7 @@ module.exports = class ClashRoyaleWinTrackerModel
     else
       diff = {}
 
-    r.table @RETHINKDB_TABLES[0].name
+    r.table @RETHINK_TABLES[0].name
     .get id
-    .update diff
+    .update _.defaults diff, {lastUpdateTime: new Date()}
     .run()

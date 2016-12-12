@@ -6,6 +6,16 @@ express = require 'express'
 Promise = require 'bluebird'
 multer = require 'multer'
 bodyParser = require 'body-parser'
+cluster = require 'cluster'
+os = require 'os'
+http = require 'http'
+socketIO = require 'socket.io'
+socketIORedis = require 'socket.io-redis'
+Redis = require 'ioredis'
+# http://socket.io/docs/using-multiple-nodes/#using-node.js-cluster
+stickyCluster = require 'sticky-cluster'
+
+Joi = require 'joi'
 
 config = require './config'
 routes = require './routes'
@@ -14,6 +24,7 @@ AuthService = require './services/auth'
 CronService = require './services/cron'
 KueRunnerService = require './services/kue_runner'
 ClashTvService = require './services/clash_tv'
+StreamService = require './services/stream'
 ClashRoyaleDeck = require './models/clash_royale_deck'
 ClashRoyaleCard = require './models/clash_royale_card'
 
@@ -82,6 +93,7 @@ app = express()
 app.set 'x-powered-by', false
 
 app.use cors()
+app.use AuthService.middleware
 
 # Before BodyParser middleware to preserve file stream
 upload = multer
@@ -138,7 +150,6 @@ app.post '/upload', (req, res, next) ->
 app.use bodyParser.json()
 # Avoid CORS preflight
 app.use bodyParser.json({type: 'text/plain'})
-app.use AuthService.middleware
 
 app.get '/ping', (req, res) -> res.send 'pong'
 
@@ -163,15 +174,42 @@ app.post '/log', (req, res) ->
   log.warn req.body
   res.status(204).send()
 
-app.post '/exoid', routes.asMiddleware()
 app.get '/clashTv', (req, res) -> ClashTvService.process()
 app.get '/updateCards', (req, res) ->
   Promise.all [
-    # ClashRoyaleCard.updateWinsAndLosses()
+    ClashRoyaleCard.updateWinsAndLosses()
     ClashRoyaleDeck.updateWinsAndLosses()
   ]
 
-module.exports = {
-  app
-  setup
-}
+if config.ENV is config.ENVS.PROD
+  redisPub = new Redis.Cluster _.filter(config.REDIS.NODES)
+  redisSub = new Redis.Cluster _.filter(config.REDIS.NODES), {
+    return_buffers: true
+  }
+else
+  redisPub = new Redis {
+    port: config.REDIS.PORT
+    host: config.REDIS.NODES[0]
+  }
+  redisSub = new Redis {
+    port: config.REDIS.PORT
+    host: config.REDIS.NODES[0]
+    return_buffers: true
+  }
+
+if cluster.isMaster
+  setup() # TODO: ideally stickyCluster would start after this...
+
+stickyCluster (callback) ->
+  server = http.createServer app
+  io = socketIO.listen server
+  io.adapter socketIORedis {
+    pubClient: redisPub
+    subClient: redisSub
+    subEvent: config.REDIS.PREFIX + 'socketio:message'
+  }
+  routes.setMiddleware AuthService.exoidMiddleware
+  routes.setDisconnect StreamService.exoidDisconnect
+  io.on 'connection', routes.onConnection
+  callback server
+, {debug: false, port: config.PORT}

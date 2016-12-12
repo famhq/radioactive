@@ -26,11 +26,14 @@ TYPES =
   CHAT_MESSAGE:
     USER: 'chatMessage:user'
   CONVERSATION:
-    MESSAGES: 'conversation:messages'
+    USERS: 'conversation:users'
+    LAST_MESSAGE: 'conversation:lastMessage'
   CLASH_ROYALE_USER_DECK:
     DECK: 'clashRoyaleUserDeck:deck'
   CLASH_ROYALE_DECK:
     CARDS: 'clashRoyaleDeck:cards'
+  GROUP:
+    USERS: 'group:users'
   THREAD_MESSAGE:
     USER: 'threadMessage:user'
   THREAD:
@@ -70,21 +73,8 @@ embedFn = _.curry (embed, object) ->
         .then (userData) ->
           _.defaults {userId: embedded.id}, userData
         .then embedFn [
-          TYPES.USER_DATA.CONVERSATION_USERS
           TYPES.USER_DATA.CLASH_ROYALE_DECK_IDS
         ]
-
-      when TYPES.USER_DATA.CONVERSATION_USERS
-        key = CacheService.PREFIXES.USER_DATA_CONVERSATION_USERS +
-              ':' + embedded.userId
-        embedded.conversationUsers =
-          CacheService.preferCache key, ->
-            if embedded.conversationUserIds
-              Promise.map embedded.conversationUserIds, (userId) ->
-                User.getById userId
-                .then User.sanitizePublic null
-            else Promise.resolve []
-          , {expireSeconds: TEN_DAYS_SECONDS}
 
       when TYPES.USER_DATA.CLASH_ROYALE_DECK_IDS
         key = CacheService.PREFIXES.USER_DATA_CLASH_ROYALE_DECK_IDS +
@@ -144,12 +134,17 @@ embedFn = _.curry (embed, object) ->
             User.sanitizePublic(null, user)
         , {expireSeconds: ONE_DAY_SECONDS}
 
-      when TYPES.CONVERSATION.MESSAGES
-        if embedded.userId1 and embedded.userId2
-          embedded.messages = ChatMessage.getAllByUserIds {
-            userId1: embedded.userId1
-            userId2: embedded.userId2
-          }
+      when TYPES.CONVERSATION.USERS
+        embedded.users = Promise.map embedded.userIds, (userId) ->
+          User.getById userId
+
+      when TYPES.GROUP.USERS
+        embedded.users = Promise.map embedded.userIds, (userId) ->
+          User.getById userId
+
+      when TYPES.CONVERSATION.LAST_MESSAGE
+        embedded.lastMessage = \
+          ChatMessage.getLastByConversationId embedded.id
 
       when TYPES.THREAD.MESSAGES
         embedded.messages = ThreadMessage.getAllByThreadId embedded.id

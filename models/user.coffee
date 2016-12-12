@@ -23,7 +23,7 @@ defaultUser = (user) ->
   unless user?
     return null
 
-  _.assign {
+  _.defaults user, {
     id: uuid.v4()
     numericId: null
     joinTime: new Date()
@@ -36,7 +36,7 @@ defaultUser = (user) ->
     counters: {}
     flags: {}
     preferredCategories: []
-  }, user
+  }
 
 class UserModel
   RETHINK_TABLES: [

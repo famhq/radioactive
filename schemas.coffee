@@ -9,6 +9,7 @@ auth =
 user =
   id: id
   username: Joi.string().min(1).max(100).allow(null).regex /^[a-zA-Z0-9-_]+$/
+  email: Joi.string().allow('')
   flags: Joi.object()
   isMember: Joi.boolean()
   data: Joi.object()

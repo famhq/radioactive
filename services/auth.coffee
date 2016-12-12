@@ -24,4 +24,18 @@ class AuthService
       log.warn err
       next()
 
+  exoidMiddleware: ({accessToken}, req) ->
+    if accessToken
+      Auth.userIdFromAccessToken accessToken
+      .then User.getById
+      .then (user) ->
+        if user
+          req.user = user
+        req
+    else
+      Promise.resolve req
+
+
+
+
 module.exports = new AuthService()

@@ -6,14 +6,14 @@ r = require '../services/rethinkdb'
 config = require '../config'
 
 PUSH_TOKENS_TABLE = 'push_tokens'
-PUSH_TOKENS_INDEX = 'token'
+PUSH_TOKENS_TOKEN_INDEX = 'token'
 USER_ID_INDEX = 'userId'
 
 defaultToken = (token) ->
   unless token?
     return null
 
-  _.assign token, {
+  _.defaults token, {
     id: uuid.v4()
     sourceType: null
     token: null
@@ -27,7 +27,7 @@ class PushToken
     {
       name: PUSH_TOKENS_TABLE
       indexes: [
-        {name: PUSH_TOKENS_INDEX}
+        {name: PUSH_TOKENS_TOKEN_INDEX}
         {name: USER_ID_INDEX}
       ]
     }
@@ -56,7 +56,7 @@ class PushToken
 
   updateByToken: (token, diff) ->
     r.table PUSH_TOKENS_TABLE
-    .getAll token, {index: PUSH_TOKENS_INDEX}
+    .getAll token, {index: PUSH_TOKENS_TOKEN_INDEX}
     .update diff
     .run()
 
@@ -68,7 +68,7 @@ class PushToken
 
   getByToken: (token) ->
     r.table PUSH_TOKENS_TABLE
-    .getAll token, {index: PUSH_TOKENS_INDEX}
+    .getAll token, {index: PUSH_TOKENS_TOKEN_INDEX}
     .nth(0)
     .default(null)
     .run()

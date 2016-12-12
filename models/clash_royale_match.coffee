@@ -13,7 +13,7 @@ defaultClashRoyaleMatch = (clashRoyaleMatch) ->
   unless clashRoyaleMatch?
     return null
 
-  _.assign {
+  _.defaults clashRoyaleMatch, {
     id: uuid.v4()
     arena: null
     deck1Id: null
@@ -23,7 +23,7 @@ defaultClashRoyaleMatch = (clashRoyaleMatch) ->
     deck1Score: null
     deck2Score: null
     time: new Date()
-  }, clashRoyaleMatch
+  }
 
 class ClashRoyaleMatchModel
   RETHINK_TABLES: [

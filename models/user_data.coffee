@@ -16,13 +16,13 @@ defaultUserData = (userData) ->
   # unless userData?
   #   return {}
 
-  _.assign {
+  _.defaults userData, {
     id: uuid.v4()
     userId: null
     followingIds: []
     followerIds: []
     blockedUserIds: []
-  }, userData
+  }
 
 class UserDataModel
   RETHINK_TABLES: [
@@ -60,7 +60,7 @@ class UserDataModel
         userData.eq null
 
         r.table USER_DATA_TABLE
-        .insert defaultUserData _.defaults(diff, {userId})
+        .insert defaultUserData _.defaults(_.clone(diff), {userId})
 
         r.table USER_DATA_TABLE
         .getAll userId, {index: USER_ID_INDEX}
@@ -69,7 +69,7 @@ class UserDataModel
         .update diff
       )
     .run()
-    .then ->
+    .then (a) ->
       null
 
   create: (userData) ->

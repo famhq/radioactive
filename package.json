@@ -28,11 +28,11 @@
   },
   "dependencies": {
     "accounting": "^0.4.1",
-    "apn": "^2.0.0",
+    "apn": "^2.1.2",
     "assert-none-missing": "^0.1.2",
     "aws-sdk": "^2.6.4",
     "bcrypt": "^0.8.7",
-    "bluebird": "^2.10.2",
+    "bluebird": "^3.4.6",
     "body-parser": "^1.14.1",
     "canvas": "^1.6.2",
     "coffee-script": "^1.10.0",
@@ -43,7 +43,7 @@
     "express": "^4.13.3",
     "fb": "^1.1.1",
     "gm": "^1.23.0",
-    "googleapis": "^14.1.0",
+    "googleapis": "^15.0.0",
     "iap": "^0.5.0",
     "ioredis": "^2.3.0",
     "joi": "^6.10.0",
@@ -64,9 +64,14 @@
     "randomstring": "^1.1.5",
     "redis": "^2.6.2",
     "redlock": "^2.0.0",
+    "remove": "^0.1.5",
     "request-promise": "^4.1.1",
     "rethinkdbdash": "^2.2.1",
+    "rx-lite": "^4.0.8",
+    "socket.io": "^1.5.1",
+    "socket.io-redis": "^2.0.0",
     "sshpk": "^1.7.0",
+    "sticky-cluster": "^0.3.0",
     "stripe": "^4.12.0"
   }
 }
