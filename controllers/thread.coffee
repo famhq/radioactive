@@ -1,12 +1,10 @@
 _ = require 'lodash'
-router = require 'exoid-router'
 
 User = require '../models/user'
 UserData = require '../models/user_data'
 Thread = require '../models/thread'
 ThreadMessage = require '../models/thread_message'
 EmbedService = require '../services/embed'
-schemas = require '../schemas'
 
 defaultEmbed = [
   EmbedService.TYPES.THREAD.FIRST_MESSAGE

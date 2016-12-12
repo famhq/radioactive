@@ -1,9 +1,7 @@
 _ = require 'lodash'
-Promise = require 'bluebird'
 uuid = require 'node-uuid'
 
 r = require '../services/rethinkdb'
-config = require '../config'
 
 THREADS_TABLE = 'threads'
 USER_ID_INDEX = 'userId'

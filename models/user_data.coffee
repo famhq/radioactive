@@ -1,7 +1,5 @@
 _ = require 'lodash'
-Promise = require 'bluebird'
 uuid = require 'node-uuid'
-log = require 'loga'
 
 r = require '../services/rethinkdb'
 CacheService = require '../services/cache'
@@ -9,8 +7,6 @@ schemas = require '../schemas'
 
 USER_DATA_TABLE = 'user_data'
 USER_ID_INDEX = 'userId'
-ONE_HOUR_SECONDS = 3600
-TEN_DAYS_SECONDS = 3600 * 24 * 10
 
 defaultUserData = (userData) ->
   # unless userData?

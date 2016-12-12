@@ -1,11 +1,5 @@
 _ = require 'lodash'
 Promise = require 'bluebird'
-moment = require 'moment'
-log = require 'loga'
-
-# run this script whenever new items should be added
-# shortly after 9am for modern art
-# shortly after 3pm for fat cat
 
 r = require './rethinkdb'
 User = require '../models/user'

@@ -1,5 +1,4 @@
 _ = require 'lodash'
-Promise = require 'bluebird'
 
 uuid = require 'node-uuid'
 

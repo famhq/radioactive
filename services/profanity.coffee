@@ -1,7 +1,4 @@
-log = require 'loga'
 _ = require 'lodash'
-
-config = require '../config'
 
 BLACKLIST = [
   'skype',

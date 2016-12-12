@@ -4,7 +4,6 @@ uuid = require 'node-uuid'
 
 r = require '../services/rethinkdb'
 Group = require './group'
-config = require '../config'
 
 CONVERSATIONS_TABLE = 'conversations'
 USER_IDS_INDEX = 'userIds'

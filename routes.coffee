@@ -32,21 +32,17 @@ module.exports = router
 .on 'auth.join', AuthCtrl.join
 .on 'auth.login', AuthCtrl.login
 .on 'auth.loginUsername', AuthCtrl.loginUsername
-.on 'auth.loginCode', AuthCtrl.loginCode
 
 ###################
 # Authed Routes   #
 ###################
 .on 'users.getMe', authed UserCtrl.getMe
 .on 'users.getById', authed UserCtrl.getById
-.on 'users.getByCode', authed UserCtrl.getByCode
-# .on 'users.makeMember', authed UserCtrl.makeMember
 .on 'users.updateById', authed UserCtrl.updateById
 .on 'users.searchByUsername', authed UserCtrl.searchByUsername
 .on 'users.setUsername', authed UserCtrl.setUsername
 .on 'users.setAvatarImage', authed UserCtrl.setAvatarImage
 .on 'users.setFlags', authed UserCtrl.setFlags
-.on 'users.requestInvite', authed UserCtrl.requestInvite
 
 .on 'userData.getMe', authed UserDataCtrl.getMe
 .on 'userData.getByUserId', authed UserDataCtrl.getByUserId

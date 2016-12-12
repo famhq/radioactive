@@ -1,8 +1,5 @@
 Promise = require 'bluebird'
-log = require 'loga'
 _ = require 'lodash'
-
-config = require '../config'
 
 TIME_FOR_INITIAL_GET_MS = 100
 

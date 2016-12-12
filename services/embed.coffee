@@ -1,7 +1,5 @@
-log = require 'loga'
 _ = require 'lodash'
 Promise = require 'bluebird'
-uuid = require 'node-uuid'
 moment = require 'moment'
 
 config = require '../config'

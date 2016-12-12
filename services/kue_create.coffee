@@ -1,18 +1,15 @@
 _ = require 'lodash'
 Promise = require 'bluebird'
-log = require 'loga'
 kue = require 'kue'
 
 KueService = require './kue'
 CacheService = require './cache'
 config = require '../config'
 
-RUNNER_ERROR_DELAY_MS = 1000
 DEFAULT_PRIORITY = 0
 DEFAULT_TTL_MS = 100000000 # 28 hours, sufficiently large for most tasks
 IDLE_PROCESS_KILL_TIME_MS = 300 * 1000 # 5 min
 PAUSE_EXTEND_BUFFER_MS = 5000
-CLEANUP_TIME_MS = 30000
 
 JOB_TYPES =
   DEFAULT: 'pulsar:default'

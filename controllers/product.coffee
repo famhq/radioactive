@@ -1,7 +1,4 @@
 _ = require 'lodash'
-router = require 'exoid-router'
-Promise = require 'bluebird'
-moment = require 'moment'
 
 Product = require '../models/product'
 

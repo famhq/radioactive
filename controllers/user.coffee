@@ -4,9 +4,7 @@ Joi = require 'joi'
 
 User = require '../models/user'
 UserData = require '../models/user_data'
-JoinRequest = require '../models/join_request'
 EmbedService = require '../services/embed'
-EmailService = require '../services/email'
 ImageService = require '../services/image'
 CacheService = require '../services/cache'
 schemas = require '../schemas'
@@ -29,43 +27,6 @@ class UserCtrl
   getById: ({id}) ->
     User.getById id
     .then User.sanitize(null)
-
-  getByCode: ({code}) ->
-    User.getByCode code
-    .then User.sanitize(null)
-
-  requestInvite: ({clanTag, username, email, referrerId}, {user}) ->
-    code = User.generateCode()
-    Promise.all [
-      JoinRequest.create {
-        gameClan: clanTag
-        gameUsername: username
-        email: email
-        userId: user.id
-        referrerId: referrerId
-      }
-      User.updateById user.id, {code}
-    ]
-    .then ->
-      (if referrerId
-      then User.getById referrerId
-      else Promise.resolve null)
-      .then (referrer) ->
-        EmailService.send
-          to: EmailService.EMAILS.OPS
-          subject: 'New Join Request'
-          text: """
-Clan Tag: #{clanTag}
-Username: #{username}
-Email: #{email}
-Referrer: #{User.getDisplayName referrer}
-Referrer ID: #{referrerId}
-Code: #{code}
-"""
-
-  # makeMember: ({}, {user}) ->
-  #   if user.flags.isFeeWaived
-  #     User.updateById user.id, {isMember: true}
 
   setFlags: (flags, {user}) ->
     flagsSchema =

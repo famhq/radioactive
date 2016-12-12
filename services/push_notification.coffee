@@ -1,5 +1,4 @@
 _ = require 'lodash'
-log = require 'loga'
 apn = require 'apn'
 gcm = require 'node-gcm'
 Promise = require 'bluebird'
@@ -162,7 +161,6 @@ class PushNotificationService
                 User.updateById user.id, {
                   hasPushToken: false
                 }
-          # log.trace err
       else if sourceType is 'ios'
         @sendIos token, message
         .then ->
@@ -179,7 +177,6 @@ class PushNotificationService
             errorCount: newErrorCount
             isActive: newErrorCount < CONSECUTIVE_ERRORS_UNTIL_INACTIVE
           }
-          # log.trace err
           if newErrorCount >= CONSECUTIVE_ERRORS_UNTIL_INACTIVE
             PushToken.getAllByUserId user.id
             .then (tokens) ->

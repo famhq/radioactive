@@ -1,9 +1,6 @@
 _ = require 'lodash'
-Promise = require 'bluebird'
 uuid = require 'node-uuid'
-jwt = require 'jsonwebtoken'
 PcgRandom = require 'pcg-random'
-randomstring = require 'randomstring'
 
 r = require '../services/rethinkdb'
 UserData = require './user_data'
@@ -12,8 +9,6 @@ config = require '../config'
 
 USERS_TABLE = 'users'
 USERNAME_INDEX = 'username'
-# invite codes
-CODE_INDEX = 'code'
 NUMERIC_ID_INDEX = 'numericId'
 FACEBOOK_ID_INDEX = 'facebookId'
 IS_MEMBER_INDEX = 'isMember'
@@ -30,7 +25,6 @@ defaultUser = (user) ->
     facebookId: null
     username: null
     name: null
-    code: null
     isMember: 0 # 1 if yes
     lastActiveTime: new Date()
     counters: {}
@@ -45,7 +39,6 @@ class UserModel
       indexes: [
         {name: USERNAME_INDEX}
         {name: NUMERIC_ID_INDEX}
-        {name: CODE_INDEX}
         {name: FACEBOOK_ID_INDEX}
         {name: IS_MEMBER_INDEX}
         {name: LAST_ACTIVE_TIME_INDEX}
@@ -74,20 +67,6 @@ class UserModel
     .default(null)
     .run()
     .then defaultUser
-
-  getByCode: (code) ->
-    unless code
-      return null
-
-    r.table USERS_TABLE
-    .getAll code, {index: CODE_INDEX}
-    .nth(0)
-    .default(null)
-    .run()
-    .then defaultUser
-
-  generateCode: ->
-    randomstring.generate 12
 
   getAllByUsername: (username, {limit} = {}) ->
     limit ?= 10

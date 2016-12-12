@@ -1,8 +1,5 @@
-Joi = require 'joi'
-log = require 'loga'
 iap = require 'iap'
 Promise = require 'bluebird'
-Qs = require 'qs'
 fx = require 'money'
 accounting = require 'accounting'
 stripe = require 'stripe'
@@ -12,7 +9,6 @@ router = require 'exoid-router'
 User = require '../models/user'
 Transaction = require '../models/transaction'
 Product = require '../models/product'
-schemas = require '../schemas'
 config = require '../config'
 
 ONE_DAY_MS = 3600 * 24 * 1000
@@ -62,7 +58,6 @@ completeVerifiedPurchase = (user, {productId, revenueCents}) ->
 
 class PaymentCtrl
   purchase: (options, {user}) ->
-    console.log options
     {productId, stripeToken, facebookSignedRequest, transactionId} = options
     Product.getByProductId productId
     .then (product) ->
@@ -132,7 +127,6 @@ class PaymentCtrl
   # TODO: check that transactionId is only processed once (iap.verifyPayment
   # returns this). Will need to start storing transactions in rethink
   verify: (options, {user}) ->
-    console.log options
     {platform, receipt, productId, packageName, isFromPending,
       currency, priceMicros, price} = options
 
@@ -140,13 +134,11 @@ class PaymentCtrl
     .then (product) ->
       if priceMicros
         revenueLocal = parseInt(priceMicros) / 1000000
-        console.log 'local (micro): ', revenueLocal, currency
       else
         priceStr = "#{price}"
         decimal = if priceStr[priceStr.length - 3] is ',' then ',' else '.'
         revenueLocal = accounting.unformat price, decimal
 
-      console.log 'local: ', revenueLocal, currency
       if currency
         revenueUsd = try
           fx.convert(revenueLocal, {from: currency, to: 'USD'})
@@ -158,7 +150,6 @@ class PaymentCtrl
 
       revenueUsd or= product.price
 
-      console.log 'usd:', revenueUsd
       revenueCents = Math.floor(revenueUsd * 100)
 
       # isNaN when coming from getPending (on android, at least)
@@ -208,7 +199,6 @@ class PaymentCtrl
               {productId, revenueUsd, transactionId}
 
       .catch (err) ->
-        console.log err
         Transaction.create transaction
         throw new router.Error
           status: 400

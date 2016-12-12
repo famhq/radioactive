@@ -5,7 +5,6 @@ User = require '../models/user'
 Conversation = require '../models/conversation'
 Group = require '../models/group'
 EmbedService = require '../services/embed'
-schemas = require '../schemas'
 
 defaultEmbed = [EmbedService.TYPES.CONVERSATION.USERS]
 lastMessageEmbed = [

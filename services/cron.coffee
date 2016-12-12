@@ -10,10 +10,7 @@ ClashRoyaleCard = require '../models/clash_royale_card'
 r = require './rethinkdb'
 config = require '../config'
 
-SEVEN_HOUR_MS = 3600 * 1000 * 7
 THIRTY_SECONDS = 30
-MIN_PROCESS_MS_TO_RESET = 1000 # 1s
-MAX_LAST_MESSAGE_TIME_MS = 60 * 1000 # 1m
 
 class CronService
   constructor: ->

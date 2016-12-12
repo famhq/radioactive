@@ -1,9 +1,7 @@
 _ = require 'lodash'
-Promise = require 'bluebird'
 uuid = require 'node-uuid'
 
 r = require '../services/rethinkdb'
-config = require '../config'
 
 PUSH_TOKENS_TABLE = 'push_tokens'
 PUSH_TOKENS_TOKEN_INDEX = 'token'

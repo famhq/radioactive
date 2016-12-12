@@ -2,11 +2,9 @@ _ = require 'lodash'
 router = require 'exoid-router'
 
 User = require '../models/user'
-UserData = require '../models/user_data'
 Group = require '../models/group'
 EmbedService = require '../services/embed'
 PushNotificationService = require '../services/push_notification'
-schemas = require '../schemas'
 config = require '../config'
 
 defaultEmbed = [

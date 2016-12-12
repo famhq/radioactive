@@ -1,6 +1,5 @@
 _ = require 'lodash'
 Promise = require 'bluebird'
-uuid = require 'node-uuid'
 jwt = require 'jsonwebtoken'
 
 config = require '../config'

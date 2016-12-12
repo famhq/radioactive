@@ -1,7 +1,5 @@
 _ = require 'lodash'
 kue = require 'kue'
-Promise = require 'bluebird'
-log = require 'loga'
 
 KueService = require './kue'
 KueCreateService = require './kue_create'

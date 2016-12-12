@@ -1,9 +1,7 @@
 _ = require 'lodash'
 router = require 'exoid-router'
-Promise = require 'bluebird'
 
 User = require '../models/user'
-UserData = require '../models/user_data'
 ChatMessage = require '../models/chat_message'
 Conversation = require '../models/conversation'
 CacheService = require '../services/cache'
@@ -65,7 +63,6 @@ class ChatMessageCtrl
           }, {skipMe: true, meUserId: user.id}).catch -> null
 
   getAllByConversationId: ({conversationId}, {user}, {emit, socket, route}) ->
-    console.log 'get', conversationId
     StreamService.stream {
       emit
       socket

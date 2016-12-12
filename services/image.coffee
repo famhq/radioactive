@@ -1,6 +1,5 @@
 Promise = require 'bluebird'
 gm = require('gm').subClass({imageMagick: true})
-Joi = require 'joi'
 
 AWSService = require './aws'
 config = require '../config'

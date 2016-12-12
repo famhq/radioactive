@@ -1,12 +1,9 @@
 _ = require 'lodash'
 Promise = require 'bluebird'
-Rx = require 'rx-lite'
 
 uuid = require 'node-uuid'
 
 r = require '../services/rethinkdb'
-User = require './user'
-CacheService = require '../services/cache'
 
 defaultChatMessage = (chatMessage) ->
   unless chatMessage?
