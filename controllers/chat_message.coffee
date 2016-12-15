@@ -4,6 +4,7 @@ router = require 'exoid-router'
 User = require '../models/user'
 ChatMessage = require '../models/chat_message'
 Conversation = require '../models/conversation'
+Group = require '../models/group'
 CacheService = require '../services/cache'
 PushNotificationService = require '../services/push_notification'
 ProfanityService = require '../services/profanity'
@@ -41,24 +42,35 @@ class ChatMessageCtrl
           userId: user.id
           body: body
           conversationId: conversationId
-        .tap ->
+        .then ->
+          if conversation.groupId
+            Group.getById conversation.groupId
+          else
+            Promise.resolve null
+        .tap (group) ->
           userIds = conversation.userIds
           Conversation.updateById conversation.id, {
             lastUpdateTime: new Date()
             userData: _.zipObject userIds, _.map userIds, (userId) ->
-              {isRead: userId isnt user.id}
+              {isRead: userId is user.id}
           }
+          cdnUrl = "https://#{config.CDN_HOST}/d/images/red_tritium"
           PushNotificationService.sendToConversation(
             conversation, {
-              title: if conversation.groupId \
-                    then 'New group message'
-                    else 'New private message'
+              title: group?.name or User.getDisplayName(user)
               type: PushNotificationService.TYPES.PRIVATE_MESSAGE
-              text: "#{User.getDisplayName(user)} sent a message."
+              text: if group \
+                    then "#{User.getDisplayName(user)}: #{body}"
+                    else body
               url: "https://#{config.SUPERNOVA_HOST}"
+              icon: if group \
+                    then "#{cdnUrl}/groups/badges/#{group.badgeId}.png"
+                    else user?.avatarImage?.versions[0].url
               data:
-                path: if conversation.groupId \
-                      then "/group/#{conversation.groupId}"
+                conversationId: conversation.id
+                contextId: conversation.id
+                path: if group \
+                      then "/group/#{group.id}"
                       else "/conversation/#{conversationId}"
           }, {skipMe: true, meUserId: user.id}).catch -> null
 

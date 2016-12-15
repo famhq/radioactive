@@ -35,6 +35,7 @@ class PushNotificationService
       cert: config.APN_CERT
       key: config.APN_KEY
       passphrase: config.APN_PASSPHRASE
+      production: config.ENV is config.ENVS.PROD and not config.IS_STAGING
     }
     @isApnConnected = false
     @apnConnection.on 'connected', =>
@@ -64,21 +65,34 @@ class PushNotificationService
       sound: 'ping.aiff'
       alert: "#{title}: #{text}"
       topic: config.IOS_BUNDLE_ID
+      category: type
+      mutableContent: type is 'privateMessage'
       payload: {data, type, title, message: text}
-      contentAvailable: true
+      contentAvailable: 1
     }
     @apnConnection.send notification, token
     .then (response) ->
       if _.isEmpty response?.sent
         throw new Error 'message not sent'
 
-  sendAndroid: (token, {title, text, type, data}) =>
+  sendAndroid: (token, {title, text, type, data, icon}) =>
     new Promise (resolve, reject) =>
       notification = new gcm.Message {
         data:
           title: title
           message: text
+          ledColor: [0, 255, 0, 0]
+          image: if icon then icon else null
           data: data
+          priority: 1
+          actions: [
+            {
+              title: 'REPLY'
+              callback: 'app.pushActions.reply'
+              foreground: false
+              inline: true
+            }
+          ]
           type: type
           icon: 'notification_icon'
           color: config.NOTIFICATION_COLOR

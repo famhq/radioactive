@@ -41,7 +41,7 @@ class StreamService
           postFn item.new_val
           .then (item) ->
             if item
-              items = _.take items.concat([item]), limit
+              items = _.takeRight items.concat([item]), limit
               if isResolved
                 emit items
             null

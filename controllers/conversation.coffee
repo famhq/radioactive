@@ -25,7 +25,7 @@ class ConversationCtrl
         userIds
         userData: _.zipObject userIds, _.map (userId) ->
           {
-            isRead: userId isnt user.id
+            isRead: userId is user.id
           }
       }
 
