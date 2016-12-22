@@ -1,7 +1,9 @@
 _ = require 'lodash'
 router = require 'exoid-router'
+Promise = require 'bluebird'
 
 User = require '../models/user'
+UserData = require '../models/user_data'
 Group = require '../models/group'
 EmbedService = require '../services/embed'
 PushNotificationService = require '../services/push_notification'
@@ -10,32 +12,109 @@ config = require '../config'
 defaultEmbed = [
   EmbedService.TYPES.GROUP.USERS
 ]
+userDataEmbed = [
+  EmbedService.TYPES.USER.DATA
+]
 
 class GroupCtrl
-  create: ({name, description, badgeId, background}, {user}) ->
+  create: ({name, description, badgeId, background, mode}, {user}) ->
     creatorId = user.id
 
     Group.create {
-      name, description, badgeId, background, creatorId, userIds: [creatorId]
+      name, description, badgeId, background, creatorId, mode
+      userIds: [creatorId]
     }
 
-  updateById: ({id, name, description, badgeId, background}, {user}) ->
-    Group.updateById id, {name, description, badgeId, background}
+  updateById: ({id, name, description, badgeId, background, mode}, {user}) ->
+    Group.hasPermissionById groupId, user.id, {level: 'admin'}
+    .then (hasPermission) ->
+      unless hasPermission
+        router.throw {status: 400, info: 'You don\'t have permission'}
+
+      Group.updateById id, {name, description, badgeId, background, mode}
+
+  inviteById: ({id, userIds}, {user}) ->
+    groupId = id
+
+    unless groupId
+      router.throw {status: 404, info: 'Group not found'}
+
+    Promise.all [
+      Group.getById groupId
+      Promise.map userIds, User.getById
+    ]
+    .then ([group, toUsers]) ->
+      unless group
+        router.throw {status: 404, info: 'Group not found'}
+      if _.isEmpty toUsers
+        router.throw {status: 404, info: 'User not found'}
+
+      hasPermission = Group.hasPermission group, user.id
+      unless hasPermission
+        router.throw {status: 400, info: 'You don\'t have permission'}
+
+      Promise.map toUsers, EmbedService.embed userDataEmbed
+      .map (toUser) ->
+        senderName = User.getDisplayName user
+        groupInvitedIds = toUser.data.groupInvitedIds or []
+        unreadGroupInvites = toUser.data.unreadGroupInvites or 0
+        UserData.upsertByUserId toUser.id, {
+          groupInvitedIds: _.uniq groupInvitedIds.concat [id]
+          unreadGroupInvites: unreadGroupInvites + 1
+        }
+        PushNotificationService.send toUser, {
+          title: 'New group invite'
+          text: "#{senderName} invited you to the group, #{group.name}"
+          type: PushNotificationService.TYPES.GROUP
+          url: "https://#{config.CLIENT_HOST}"
+          data:
+            path: "/group/#{group.id}"
+        }
+
+      Group.updateById groupId,
+        invitedIds: _.uniq group.invitedIds.concat(userIds)
+
+  leaveById: ({id}, {user}) ->
+    groupId = id
+    userId = user.id
+
+    unless groupId
+      router.throw {status: 404, info: 'Group not found'}
+
+    Promise.all [
+      EmbedService.embed userDataEmbed, user
+      Group.getById groupId
+    ]
+    .then ([user, group]) ->
+      unless group
+        router.throw {status: 404, info: 'Group not found'}
+
+      Promise.all [
+        UserData.upsertByUserId user.id, {
+          groupIds: _.filter user.data.groupIds, (id) -> groupId isnt id
+        }
+        Group.updateById groupId, {
+          userIds: _.filter group.userIds, (id) -> userId isnt id
+        }
+      ]
 
   joinById: ({id}, {user}) ->
     groupId = id
     userId = user.id
 
     unless groupId
-      throw new router.Error {status: 404, detail: 'Group not found'}
+      router.throw {status: 404, info: 'Group not found'}
 
-    Group.getById groupId
-    .then (group) ->
+    Promise.all [
+      EmbedService.embed userDataEmbed, user
+      Group.getById groupId
+    ]
+    .then ([user, group]) ->
       unless group
-        throw new router.Error {status: 404, detail: 'Group not found'}
+        router.throw {status: 404, info: 'Group not found'}
 
-      if group.isInviteOnly and group.invitedIds.indexOf(userId) is -1
-        throw new router.Error {status: 401, detail: 'Not invited'}
+      if group.mode is 'private' and group.invitedIds.indexOf(userId) is -1
+        router.throw {status: 401, info: 'Not invited'}
 
       name = User.getDisplayName user
       PushNotificationService.sendToGroup(group, {
@@ -46,14 +125,21 @@ class GroupCtrl
         path: "/group/#{group.id}"
       }, {skipMe: true, meUserId: user.id}).catch -> null
 
+      groupIds = user.data.groupIds or []
       Promise.all [
+        UserData.upsertByUserId user.id, {
+          groupIds: _.uniq groupIds.concat [groupId]
+          invitedIds: _.filter user.data.invitedIds, (id) -> id isnt groupId
+        }
         Group.updateById groupId,
           userIds: _.uniq group.userIds.concat([userId])
           invitedIds: _.filter group.invitedIds, (id) -> id isnt userId
       ]
 
   getAll: ({filter}, {user}) ->
-    Group.getAll {filter, userId: user.id}
+    EmbedService.embed userDataEmbed, user
+    .then (user) ->
+      Group.getAll {filter, user}
     .map EmbedService.embed defaultEmbed
     .map Group.sanitize null
 

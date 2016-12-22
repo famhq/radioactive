@@ -17,16 +17,16 @@ class PushTokensCtrl
     , {presence: 'required'}
 
     if valid.error
-      throw new router.Error
+      router.throw
         status: 400
-        detail: valid.error.message
+        info: valid.error.message
 
     PushToken.getByToken token
     .then (sameToken) ->
       if sameToken
-        throw new router.Error
+        router.throw
           status: 400
-          detail: 'pushToken exists'
+          info: 'pushToken exists'
 
       Promise.all [
         User.updateSelf userId, {
@@ -51,7 +51,7 @@ class PushTokensCtrl
     updateValid = Joi.validate diff, updateSchema
 
     if updateValid.error
-      throw new router.Error status: 400, info: updateValid.error.message
+      router.throw status: 400, info: updateValid.error.message
 
     Promise.all [
       User.updateSelf userId, {

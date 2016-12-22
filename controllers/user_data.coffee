@@ -40,7 +40,8 @@ class UserDataCtrl
     ]
 
   updateMe: (diff, {user}) ->
-    UserData.upsertByUserId user.id, _.pick diff, ['presetAvatarId']
+    keys = ['presetAvatarId', 'unreadGroupInvites']
+    UserData.upsertByUserId user.id, _.pick diff, keys
 
   followByUserId: ({userId}, {user}) ->
     otherUserId = userId

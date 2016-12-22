@@ -70,8 +70,10 @@ module.exports = router
 .on 'groups.create', authed GroupCtrl.create
 .on 'groups.updateById', authed GroupCtrl.updateById
 .on 'groups.joinById', authed GroupCtrl.joinById
+.on 'groups.leaveById', authed GroupCtrl.leaveById
 .on 'groups.getAll', authed GroupCtrl.getAll
 .on 'groups.getById', authed GroupCtrl.getById
+.on 'groups.inviteById', authed GroupCtrl.inviteById
 
 .on 'threadMessages.create', authed ThreadMessageCtrl.create
 .on 'threadMessages.flag', authed ThreadMessageCtrl.flag

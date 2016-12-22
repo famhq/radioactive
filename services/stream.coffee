@@ -20,30 +20,33 @@ class StreamService
 
   stream: ({emit, socket, limit, route, promise, postFn}) =>
     limit ?= 30
-    items = []
-    isResolved = false
+    isInitial = true
     promise
     .then (cursor) =>
-      # TODO: release cursors when switching to tab where obs isn't required?
+      # TODO: release cursors when switching to tab/page
+      # where obs isn't required?
       if @openCursors[socket.id]?[route]
-        # console.log 'existing cursor, closing'
         @openCursors[socket.id][route].close()
 
       @openCursors[socket.id] ?= {}
       @openCursors[socket.id][route] = cursor
 
+      items = []
       new Promise (resolve, reject) ->
-        setTimeout ->
-          isResolved = true
-          resolve items
-        , TIME_FOR_INITIAL_GET_MS
         cursor.eachAsync (item) ->
+          if item.state is 'ready'
+            isInitial = false
+            resolve {initial: items, changes: null}
+          if item.type is 'uninitial' or item.type is 'state'
+            return false
           postFn item.new_val
-          .then (item) ->
-            if item
-              items = _.takeRight items.concat([item]), limit
-              if isResolved
-                emit items
-            null
+          .then (newItem) ->
+            if isInitial
+              items = items.concat([newItem])
+            else
+              emit {
+                initial: null
+                changes: [{oldId: item.old_val?.id, newVal: newItem}]
+              }
 
 module.exports = new StreamService()

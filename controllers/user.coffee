@@ -57,7 +57,7 @@ class UserCtrl
     if diff.flags?.isChatBanned and not user.flags.isModerator
       router.throw
         status: 400
-        detail: 'You don\'t have permission to do that'
+        info: 'You don\'t have permission to do that'
 
     if id and not _.isEmpty diff
       User.updateById id, diff

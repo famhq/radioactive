@@ -1,6 +1,6 @@
 _ = require 'lodash'
 Promise = require 'bluebird'
-
+moment = require 'moment'
 uuid = require 'node-uuid'
 
 r = require '../services/rethinkdb'
@@ -60,18 +60,34 @@ class ChatMessageModel
     .map defaultChatMessage
 
   getAllByConversationId: (conversationId, {isStreamed}) ->
-    q = r.table CHAT_MESSAGES_TABLE
-    # HACK to get sorting to work
+    r.table CHAT_MESSAGES_TABLE
     .between [conversationId], [conversationId + 'z'], {
       index: CONVERSATION_ID_TIME_INDEX
     }
     .orderBy {index: r.desc(CONVERSATION_ID_TIME_INDEX)}
+    # NOTE: a limit on the actual query we subscribe to causes
+    # all inserts to show as 'change's since it's change the top 30 (limit)
     .limit MAX_MESSAGES
+    .run()
+    .then (messages) ->
+      startTime = _.last(messages)?.time or new Date()
+      endTime = moment(startTime).add(1, 'year').toDate()
+      q = r.table CHAT_MESSAGES_TABLE
+      .between(
+        [conversationId, startTime]
+        [conversationId, endTime]
+        {index: CONVERSATION_ID_TIME_INDEX}
+      )
 
-    if isStreamed
-      q = q.changes({includeInitial: true, squash: true})
+      if isStreamed
+        q = q.changes {
+          includeInitial: true
+          includeTypes: true
+          includeStates: true
+          squash: true
+        }
 
-    q.run()
+      q.run()
 
   getById: (id) ->
     r.table CHAT_MESSAGES_TABLE

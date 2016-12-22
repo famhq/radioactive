@@ -17,7 +17,7 @@ defaultGroup = (group) ->
     description: null
     badgeId: null
     background: null
-    isPrivate: false
+    mode: 'open' # open | private | inviteOnly
     userIds: []
     invitedIds: []
   }
@@ -43,10 +43,24 @@ class GroupModel
       group
 
   hasPermissionById: (id, userId, {level} = {}) =>
-    level ?= 'member'
+    unless userId
+      return false
+
     @getById id
-    .then (group) ->
-      userId and group.userIds?.indexOf(userId) isnt -1
+    .then (group) =>
+      @hasPermission group, userId, {level}
+
+  hasPermission: (group, userId, {level} = {}) ->
+    unless userId
+      return false
+
+    level ?= 'member'
+
+    return switch level
+      when 'admin'
+      then group.creatorId is userId
+      # member
+      else group.userIds?.indexOf(userId) isnt -1
 
   getById: (id) ->
     r.table GROUPS_TABLE
@@ -54,17 +68,18 @@ class GroupModel
     .run()
     .then defaultGroup
 
-  getAll: ({filter, limit, userId} = {}) ->
+  getAll: ({filter, limit, user} = {}) ->
     limit ?= 10
 
     q = r.table GROUPS_TABLE
 
-    console.log filter
-
     if filter is 'mine'
-      q = q.getAll userId, {index: USER_IDS_INDEX}
+      q = q.getAll user.id, {index: USER_IDS_INDEX}
+    else if filter is 'invited'
+      console.log user.data
+      q = q.getAll r.args (user.data.groupInvitedIds or [])
     else if filter is 'open'
-      q = q.filter r.row('isPrivate').default(false).eq(false)
+      q = q.filter r.row('mode').default('open').eq('open')
 
     q.orderBy r.desc r.row('userIds').count()
     .limit limit
@@ -91,6 +106,7 @@ class GroupModel
       'description'
       'badgeId'
       'background'
+      'mode'
       'userIds'
       'users'
       'embedded'

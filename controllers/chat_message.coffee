@@ -19,7 +19,7 @@ MAX_CONVERSATION_USER_IDS = 20
 defaultConversationEmbed = [EmbedService.TYPES.CONVERSATION.USERS]
 
 class ChatMessageCtrl
-  create: ({body, conversationId}, {user, headers, connection}) ->
+  create: ({body, conversationId, clientId}, {user, headers, connection}) ->
     userAgent = headers['user-agent']
     ip = headers['x-forwarded-for'] or
           connection.remoteAddress
@@ -28,19 +28,24 @@ class ChatMessageCtrl
     msPlayed = Date.now() - user.joinTime?.getTime()
 
     if isProfane or user.flags.isChatBanned
-      router.throw status: 400, detail: 'unable to post...'
+      router.throw status: 400, info: 'unable to post...'
 
     Conversation.getById conversationId
     .then EmbedService.embed defaultConversationEmbed
+    .tap ->
+      new Promise (resolve) ->
+        setTimeout resolve, 3000
     .then (conversation) ->
+      console.log 'create'
       Conversation.hasPermission conversation, user.id
       .then (hasPermission) ->
         unless hasPermission
-          router.throw status: 401, detail: 'unauthorized'
+          router.throw status: 401, info: 'unauthorized'
 
         ChatMessage.create
           userId: user.id
           body: body
+          clientId: clientId
           conversationId: conversationId
         .then ->
           if conversation.groupId
@@ -89,7 +94,5 @@ class ChatMessageCtrl
           if item.user?.flags?.isChatBanned isnt true
             item
     }
-    .then (results) ->
-      results.reverse()
 
 module.exports = new ChatMessageCtrl()

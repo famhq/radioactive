@@ -77,9 +77,9 @@ class PaymentCtrl
         if signedRequest and signedRequest.payment_id is transactionId
           Promise.resolve signedRequest
         else
-          throw new router.Error
+          router.throw
             status: 400
-            detail: 'Unable to verify payment'
+            info: 'Unable to verify payment'
       else
         (if stripeToken
           stripe.customers.create({
@@ -120,9 +120,9 @@ class PaymentCtrl
       .catch (err) ->
         console.log err
         Transaction.create transaction
-        throw new router.Error
+        router.throw
           status: 400
-          detail: 'Unable to verify payment'
+          info: 'Unable to verify payment'
 
   # TODO: check that transactionId is only processed once (iap.verifyPayment
   # returns this). Will need to start storing transactions in rethink
@@ -200,9 +200,9 @@ class PaymentCtrl
 
       .catch (err) ->
         Transaction.create transaction
-        throw new router.Error
+        router.throw
           status: 400
-          detail: 'Unable to verify payment'
+          info: 'Unable to verify payment'
 
 
 

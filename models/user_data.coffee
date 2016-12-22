@@ -18,6 +18,9 @@ defaultUserData = (userData) ->
     followingIds: []
     followerIds: []
     blockedUserIds: []
+    groupInvitedIds: []
+    groupIds: []
+    unreadGroupInvites: 0
   }
 
 class UserDataModel
