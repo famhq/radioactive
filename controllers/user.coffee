@@ -105,7 +105,7 @@ class UserCtrl
     }
 
     # bust cache
-    keyPrefix = "/images/red_tritium/u/#{user.id}/avatar_#{Date.now()}"
+    keyPrefix = "images/red_tritium/u/#{user.id}/avatar_#{Date.now()}"
 
     Promise.all [
       ImageService.uploadImage

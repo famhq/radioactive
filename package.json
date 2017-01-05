@@ -35,6 +35,7 @@
     "bluebird": "^3.4.6",
     "body-parser": "^1.14.1",
     "canvas": "^1.6.2",
+    "card-builder": "git://github.com/claydotio/card-builder.git",
     "coffee-script": "^1.10.0",
     "cors": "^2.7.1",
     "cron": "^1.1.0",

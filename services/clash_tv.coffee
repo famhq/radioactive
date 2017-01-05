@@ -427,7 +427,7 @@ focusText = (canvas, ctx, card) ->
     g = data[i + 1]
     b = data[i + 2]
     if isLegendary
-      isLevelText = r is 255 or g is 255 or b is 255
+      isLevelText = r >= 250 or g >= 250 or b >= 250
     else
       isLevelText = _.find colors, (rgb) ->
         Math.abs(r - rgb[0]) <= RGB_TOLERANCE and

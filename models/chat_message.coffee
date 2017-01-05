@@ -106,6 +106,12 @@ class ChatMessageModel
     .run()
     .then defaultChatMessage
 
+  updateById: (id, diff) ->
+    r.table CHAT_MESSAGES_TABLE
+    .get id
+    .update diff
+    .run()
+
   deleteOld: ->
     Promise.all [
       r.table CHAT_MESSAGES_TABLE

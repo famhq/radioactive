@@ -26,7 +26,7 @@ class GroupCtrl
     }
 
   updateById: ({id, name, description, badgeId, background, mode}, {user}) ->
-    Group.hasPermissionById groupId, user.id, {level: 'admin'}
+    Group.hasPermissionById id, user.id, {level: 'admin'}
     .then (hasPermission) ->
       unless hasPermission
         router.throw {status: 400, info: 'You don\'t have permission'}

@@ -57,6 +57,7 @@ module.exports = router
   authed UserDataCtrl.deleteConversationByUserId
 
 .on 'chatMessages.create', authed ChatMessageCtrl.create
+.on 'chatMessages.uploadImage', authed ChatMessageCtrl.uploadImage
 .on 'chatMessages.getAllByConversationId',
   authed ChatMessageCtrl.getAllByConversationId
 

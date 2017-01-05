@@ -22,6 +22,7 @@ r = require './services/rethinkdb'
 AuthService = require './services/auth'
 CronService = require './services/cron'
 KueRunnerService = require './services/kue_runner'
+ChatMessageCtrl = require './controllers/chat_message'
 ClashTvService = require './services/clash_tv'
 StreamService = require './services/stream'
 ClashRoyaleDeck = require './models/clash_royale_deck'
@@ -172,6 +173,8 @@ app.post '/log', (req, res) ->
 
   log.warn req.body
   res.status(204).send()
+
+app.post '/chatMessage/:id/card', ChatMessageCtrl.updateCard
 
 app.get '/clashTv', (req, res) -> ClashTvService.process()
 app.get '/updateCards', (req, res) ->

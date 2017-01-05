@@ -36,7 +36,7 @@ class StreamService
         cursor.eachAsync (item) ->
           if item.state is 'ready'
             isInitial = false
-            resolve {initial: items, changes: null}
+            resolve items
           if item.type is 'uninitial' or item.type is 'state'
             return false
           postFn item.new_val
