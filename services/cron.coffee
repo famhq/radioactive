@@ -19,15 +19,15 @@ class CronService
     @addCron 'daily', '0 0 7 * * *', ->
       r.table('user_daily_data').delete()
 
-    @addCron 'hourly', '0 0 * * * *', ->
-      ClashTvService.process()
+    # @addCron 'hourly', '0 0 * * * *', ->
+    #   ClashTvService.process()
 
     # daily 6pm PT
-    @addCron 'winRates', '0 0 2 * * *', ->
-      Promise.all [
-        ClashRoyaleDeck.updateWinsAndLosses()
-        ClashRoyaleCard.updateWinsAndLosses()
-      ]
+    # @addCron 'winRates', '0 0 2 * * *', ->
+    #   Promise.all [
+    #     ClashRoyaleDeck.updateWinsAndLosses()
+    #     ClashRoyaleCard.updateWinsAndLosses()
+    #   ]
 
   addCron: (key, time, fn) =>
     @crons.push new CronJob time, ->
