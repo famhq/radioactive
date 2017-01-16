@@ -1,14 +1,17 @@
+log = require 'loga'
 _ = require 'lodash'
+
+config = require '../config'
 
 BLACKLIST = [
   'skype',
   'anal',
   'anus',
   'arse',
-  'ass.*',
+  'ass',
   'ballsack.*',
   'balls',
-  'bastard',
+  'bastard.*',
   'bich',
   'bitch.',
   'biatch',
@@ -21,7 +24,6 @@ BLACKLIST = [
   'buttplug',
   'clitoris',
   'cock',
-  'coon',
   'crap',
   'cunt.',
   'damn',
@@ -38,8 +40,6 @@ BLACKLIST = [
   'fellate',
   'fellatio',
   'felching',
-  'freaks?',
-  'freaky',
   '.*f+u+c+k+.*',
   'fuk',
   'fudgepacker',
@@ -56,7 +56,7 @@ BLACKLIST = [
   'labia',
   'nigger.*',
   'nigga.*',
-  'nude.*',
+  'nude',
   '.*orgasm.*'
   'penis.*',
   'piss',

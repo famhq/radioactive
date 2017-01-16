@@ -5,6 +5,7 @@ Promise = require 'bluebird'
 User = require '../models/user'
 UserData = require '../models/user_data'
 Group = require '../models/group'
+GroupRecordType = require '../models/group_record_type'
 EmbedService = require '../services/embed'
 PushNotificationService = require '../services/push_notification'
 config = require '../config'
@@ -15,6 +16,10 @@ defaultEmbed = [
 userDataEmbed = [
   EmbedService.TYPES.USER.DATA
 ]
+defaultGroupRecordTypes = [
+  {name: 'Donations', timeScale: 'week'}
+  {name: 'Crowns', timeScale: 'week'}
+]
 
 class GroupCtrl
   create: ({name, description, badgeId, background, mode}, {user}) ->
@@ -24,6 +29,14 @@ class GroupCtrl
       name, description, badgeId, background, creatorId, mode
       userIds: [creatorId]
     }
+    .tap ({id}) ->
+      Promise.map defaultGroupRecordTypes, ({name, timeScale}) ->
+        GroupRecordType.create {
+          name: name
+          timeScale: timeScale
+          groupId: id
+          creatorId: user.id
+        }
 
   updateById: ({id, name, description, badgeId, background, mode}, {user}) ->
     Group.hasPermissionById id, user.id, {level: 'admin'}

@@ -38,8 +38,14 @@ class ConversationModel
   create: (conversation) ->
     conversation = defaultConversation conversation
 
+    if conversation.groupId
+      conversation.id =
+        'c-' + conversation.groupId + (conversation.channelId or '')
+
+    # replace will create 1 unique row for conversation.id
     r.table CONVERSATIONS_TABLE
-    .insert conversation
+    .get conversation.id
+    .replace conversation
     .run()
     .then ->
       conversation

@@ -21,13 +21,17 @@ TYPES =
   REWARD: 'reward'
   NEW_TRADE: 'newTrade'
   TRADE_UPDATE: 'tradeUpdate'
+  CHAT_MESSAGE: 'chatMessage'
   PRIVATE_MESSAGE: 'privateMessage'
   NEW_FRIEND: 'newFriend'
   GIFT: 'gift'
   GROUP: 'group'
   STATUS: 'status'
 
-defaultUserEmbed = [EmbedService.TYPES.USER.DATA]
+defaultUserEmbed = [
+  EmbedService.TYPES.USER.DATA
+  EmbedService.TYPES.USER.GROUP_DATA
+]
 
 class PushNotificationService
   constructor: ->
@@ -114,15 +118,19 @@ class PushNotificationService
     else
       Promise.resolve conversation.userIds
     ).then (users) =>
-      @sendToUserIds users, message, {skipMe, meUserId}
+      @sendToUserIds users, message, {
+        skipMe, meUserId, groupId: conversation.groupId
+      }
 
-  sendToGroup: (group, message, {skipMe, meUserId}) =>
-    @sendToUserIds group.userIds, message
+  sendToGroup: (group, message, {skipMe, meUserId, groupId}) =>
+    @sendToUserIds group.userIds, message, {skipMe, meUserId, groupId}
 
-  sendToUserIds: (userIds, message, {skipMe, meUserId} = {}) ->
+  sendToUserIds: (userIds, message, {skipMe, meUserId, groupId} = {}) ->
     Promise.each userIds, (userId) =>
       unless userId is meUserId
         User.getById userId
+        .then (user) ->
+          _.defaults user, {groupId}
         .then EmbedService.embed defaultUserEmbed
         .then (user) =>
           if user and user.data.blockedUserIds.indexOf(meUserId) isnt -1
@@ -147,11 +155,13 @@ class PushNotificationService
     if user.flags.blockedNotifications?[message.type] is true
       return Promise.resolve null
 
+    if user.groupData.globalBlockedNotifications?[message.type] is true
+      return Promise.resolve null
+
     successfullyPushedToNative = false
 
     PushToken.getAllByUserId user.id
     .map ({id, sourceType, token, errorCount}) =>
-      console.log sourceType, token
       if sourceType is 'android'
         @sendAndroid token, message
         .then ->

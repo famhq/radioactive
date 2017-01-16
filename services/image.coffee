@@ -18,15 +18,16 @@ class ImageService
         else
           resolve size
 
-  toStream: ({buffer, path, width, height, quality, type}) ->
+  toStream: ({buffer, path, width, height, quality, type, useMin}) ->
     quality ?= DEFAULT_IMAGE_QUALITY
     type ?= 'png'
 
     image = gm(buffer or path)
 
-    if width
+    if width or height
+      mode = if width and height and not useMin then '^' else null
       image = image
-        .resize width, height or width, if width and height then '^' else null
+        .resize width or height, height or width, mode
 
       if height
         image = image

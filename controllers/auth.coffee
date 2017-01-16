@@ -39,7 +39,7 @@ class AuthCtrl
 
         Promise.promisify(bcrypt.hash)(insecurePassword, BCRYPT_ROUNDS)
         .then (password) ->
-          User.updateById user.id, {username, password, isMember: true}
+          User.updateById user.id, {username, password, email, isMember: true}
       .then ->
         Auth.fromUserId user.id
 

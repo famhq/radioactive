@@ -12,10 +12,12 @@ config = require '../config'
 schemas = require '../schemas'
 
 defaultEmbed = []
+allowedClientEmbeds = ['following', 'followers', 'blockedUsers']
 
 class UserDataCtrl
   getMe: ({embed} = {}, {user}) ->
     embed ?= defaultEmbed
+    embed = _.filter embed, (item) -> allowedClientEmbeds.indexOf(item) isnt -1
     embed = _.map embed, (item) ->
       EmbedService.TYPES.USER_DATA[_.snakeCase(item).toUpperCase()]
     UserData.getByUserId user.id
@@ -23,6 +25,7 @@ class UserDataCtrl
 
   getByUserId: ({userId, embed} = {}) ->
     embed ?= defaultEmbed
+    embed = _.filter embed, (item) -> allowedClientEmbeds.indexOf(item) isnt -1
     embed = _.map embed, (item) ->
       EmbedService.TYPES.USER_DATA[_.snakeCase(item).toUpperCase()]
     UserData.getByUserId userId

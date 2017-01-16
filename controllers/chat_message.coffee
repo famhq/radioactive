@@ -22,10 +22,10 @@ defaultEmbed = [EmbedService.TYPES.CHAT_MESSAGE.USER]
 
 MAX_CONVERSATION_USER_IDS = 20
 URL_REGEX = /\b(https?):\/\/[-A-Z0-9+&@#/%?=~_|!:,.;]*[A-Z0-9+&@#/%=~_|]/gi
-IMAGE_REGEX = /\(\!\[(.*?)\]\local:\/\/(.*?)_([0-9.]+)\)/gi
+IMAGE_REGEX = /\!\[(.*?)\]\((.*?)\)/gi
 CARD_BUILDER_TIMEOUT_MS = 1000
-SMALL_IMAGE_WIDTH = 100
-LARGE_IMAGE_WIDTH = 1000
+SMALL_IMAGE_SIZE = 200
+# LARGE_IMAGE_SIZE = 1000
 
 defaultConversationEmbed = [EmbedService.TYPES.CONVERSATION.USERS]
 
@@ -38,7 +38,7 @@ class ChatMessageCtrl
     ip = headers['x-forwarded-for'] or
           connection.remoteAddress
 
-    isProfane = ProfanityService.isProfane body
+    isProfane = false #ProfanityService.isProfane body
     msPlayed = Date.now() - user.joinTime?.getTime()
 
     if isProfane or user.flags.isChatBanned
@@ -54,7 +54,10 @@ class ChatMessageCtrl
 
         chatMessageId = uuid.v4()
 
-        urls = body.match URL_REGEX
+        console.log body
+        isImage = body.match(IMAGE_REGEX)
+        urls = not isImage and body.match(URL_REGEX)
+        console.log urls
 
         (if _.isEmpty urls
           Promise.resolve null
@@ -86,12 +89,14 @@ class ChatMessageCtrl
             userData: _.zipObject userIds, _.map userIds, (userId) ->
               {isRead: userId is user.id}
           }
-          pushBody = if body.match(IMAGE_REGEX) then '[image]' else body
-          cdnUrl = "https://#{config.CDN_HOST}/d/images/red_tritium"
+          pushBody = if isImage then '[image]' else body
+          cdnUrl = "https://#{config.CDN_HOST}/d/images/starfire"
           PushNotificationService.sendToConversation(
             conversation, {
               title: group?.name or User.getDisplayName(user)
-              type: PushNotificationService.TYPES.PRIVATE_MESSAGE
+              type: if group \
+                    then PushNotificationService.TYPES.CHAT_MESSAGE
+                    else PushNotificationService.TYPES.PRIVATE_MESSAGE
               text: if group \
                     then "#{User.getDisplayName(user)}: #{pushBody}"
                     else pushBody
@@ -135,27 +140,39 @@ class ChatMessageCtrl
     }
     ImageService.getSizeByBuffer (file.buffer)
     .then (size) ->
-      ratio = Math.round(100 * size.width / size.height) / 100
-      key = "#{user.id}_#{uuid.v4()}_#{ratio}"
-      keyPrefix = "images/red_tritium/cm/#{key}"
+      key = "#{user.id}_#{uuid.v4()}"
+      keyPrefix = "images/starfire/cm/#{key}"
+
+      aspectRatio = size.width / size.height
+      # 10 is to prevent super wide/tall images from being uploaded
+      if (aspectRatio < 1 and aspectRatio < 10) or aspectRatio < 0.1
+        smallWidth = SMALL_IMAGE_SIZE
+        smallHeight = smallWidth / aspectRatio
+      else
+        smallHeight = SMALL_IMAGE_SIZE
+        smallWidth = smallHeight * aspectRatio
 
       Promise.all [
         ImageService.uploadImage
           key: "#{keyPrefix}.small.png"
           stream: ImageService.toStream
             buffer: file.buffer
-            width: SMALL_IMAGE_WIDTH
+            width: smallWidth
+            height: smallHeight
+            useMin: true
 
         ImageService.uploadImage
           key: "#{keyPrefix}.large.png"
           stream: ImageService.toStream
             buffer: file.buffer
-            width: LARGE_IMAGE_WIDTH
+            width: smallWidth * 5
+            height: smallHeight * 5
+            useMin: true
       ]
       .then (imageKeys) ->
         _.map imageKeys, (imageKey) ->
           "https://#{config.CDN_HOST}/#{imageKey}"
       .then ([smallUrl, largeUrl]) ->
-        {smallUrl, largeUrl, key}
+        {smallUrl, largeUrl, key, width: size.width, height: size.height}
 
 module.exports = new ChatMessageCtrl()

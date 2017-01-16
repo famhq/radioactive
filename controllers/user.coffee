@@ -22,6 +22,8 @@ defaultEmbed = [EmbedService.TYPES.USER.DATA]
 class UserCtrl
   getMe: ({}, {user}) ->
     EmbedService.embed defaultEmbed, user
+    .tap ->
+      User.updateById user.id, {lastActiveTime: new Date()}
     .then User.sanitize null
 
   getById: ({id}) ->
@@ -105,7 +107,7 @@ class UserCtrl
     }
 
     # bust cache
-    keyPrefix = "images/red_tritium/u/#{user.id}/avatar_#{Date.now()}"
+    keyPrefix = "images/starfire/u/#{user.id}/avatar_#{Date.now()}"
 
     Promise.all [
       ImageService.uploadImage

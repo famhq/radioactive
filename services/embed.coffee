@@ -10,11 +10,15 @@ ThreadMessage = require '../models/thread_message'
 ClashRoyaleCard = require '../models/clash_royale_card'
 ClashRoyaleUserDeck = require '../models/clash_royale_user_deck'
 ClashRoyaleDeck = require '../models/clash_royale_deck'
+GroupRecord = require '../models/group_record'
+GroupUserData = require '../models/group_user_data'
 CacheService = require './cache'
 
 TYPES =
   USER:
     DATA: 'user:data'
+    IS_ONLINE: 'user:isOnline'
+    GROUP_DATA: 'user:groupData'
   USER_DATA:
     CONVERSATION_USERS: 'userData:conversationUsers'
     FOLLOWERS: 'userData:followers'
@@ -32,6 +36,8 @@ TYPES =
     CARDS: 'clashRoyaleDeck:cards'
   GROUP:
     USERS: 'group:users'
+  GROUP_RECORD_TYPE:
+    USER_VALUES: 'groupRecordType:userValues'
   THREAD_MESSAGE:
     USER: 'threadMessage:user'
   THREAD:
@@ -43,6 +49,7 @@ TEN_DAYS_SECONDS = 3600 * 24 * 10
 ONE_HOUR_SECONDS = 3600
 ONE_DAY_SECONDS = 3600 * 24
 FIVE_MINUTES_SECONDS = 60 * 5
+LAST_ACTIVE_TIME_MS = 60 * 15
 MAX_FRIENDS = 100 # FIXME add pagination
 
 getUserDataItems = (userData) ->
@@ -73,6 +80,17 @@ embedFn = _.curry (embed, object) ->
         .then embedFn [
           TYPES.USER_DATA.CLASH_ROYALE_DECK_IDS
         ]
+
+      when TYPES.USER.GROUP_DATA
+        console.log 'embeddddd'
+        embedded.groupData = GroupUserData.getByUserIdAndGroupId(
+          embedded.id, embedded.groupId
+        )
+
+      when TYPES.USER.IS_ONLINE
+        embedded.isOnline = moment(embedded.lastActiveTime)
+                            .add(LAST_ACTIVE_TIME_MS)
+                            .isAfter moment()
 
       when TYPES.USER_DATA.CLASH_ROYALE_DECK_IDS
         key = CacheService.PREFIXES.USER_DATA_CLASH_ROYALE_DECK_IDS +
@@ -132,6 +150,12 @@ embedFn = _.curry (embed, object) ->
             User.sanitizePublic(null, user)
         , {expireSeconds: ONE_DAY_SECONDS}
 
+      when TYPES.GROUP_RECORD_TYPE.USER_VALUES
+        embedded.userValues = GroupRecord.getAllRecordsByTypeAndTime {
+          groupRecordTypeId: embedded.id
+          scaledTime: GroupRecord.getScaledTimeByTimeScale embedded.timeScale
+        }
+
       when TYPES.CONVERSATION.USERS
         embedded.users = Promise.map embedded.userIds, (userId) ->
           User.getById userId
@@ -139,6 +163,7 @@ embedFn = _.curry (embed, object) ->
       when TYPES.GROUP.USERS
         embedded.users = Promise.map embedded.userIds, (userId) ->
           User.getById userId
+        .map embedFn [TYPES.USER.IS_ONLINE]
 
       when TYPES.CONVERSATION.LAST_MESSAGE
         embedded.lastMessage = \

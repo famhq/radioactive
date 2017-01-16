@@ -12,6 +12,9 @@ PushTokenCtrl = require './controllers/push_token'
 PaymentCtrl = require './controllers/payment'
 TheadCtrl = require './controllers/thread'
 GroupCtrl = require './controllers/group'
+GroupRecordCtrl = require './controllers/group_record'
+GroupUserDataCtrl = require './controllers/group_user_data'
+GroupRecordTypeCtrl = require './controllers/group_record_type'
 ThreadMessageCtrl = require './controllers/thread_message'
 StreamService = require './services/stream'
 
@@ -75,6 +78,21 @@ module.exports = router
 .on 'groups.getAll', authed GroupCtrl.getAll
 .on 'groups.getById', authed GroupCtrl.getById
 .on 'groups.inviteById', authed GroupCtrl.inviteById
+
+.on 'groupRecords.getAllByUserIdAndGroupId',
+  authed GroupRecordCtrl.getAllByUserIdAndGroupId
+.on 'groupRecords.save', authed GroupRecordCtrl.save
+.on 'groupRecords.bulkSave', authed GroupRecordCtrl.bulkSave
+
+.on 'groupRecordTypes.getAllByGroupId',
+  authed GroupRecordTypeCtrl.getAllByGroupId
+.on 'groupRecordTypes.create', authed GroupRecordTypeCtrl.create
+.on 'groupRecordTypes.deleteById', authed GroupRecordTypeCtrl.deleteById
+
+.on 'groupUserData.updateMeByGroupId',
+  authed GroupUserDataCtrl.updateMeByGroupId
+.on 'groupUserData.getMeByGroupId',
+  authed GroupUserDataCtrl.getMeByGroupId
 
 .on 'threadMessages.create', authed ThreadMessageCtrl.create
 .on 'threadMessages.flag', authed ThreadMessageCtrl.flag
