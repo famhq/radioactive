@@ -12,6 +12,12 @@ config = require '../config'
 
 defaultEmbed = [
   EmbedService.TYPES.GROUP.USERS
+  EmbedService.TYPES.GROUP.CONVERSATIONS
+]
+channelsEmbed = [
+  EmbedService.TYPES.GROUP.USERS
+  EmbedService.TYPES.GROUP.CHANNELS
+  EmbedService.TYPES.GROUP.CONVERSATIONS
 ]
 userDataEmbed = [
   EmbedService.TYPES.USER.DATA
@@ -30,16 +36,22 @@ class GroupCtrl
       userIds: [creatorId]
     }
     .tap ({id}) ->
-      Promise.map defaultGroupRecordTypes, ({name, timeScale}) ->
-        GroupRecordType.create {
-          name: name
-          timeScale: timeScale
+      Promise.all [
+        Conversation.create {
           groupId: id
-          creatorId: user.id
+          name: 'general'
         }
+        Promise.map defaultGroupRecordTypes, ({name, timeScale}) ->
+          GroupRecordType.create {
+            name: name
+            timeScale: timeScale
+            groupId: id
+            creatorId: user.id
+          }
+      ]
 
   updateById: ({id, name, description, badgeId, background, mode}, {user}) ->
-    Group.hasPermissionById id, user.id, {level: 'admin'}
+    Group.hasPermissionByIdAndUserId id, user.id, {level: 'admin'}
     .then (hasPermission) ->
       unless hasPermission
         router.throw {status: 400, info: 'You don\'t have permission'}
@@ -62,7 +74,7 @@ class GroupCtrl
       if _.isEmpty toUsers
         router.throw {status: 404, info: 'User not found'}
 
-      hasPermission = Group.hasPermission group, user.id
+      hasPermission = Group.hasPermission group, user
       unless hasPermission
         router.throw {status: 400, info: 'You don\'t have permission'}
 
@@ -95,7 +107,7 @@ class GroupCtrl
       router.throw {status: 404, info: 'Group not found'}
 
     Promise.all [
-      EmbedService.embed userDataEmbed, user
+      EmbedService.embed {embed: userDataEmbed}, user
       Group.getById groupId
     ]
     .then ([user, group]) ->
@@ -119,7 +131,7 @@ class GroupCtrl
       router.throw {status: 404, info: 'Group not found'}
 
     Promise.all [
-      EmbedService.embed userDataEmbed, user
+      EmbedService.embed {embed: userDataEmbed}, user
       Group.getById groupId
     ]
     .then ([user, group]) ->
@@ -150,15 +162,15 @@ class GroupCtrl
       ]
 
   getAll: ({filter}, {user}) ->
-    EmbedService.embed userDataEmbed, user
+    EmbedService.embed {embed: userDataEmbed}, user
     .then (user) ->
       Group.getAll {filter, user}
-    .map EmbedService.embed defaultEmbed
+    .map EmbedService.embed {embed: defaultEmbed}
     .map Group.sanitize null
 
   getById: ({id}, {user}) ->
     Group.getById id
-    .then EmbedService.embed defaultEmbed
+    .then EmbedService.embed {embed: channelsEmbed, user}
     .then Group.sanitize null
 
 module.exports = new GroupCtrl()

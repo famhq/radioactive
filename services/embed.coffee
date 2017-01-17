@@ -5,11 +5,13 @@ moment = require 'moment'
 config = require '../config'
 User = require '../models/user'
 UserData = require '../models/user_data'
+Conversation = require '../models/conversation'
 ChatMessage = require '../models/chat_message'
-ThreadMessage = require '../models/thread_message'
+ThreadComment = require '../models/thread_comment'
 ClashRoyaleCard = require '../models/clash_royale_card'
 ClashRoyaleUserDeck = require '../models/clash_royale_user_deck'
 ClashRoyaleDeck = require '../models/clash_royale_deck'
+Group = require '../models/group'
 GroupRecord = require '../models/group_record'
 GroupUserData = require '../models/group_user_data'
 CacheService = require './cache'
@@ -36,10 +38,11 @@ TYPES =
     CARDS: 'clashRoyaleDeck:cards'
   GROUP:
     USERS: 'group:users'
+    CONVERSATIONS: 'group:conversations'
   GROUP_RECORD_TYPE:
     USER_VALUES: 'groupRecordType:userValues'
-  THREAD_MESSAGE:
-    USER: 'threadMessage:user'
+  THREAD_COMMENT:
+    USER: 'threadComment:user'
   THREAD:
     FIRST_MESSAGE: 'thread:firstMessage'
     MESSAGES: 'thread:messages'
@@ -51,6 +54,10 @@ ONE_DAY_SECONDS = 3600 * 24
 FIVE_MINUTES_SECONDS = 60 * 5
 LAST_ACTIVE_TIME_MS = 60 * 15
 MAX_FRIENDS = 100 # FIXME add pagination
+
+# separate service so models don't have to depend on
+# each other (circular). eg user data needing user for
+# embedding followers, and user needing user data
 
 getUserDataItems = (userData) ->
   key = CacheService.PREFIXES.USER_ITEMS + ':' + userData.userId
@@ -65,7 +72,7 @@ getUserDataItems = (userData) ->
       .filter ({item}) -> Boolean item
   , {expireSeconds: ONE_HOUR_SECONDS}
 
-embedFn = _.curry (embed, object) ->
+embedFn = _.curry ({embed, user, groupId}, object) ->
   embedded = _.cloneDeep object
   unless embedded
     return Promise.resolve null
@@ -82,9 +89,8 @@ embedFn = _.curry (embed, object) ->
         ]
 
       when TYPES.USER.GROUP_DATA
-        console.log 'embeddddd'
         embedded.groupData = GroupUserData.getByUserIdAndGroupId(
-          embedded.id, embedded.groupId
+          embedded.id, groupId
         )
 
       when TYPES.USER.IS_ONLINE
@@ -165,26 +171,34 @@ embedFn = _.curry (embed, object) ->
           User.getById userId
         .map embedFn [TYPES.USER.IS_ONLINE]
 
+      when TYPES.GROUP.CONVERSATIONS
+        embedded.conversations = Conversation.getAllByGroupId embedded.id
+
+      when TYPES.GROUP.USER_CONVERSATIONS
+        embedded.conversations = Conversation.getAllByGroupId embedded.id
+        .filter (conversation) ->
+          Group.hasPermission embedded, user, {level: ''} # FIXME
+
       when TYPES.CONVERSATION.LAST_MESSAGE
         embedded.lastMessage = \
           ChatMessage.getLastByConversationId embedded.id
 
       when TYPES.THREAD.MESSAGES
-        embedded.messages = ThreadMessage.getAllByThreadId embedded.id
-        .map embedFn [TYPES.THREAD_MESSAGE.USER]
+        embedded.messages = ThreadComment.getAllByThreadId embedded.id
+        .map embedFn [TYPES.THREAD_COMMENT.USER]
 
       when TYPES.THREAD.FIRST_MESSAGE
         embedded.firstMessage = \
-          ThreadMessage.getFirstByThreadId embedded.id
-          .then embedFn [TYPES.THREAD_MESSAGE.USER]
+          ThreadComment.getFirstByThreadId embedded.id
+          .then embedFn [TYPES.THREAD_COMMENT.USER]
 
       when TYPES.THREAD.MESSAGE_COUNT
         unless embedded.messages
-          embedded.messages = ThreadMessage.getAllByThreadId embedded.id
+          embedded.messages = ThreadComment.getAllByThreadId embedded.id
         embedded.messageCount = embedded.messages.then (messages) ->
           messages?.length
 
-      when TYPES.THREAD_MESSAGE.USER
+      when TYPES.THREAD_COMMENT.USER
         if embedded.userId
           key = CacheService.PREFIXES.THREAD_USER + ':' + embedded.userId
           embedded.user =

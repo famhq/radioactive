@@ -21,7 +21,7 @@ defaultEmbed = [EmbedService.TYPES.USER.DATA]
 
 class UserCtrl
   getMe: ({}, {user}) ->
-    EmbedService.embed defaultEmbed, user
+    EmbedService.embed {embed: defaultEmbed}, user
     .tap ->
       User.updateById user.id, {lastActiveTime: new Date()}
     .then User.sanitize null

@@ -2,6 +2,7 @@ _ = require 'lodash'
 uuid = require 'node-uuid'
 
 r = require '../services/rethinkdb'
+User = require './user'
 
 GROUPS_TABLE = 'groups'
 USER_IDS_INDEX = 'userIds'
@@ -42,25 +43,36 @@ class GroupModel
     .then ->
       group
 
-  hasPermissionById: (id, userId, {level} = {}) =>
+  hasPermissionByIdAndUserId: (id, userId, {level} = {}) =>
     unless userId
+      return false
+
+    Promise.all [
+      @getById id
+      User.getById userId
+    ]
+    .then ([group, user]) =>
+      @hasPermission group, user, {level}
+
+  hasPermissionByIdAndUser: (id, user, {level} = {}) =>
+    unless user
       return false
 
     @getById id
     .then (group) =>
-      @hasPermission group, userId, {level}
+      @hasPermission group, user, {level}
 
-  hasPermission: (group, userId, {level} = {}) ->
-    unless userId
+  hasPermission: (group, user, {level} = {}) ->
+    unless group and user
       return false
 
     level ?= 'member'
 
     return switch level
       when 'admin'
-      then group.creatorId is userId
+      then group.creatorId is user.id
       # member
-      else group.userIds?.indexOf(userId) isnt -1
+      else group.userIds?.indexOf(user.id) isnt -1
 
   getById: (id) ->
     r.table GROUPS_TABLE
@@ -109,6 +121,7 @@ class GroupModel
       'mode'
       'userIds'
       'users'
+      'conversations'
       'embedded'
     ]
 

@@ -12,7 +12,7 @@ class GroupRecordCtrl
   save: ({userId, groupRecordTypeId, value}, {user}) ->
     GroupRecordType.getById groupRecordTypeId
     .then (groupRecordType) ->
-      Group.hasPermissionById groupRecordType.groupId, user.id, {level:
+      Group.hasPermissionByIdAndUserId groupRecordType.groupId, user.id, {level:
         'admin'
       }
       .then (hasPermission) ->
@@ -43,7 +43,7 @@ class GroupRecordCtrl
     unless userId
       router.throw status: 404, info: 'user not found'
 
-    Group.hasPermissionById groupId, user.id, {level: 'admin'}
+    Group.hasPermissionByIdAndUserId groupId, user.id, {level: 'admin'}
     .then (hasPermission) ->
       unless hasPermission
         router.throw status: 400, info: 'no permission'

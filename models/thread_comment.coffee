@@ -6,11 +6,11 @@ r = require '../services/rethinkdb'
 User = require './user'
 CacheService = require '../services/cache'
 
-defaultThreadMessage = (threadMessage) ->
-  unless threadMessage?
+defaultThreadComment = (threadComment) ->
+  unless threadComment?
     return null
 
-  _.defaults threadMessage, {
+  _.defaults threadComment, {
     id: uuid.v4()
     userId: null
     time: new Date()
@@ -18,16 +18,16 @@ defaultThreadMessage = (threadMessage) ->
     toId: null
   }
 
-THREAD_MESSAGES_TABLE = 'thread_messages'
+THREAD_COMMENTS_TABLE = 'thread_comments'
 TIME_INDEX = 'time'
 USER_ID_INDEX = 'userId'
 THREAD_ID_INDEX = 'threadId'
 MAX_MESSAGES = 30
 
-class ThreadMessageModel
+class ThreadCommentModel
   RETHINK_TABLES: [
     {
-      name: THREAD_MESSAGES_TABLE
+      name: THREAD_COMMENTS_TABLE
       indexes: [
         {
           name: TIME_INDEX
@@ -42,49 +42,49 @@ class ThreadMessageModel
     }
   ]
 
-  create: (threadMessage) ->
-    threadMessage = defaultThreadMessage threadMessage
+  create: (threadComment) ->
+    threadComment = defaultThreadComment threadComment
 
-    r.table THREAD_MESSAGES_TABLE
-    .insert threadMessage
+    r.table THREAD_COMMENTS_TABLE
+    .insert threadComment
     .run()
     .then ->
-      threadMessage
+      threadComment
 
   updateById: (id, diff) ->
-    r.table THREAD_MESSAGES_TABLE
+    r.table THREAD_COMMENTS_TABLE
     .get id
     .update diff
     .run()
 
   getAll: ->
-    r.table THREAD_MESSAGES_TABLE
+    r.table THREAD_COMMENTS_TABLE
     .orderBy {index: r.desc(TIME_INDEX)}
     .limit MAX_MESSAGES
     .filter r.row('toId').default(null).eq(null)
     .run()
-    .map defaultThreadMessage
+    .map defaultThreadComment
 
   getAllByThreadId: (threadId) ->
-    r.table THREAD_MESSAGES_TABLE
+    r.table THREAD_COMMENTS_TABLE
     .getAll threadId, {index: THREAD_ID_INDEX}
     .orderBy r.asc(TIME_INDEX)
     .run()
-    .map defaultThreadMessage
+    .map defaultThreadComment
 
   getFirstByThreadId: (threadId) ->
-    r.table THREAD_MESSAGES_TABLE
+    r.table THREAD_COMMENTS_TABLE
     .getAll threadId, {index: THREAD_ID_INDEX}
     .orderBy r.asc(TIME_INDEX)
     .nth 0
     .default null
     .run()
-    .then defaultThreadMessage
+    .then defaultThreadComment
 
   getById: (id) ->
-    r.table THREAD_MESSAGES_TABLE
+    r.table THREAD_COMMENTS_TABLE
     .get id
     .run()
-    .then defaultThreadMessage
+    .then defaultThreadComment
 
-module.exports = new ThreadMessageModel()
+module.exports = new ThreadCommentModel()

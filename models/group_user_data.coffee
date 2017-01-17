@@ -17,6 +17,7 @@ defaultGroupUserData = (groupUserData) ->
     userId: null
     groupId: null
     globalBlockedNotifications: {}
+    roleIds: []
   }
 
 class GroupUserDataModel

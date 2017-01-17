@@ -15,6 +15,7 @@ defaultThread = (thread) ->
     id: uuid.v4()
     userId: null
     title: null
+    body: null
     creatorId: null
     lastUpdateTime: new Date()
   }

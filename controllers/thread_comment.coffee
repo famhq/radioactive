@@ -1,14 +1,14 @@
 _ = require 'lodash'
 router = require 'exoid-router'
 
-ThreadMessage = require '../models/thread_message'
+ThreadComment = require '../models/thread_comment'
 Thread = require '../models/thread'
 EmbedService = require '../services/embed'
 config = require '../config'
 
 MAX_CONVERSATION_USER_IDS = 20
 
-class ThreadMessageCtrl
+class ThreadCommentCtrl
   create: ({body, threadId}, {user, headers, connection}) ->
     userAgent = headers['user-agent']
     ip = headers['x-forwarded-for'] or
@@ -17,7 +17,7 @@ class ThreadMessageCtrl
     if user.flags.isChatBanned
       router.throw status: 400, info: 'unable to post...'
 
-    ThreadMessage.create
+    ThreadComment.create
       userId: user.id
       body: body
       threadId: threadId
@@ -28,14 +28,14 @@ class ThreadMessageCtrl
     ip = headers['x-forwarded-for'] or
           connection.remoteAddress
 
-    ThreadMessage.getById id
-    .then EmbedService.embed [EmbedService.TYPES.THREAD_MESSAGE.USER]
-    .then (threadMessage) ->
-      flagIps = threadMessage.flagIps or []
+    ThreadComment.getById id
+    .then EmbedService.embed {embed: [EmbedService.TYPES.THREAD_COMMENT.USER]}
+    .then (threadComment) ->
+      flagIps = threadComment.flagIps or []
       if flagIps.indexOf(ip) is -1
-        ThreadMessage.updateById threadMessage.id, {
-          flags: (threadMessage.flags or []).concat [1]
+        ThreadComment.updateById threadComment.id, {
+          flags: (threadComment.flags or []).concat [1]
           flagIps: flagIps.concat [ip]
         }
 
-module.exports = new ThreadMessageCtrl()
+module.exports = new ThreadCommentCtrl()

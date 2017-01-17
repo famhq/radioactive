@@ -129,9 +129,7 @@ class PushNotificationService
     Promise.each userIds, (userId) =>
       unless userId is meUserId
         User.getById userId
-        .then (user) ->
-          _.defaults user, {groupId}
-        .then EmbedService.embed defaultUserEmbed
+        .then EmbedService.embed {embed: defaultUserEmbed, groupId}
         .then (user) =>
           if user and user.data.blockedUserIds.indexOf(meUserId) isnt -1
             return

@@ -21,7 +21,7 @@ class UserDataCtrl
     embed = _.map embed, (item) ->
       EmbedService.TYPES.USER_DATA[_.snakeCase(item).toUpperCase()]
     UserData.getByUserId user.id
-    .then EmbedService.embed embed
+    .then EmbedService.embed {embed}
 
   getByUserId: ({userId, embed} = {}) ->
     embed ?= defaultEmbed
@@ -29,7 +29,7 @@ class UserDataCtrl
     embed = _.map embed, (item) ->
       EmbedService.TYPES.USER_DATA[_.snakeCase(item).toUpperCase()]
     UserData.getByUserId userId
-    .then EmbedService.embed embed
+    .then EmbedService.embed {embed}
 
   setAddress: ({country, address, city, zip}, {user}) ->
     UserData.upsertByUserId user.id, {address: {country, address, city, zip}}

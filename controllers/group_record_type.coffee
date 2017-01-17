@@ -15,7 +15,7 @@ class GroupRecordTypeCtrl
       timeScale: Joi.string()
     }
 
-    Group.hasPermissionById groupId, user.id, {level: 'admin'}
+    Group.hasPermissionByIdAndUser groupId, user, {level: 'admin'}
     .then (hasPermission) ->
       unless hasPermission
         router.throw status: 400, info: 'no permission'
@@ -29,10 +29,10 @@ class GroupRecordTypeCtrl
 
   # getById: ({id}, {user}) ->
   #   GroupRecordType.getById id
-  #   .then EmbedService.embed defaultEmbed
+  #   .then EmbedService.embed {embed: defaultEmbed}
 
   getAllByGroupId: ({groupId, embed}, {user}) ->
-    Group.hasPermissionById groupId, user.id, {level: 'admin'}
+    Group.hasPermissionByIdAndUser groupId, user, {level: 'admin'}
     .then (hasPermission) ->
       unless hasPermission
         router.throw status: 400, info: 'no permission'
@@ -44,14 +44,16 @@ class GroupRecordTypeCtrl
         EmbedService.TYPES.GROUP_RECORD_TYPE[_.snakeCase(item).toUpperCase()]
 
       GroupRecordType.getAllByGroupId groupId
-      .map EmbedService.embed embed
+      .map EmbedService.embed {embed}
 
   deleteById: ({id}, {user}) ->
     GroupRecordType.getById id
     .then (groupRecordType) ->
       unless groupRecordType
         router.throw status: 404, info: 'record not found'
-      Group.hasPermissionById groupRecordType.groupId, user.id, {level: 'admin'}
+      Group.hasPermissionByIdAndUser groupRecordType.groupId, user, {
+        level: 'admin'
+      }
       .then (hasPermission) ->
         unless hasPermission
           router.throw status: 400, info: 'no permission'

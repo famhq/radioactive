@@ -45,7 +45,7 @@ class ChatMessageCtrl
       router.throw status: 400, info: 'unable to post...'
 
     Conversation.getById conversationId
-    .then EmbedService.embed defaultConversationEmbed
+    .then EmbedService.embed {embed: defaultConversationEmbed}
     .then (conversation) =>
       Conversation.hasPermission conversation, user.id
       .then (hasPermission) =>
@@ -128,7 +128,7 @@ class ChatMessageCtrl
         isStreamed: true
       }
       postFn: (item) ->
-        EmbedService.embed defaultEmbed, ChatMessage.default(item)
+        EmbedService.embed {embed: defaultEmbed}, ChatMessage.default(item)
         .then (item) ->
           if item.user?.flags?.isChatBanned isnt true
             item

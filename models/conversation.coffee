@@ -10,6 +10,13 @@ USER_IDS_INDEX = 'userIds'
 GROUP_ID_INDEX = 'groupId'
 LAST_UPDATE_TIME_INDEX = 'lastUpdateTime'
 
+# group, embed channels / conversations
+# get channels i have permission to
+  # get all channels
+  # get group_user_data (roleIds)
+  # get group_roles perms channel permissions
+  # filter out channels where view isnt true
+
 defaultConversation = (conversation) ->
   unless conversation?
     return null
@@ -18,6 +25,9 @@ defaultConversation = (conversation) ->
     id: uuid.v4()
     userIds: []
     groupId: null
+    type: 'pm' # pm | channel
+    name: null
+    description: null
     userData: {}
     lastUpdateTime: new Date()
   }
@@ -38,14 +48,8 @@ class ConversationModel
   create: (conversation) ->
     conversation = defaultConversation conversation
 
-    if conversation.groupId
-      conversation.id =
-        'c-' + conversation.groupId + (conversation.channelId or '')
-
-    # replace will create 1 unique row for conversation.id
     r.table CONVERSATIONS_TABLE
-    .get conversation.id
-    .replace conversation
+    .insert conversation
     .run()
     .then ->
       conversation
@@ -56,9 +60,10 @@ class ConversationModel
     .run()
     .then defaultConversation
 
-  getByGroupId: (groupId) ->
+  getByGroupIdAndName: (groupId, name) ->
     r.table CONVERSATIONS_TABLE
     .getAll groupId, {index: GROUP_ID_INDEX}
+    .filter {name}
     .nth 0
     .default null
     .run()
@@ -71,6 +76,12 @@ class ConversationModel
     .getAll userId, {index: USER_IDS_INDEX}
     .orderBy r.desc(LAST_UPDATE_TIME_INDEX)
     .limit limit
+    .run()
+    .map defaultConversation
+
+  getAllByGroupId: (groupId) ->
+    r.table CONVERSATIONS_TABLE
+    .getAll groupId, {index: GROUP_ID_INDEX}
     .run()
     .map defaultConversation
 
@@ -121,6 +132,8 @@ class ConversationModel
       'userData'
       'users'
       'groupId'
+      'name'
+      'description'
       'lastUpdateTime'
       'lastMessage'
       'embedded'

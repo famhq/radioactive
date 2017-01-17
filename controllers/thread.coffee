@@ -3,7 +3,7 @@ _ = require 'lodash'
 User = require '../models/user'
 UserData = require '../models/user_data'
 Thread = require '../models/thread'
-ThreadMessage = require '../models/thread_message'
+ThreadComment = require '../models/thread_comment'
 EmbedService = require '../services/embed'
 
 defaultEmbed = [
@@ -18,24 +18,18 @@ class ThreadCtrl
   create: ({title, body}, {user}) ->
     userId = user.id
 
-    Thread.create {title, userId}
-    .tap (thread) ->
-      ThreadMessage.create {
-        body
-        userId
-        threadId: thread.id
-      }
+    Thread.create {title, userId, body}
 
   getAll: ({}, {user}) ->
     Thread.getAll()
-    .map EmbedService.embed defaultEmbed
+    .map EmbedService.embed {embed: defaultEmbed}
     .map Thread.sanitize null
 
   getById: ({id}, {user}) ->
     UserData.getByUserId user.id
     .then (userData) ->
       Thread.getById id
-      .then EmbedService.embed messagesEmbed
+      .then EmbedService.embed {embed: messagesEmbed}
       .then (thread) ->
         thread?.messages = _.filter thread.messages, (message) ->
           userId = message.user?.id or 0

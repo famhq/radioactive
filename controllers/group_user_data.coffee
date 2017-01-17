@@ -8,7 +8,7 @@ EmbedService = require '../services/embed'
 
 class GroupUserDataCtrl
   getMeByGroupId: ({groupId}, {user}) ->
-    Group.hasPermissionById groupId, user.id, {level: 'member'}
+    Group.hasPermissionByIdAndUserId groupId, user.id, {level: 'member'}
     .then (hasPermission) ->
       unless hasPermission
         router.throw status: 400, info: 'no permission'
@@ -16,7 +16,7 @@ class GroupUserDataCtrl
       GroupUserData.getByUserIdAndGroupId user.id, groupId
 
   updateMeByGroupId: ({groupId, globalBlockedNotifications}, {user}) ->
-    Group.hasPermissionById groupId, user.id, {level: 'member'}
+    Group.hasPermissionByIdAndUserId groupId, user.id, {level: 'member'}
     .then (hasPermission) ->
       unless hasPermission
         router.throw status: 400, info: 'no permission'

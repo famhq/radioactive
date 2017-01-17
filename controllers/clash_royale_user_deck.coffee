@@ -15,12 +15,12 @@ defaultEmbed = [
 class ClashRoyaleUserDeckCtrl
   getAll: ({sort, filter}, {user}) ->
     ClashRoyaleUserDeck.getAllByUserId user.id
-    .map EmbedService.embed defaultEmbed
+    .map EmbedService.embed {embed: defaultEmbed}
     .map ClashRoyaleUserDeck.sanitize null
 
   getByDeckId: ({deckId}, {user}) ->
     ClashRoyaleUserDeck.getByDeckIdAndUserId deckId, user.id
-    .then EmbedService.embed defaultEmbed
+    .then EmbedService.embed {embed: defaultEmbed}
     .then ClashRoyaleUserDeck.sanitize null
 
   incrementByDeckId: ({deckId, state}, {user}) ->

@@ -15,7 +15,7 @@ GroupCtrl = require './controllers/group'
 GroupRecordCtrl = require './controllers/group_record'
 GroupUserDataCtrl = require './controllers/group_user_data'
 GroupRecordTypeCtrl = require './controllers/group_record_type'
-ThreadMessageCtrl = require './controllers/thread_message'
+ThreadCommentCtrl = require './controllers/thread_comment'
 StreamService = require './services/stream'
 
 authed = (handler) ->
@@ -94,13 +94,14 @@ module.exports = router
 .on 'groupUserData.getMeByGroupId',
   authed GroupUserDataCtrl.getMeByGroupId
 
-.on 'threadMessages.create', authed ThreadMessageCtrl.create
-.on 'threadMessages.flag', authed ThreadMessageCtrl.flag
+.on 'threadComments.create', authed ThreadCommentCtrl.create
+.on 'threadComments.flag', authed ThreadCommentCtrl.flag
 
 .on 'payments.verify', authed PaymentCtrl.verify
 .on 'payments.purchase', authed PaymentCtrl.purchase
 
 .on 'conversations.create', authed ConversationCtrl.create
+.on 'conversations.updateById', authed ConversationCtrl.updateById
 .on 'conversations.getAll', authed ConversationCtrl.getAll
 .on 'conversations.getByGroupId', authed ConversationCtrl.getByGroupId
 .on 'conversations.getById', authed ConversationCtrl.getById
