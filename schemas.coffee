@@ -22,10 +22,28 @@ pushToken =
   token: Joi.string()
   sourceType: Joi.string()
 
+event =
+  # id: id
+  # creatorId: id
+  groupId: id.optional()
+  name: Joi.string()
+  description: Joi.string()
+  password: Joi.string().allow(null).optional()
+  startTime: Joi.date()
+  endTime: Joi.date()
+  maxUserCount: Joi.number().optional()
+  userIds: Joi.array().allow(null).optional()
+  noUserIds: Joi.array().allow(null).optional()
+  maybeUserIds: Joi.array().allow(null).optional()
+  invitedUserIds: Joi.array().allow(null).optional()
+  # visibility: Joi.string()
+  # addTime: Joi.object()
+  data: Joi.object()
 
 module.exports = {
   id
   auth
   user
   pushToken
+  event
 }

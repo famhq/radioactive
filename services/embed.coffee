@@ -36,6 +36,9 @@ TYPES =
     DECK: 'clashRoyaleUserDeck:deck'
   CLASH_ROYALE_DECK:
     CARDS: 'clashRoyaleDeck:cards'
+  EVENT:
+    USERS: 'event:users'
+    CREATOR: 'event:creator'
   GROUP:
     USERS: 'group:users'
     CONVERSATIONS: 'group:conversations'
@@ -166,6 +169,13 @@ embedFn = _.curry ({embed, user, groupId}, object) ->
         embedded.users = Promise.map embedded.userIds, (userId) ->
           User.getById userId
 
+      when TYPES.EVENT.USERS
+        embedded.users = Promise.map embedded.userIds, (userId) ->
+          User.getById userId
+
+      when TYPES.EVENT.CREATOR
+        embedded.creator = User.getById embedded.creatorId
+
       when TYPES.GROUP.USERS
         embedded.users = Promise.map embedded.userIds, (userId) ->
           User.getById userId
@@ -235,6 +245,9 @@ embedFn = _.curry ({embed, user, groupId}, object) ->
       when TYPES.CLASH_ROYALE_USER_DECK.DECK
         embedded.deck = ClashRoyaleDeck.getById embedded.deckId
         .then embedFn [TYPES.CLASH_ROYALE_DECK.CARDS]
+
+      else
+        console.log 'no match found', key
 
   return Promise.props embedded
 

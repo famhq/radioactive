@@ -20,6 +20,7 @@ TYPES =
   NEW_PROMOTION: 'sale'
   REWARD: 'reward'
   NEW_TRADE: 'newTrade'
+  EVENT: 'event'
   TRADE_UPDATE: 'tradeUpdate'
   CHAT_MESSAGE: 'chatMessage'
   PRIVATE_MESSAGE: 'privateMessage'
@@ -110,7 +111,7 @@ class PushNotificationService
         else
           resolve true
 
-  sendToConversation: (conversation, message, {skipMe, meUserId}) =>
+  sendToConversation: (conversation, message, {skipMe, meUserId} = {}) =>
     (if conversation.groupId
       Group.getById conversation.groupId
       .then ({userIds}) ->
@@ -122,20 +123,29 @@ class PushNotificationService
         skipMe, meUserId, groupId: conversation.groupId
       }
 
-  sendToGroup: (group, message, {skipMe, meUserId, groupId}) =>
+  sendToGroup: (group, message, {skipMe, meUserId, groupId} = {}) =>
     @sendToUserIds group.userIds, message, {skipMe, meUserId, groupId}
+
+  sendToEvent: (event, message, {skipMe, meUserId, eventId} = {}) =>
+    @sendToUserIds event.userIds, message, {skipMe, meUserId, eventId}
 
   sendToUserIds: (userIds, message, {skipMe, meUserId, groupId} = {}) ->
     Promise.each userIds, (userId) =>
       unless userId is meUserId
-        User.getById userId
-        .then EmbedService.embed {embed: defaultUserEmbed, groupId}
+        user = User.getById userId
+        if groupId
+          user = user
+                .then EmbedService.embed {embed: defaultUserEmbed, groupId}
+        user
         .then (user) =>
-          if user and user.data.blockedUserIds.indexOf(meUserId) isnt -1
+          if user?.data and user.data.blockedUserIds.indexOf(meUserId) isnt -1
             return
           @send user, message
 
   send: (user, message) =>
+    if config.ENV is config.ENVS.DEV or true
+      console.log 'send notification', user.id, message
+
     unless message and (message.title or message.text)
       return Promise.reject new Error 'missing message'
 
@@ -153,7 +163,8 @@ class PushNotificationService
     if user.flags.blockedNotifications?[message.type] is true
       return Promise.resolve null
 
-    if user.groupData.globalBlockedNotifications?[message.type] is true
+    if user.groupData and
+        user.groupData.globalBlockedNotifications?[message.type] is true
       return Promise.resolve null
 
     successfullyPushedToNative = false

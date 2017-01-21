@@ -17,6 +17,8 @@ class ConversationCtrl
     userIds ?= []
     userIds = _.uniq userIds.concat [user.id]
 
+    name = name and _.kebabCase(name.toLowerCase()).replace(/[^0-9a-z-]/gi, '')
+
     if groupId
       conversation = Conversation.getByGroupIdAndName groupId, name
       hasPermission = Group.hasPermissionByIdAndUser groupId, user, {
@@ -44,6 +46,8 @@ class ConversationCtrl
       }
 
   updateById: ({id, name, description}, {user}) ->
+    name = name and _.kebabCase(name.toLowerCase()).replace(/[^0-9a-z-]/gi, '')
+
     Conversation.getById id
     .tap (conversation) ->
       Group.hasPermissionByIdAndUser conversation.groupId, user, {

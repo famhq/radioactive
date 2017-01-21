@@ -38,7 +38,7 @@
     "card-builder": "git://github.com/claydotio/card-builder.git",
     "coffee-script": "^1.10.0",
     "cors": "^2.7.1",
-    "cron": "^1.1.0",
+    "cron": "^1.2.1",
     "emailjs": "^1.0.8",
     "exoid-router": "git://github.com/claydotio/exoid-router.git",
     "express": "^4.13.3",

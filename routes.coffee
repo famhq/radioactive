@@ -8,6 +8,7 @@ ConversationCtrl = require './controllers/conversation'
 ClashRoyaleDeckCtrl = require './controllers/clash_royale_deck'
 ClashRoyaleUserDeckCtrl = require './controllers/clash_royale_user_deck'
 ClashRoyaleCardCtrl = require './controllers/clash_royale_card'
+EventCtrl = require './controllers/event'
 PushTokenCtrl = require './controllers/push_token'
 PaymentCtrl = require './controllers/payment'
 TheadCtrl = require './controllers/thread'
@@ -71,6 +72,14 @@ module.exports = router
 .on 'threads.getAll', authed TheadCtrl.getAll
 .on 'threads.getById', authed TheadCtrl.getById
 
+.on 'events.create', authed EventCtrl.create
+.on 'events.updateById', authed EventCtrl.updateById
+.on 'events.getById', authed EventCtrl.getById
+.on 'events.getAll', authed EventCtrl.getAll
+.on 'events.joinById', authed EventCtrl.joinById
+.on 'events.leaveById', authed EventCtrl.leaveById
+.on 'events.deleteById', authed EventCtrl.deleteById
+
 .on 'groups.create', authed GroupCtrl.create
 .on 'groups.updateById', authed GroupCtrl.updateById
 .on 'groups.joinById', authed GroupCtrl.joinById
@@ -103,7 +112,6 @@ module.exports = router
 .on 'conversations.create', authed ConversationCtrl.create
 .on 'conversations.updateById', authed ConversationCtrl.updateById
 .on 'conversations.getAll', authed ConversationCtrl.getAll
-.on 'conversations.getByGroupId', authed ConversationCtrl.getByGroupId
 .on 'conversations.getById', authed ConversationCtrl.getById
 
 .on 'clashRoyaleDeck.getAll', authed ClashRoyaleDeckCtrl.getAll
