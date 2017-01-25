@@ -82,6 +82,7 @@ class ConversationModel
   getAllByGroupId: (groupId) ->
     r.table CONVERSATIONS_TABLE
     .getAll groupId, {index: GROUP_ID_INDEX}
+    .orderBy r.asc LAST_UPDATE_TIME_INDEX
     .run()
     .map defaultConversation
 

@@ -9,6 +9,7 @@ class EventService
     Event.getAllStartingNow()
     .then (events) ->
       Promise.each events, (event) ->
+        Event.updateById event.id, {hasStarted: true}
         PushNotificationService.sendToEvent event, {
           title: 'Event starting'
           type: PushNotificationService.TYPES.EVENT

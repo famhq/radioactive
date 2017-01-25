@@ -87,9 +87,11 @@ embedFn = _.curry ({embed, user, groupId}, object) ->
         embedded.data = UserData.getByUserId(embedded.id)
         .then (userData) ->
           _.defaults {userId: embedded.id}, userData
-        .then embedFn [
-          TYPES.USER_DATA.CLASH_ROYALE_DECK_IDS
-        ]
+        .then embedFn {
+          embed: [
+            TYPES.USER_DATA.CLASH_ROYALE_DECK_IDS
+          ]
+        }
 
       when TYPES.USER.GROUP_DATA
         embedded.groupData = GroupUserData.getByUserIdAndGroupId(
@@ -179,7 +181,7 @@ embedFn = _.curry ({embed, user, groupId}, object) ->
       when TYPES.GROUP.USERS
         embedded.users = Promise.map embedded.userIds, (userId) ->
           User.getById userId
-        .map embedFn [TYPES.USER.IS_ONLINE]
+        .map embedFn {embed: [TYPES.USER.IS_ONLINE]}
 
       when TYPES.GROUP.CONVERSATIONS
         embedded.conversations = Conversation.getAllByGroupId embedded.id
@@ -195,12 +197,12 @@ embedFn = _.curry ({embed, user, groupId}, object) ->
 
       when TYPES.THREAD.MESSAGES
         embedded.messages = ThreadComment.getAllByThreadId embedded.id
-        .map embedFn [TYPES.THREAD_COMMENT.USER]
+        .map embedFn {embed: [TYPES.THREAD_COMMENT.USER]}
 
       when TYPES.THREAD.FIRST_MESSAGE
         embedded.firstMessage = \
           ThreadComment.getFirstByThreadId embedded.id
-          .then embedFn [TYPES.THREAD_COMMENT.USER]
+          .then embedFn {embed: [TYPES.THREAD_COMMENT.USER]}
 
       when TYPES.THREAD.MESSAGE_COUNT
         unless embedded.messages
@@ -244,7 +246,7 @@ embedFn = _.curry ({embed, user, groupId}, object) ->
 
       when TYPES.CLASH_ROYALE_USER_DECK.DECK
         embedded.deck = ClashRoyaleDeck.getById embedded.deckId
-        .then embedFn [TYPES.CLASH_ROYALE_DECK.CARDS]
+        .then embedFn {embed: [TYPES.CLASH_ROYALE_DECK.CARDS]}
 
       else
         console.log 'no match found', key

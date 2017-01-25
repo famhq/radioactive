@@ -2538,7 +2538,7 @@ module.exports = {
       }
     ]
   },
-  '3395': {
+  'ice-golem': {
     'cost': '2',
     'hit_speed': '2.5 sec',
     'speed': 'Slow',
@@ -2743,6 +2743,228 @@ module.exports = {
       {
         'level': '8',
         'damage_per_second': '85'
+      }
+    ]
+  },
+  'electro-wizard': {
+    'cost': '4',
+    'hit_speed': '1.7 sec',
+    'stun_duration': '0.5 sec',
+    'speed': 'Fast',
+    'deploy_time': '1 sec',
+    'range': '5',
+    'target': 'Air & Ground',
+    'count': 'x1',
+    'transport': 'Ground',
+    'type': 'Troop',
+    'rarity': 'Legendary',
+    'levels': [
+      {
+        'level': '1',
+        'hitpoints': '600',
+        'damage': '200',
+        'spawn_damage': '159',
+        'damage_per_second': '117'
+      },
+      {
+        'level': '2',
+        'hitpoints': '660',
+        'damage': '220',
+        'spawn_damage': '174',
+        'damage_per_second': '129'
+      },
+      {
+        'level': '3',
+        'hitpoints': '726',
+        'damage': '242',
+        'spawn_damage': '192',
+        'damage_per_second': '142'
+      },
+      {
+        'level': '4',
+        'hitpoints': '798',
+        'damage': '266',
+        'spawn_damage': '210',
+        'damage_per_second': '156'
+      },
+      {
+        'level': '5',
+        'hitpoints': '876',
+        'damage': '292',
+        'spawn_damage': '231',
+        'damage_per_second': '171'
+      }
+    ]
+  },
+  'dart-goblin': {
+    'cost': '3',
+    'hit_speed': '0.7 sec',
+    'speed': 'Very Fast',
+    'deploy_time': '1 sec',
+    'range': '6.5',
+    'target': 'Air & Ground',
+    'count': 'x1',
+    'transport': 'Ground',
+    'type': 'Troop',
+    'rarity': 'Rare',
+    'levels': [
+      {
+        'level': '1',
+        'hitpoints': '123',
+        'damage': '53',
+        'damage_per_second': '75'
+      },
+      {
+        'level': '2',
+        'hitpoints': '135',
+        'damage': '58',
+        'damage_per_second': '82'
+      },
+      {
+        'level': '3',
+        'hitpoints': '148',
+        'damage': '64',
+        'damage_per_second': '91'
+      },
+      {
+        'level': '4',
+        'hitpoints': '163',
+        'damage': '70',
+        'damage_per_second': '100'
+      },
+      {
+        'level': '5',
+        'hitpoints': '179',
+        'damage': '77',
+        'damage_per_second': '110'
+      },
+      {
+        'level': '6',
+        'hitpoints': '196',
+        'damage': '84',
+        'damage_per_second': '120'
+      },
+      {
+        'level': '7',
+        'hitpoints': '216',
+        'damage': '93',
+        'damage_per_second': '132'
+      },
+      {
+        'level': '8',
+        'hitpoints': '237',
+        'damage': '102',
+        'damage_per_second': '145'
+      },
+      {
+        'level': '9',
+        'hitpoints': '260',
+        'damage': '112',
+        'damage_per_second': '160'
+      },
+      {
+        'level': '10',
+        'hitpoints': '286',
+        'damage': '123',
+        'damage_per_second': '175'
+      },
+      {
+        'level': '11',
+        'hitpoints': '314',
+        'damage': '135',
+        'damage_per_second': '192'
+      }
+    ]
+  },
+  'elite-barbarians': {
+    'cost': '6',
+    'hit_speed': '1.5 sec',
+    'speed': 'Very Fast',
+    'deploy_time': '1 sec',
+    'range': 'Melee',
+    'target': 'Ground',
+    'count': 'x2',
+    'transport': 'Ground',
+    'type': 'Troop',
+    'rarity': 'Common',
+    'levels': [
+      {
+        'level': '1',
+        'hitpoints': '478',
+        'damage': '120',
+        'damage_per_second': '80'
+      },
+      {
+        'level': '2',
+        'hitpoints': '525',
+        'damage': '132',
+        'damage_per_second': '88'
+      },
+      {
+        'level': '3',
+        'hitpoints': '578',
+        'damage': '145',
+        'damage_per_second': '96'
+      },
+      {
+        'level': '4',
+        'hitpoints': '635',
+        'damage': '159',
+        'damage_per_second': '106'
+      },
+      {
+        'level': '5',
+        'hitpoints': '697',
+        'damage': '175',
+        'damage_per_second': '116'
+      },
+      {
+        'level': '6',
+        'hitpoints': '764',
+        'damage': '192',
+        'damage_per_second': '128'
+      },
+      {
+        'level': '7',
+        'hitpoints': '841',
+        'damage': '211',
+        'damage_per_second': '140'
+      },
+      {
+        'level': '8',
+        'hitpoints': '922',
+        'damage': '231',
+        'damage_per_second': '154'
+      },
+      {
+        'level': '9',
+        'hitpoints': '1,013',
+        'damage': '254',
+        'damage_per_second': '169'
+      },
+      {
+        'level': '10',
+        'hitpoints': '1,113',
+        'damage': '279',
+        'damage_per_second': '186'
+      },
+      {
+        'level': '11',
+        'hitpoints': '1,223',
+        'damage': '307',
+        'damage_per_second': '204'
+      },
+      {
+        'level': '12',
+        'hitpoints': '1,343',
+        'damage': '337',
+        'damage_per_second': '224'
+      },
+      {
+        'level': '13',
+        'hitpoints': '1,477',
+        'damage': '370',
+        'damage_per_second': '246'
       }
     ]
   },
@@ -3293,6 +3515,70 @@ module.exports = {
         'level': '13',
         'area_damage': '355',
         'crown_tower_damage': '142'
+      }
+    ]
+  },
+  'clone': {
+    'cost': '3',
+    'radius': '3',
+    'type': 'Spell',
+    'rarity': 'Epic',
+    'levels': [
+      {
+        'level': '1',
+        'cloned_common_level': '6',
+        'cloned_rare_level': '4',
+        'cloned_epic_level': '1',
+        'cloned_legendary_level': '1'
+      },
+      {
+        'level': '2',
+        'cloned_common_level': '7',
+        'cloned_rare_level': '5',
+        'cloned_epic_level': '2',
+        'cloned_legendary_level': '1'
+      },
+      {
+        'level': '3',
+        'cloned_common_level': '8',
+        'cloned_rare_level': '6',
+        'cloned_epic_level': '3',
+        'cloned_legendary_level': '1'
+      },
+      {
+        'level': '4',
+        'cloned_common_level': '9',
+        'cloned_rare_level': '7',
+        'cloned_epic_level': '4',
+        'cloned_legendary_level': '1'
+      },
+      {
+        'level': '5',
+        'cloned_common_level': '10',
+        'cloned_rare_level': '8',
+        'cloned_epic_level': '5',
+        'cloned_legendary_level': '2'
+      },
+      {
+        'level': '6',
+        'cloned_common_level': '11',
+        'cloned_rare_level': '9',
+        'cloned_epic_level': '6',
+        'cloned_legendary_level': '3'
+      },
+      {
+        'level': '7',
+        'cloned_common_level': '12',
+        'cloned_rare_level': '10',
+        'cloned_epic_level': '7',
+        'cloned_legendary_level': '4'
+      },
+      {
+        'level': '8',
+        'cloned_common_level': '13',
+        'cloned_rare_level': '11',
+        'cloned_epic_level': '8',
+        'cloned_legendary_level': '5'
       }
     ]
   },

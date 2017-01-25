@@ -108,7 +108,7 @@ class ChatMessageCtrl
                 conversationId: conversation.id
                 contextId: conversation.id
                 path: if group \
-                      then "/group/#{group.id}"
+                      then "/group/#{group.id}/chat/#{conversation.id}"
                       else "/conversation/#{conversationId}"
           }, {skipMe: true, meUserId: user.id}).catch -> null
 

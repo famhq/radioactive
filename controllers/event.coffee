@@ -129,18 +129,4 @@ class EventCtrl
       Event.getAllByGroupId groupId
       .map EmbedService.embed {embed}
 
-  deleteById: ({id}, {user}) ->
-    Event.getById id
-    .then (groupRecordType) ->
-      unless groupRecordType
-        router.throw status: 404, info: 'record not found'
-      Group.hasPermissionByIdAndUser groupRecordType.groupId, user, {
-        level: 'admin'
-      }
-      .then (hasPermission) ->
-        unless hasPermission
-          router.throw status: 400, info: 'no permission'
-
-        Event.deleteById id
-
 module.exports = new EventCtrl()

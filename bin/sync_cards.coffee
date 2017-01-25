@@ -4,6 +4,8 @@ Promise = require 'bluebird'
 cards = require '../resources/data/cards'
 Card = require '../models/clash_royale_card'
 
+# ruby ../clash-royale-data/parsers/clashroyaleguies.rb
+
 snakeToCamel = (card) ->
   _.reduce card, (obj, value, property) ->
     if _.isInteger parseInt(value)
@@ -25,4 +27,14 @@ _.map cards, (card, name) ->
   key = key.replace 'archer', 'archers'
   key = key.replace '3395', 'mega_minion'
   key = key.replace 'clash_royale_skeleton_army', 'skeleton_army'
-  Card.updateByKey key, {data}
+  Card.getByKey key
+  .then (card) ->
+    if card
+      Card.updateByKey key, {data}
+    else
+      console.log 'create', key
+      Card.create {
+        key
+        name: _.startCase key
+        data
+      }
