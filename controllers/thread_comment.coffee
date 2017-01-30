@@ -6,7 +6,7 @@ Thread = require '../models/thread'
 EmbedService = require '../services/embed'
 config = require '../config'
 
-MAX_CONVERSATION_USER_IDS = 20
+creatorId = [EmbedService.TYPES.THREAD_COMMENT.CREATOR]
 
 class ThreadCommentCtrl
   create: ({body, threadId}, {user, headers, connection}) ->
@@ -18,18 +18,22 @@ class ThreadCommentCtrl
       router.throw status: 400, info: 'unable to post...'
 
     ThreadComment.create
-      userId: user.id
+      creatorId: user.id
       body: body
       threadId: threadId
     .tap ->
       Thread.updateById threadId, {lastUpdateTime: new Date()}
+
+  getAllByThreadId: ({threadId}, {user}) ->
+    ThreadComment.getAllByThreadId threadId
+    .map EmbedService.embed {embed: creatorId}
 
   flag: ({id}, {headers, connection}) ->
     ip = headers['x-forwarded-for'] or
           connection.remoteAddress
 
     ThreadComment.getById id
-    .then EmbedService.embed {embed: [EmbedService.TYPES.THREAD_COMMENT.USER]}
+    .then EmbedService.embed {embed: [EmbedService.TYPES.THREAD_COMMENT.CREATOR]}
     .then (threadComment) ->
       flagIps = threadComment.flagIps or []
       if flagIps.indexOf(ip) is -1

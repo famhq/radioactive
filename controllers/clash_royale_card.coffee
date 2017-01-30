@@ -19,4 +19,9 @@ class ClashRoyaleCardCtrl
     .then EmbedService.embed {embed: defaultEmbed}
     .then ClashRoyaleCard.sanitize null
 
+  getByKey: ({key}) ->
+    ClashRoyaleCard.getByKey key
+    .then EmbedService.embed {embed: defaultEmbed}
+    .then ClashRoyaleCard.sanitize null
+
 module.exports = new ClashRoyaleCardCtrl()

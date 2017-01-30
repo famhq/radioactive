@@ -45,11 +45,11 @@ TYPES =
   GROUP_RECORD_TYPE:
     USER_VALUES: 'groupRecordType:userValues'
   THREAD_COMMENT:
-    USER: 'threadComment:user'
+    CREATOR: 'threadComment:creator'
   THREAD:
-    FIRST_MESSAGE: 'thread:firstMessage'
-    MESSAGES: 'thread:messages'
-    MESSAGE_COUNT: 'thread:messageCount'
+    CREATOR: 'thread:creator'
+    COMMENT_COUNT: 'thread:commentCount'
+    SCORE: 'thread:score'
 
 TEN_DAYS_SECONDS = 3600 * 24 * 10
 ONE_HOUR_SECONDS = 3600
@@ -195,31 +195,42 @@ embedFn = _.curry ({embed, user, groupId}, object) ->
         embedded.lastMessage = \
           ChatMessage.getLastByConversationId embedded.id
 
-      when TYPES.THREAD.MESSAGES
-        embedded.messages = ThreadComment.getAllByThreadId embedded.id
+      when TYPES.THREAD.COMMENTS
+        embedded.comments = ThreadComment.getAllByThreadId embedded.id
         .map embedFn {embed: [TYPES.THREAD_COMMENT.USER]}
 
-      when TYPES.THREAD.FIRST_MESSAGE
-        embedded.firstMessage = \
-          ThreadComment.getFirstByThreadId embedded.id
-          .then embedFn {embed: [TYPES.THREAD_COMMENT.USER]}
+      when TYPES.THREAD.COMMENT_COUNT
+        if embedded.comments
+          comments = embedded.comments
+        else
+          comments = ThreadComment.getAllByThreadId embedded.id
+        embedded.commentCount = comments.then (comments) ->
+          comments?.length
 
-      when TYPES.THREAD.MESSAGE_COUNT
-        unless embedded.messages
-          embedded.messages = ThreadComment.getAllByThreadId embedded.id
-        embedded.messageCount = embedded.messages.then (messages) ->
-          messages?.length
+      when TYPES.THREAD.SCORE
+        embedded.score = embedded.upvotes - embedded.downvotes
 
-      when TYPES.THREAD_COMMENT.USER
-        if embedded.userId
-          key = CacheService.PREFIXES.THREAD_USER + ':' + embedded.userId
-          embedded.user =
+      when TYPES.THREAD.CREATOR
+        if embedded.creatorId
+          key = CacheService.PREFIXES.THREAD_CREATOR + ':' + embedded.creatorId
+          embedded.creator =
             CacheService.preferCache key, ->
-              User.getById embedded.userId
+              User.getById embedded.creatorId
               .then User.sanitizePublic(null)
             , {expireSeconds: FIVE_MINUTES_SECONDS}
         else
-          embedded.user = null
+          embedded.creator = null
+
+      when TYPES.THREAD_COMMENT.CREATOR
+        if embedded.creatorId
+          key = CacheService.PREFIXES.THREAD_CREATOR + ':' + embedded.creatorId
+          embedded.creator =
+            CacheService.preferCache key, ->
+              User.getById embedded.creatorId
+              .then User.sanitizePublic(null)
+            , {expireSeconds: FIVE_MINUTES_SECONDS}
+        else
+          embedded.creator = null
 
       when TYPES.CHAT_MESSAGE.USER
         if embedded.userId

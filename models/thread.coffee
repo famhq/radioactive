@@ -4,7 +4,7 @@ uuid = require 'node-uuid'
 r = require '../services/rethinkdb'
 
 THREADS_TABLE = 'threads'
-USER_ID_INDEX = 'userId'
+CREATOR_ID_INDEX = 'creatorId'
 LAST_UPDATE_TIME_INDEX = 'lastUpdateTime'
 
 defaultThread = (thread) ->
@@ -13,11 +13,20 @@ defaultThread = (thread) ->
 
   _.defaults thread, {
     id: uuid.v4()
-    userId: null
+    creatorId: null
+    groupId: null
     title: null
     body: null
-    creatorId: null
+    summary: null
+    headerImage: null
+    type: 'text'
+    upvotes: 0
+    downvotes: 0
+    upvoteIds: []
+    downvoteIds: []
+    data: {}
     lastUpdateTime: new Date()
+    addTime: new Date()
   }
 
 class ThreadModel
@@ -26,7 +35,7 @@ class ThreadModel
       name: THREADS_TABLE
       options: {}
       indexes: [
-        {name: USER_ID_INDEX}
+        {name: CREATOR_ID_INDEX}
         {name: LAST_UPDATE_TIME_INDEX}
       ]
     }
@@ -68,14 +77,41 @@ class ThreadModel
     .delete()
     .run()
 
+  hasPermissionByIdAndUser: (id, user, {level} = {}) =>
+    unless user
+      return false
+
+    @getById id
+    .then (thread) =>
+      @hasPermission thread, user, {level}
+
+  hasPermission: (thread, user, {level} = {}) ->
+    unless thread and user
+      return false
+
+    level ?= 'member'
+
+    return switch level
+      when 'admin'
+      then thread.creatorId is user.id
+      # member
+      else thread.userIds?.indexOf(user.id) isnt -1
+
   sanitize: _.curry (requesterId, thread) ->
     _.pick thread, [
       'id'
-      'userId'
+      'creatorId'
+      'creator'
+      'type'
       'title'
-      'firstMessage'
-      'messages'
-      'messageCount'
+      'summary'
+      'headerImage'
+      'body'
+      'data'
+      'comments'
+      'commentCount'
+      'score'
+      'addTime'
       'lastUpdateTime'
       'embedded'
     ]

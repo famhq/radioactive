@@ -12,15 +12,19 @@ defaultThreadComment = (threadComment) ->
 
   _.defaults threadComment, {
     id: uuid.v4()
-    userId: null
-    time: new Date()
+    creatorId: null
+    threadId: null
+    parentId: null
     body: ''
-    toId: null
+    upvotes: 0
+    downvotes: 0
+    time: new Date()
+
   }
 
 THREAD_COMMENTS_TABLE = 'thread_comments'
 TIME_INDEX = 'time'
-USER_ID_INDEX = 'userId'
+CREATOR_ID_INDEX = 'creatorId'
 THREAD_ID_INDEX = 'threadId'
 MAX_MESSAGES = 30
 
@@ -33,7 +37,7 @@ class ThreadCommentModel
           name: TIME_INDEX
         }
         {
-          name: USER_ID_INDEX
+          name: CREATOR_ID_INDEX
         }
         {
           name: THREAD_ID_INDEX

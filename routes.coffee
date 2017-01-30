@@ -68,9 +68,11 @@ module.exports = router
 .on 'pushTokens.create', authed PushTokenCtrl.create
 .on 'pushTokens.updateByToken', authed PushTokenCtrl.updateByToken
 
-.on 'threads.create', authed TheadCtrl.create
+.on 'threads.create', authed TheadCtrl.createOrUpdateById
 .on 'threads.getAll', authed TheadCtrl.getAll
 .on 'threads.getById', authed TheadCtrl.getById
+.on 'threads.voteById', authed TheadCtrl.voteById
+.on 'threads.updateById', authed TheadCtrl.createOrUpdateById
 
 .on 'events.create', authed EventCtrl.create
 .on 'events.updateById', authed EventCtrl.updateById
@@ -105,6 +107,7 @@ module.exports = router
 
 .on 'threadComments.create', authed ThreadCommentCtrl.create
 .on 'threadComments.flag', authed ThreadCommentCtrl.flag
+.on 'threadComments.getAllByThreadId', authed ThreadCommentCtrl.getAllByThreadId
 
 .on 'payments.verify', authed PaymentCtrl.verify
 .on 'payments.purchase', authed PaymentCtrl.purchase
@@ -127,3 +130,4 @@ module.exports = router
 
 .on 'clashRoyaleCard.getAll', authed ClashRoyaleCardCtrl.getAll
 .on 'clashRoyaleCard.getById', authed ClashRoyaleCardCtrl.getById
+.on 'clashRoyaleCard.getByKey', authed ClashRoyaleCardCtrl.getByKey

@@ -68,6 +68,7 @@ class ChatMessageCtrl
               "#{config.RADIOACTIVE_API_URL}/chatMessage/#{chatMessageId}/card"
           }
           .timeout CARD_BUILDER_TIMEOUT_MS
+          .catch -> null
         )
         .then ({card} = {}) ->
           ChatMessage.create

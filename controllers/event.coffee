@@ -60,7 +60,7 @@ class EventCtrl
       @validateAndCheckPermissions diff, {user}
     ]
     .then ([event, diff]) ->
-      hasPermission = Group.hasPermission event, user, {
+      hasPermission = Event.hasPermission event, user, {
         level: 'admin'
       }
       unless hasPermission

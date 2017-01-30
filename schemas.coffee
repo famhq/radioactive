@@ -40,10 +40,20 @@ event =
   # addTime: Joi.object()
   data: Joi.object()
 
+thread =
+  id: id.optional()
+  # creatorId: id
+  groupId: id.optional()
+  title: Joi.string()
+  summary: Joi.string()
+  body: Joi.string()
+  data: Joi.object()
+
 module.exports = {
   id
   auth
   user
   pushToken
   event
+  thread
 }
