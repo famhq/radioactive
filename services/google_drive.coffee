@@ -32,7 +32,7 @@ oauth2Client = new OAuth2(
 #   scope: scopes
 # }
 # if you need a new refresh_token, get a code (url above), put into var below
-# and get token
+# and get refresh token
 # code = '4/vJLyVVM20Y45blJbMTv3gM5kP8dMQwxCjHXjJd1xPNk'
 # oauth2Client.getToken code, (err, token) ->
 #   console.log err, token

@@ -149,11 +149,28 @@ class EventModel
       'name'
       'creator'
       'creatorId'
+      'description'
+      'startTime'
+      'endTime'
+      'maxUserCount'
+      'userIds'
+      'users'
+      'visibility'
+      'data'
+    ]
+
+  sanitize: _.curry (requesterId, eventData) ->
+    _.pick eventData, [
+      'id'
+      'name'
+      'creator'
+      'creatorId'
       'conversationId'
       'description'
       'startTime'
       'endTime'
       'maxUserCount'
+      'password'
       'userIds'
       'users'
       'visibility'

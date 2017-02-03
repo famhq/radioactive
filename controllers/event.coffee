@@ -85,29 +85,38 @@ class EventCtrl
         null # TODO
 
   leaveById: ({id}, {user}) ->
-    hasPermission = Event.hasPermissionByIdAndUser id, user, {
+    Event.hasPermissionByIdAndUser id, user, {
       level: 'member'
     }
-    unless hasPermission
-      router.throw status: 400, info: 'no permission'
+    .then (hasPermission) ->
+      unless hasPermission
+        router.throw status: 400, info: 'no permission'
 
-    Event.updateById id, {
-      userIds: r.row('userIds').difference [user.id]
-    }
+      Event.updateById id, {
+        userIds: r.row('userIds').difference [user.id]
+      }
 
   deleteById: ({id}, {user}) ->
-    hasPermission = Event.hasPermissionByIdAndUser id, user, {
+    Event.hasPermissionByIdAndUser id, user, {
       level: 'admin'
     }
-    unless hasPermission
-      router.throw status: 400, info: 'no permission'
+    .then (hasPermission) ->
+      unless hasPermission
+        router.throw status: 400, info: 'no permission'
 
-    Event.deleteById id
+      Event.deleteById id
 
   getById: ({id}, {user}) ->
     Event.getById id
     .then EmbedService.embed {embed: usersEmbed}
-    .then Event.sanitizePublic null
+    .then (event) ->
+      hasPermission = Event.hasPermission event, user, {
+        level: 'member'
+      }
+      if hasPermission
+        Event.sanitize null, event
+      else
+        Event.sanitizePublic null, event
 
   getAll: ({filter}, {user}) ->
     Event.getAll {filter, user}

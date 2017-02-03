@@ -4,6 +4,7 @@ uuid = require 'node-uuid'
 
 r = require '../services/rethinkdb'
 Group = require './group'
+Event = require './event'
 
 CONVERSATIONS_TABLE = 'conversations'
 USER_IDS_INDEX = 'userIds'
@@ -90,10 +91,12 @@ class ConversationModel
     q = r.table CONVERSATIONS_TABLE
     .getAll checkUserIds[0], {index: USER_IDS_INDEX}
     .filter (conversation) ->
-      r.expr(checkUserIds).filter (userId) ->
-        conversation('userIds').contains(userId)
-      .count()
-      .eq(conversation('userIds').count())
+      conversation('type').eq('pm').and(
+        r.expr(checkUserIds).filter (userId) ->
+          conversation('userIds').contains(userId)
+        .count()
+        .eq(r.expr(checkUserIds).count())
+      )
 
     .nth 0
     .default null
@@ -105,6 +108,10 @@ class ConversationModel
       Group.getById conversation.groupId
       .then (group) ->
         group and group.userIds.indexOf(userId) isnt -1
+    else if conversation.eventId
+      Event.getById conversation.eventId
+      .then (event) ->
+        event and event.userIds.indexOf(userId) isnt -1
     else
       Promise.resolve userId and conversation.userIds.indexOf(userId) isnt -1
 

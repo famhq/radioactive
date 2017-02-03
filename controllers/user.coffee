@@ -24,6 +24,7 @@ class UserCtrl
     EmbedService.embed {embed: defaultEmbed}, user
     .tap ->
       User.updateById user.id, {lastActiveTime: new Date()}
+      null # don't block
     .then User.sanitize null
 
   getById: ({id}) ->

@@ -439,6 +439,30 @@
       "from": "character-parser@>=2.1.1 <3.0.0",
       "resolved": "https://registry.npmjs.org/character-parser/-/character-parser-2.2.0.tgz"
     },
+    "cld": {
+      "version": "2.4.7",
+      "from": "cld@latest",
+      "resolved": "https://registry.npmjs.org/cld/-/cld-2.4.7.tgz",
+      "dependencies": {
+        "glob": {
+          "version": "5.0.15",
+          "from": "glob@>=5.0.10 <6.0.0",
+          "resolved": "https://registry.npmjs.org/glob/-/glob-5.0.15.tgz"
+        },
+        "rimraf": {
+          "version": "2.5.4",
+          "from": "rimraf@>=2.4.0 <3.0.0",
+          "resolved": "https://registry.npmjs.org/rimraf/-/rimraf-2.5.4.tgz",
+          "dependencies": {
+            "glob": {
+              "version": "7.1.1",
+              "from": "glob@>=7.0.5 <8.0.0",
+              "resolved": "https://registry.npmjs.org/glob/-/glob-7.1.1.tgz"
+            }
+          }
+        }
+      }
+    },
     "clean-css": {
       "version": "3.4.21",
       "from": "clean-css@>=3.3.0 <4.0.0",
@@ -589,9 +613,9 @@
       "resolved": "https://registry.npmjs.org/cors/-/cors-2.8.1.tgz"
     },
     "cron": {
-      "version": "1.1.1",
-      "from": "cron@>=1.1.0 <2.0.0",
-      "resolved": "https://registry.npmjs.org/cron/-/cron-1.1.1.tgz"
+      "version": "1.2.1",
+      "from": "cron@>=1.2.1 <2.0.0",
+      "resolved": "https://registry.npmjs.org/cron/-/cron-1.2.1.tgz"
     },
     "cross-spawn": {
       "version": "4.0.2",
@@ -858,7 +882,7 @@
     "exoid-router": {
       "version": "0.2.5",
       "from": "git://github.com/claydotio/exoid-router.git",
-      "resolved": "git://github.com/claydotio/exoid-router.git#bcdb4d4ef94fbf4604f7a39e9f934c7382891216",
+      "resolved": "git://github.com/claydotio/exoid-router.git#bcba96d0dd9fea4fa81aef0da51925772f3d506e",
       "dependencies": {
         "bluebird": {
           "version": "2.11.0",
@@ -2289,9 +2313,9 @@
       "resolved": "https://registry.npmjs.org/moment/-/moment-2.17.1.tgz"
     },
     "moment-timezone": {
-      "version": "0.5.10",
-      "from": "moment-timezone@>=0.5.5 <0.6.0",
-      "resolved": "https://registry.npmjs.org/moment-timezone/-/moment-timezone-0.5.10.tgz"
+      "version": "0.5.11",
+      "from": "moment-timezone@>=0.5.0 <0.6.0",
+      "resolved": "https://registry.npmjs.org/moment-timezone/-/moment-timezone-0.5.11.tgz"
     },
     "money": {
       "version": "0.2.0",

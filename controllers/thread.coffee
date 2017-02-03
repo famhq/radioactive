@@ -1,7 +1,6 @@
 _ = require 'lodash'
 router = require 'exoid-router'
 Promise = require 'bluebird'
-request = require 'request-promise'
 uuid = require 'uuid'
 
 User = require '../models/user'
@@ -26,10 +25,6 @@ YOUTUBE_ID_REGEX = ///
   (?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)
   ([^"&?\/ ]{11})
 ///i
-SMALL_VIDEO_PREVIEW_WIDTH = 360
-SMALL_VIDEO_PREVIEW_HEIGHT = 202
-LARGE_VIDEO_PREVIEW_WIDTH = 512
-LARGE_VIDEO_PREVIEW_HEIGHT = 288
 
 class ThreadCtrl
   createOrUpdateById: (diff, {user}) =>
@@ -65,61 +60,16 @@ class ThreadCtrl
           Thread.create _.defaults diff, {
             creatorId: user.id
           }
-    .tap (deck) =>
-      if deck.data.videoUrl
-        @getVideoPreview deck.id, deck.data.videoUrl
+    .tap (deck) ->
+      if deck.data?.videoUrl
+        keyPrefix = "images/starfire/gv/#{deckId}"
+        youtubeId = deck.data.videoUrl.match(YOUTUBE_ID_REGEX)?[1]
+        ImageService.getVideoPreview keyPrefix, youtubeId
         .then (videoPreview) ->
           if videoPreview
             Thread.updateById deck.id, {
               headerImage: videoPreview
             }
-
-  getVideoPreview: (deckId, videoUrl) ->
-    youtubeId = videoUrl.match(YOUTUBE_ID_REGEX)?[1]
-    unless youtubeId
-      return Promise.resolve null
-    previewUrl = "https://img.youtube.com/vi/#{youtubeId}/maxresdefault.jpg"
-    request previewUrl, {encoding: null}
-    .then (buffer) ->
-      ImageService.getSizeByBuffer (buffer)
-      .then (size) ->
-        key = "#{deckId}"
-        keyPrefix = "images/starfire/gv/#{key}"
-
-        Promise.all [
-          ImageService.uploadImage
-            key: "#{keyPrefix}.small.png"
-            stream: ImageService.toStream
-              buffer: buffer
-              width: SMALL_VIDEO_PREVIEW_WIDTH
-              height: SMALL_VIDEO_PREVIEW_HEIGHT
-
-          ImageService.uploadImage
-            key: "#{keyPrefix}.large.png"
-            stream: ImageService.toStream
-              buffer: buffer
-              width: LARGE_VIDEO_PREVIEW_WIDTH
-              height: LARGE_VIDEO_PREVIEW_HEIGHT
-        ]
-      .then (imageKeys) ->
-        _.map imageKeys, (imageKey) ->
-          "https://#{config.CDN_HOST}/#{imageKey}"
-      .then ([smallUrl, largeUrl]) ->
-        {
-          originalUrl: largeUrl
-          versions: [
-            {
-              width: SMALL_VIDEO_PREVIEW_WIDTH
-              height: SMALL_VIDEO_PREVIEW_HEIGHT
-              url: smallUrl
-            }
-            {
-              width: LARGE_VIDEO_PREVIEW_WIDTH
-              height: LARGE_VIDEO_PREVIEW_HEIGHT
-              url: largeUrl
-            }
-          ]
-        }
 
   validateAndCheckPermissions: (diff, {user}) ->
     diff = _.pick diff, _.keys schemas.thread

@@ -17,6 +17,7 @@ GroupRecordCtrl = require './controllers/group_record'
 GroupUserDataCtrl = require './controllers/group_user_data'
 GroupRecordTypeCtrl = require './controllers/group_record_type'
 ThreadCommentCtrl = require './controllers/thread_comment'
+VideoCtrl = require './controllers/video'
 StreamService = require './services/stream'
 
 authed = (handler) ->
@@ -117,17 +118,20 @@ module.exports = router
 .on 'conversations.getAll', authed ConversationCtrl.getAll
 .on 'conversations.getById', authed ConversationCtrl.getById
 
-.on 'clashRoyaleDeck.getAll', authed ClashRoyaleDeckCtrl.getAll
-.on 'clashRoyaleDeck.getById', authed ClashRoyaleDeckCtrl.getById
+.on 'clashRoyaleDecks.getAll', authed ClashRoyaleDeckCtrl.getAll
+.on 'clashRoyaleDecks.getById', authed ClashRoyaleDeckCtrl.getById
 
-.on 'clashRoyaleUserDeck.create', authed ClashRoyaleUserDeckCtrl.create
-.on 'clashRoyaleUserDeck.getByDeckId',
+.on 'clashRoyaleUserDecks.create', authed ClashRoyaleUserDeckCtrl.create
+.on 'clashRoyaleUserDecks.getByDeckId',
   authed ClashRoyaleUserDeckCtrl.getByDeckId
-.on 'clashRoyaleUserDeck.favorite', authed ClashRoyaleUserDeckCtrl.favorite
-.on 'clashRoyaleUserDeck.unfavorite', authed ClashRoyaleUserDeckCtrl.unfavorite
-.on 'clashRoyaleUserDeck.incrementByDeckId',
+.on 'clashRoyaleUserDecks.favorite', authed ClashRoyaleUserDeckCtrl.favorite
+.on 'clashRoyaleUserDecks.unfavorite', authed ClashRoyaleUserDeckCtrl.unfavorite
+.on 'clashRoyaleUserDecks.incrementByDeckId',
   authed ClashRoyaleUserDeckCtrl.incrementByDeckId
 
-.on 'clashRoyaleCard.getAll', authed ClashRoyaleCardCtrl.getAll
-.on 'clashRoyaleCard.getById', authed ClashRoyaleCardCtrl.getById
-.on 'clashRoyaleCard.getByKey', authed ClashRoyaleCardCtrl.getByKey
+.on 'clashRoyaleCards.getAll', authed ClashRoyaleCardCtrl.getAll
+.on 'clashRoyaleCards.getById', authed ClashRoyaleCardCtrl.getById
+.on 'clashRoyaleCards.getByKey', authed ClashRoyaleCardCtrl.getByKey
+
+.on 'videos.getAll', authed VideoCtrl.getAll
+.on 'videos.getById', authed VideoCtrl.getById

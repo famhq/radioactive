@@ -5,6 +5,7 @@ Promise = require 'bluebird'
 CacheService = require './cache'
 KueCreateService = require './kue_create'
 ClashTvService = require './clash_tv'
+VideoDiscoveryService = require './video_discovery'
 EventService = require './event'
 ClashRoyaleDeck = require '../models/clash_royale_deck'
 ClashRoyaleCard = require '../models/clash_royale_card'
@@ -25,8 +26,8 @@ class CronService
     @addCron 'minute', '0 * * * * *', ->
       EventService.notifyForStart()
 
-    # @addCron 'hourly', '0 0 * * * *', ->
-    #   ClashTvService.process()
+    @addCron 'hourly', '0 0 * * * *', ->
+      VideoDiscoveryService.discover()
 
     # daily 6pm PT
     # @addCron 'winRates', '0 0 2 * * *', ->

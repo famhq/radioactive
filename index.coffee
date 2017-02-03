@@ -24,6 +24,7 @@ CronService = require './services/cron'
 KueRunnerService = require './services/kue_runner'
 ChatMessageCtrl = require './controllers/chat_message'
 ClashTvService = require './services/clash_tv'
+VideoDiscoveryService = require './services/video_discovery'
 StreamService = require './services/stream'
 ClashRoyaleDeck = require './models/clash_royale_deck'
 ClashRoyaleCard = require './models/clash_royale_card'
@@ -177,6 +178,7 @@ app.post '/log', (req, res) ->
 app.post '/chatMessage/:id/card', ChatMessageCtrl.updateCard
 
 app.get '/clashTv', (req, res) -> ClashTvService.process()
+app.get '/videoDiscovery', (req, res) -> VideoDiscoveryService.discover()
 app.get '/updateCards', (req, res) ->
   Promise.all [
     ClashRoyaleCard.updateWinsAndLosses()
@@ -202,7 +204,7 @@ else
 if cluster.isMaster
   setup() # TODO: ideally stickyCluster would start after this...
 
-stickyCluster (callback) ->
+stickyCluster ((callback) ->
   server = http.createServer app
   io = socketIO.listen server
   io.adapter socketIORedis {
@@ -214,4 +216,8 @@ stickyCluster (callback) ->
   routes.setDisconnect StreamService.exoidDisconnect
   io.on 'connection', routes.onConnection
   callback server
-, {debug: false, port: config.PORT}
+), {
+  debug: false
+  concurrency: if config.ENV is config.ENVS.DEV then 1 else undefined
+  port: config.PORT
+}

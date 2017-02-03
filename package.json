@@ -36,6 +36,7 @@
     "body-parser": "^1.14.1",
     "canvas": "^1.6.2",
     "card-builder": "git://github.com/claydotio/card-builder.git",
+    "cld": "^2.4.7",
     "coffee-script": "^1.10.0",
     "cors": "^2.7.1",
     "cron": "^1.2.1",

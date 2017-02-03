@@ -54,10 +54,8 @@ class ChatMessageCtrl
 
         chatMessageId = uuid.v4()
 
-        console.log body
         isImage = body.match(IMAGE_REGEX)
         urls = not isImage and body.match(URL_REGEX)
-        console.log urls
 
         (if _.isEmpty urls
           Promise.resolve null
@@ -79,11 +77,6 @@ class ChatMessageCtrl
             conversationId: conversationId
             card: card
         .then ->
-          if conversation.groupId
-            Group.getById conversation.groupId
-          else
-            Promise.resolve null
-        .tap (group) ->
           userIds = conversation.userIds
           Conversation.updateById conversation.id, {
             lastUpdateTime: new Date()
@@ -91,27 +84,12 @@ class ChatMessageCtrl
               {isRead: userId is user.id}
           }
           pushBody = if isImage then '[image]' else body
-          cdnUrl = "https://#{config.CDN_HOST}/d/images/starfire"
           PushNotificationService.sendToConversation(
             conversation, {
-              title: group?.name or User.getDisplayName(user)
-              type: if group \
-                    then PushNotificationService.TYPES.CHAT_MESSAGE
-                    else PushNotificationService.TYPES.PRIVATE_MESSAGE
-              text: if group \
-                    then "#{User.getDisplayName(user)}: #{pushBody}"
-                    else pushBody
-              url: "https://#{config.SUPERNOVA_HOST}"
-              icon: if group \
-                    then "#{cdnUrl}/groups/badges/#{group.badgeId}.png"
-                    else user?.avatarImage?.versions[0].url
-              data:
-                conversationId: conversation.id
-                contextId: conversation.id
-                path: if group \
-                      then "/group/#{group.id}/chat/#{conversation.id}"
-                      else "/conversation/#{conversationId}"
-          }, {skipMe: true, meUserId: user.id}).catch -> null
+              skipMe: true
+              meUser: user
+              text: pushBody
+            }).catch -> null
 
   updateCard: ({body, params, headers}) ->
     radioactiveHost = config.RADIOACTIVE_API_URL.replace /https?:\/\//i, ''
@@ -120,20 +98,27 @@ class ChatMessageCtrl
       ChatMessage.updateById params.id, {card: body.card}
 
   getAllByConversationId: ({conversationId}, {user}, {emit, socket, route}) ->
-    StreamService.stream {
-      emit
-      socket
-      route
-      limit: 30
-      promise: ChatMessage.getAllByConversationId conversationId, {
-        isStreamed: true
+    Conversation.getById conversationId
+    .then (conversation) ->
+      Conversation.hasPermission conversation, user.id
+    .then (hasPermission) ->
+      unless hasPermission
+        router.throw status: 401, info: 'unauthorized'
+
+      StreamService.stream {
+        emit
+        socket
+        route
+        limit: 30
+        promise: ChatMessage.getAllByConversationId conversationId, {
+          isStreamed: true
+        }
+        postFn: (item) ->
+          EmbedService.embed {embed: defaultEmbed}, ChatMessage.default(item)
+          .then (item) ->
+            if item.user?.flags?.isChatBanned isnt true
+              item
       }
-      postFn: (item) ->
-        EmbedService.embed {embed: defaultEmbed}, ChatMessage.default(item)
-        .then (item) ->
-          if item.user?.flags?.isChatBanned isnt true
-            item
-    }
 
   uploadImage: ({}, {user, file}) ->
     router.assert {file}, {

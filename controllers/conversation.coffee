@@ -4,6 +4,7 @@ router = require 'exoid-router'
 User = require '../models/user'
 Conversation = require '../models/conversation'
 Group = require '../models/group'
+Event = require '../models/event'
 EmbedService = require '../services/embed'
 
 defaultEmbed = [EmbedService.TYPES.CONVERSATION.USERS]
@@ -74,7 +75,11 @@ class ConversationCtrl
         .then (hasPermission) ->
           unless hasPermission
             router.throw status: 400, info: 'no permission'
-
+      else if conversation.eventId
+        Event.hasPermissionByIdAndUser conversation.eventId, user
+        .then (hasPermission) ->
+          unless hasPermission
+            router.throw status: 400, info: 'no permission'
       else if conversation.userIds.indexOf(user.id) is -1
         router.throw status: 400, info: 'no permission'
 

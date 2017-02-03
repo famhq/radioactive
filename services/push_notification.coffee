@@ -9,6 +9,7 @@ EmbedService = require './embed'
 User = require '../models/user'
 Notification = require '../models/notification'
 PushToken = require '../models/push_token'
+Event = require '../models/event'
 Group = require '../models/group'
 
 ONE_DAY_SECONDS = 3600 * 24
@@ -33,6 +34,7 @@ defaultUserEmbed = [
   EmbedService.TYPES.USER.DATA
   EmbedService.TYPES.USER.GROUP_DATA
 ]
+cdnUrl = "https://#{config.CDN_HOST}/d/images/starfire"
 
 class PushNotificationService
   constructor: ->
@@ -111,16 +113,41 @@ class PushNotificationService
         else
           resolve true
 
-  sendToConversation: (conversation, message, {skipMe, meUserId} = {}) =>
+  sendToConversation: (conversation, {skipMe, meUser, text} = {}) =>
     (if conversation.groupId
       Group.getById conversation.groupId
-      .then ({userIds}) ->
-        userIds
+      .then (group) ->
+        {group, userIds: group.userIds}
+    else if conversation.eventId
+      Event.getById conversation.eventId
+      .then (event) ->
+        {event, userIds: event.userIds}
     else
-      Promise.resolve conversation.userIds
-    ).then (users) =>
-      @sendToUserIds users, message, {
-        skipMe, meUserId, groupId: conversation.groupId
+      Promise.resolve {userIds: conversation.userIds}
+    ).then ({group, event, userIds}) =>
+      message =
+        title: event?.name or group?.name or User.getDisplayName meUser
+        type: if group or event \
+              then @TYPES.CHAT_MESSAGE
+              else @TYPES.PRIVATE_MESSAGE
+        text: if group or event \
+              then "#{User.getDisplayName(meUser)}: #{text}"
+              else text
+        url: "https://#{config.STARFIRE_HOST}"
+        icon: if group \
+              then "#{cdnUrl}/groups/badges/#{group.badgeId}.png"
+              else meUser?.avatarImage?.versions[0].url
+        data:
+          conversationId: conversation.id
+          contextId: conversation.id
+          path: if group \
+                then "/group/#{group.id}/chat/#{conversation.id}"
+                else if event
+                then "/event/#{event.id}"
+                else "/conversation/#{conversation.id}"
+
+      @sendToUserIds userIds, message, {
+        skipMe, meUserId: meUser.id, groupId: conversation.groupId
       }
 
   sendToGroup: (group, message, {skipMe, meUserId, groupId} = {}) =>
@@ -143,7 +170,7 @@ class PushNotificationService
           @send user, message
 
   send: (user, message) =>
-    if config.ENV is config.ENVS.DEV or true
+    if config.ENV is config.ENVS.DEV
       console.log 'send notification', user.id, message
 
     unless message and (message.title or message.text)
