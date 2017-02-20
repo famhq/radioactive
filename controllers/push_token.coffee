@@ -13,7 +13,7 @@ class PushTokensCtrl
     valid = Joi.validate {userId, token, sourceType},
       userId: schemas.user.id.optional()
       token: schemas.pushToken.token
-      sourceType: Joi.string().optional().valid ['android', 'ios']
+      sourceType: Joi.string().optional().valid ['android', 'ios', 'web']
     , {presence: 'required'}
 
     if valid.error

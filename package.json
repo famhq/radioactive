@@ -73,6 +73,7 @@
     "socket.io-redis": "^2.0.0",
     "sshpk": "^1.7.0",
     "sticky-cluster": "^0.3.0",
-    "stripe": "^4.12.0"
+    "stripe": "^4.12.0",
+    "web-push": "^3.2.1"
   }
 }

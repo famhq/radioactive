@@ -11,6 +11,7 @@ ThreadComment = require '../models/thread_comment'
 ClashRoyaleCard = require '../models/clash_royale_card'
 ClashRoyaleUserDeck = require '../models/clash_royale_user_deck'
 ClashRoyaleDeck = require '../models/clash_royale_deck'
+Deck = require '../models/clash_royale_deck'
 Group = require '../models/group'
 GroupRecord = require '../models/group_record'
 GroupUserData = require '../models/group_user_data'
@@ -50,6 +51,7 @@ TYPES =
     CREATOR: 'thread:creator'
     COMMENT_COUNT: 'thread:commentCount'
     SCORE: 'thread:score'
+    DECK: 'thread:deck'
 
 TEN_DAYS_SECONDS = 3600 * 24 * 10
 ONE_HOUR_SECONDS = 3600
@@ -170,10 +172,12 @@ embedFn = _.curry ({embed, user, groupId}, object) ->
       when TYPES.CONVERSATION.USERS
         embedded.users = Promise.map embedded.userIds, (userId) ->
           User.getById userId
+        .map User.sanitizePublic null
 
       when TYPES.EVENT.USERS
         embedded.users = Promise.map embedded.userIds, (userId) ->
           User.getById userId
+        .map User.sanitizePublic null
 
       when TYPES.EVENT.CREATOR
         embedded.creator = User.getById embedded.creatorId
@@ -182,6 +186,7 @@ embedFn = _.curry ({embed, user, groupId}, object) ->
         embedded.users = Promise.map embedded.userIds, (userId) ->
           User.getById userId
         .map embedFn {embed: [TYPES.USER.IS_ONLINE]}
+        .map User.sanitizePublic null
 
       when TYPES.GROUP.CONVERSATIONS
         embedded.conversations = Conversation.getAllByGroupId embedded.id
@@ -209,6 +214,13 @@ embedFn = _.curry ({embed, user, groupId}, object) ->
 
       when TYPES.THREAD.SCORE
         embedded.score = embedded.upvotes - embedded.downvotes
+
+      when TYPES.THREAD.DECK
+        key = CacheService.PREFIXES.THREAD_DECK + ':' + embedded.id
+        embedded.deck = CacheService.preferCache key, ->
+          Deck.getById embedded.data.deckId
+          .then embedFn {embed: [TYPES.CLASH_ROYALE_DECK.CARDS]}
+        , {expireSeconds: ONE_DAY_SECONDS}
 
       when TYPES.THREAD.CREATOR
         if embedded.creatorId

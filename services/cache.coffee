@@ -15,6 +15,7 @@ class CacheService
   PREFIXES:
     CHAT_USER: 'chat:user'
     THREAD_USER: 'thread:user1'
+    THREAD_DECK: 'thread:deck'
     USER_DATA_CONVERSATION_USERS: 'user_data:conversation_users'
     USER_DATA_FOLLOWERS: 'user_data:followers'
     USER_DATA_FOLLOWING: 'user_data:following'

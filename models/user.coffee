@@ -26,6 +26,7 @@ defaultUser = (user) ->
     username: null
     name: null
     isMember: 0 # 1 if yes
+    hasPushToken: false
     lastActiveTime: new Date()
     counters: {}
     flags: {}

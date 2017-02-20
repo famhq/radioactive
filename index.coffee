@@ -29,6 +29,13 @@ StreamService = require './services/stream'
 ClashRoyaleDeck = require './models/clash_royale_deck'
 ClashRoyaleCard = require './models/clash_royale_card'
 
+if config.DEV_USE_HTTPS
+  https = require 'https'
+  fs = require 'fs'
+  privateKey  = fs.readFileSync './bin/starfire-dev.key'
+  certificate = fs.readFileSync './bin/starfire-dev.crt'
+  credentials = {key: privateKey, cert: certificate}
+
 HEALTHCHECK_TIMEOUT = 1000
 MAX_FILE_SIZE_BYTES = 20 * 1000 * 1000 # 20MB
 MAX_FIELD_SIZE_BYTES = 100 * 1000 # 100KB
@@ -205,7 +212,9 @@ if cluster.isMaster
   setup() # TODO: ideally stickyCluster would start after this...
 
 stickyCluster ((callback) ->
-  server = http.createServer app
+  server = if config.DEV_USE_HTTPS \
+           then https.createServer credentials, app
+           else http.createServer app
   io = socketIO.listen server
   io.adapter socketIORedis {
     pubClient: redisPub

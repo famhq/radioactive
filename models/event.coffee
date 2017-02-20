@@ -6,8 +6,10 @@ r = require '../services/rethinkdb'
 GROUP_ID_INDEX = 'groupId'
 USER_IDS_INDEX = 'userIds'
 START_TIME_INDEX = 'startTime'
+END_TIME_INDEX = 'endTime'
 
 ONE_YEAR_SECONDS = 3600 * 24 * 365 * 10
+THREE_HOURS_SECONDS = 3 * 3600
 
 defaultEvent = (event) ->
   unless event?
@@ -46,6 +48,7 @@ class EventModel
         {name: GROUP_ID_INDEX}
         {name: USER_IDS_INDEX, options: {multi: true}}
         {name: START_TIME_INDEX}
+        {name: END_TIME_INDEX}
       ]
     }
   ]
@@ -69,9 +72,11 @@ class EventModel
           .filter r.row('startTime').gt(r.now())
           .orderBy r.asc('startTime')
     else
-      q = q.between r.now(), r.now().add(ONE_YEAR_SECONDS), {
-        index: START_TIME_INDEX
-      }
+      q = q.between(
+        r.now().sub(THREE_HOURS_SECONDS)
+        r.now().add(ONE_YEAR_SECONDS)
+        {index: END_TIME_INDEX}
+      )
       .filter ({visibility: 'public'})
       .orderBy r.asc START_TIME_INDEX
 
@@ -86,7 +91,7 @@ class EventModel
 
   getAllStartingNow: ->
     r.table EVENTS_TABLE
-    .between r.now().sub(60 * 5), r.now().add(3600), {index: START_TIME_INDEX}
+    .between r.now(), r.now().add(60 * 5), {index: START_TIME_INDEX}
     .filter r.row('hasStarted').default(false).ne(true)
     .run()
 

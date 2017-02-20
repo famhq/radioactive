@@ -41,6 +41,7 @@ class GroupCtrl
         Conversation.create {
           groupId: id
           name: 'general'
+          type: 'group'
         }
         Promise.map defaultGroupRecordTypes, ({name, timeScale}) ->
           GroupRecordType.create {

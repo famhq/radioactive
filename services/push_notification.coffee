@@ -3,6 +3,7 @@ apn = require 'apn'
 gcm = require 'node-gcm'
 Promise = require 'bluebird'
 uuid = require 'node-uuid'
+webpush = require 'web-push'
 
 config = require '../config'
 EmbedService = require './embed'
@@ -55,6 +56,12 @@ class PushNotificationService
 
     @gcmConnection = new gcm.Sender(config.GOOGLE_API_KEY)
 
+    webpush.setVapidDetails(
+      config.VAPID_SUBJECT,
+      config.VAPID_PUBLIC_KEY,
+      config.VAPID_PRIVATE_KEY
+    )
+
   TYPES: TYPES
 
   isApnHealthy: =>
@@ -62,6 +69,9 @@ class PushNotificationService
 
   isGcmHealthy: ->
     Promise.resolve true # TODO
+
+  sendWeb: (token, message) ->
+    webpush.sendNotification JSON.parse(token), JSON.stringify message
 
   sendIos: (token, {title, text, type, data}) =>
     data ?= {}
@@ -198,52 +208,32 @@ class PushNotificationService
 
     PushToken.getAllByUserId user.id
     .map ({id, sourceType, token, errorCount}) =>
-      if sourceType is 'android'
-        @sendAndroid token, message
-        .then ->
-          # console.log 'android push success'
-          successfullyPushedToNative = true
-          if errorCount
-            PushToken.updateById id, {
-              errorCount: 0
-            }
-        .catch (err) ->
-          console.log 'android push error'
-          newErrorCount = errorCount + 1
+      fn = if sourceType is 'web' \
+           then @sendWeb
+           else if sourceType is 'android'
+           then @sendAndroid
+           else @sendIos
+
+      fn token, message
+      .then ->
+        successfullyPushedToNative = true
+        if errorCount
           PushToken.updateById id, {
-            errorCount: newErrorCount
-            isActive: newErrorCount < CONSECUTIVE_ERRORS_UNTIL_INACTIVE
+            errorCount: 0
           }
-          if newErrorCount >= CONSECUTIVE_ERRORS_UNTIL_INACTIVE
-            PushToken.getAllByUserId user.id
-            .then (tokens) ->
-              if _.isEmpty tokens
-                User.updateById user.id, {
-                  hasPushToken: false
-                }
-      else if sourceType is 'ios'
-        @sendIos token, message
-        .then ->
-          # console.log 'ios push success'
-          successfullyPushedToNative = true
-          if errorCount
-            PushToken.updateById id, {
-              errorCount: 0
-            }
-        .catch (err) ->
-          console.log 'ios push error'
-          newErrorCount = errorCount + 1
-          PushToken.updateById id, {
-            errorCount: newErrorCount
-            isActive: newErrorCount < CONSECUTIVE_ERRORS_UNTIL_INACTIVE
-          }
-          if newErrorCount >= CONSECUTIVE_ERRORS_UNTIL_INACTIVE
-            PushToken.getAllByUserId user.id
-            .then (tokens) ->
-              if _.isEmpty tokens
-                User.updateById user.id, {
-                  hasPushToken: false
-                }
+      .catch (err) ->
+        newErrorCount = errorCount + 1
+        PushToken.updateById id, {
+          errorCount: newErrorCount
+          isActive: newErrorCount < CONSECUTIVE_ERRORS_UNTIL_INACTIVE
+        }
+        if newErrorCount >= CONSECUTIVE_ERRORS_UNTIL_INACTIVE
+          PushToken.getAllByUserId user.id
+          .then (tokens) ->
+            if _.isEmpty tokens
+              User.updateById user.id, {
+                hasPushToken: false
+              }
 
 
 module.exports = new PushNotificationService()

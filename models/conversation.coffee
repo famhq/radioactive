@@ -75,6 +75,7 @@ class ConversationModel
 
     r.table CONVERSATIONS_TABLE
     .getAll userId, {index: USER_IDS_INDEX}
+    .filter {type: 'pm'}
     .orderBy r.desc(LAST_UPDATE_TIME_INDEX)
     .limit limit
     .run()

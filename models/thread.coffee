@@ -108,6 +108,7 @@ class ThreadModel
       'headerImage'
       'body'
       'data'
+      'deck'
       'comments'
       'commentCount'
       'score'

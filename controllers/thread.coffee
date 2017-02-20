@@ -9,6 +9,7 @@ Group = require '../models/group'
 Thread = require '../models/thread'
 ThreadComment = require '../models/thread_comment'
 ClashRoyaleDeck = require '../models/clash_royale_deck'
+CacheService = require '../services/cache'
 EmbedService = require '../services/embed'
 ImageService = require '../services/image'
 r = require '../services/rethinkdb'
@@ -19,6 +20,9 @@ defaultEmbed = [
   EmbedService.TYPES.THREAD.CREATOR
   EmbedService.TYPES.THREAD.COMMENT_COUNT
   EmbedService.TYPES.THREAD.SCORE
+]
+deckEmbed = [
+  EmbedService.TYPES.THREAD.DECK
 ]
 
 YOUTUBE_ID_REGEX = ///
@@ -55,14 +59,17 @@ class ThreadCtrl
       .then (diff) ->
         if diff.id
           Thread.updateById diff.id, diff
-          .then -> {id: diff.id}
+          .then ->
+            key = CacheService.PREFIXES.THREAD_DECK + ':' + diff.id
+            CacheService.deleteByKey key
+            {id: diff.id}
         else
           Thread.create _.defaults diff, {
             creatorId: user.id
           }
     .tap (deck) ->
       if deck.data?.videoUrl
-        keyPrefix = "images/starfire/gv/#{deckId}"
+        keyPrefix = "images/starfire/gv/#{deck.id}"
         youtubeId = deck.data.videoUrl.match(YOUTUBE_ID_REGEX)?[1]
         ImageService.getVideoPreview keyPrefix, youtubeId
         .then (videoPreview) ->
@@ -114,9 +121,13 @@ class ThreadCtrl
 
       Thread.updateById id, diff
 
-  getAll: ({}, {user}) ->
+  getAll: ({type}, {user}) ->
     Thread.getAll()
-    .map EmbedService.embed {embed: defaultEmbed}
+    .map EmbedService.embed {
+      embed: if type is 'deckGuide' \
+             then defaultEmbed.concat deckEmbed
+             else defaultEmbed
+    }
     .map Thread.sanitize null
 
   getById: ({id}, {user}) ->
