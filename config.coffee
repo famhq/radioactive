@@ -7,6 +7,8 @@ REDIS_PORT = if env.IS_STAGING is '1' then 6378 else 6379
 DEV_USE_HTTPS = process.env.DEV_USE_HTTPS and process.env.DEV_USE_HTTPS isnt '0'
 
 config =
+  # hardcoded while we just have one game
+  CLASH_ROYALE_ID: '319a9065-e3dc-4d02-ad30-62047716a88f'
   VERBOSE: if env.VERBOSE then env.VERBOSE is '1' else true
   PORT: env.RADIOACTIVE_PORT or 50000
   ENV: env.NODE_ENV
@@ -26,6 +28,7 @@ config =
   IOS_BUNDLE_ID: 'com.clay.redtritium'
   DEALER_API_URL: env.DEALER_API_URL
   DEALER_SECRET: env.DEALER_SECRET
+  CR_API_URL: env.CR_API_URL
   RADIOACTIVE_API_URL: env.RADIOACTIVE_API_URL
   VAPID_SUBJECT: env.RADIOACTIVE_VAPID_SUBJECT
   VAPID_PUBLIC_KEY: env.RADIOACTIVE_VAPID_PUBLIC_KEY

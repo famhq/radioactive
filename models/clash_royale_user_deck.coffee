@@ -25,7 +25,6 @@ defaultClashRoyaleUserDeck = (clashRoyaleUserDeck) ->
     losses: 0
     draws: 0
     creatorId: null
-    timePeriods: {}
     addTime: new Date()
   }
 
@@ -87,6 +86,7 @@ class ClashRoyaleUserDeckModel
     .map defaultClashRoyaleUserDeck
 
   getAllByUserId: (userId, {limit} = {}) ->
+    console.log 'get all', userId
     limit ?= 10
     r.table CLASH_ROYALE_USER_DECK_TABLE
     .getAll userId, {index: USER_ID_INDEX}
@@ -171,6 +171,8 @@ class ClashRoyaleUserDeckModel
       'losses'
       'draws'
       'addTime'
+      'isFavorited'
+      'isCurrentDeck'
     ]
 
 module.exports = new ClashRoyaleUserDeckModel()

@@ -14,7 +14,7 @@ LAST_UPDATE_TIME_INDEX = 'lastUpdateTime'
 # group, embed channels / conversations
 # get channels i have permission to
   # get all channels
-  # get group_user_data (roleIds)
+  # get user_group_data (roleIds)
   # get group_roles perms channel permissions
   # filter out channels where view isnt true
 

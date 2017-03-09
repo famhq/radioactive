@@ -24,6 +24,7 @@ class CacheService
     CLASH_ROYALE_CARD: 'clash_royale_card7'
     CLASH_ROYALE_CARD_RANK: 'clash_royal_card:rank'
     CLASH_ROYALE_DECK_RANK: 'clash_royal_deck:rank'
+    CLASH_ROYALE_DECK_CARD_KEYS: 'clash_royal_deck:card_keys1'
     USERNAME_SEARCH: 'username:search'
 
   constructor: ->

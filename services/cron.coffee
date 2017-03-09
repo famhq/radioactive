@@ -25,6 +25,10 @@ class CronService
     # minute
     @addCron 'minute', '0 * * * * *', ->
       EventService.notifyForStart()
+      # ClashApiSiuervice.process()
+      # get all game_users where lastUpdate > 12 hours
+      # get all clans where lastUpdate > 12 hours
+      # have a check to make sure update doesn't take longer than a minuteS
 
     @addCron 'hourly', '0 0 * * * *', ->
       VideoDiscoveryService.discover()

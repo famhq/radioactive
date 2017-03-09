@@ -2,18 +2,18 @@ _ = require 'lodash'
 router = require 'exoid-router'
 Joi = require 'joi'
 
-GroupUserData = require '../models/group_user_data'
+UserGroupData = require '../models/user_group_data'
 Group = require '../models/group'
 EmbedService = require '../services/embed'
 
-class GroupUserDataCtrl
+class UserGroupData
   getMeByGroupId: ({groupId}, {user}) ->
     Group.hasPermissionByIdAndUserId groupId, user.id, {level: 'member'}
     .then (hasPermission) ->
       unless hasPermission
         router.throw status: 400, info: 'no permission'
 
-      GroupUserData.getByUserIdAndGroupId user.id, groupId
+      UserGroupData.getByUserIdAndGroupId user.id, groupId
 
   updateMeByGroupId: ({groupId, globalBlockedNotifications}, {user}) ->
     Group.hasPermissionByIdAndUserId groupId, user.id, {level: 'member'}
@@ -21,8 +21,8 @@ class GroupUserDataCtrl
       unless hasPermission
         router.throw status: 400, info: 'no permission'
 
-      GroupUserData.upsertByUserIdAndGroupId user.id, groupId, {
+      UserGroupData.upsertByUserIdAndGroupId user.id, groupId, {
         globalBlockedNotifications: globalBlockedNotifications
       }
 
-module.exports = new GroupUserDataCtrl()
+module.exports = new UserGroupData()

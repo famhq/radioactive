@@ -9,7 +9,6 @@ Video = require '../models/video'
 ImageService = require './image'
 config = require '../config'
 
-
 oauth2Client = new OAuth2(
   config.GOOGLE.CLIENT_ID
   config.GOOGLE.CLIENT_SECRET
