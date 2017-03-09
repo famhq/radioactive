@@ -5,25 +5,26 @@ r = require '../services/rethinkdb'
 CacheService = require '../services/cache'
 schemas = require '../schemas'
 
-GROUP_USER_DATA_TABLE = 'group_user_data'
+USER_GROUP_DATA_TABLE = 'user_group_data'
 USER_ID_GROUP_ID_INDEX = 'userIdGroupId'
 
-defaultGroupUserData = (groupUserData) ->
-  # unless groupUserData?
+defaultUserGroupData = (userGroupData) ->
+  # unless userGroupData?
   #   return {}
 
-  _.defaults groupUserData, {
+  _.defaults userGroupData, {
     id: uuid.v4()
     userId: null
     groupId: null
     globalBlockedNotifications: {}
     roleIds: []
+    gameData: {}
   }
 
-class GroupUserDataModel
+class UserGroupDataModel
   RETHINK_TABLES: [
     {
-      name: GROUP_USER_DATA_TABLE
+      name: USER_GROUP_DATA_TABLE
       indexes: [
         {name: USER_ID_GROUP_ID_INDEX, fn: (row) ->
           [row('userId'), row('groupId')]}
@@ -32,34 +33,34 @@ class GroupUserDataModel
   ]
 
   getById: (id) ->
-    r.table GROUP_USER_DATA_TABLE
+    r.table USER_GROUP_DATA_TABLE
     .get id
     .run()
-    .then defaultGroupUserData
+    .then defaultUserGroupData
 
   getByUserIdAndGroupId: (userId, groupId) ->
-    r.table GROUP_USER_DATA_TABLE
+    r.table USER_GROUP_DATA_TABLE
     .getAll [userId, groupId], {index: USER_ID_GROUP_ID_INDEX}
     .nth 0
     .default null
     .run()
-    .then defaultGroupUserData
-    .then (groupUserData) ->
-      _.defaults {userId}, groupUserData
+    .then defaultUserGroupData
+    .then (userGroupData) ->
+      _.defaults {userId}, userGroupData
 
   upsertByUserIdAndGroupId: (userId, groupId, diff) ->
-    r.table GROUP_USER_DATA_TABLE
+    r.table USER_GROUP_DATA_TABLE
     .getAll [userId, groupId], {index: USER_ID_GROUP_ID_INDEX}
     .nth 0
     .default null
-    .do (groupUserData) ->
+    .do (userGroupData) ->
       r.branch(
-        groupUserData.eq null
+        userGroupData.eq null
 
-        r.table GROUP_USER_DATA_TABLE
-        .insert defaultGroupUserData _.defaults _.clone(diff), {userId, groupId}
+        r.table USER_GROUP_DATA_TABLE
+        .insert defaultUserGroupData _.defaults _.clone(diff), {userId, groupId}
 
-        r.table GROUP_USER_DATA_TABLE
+        r.table USER_GROUP_DATA_TABLE
         .getAll [userId, groupId], {index: USER_ID_GROUP_ID_INDEX}
         .nth 0
         .default null
@@ -69,7 +70,7 @@ class GroupUserDataModel
     .then (a) ->
       null
 
-  # sanitize: _.curry (requesterId, groupUserData) ->
-  #   _.pick groupUserData, _.keys schemas.groupUserData
+  # sanitize: _.curry (requesterId, userGroupData) ->
+  #   _.pick userGroupData, _.keys schemas.userGroupData
 
-module.exports = new GroupUserDataModel()
+module.exports = new UserGroupDataModel()

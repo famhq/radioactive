@@ -24,7 +24,9 @@
     "gulp-shell": "^0.5.2",
     "jsbarcode": "^3.5.1",
     "sshpk": "^1.4.6",
-    "traceur": "0.0.111"
+    "tabletojson": "^0.4.0",
+    "traceur": "0.0.111",
+    "x-ray": "^2.3.2"
   },
   "dependencies": {
     "accounting": "^0.4.1",

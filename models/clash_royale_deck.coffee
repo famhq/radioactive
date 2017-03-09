@@ -3,6 +3,8 @@ Promise = require 'bluebird'
 uuid = require 'node-uuid'
 
 ClashRoyaleWinTrackerModel = require './clash_royale_win_tracker'
+Card = require './clash_royale_card'
+CacheService = require '../services/cache'
 r = require '../services/rethinkdb'
 config = require '../config'
 
@@ -11,6 +13,7 @@ ADD_TIME_INDEX = 'addTime'
 POPULARITY_INDEX = 'thisWeekPopularity'
 NAME_INDEX = 'name'
 CARD_KEYS_INDEX = 'cardKeys'
+ONE_HOUR_SECONDS = 3600
 # coffeelint: disable=max_line_length
 # for naming
 TANK_CARD_KEYS = [
@@ -53,7 +56,6 @@ defaultClashRoyaleDeck = (clashRoyaleDeck) ->
     wins: 0
     losses: 0
     draws: 0
-    timePeriods: {}
     createdByUserId: null
     addTime: new Date()
     lastUpdateTime: new Date()
@@ -97,7 +99,7 @@ class ClashRoyaleDeckModel extends ClashRoyaleWinTrackerModel
     return @getByName name
     .then (deck) =>
       if deck and attempts < MAX_RANDOM_NAME_ATTEMPTS
-        console.log 'dupe name', name, attempts
+        # console.log 'dupe name', name, attempts
         @getRandomName cards, attempts + 1
       else if deck
         'Nameless'
@@ -127,13 +129,35 @@ class ClashRoyaleDeckModel extends ClashRoyaleWinTrackerModel
   getCardKeys: (cards) ->
     cardKeys = _.sortBy(cards).join '|'
 
-  getByCardKeys: (cardKeys) ->
-    r.table CLASH_ROYALE_DECK_TABLE
-    .getAll cardKeys, {index: CARD_KEYS_INDEX}
-    .nth 0
-    .default null
-    .run()
-    .then defaultClashRoyaleDeck
+  getByCardKeys: (cardKeys, {useCache} = {}) =>
+    cardKeysStr = @getCardKeys cardKeys
+    get = =>
+      console.log 'getting', cardKeysStr
+      r.table CLASH_ROYALE_DECK_TABLE
+      .getAll cardKeysStr, {index: CARD_KEYS_INDEX}
+      .nth 0
+      .default null
+      .run()
+      .then (deck) =>
+        if deck
+          return deck
+        else
+          Promise.all [
+            @getRandomName(_.map(cardKeys, (key) -> {key}))
+            Promise.map cardKeys, Card.getByKey
+          ]
+          .then ([randomName, cards]) =>
+            @create {
+              cardKeys: cardKeysStr
+              name: randomName
+              cardIds: _.filter _.map cards, 'id'
+            }
+      .then defaultClashRoyaleDeck
+    if useCache
+      key = CacheService.PREFIXES.CLASH_ROYALE_DECK_CARD_KEYS
+      CacheService.preferCache key, get, {expireSeconds: ONE_HOUR_SECONDS}
+    else
+      get()
 
   getAll: ({limit, sort, timeFrame} = {}) ->
     limit ?= 10

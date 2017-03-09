@@ -2,9 +2,12 @@ router = require 'exoid-router'
 
 UserCtrl = require './controllers/user'
 UserDataCtrl = require './controllers/user_data'
+UserGroupData = require './controllers/user_group_data'
+UserGameData = require './controllers/user_game_data'
 AuthCtrl = require './controllers/auth'
 ChatMessageCtrl = require './controllers/chat_message'
 ConversationCtrl = require './controllers/conversation'
+ClashRoyaleAPICtrl = require './controllers/clash_royale_api'
 ClashRoyaleDeckCtrl = require './controllers/clash_royale_deck'
 ClashRoyaleUserDeckCtrl = require './controllers/clash_royale_user_deck'
 ClashRoyaleCardCtrl = require './controllers/clash_royale_card'
@@ -14,7 +17,6 @@ PaymentCtrl = require './controllers/payment'
 TheadCtrl = require './controllers/thread'
 GroupCtrl = require './controllers/group'
 GroupRecordCtrl = require './controllers/group_record'
-GroupUserDataCtrl = require './controllers/group_user_data'
 GroupRecordTypeCtrl = require './controllers/group_record_type'
 ThreadCommentCtrl = require './controllers/thread_comment'
 VideoCtrl = require './controllers/video'
@@ -52,7 +54,6 @@ module.exports = router
 .on 'userData.getMe', authed UserDataCtrl.getMe
 .on 'userData.getByUserId', authed UserDataCtrl.getByUserId
 .on 'userData.setAddress', authed UserDataCtrl.setAddress
-.on 'userData.setClashRoyaleDeckId', authed UserDataCtrl.setClashRoyaleDeckId
 .on 'userData.updateMe', authed UserDataCtrl.updateMe
 .on 'userData.followByUserId', authed UserDataCtrl.followByUserId
 .on 'userData.unfollowByUserId', authed UserDataCtrl.unfollowByUserId
@@ -101,10 +102,11 @@ module.exports = router
 .on 'groupRecordTypes.create', authed GroupRecordTypeCtrl.create
 .on 'groupRecordTypes.deleteById', authed GroupRecordTypeCtrl.deleteById
 
-.on 'groupUserData.updateMeByGroupId',
-  authed GroupUserDataCtrl.updateMeByGroupId
-.on 'groupUserData.getMeByGroupId',
-  authed GroupUserDataCtrl.getMeByGroupId
+.on 'userGroupData.updateMeByGroupId', authed UserGroupData.updateMeByGroupId
+.on 'userGroupData.getMeByGroupId', authed UserGroupData.getMeByGroupId
+
+.on 'userGameData.updateMeByGameId', authed UserGameData.updateMeByGameId
+.on 'userGameData.getMeByGameId', authed UserGameData.getMeByGameId
 
 .on 'threadComments.create', authed ThreadCommentCtrl.create
 .on 'threadComments.flag', authed ThreadCommentCtrl.flag
@@ -118,16 +120,18 @@ module.exports = router
 .on 'conversations.getAll', authed ConversationCtrl.getAll
 .on 'conversations.getById', authed ConversationCtrl.getById
 
+.on 'clashRoyaleAPI.refreshByPlayerTag',
+  authed ClashRoyaleAPICtrl.refreshByPlayerTag
+
 .on 'clashRoyaleDecks.getAll', authed ClashRoyaleDeckCtrl.getAll
 .on 'clashRoyaleDecks.getById', authed ClashRoyaleDeckCtrl.getById
 
 .on 'clashRoyaleUserDecks.create', authed ClashRoyaleUserDeckCtrl.create
+.on 'clashRoyaleUserDecks.getAll', authed ClashRoyaleUserDeckCtrl.getAll
 .on 'clashRoyaleUserDecks.getByDeckId',
   authed ClashRoyaleUserDeckCtrl.getByDeckId
 .on 'clashRoyaleUserDecks.favorite', authed ClashRoyaleUserDeckCtrl.favorite
 .on 'clashRoyaleUserDecks.unfavorite', authed ClashRoyaleUserDeckCtrl.unfavorite
-.on 'clashRoyaleUserDecks.incrementByDeckId',
-  authed ClashRoyaleUserDeckCtrl.incrementByDeckId
 
 .on 'clashRoyaleCards.getAll', authed ClashRoyaleCardCtrl.getAll
 .on 'clashRoyaleCards.getById', authed ClashRoyaleCardCtrl.getById

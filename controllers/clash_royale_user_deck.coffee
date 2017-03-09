@@ -23,12 +23,6 @@ class ClashRoyaleUserDeckCtrl
     .then EmbedService.embed {embed: defaultEmbed}
     .then ClashRoyaleUserDeck.sanitize null
 
-  incrementByDeckId: ({deckId, state}, {user}) ->
-    Promise.all [
-      ClashRoyaleUserDeck.incrementByDeckIdAndUserId deckId, user.id, state
-      ClashRoyaleDeck.incrementById deckId, state
-    ]
-
   favorite: ({deckId}, {user}) ->
     ClashRoyaleUserDeck.upsertByDeckIdAndUserId deckId, user.id, {
       isFavorited: true

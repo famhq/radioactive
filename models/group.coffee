@@ -19,6 +19,7 @@ defaultGroup = (group) ->
     badgeId: null
     background: null
     mode: 'open' # open | private | inviteOnly
+    gameIds: []
     userIds: []
     invitedIds: []
   }

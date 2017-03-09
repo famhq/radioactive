@@ -16,12 +16,26 @@ defaultClashRoyaleMatch = (clashRoyaleMatch) ->
   _.defaults clashRoyaleMatch, {
     id: uuid.v4()
     arena: null
-    deck1Id: null
-    deck2Id: null
-    deck1CardIds: null
-    deck2CardIds: null
-    deck1Score: null
-    deck2Score: null
+    player1UserId: null
+    player2UserId: null
+    winningDeckId: null
+    losingDeckId: null
+    player1Data:
+      deckId: null
+      crowns: null
+      playerName: null
+      playerTag: null
+      clanName: null
+      clanTag: null
+      trophies: null
+    player2Data:
+      deckId: null
+      crowns: null
+      playerName: null
+      playerTag: null
+      clanName: null
+      clanTag: null
+      trophies: null
     time: new Date()
   }
 

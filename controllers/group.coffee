@@ -29,13 +29,19 @@ defaultGroupRecordTypes = [
 ]
 
 class GroupCtrl
-  create: ({name, description, badgeId, background, mode}, {user}) ->
+  create: ({name, description, badgeId, background, mode, clanId}, {user}) ->
     creatorId = user.id
 
-    Group.create {
-      name, description, badgeId, background, creatorId, mode
-      userIds: [creatorId]
-    }
+    Game.getByKey 'clashRoyale'
+    .then ({id}) ->
+      Group.create {
+        name, description, badgeId, background, creatorId, mode
+        userIds: [creatorId]
+        gameIds: [id]
+        gameData:
+          "#{id}":
+            clanId: clanId
+      }
     .tap ({id}) ->
       Promise.all [
         Conversation.create {

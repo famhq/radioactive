@@ -14,7 +14,7 @@ ClashRoyaleDeck = require '../models/clash_royale_deck'
 Deck = require '../models/clash_royale_deck'
 Group = require '../models/group'
 GroupRecord = require '../models/group_record'
-GroupUserData = require '../models/group_user_data'
+UserGroupData = require '../models/user_group_data'
 CacheService = require './cache'
 
 TYPES =
@@ -96,7 +96,7 @@ embedFn = _.curry ({embed, user, groupId}, object) ->
         }
 
       when TYPES.USER.GROUP_DATA
-        embedded.groupData = GroupUserData.getByUserIdAndGroupId(
+        embedded.groupData = UserGroupData.getByUserIdAndGroupId(
           embedded.id, groupId
         )
 

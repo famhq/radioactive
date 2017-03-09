@@ -4,7 +4,6 @@ Joi = require 'joi'
 
 User = require '../models/user'
 UserData = require '../models/user_data'
-ClashRoyaleUserDeck = require '../models/clash_royale_user_deck'
 EmbedService = require '../services/embed'
 CacheService = require '../services/cache'
 PushNotificationService = require '../services/push_notification'
@@ -33,14 +32,6 @@ class UserDataCtrl
 
   setAddress: ({country, address, city, zip}, {user}) ->
     UserData.upsertByUserId user.id, {address: {country, address, city, zip}}
-
-  setClashRoyaleDeckId: ({clashRoyaleDeckId}, {user}) ->
-    Promise.all [
-      ClashRoyaleUserDeck.upsertByDeckIdAndUserId(
-        clashRoyaleDeckId, user.id, {isFavorited: true}
-      )
-      UserData.upsertByUserId user.id, {clashRoyaleDeckId}
-    ]
 
   updateMe: (diff, {user}) ->
     keys = ['presetAvatarId', 'unreadGroupInvites']
