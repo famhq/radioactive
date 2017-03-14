@@ -10,12 +10,19 @@ find = {
   cardNames: ['.su-column-inner li a']
   hrefs: ['.su-column-inner li a@href']
 }
+i = 0
 x('http://clashroyalearena.com/cards', find) (err, {cardNames, hrefs}) ->
   cards = _.zip cardNames, hrefs
   # return console.log cards.length
   cards = _.map cards, ([cardName, href]) ->
     cardKey = _.snakeCase cardName.toLowerCase().replace /\./g, ''
-    x(hrefs[0], ['.su-table@html']) (err, tables) ->
+    cardKey = cardKey.replace 'the_log', 'log'
+    x(href, ['.su-table@html']) (err, tables) ->
+      if err
+        console.log err
+      unless tables
+        return
+      i += 1
       statsTable =  tabletojson.convert tables[0]
       levelsTable = tabletojson.convert tables[1]
 
@@ -42,6 +49,7 @@ x('http://clashroyalearena.com/cards', find) (err, {cardNames, hrefs}) ->
       Card.getByKey cardKey
       .then (card) ->
         if card
+          console.log 'update', cardKey
           Card.updateByKey cardKey, {data: cardData}
         else
           console.log 'create', cardKey

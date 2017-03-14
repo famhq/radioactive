@@ -23,6 +23,7 @@ AuthService = require './services/auth'
 CronService = require './services/cron'
 KueRunnerService = require './services/kue_runner'
 ChatMessageCtrl = require './controllers/chat_message'
+ClashRoyaleAPICtrl = require './controllers/clash_royale_api'
 ClashTvService = require './services/clash_tv'
 VideoDiscoveryService = require './services/video_discovery'
 StreamService = require './services/stream'
@@ -184,7 +185,10 @@ app.post '/log', (req, res) ->
 
 app.post '/chatMessage/:id/card', ChatMessageCtrl.updateCard
 
+app.post '/clashRoyaleApi/updatePlayer', ClashRoyaleAPICtrl.updatePlayer
+
 app.get '/clashTv', (req, res) -> ClashTvService.process()
+app.get '/clashApiProcess', (req, res) -> ClashRoyaleAPICtrl.process()
 app.get '/videoDiscovery', (req, res) -> VideoDiscoveryService.discover()
 app.get '/updateCards', (req, res) ->
   Promise.all [

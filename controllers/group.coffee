@@ -150,13 +150,16 @@ class GroupCtrl
         router.throw {status: 401, info: 'Not invited'}
 
       name = User.getDisplayName user
-      PushNotificationService.sendToGroup(group, {
-        title: 'New group member'
-        text: "#{name} joined your group."
-        type: PushNotificationService.TYPES.CREW
-        url: "https://#{config.CLIENT_HOST}"
-        path: "/group/#{group.id}"
-      }, {skipMe: true, meUserId: user.id}).catch -> null
+
+      # FIXME FIXME: re-enable notifications
+      unless id is '73ed4af0-a2f2-4371-a893-1360d3989708'
+        PushNotificationService.sendToGroup(group, {
+          title: 'New group member'
+          text: "#{name} joined your group."
+          type: PushNotificationService.TYPES.CREW
+          url: "https://#{config.CLIENT_HOST}"
+          path: "/group/#{group.id}"
+        }, {skipMe: true, meUserId: user.id}).catch -> null
 
       groupIds = user.data.groupIds or []
       Promise.all [

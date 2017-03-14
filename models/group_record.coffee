@@ -11,6 +11,8 @@ GROUP_ID_INDEX = 'groupId'
 RECORD_INDEX = 'record'
 RECORD_GROUP_TYPE_TIME_INDEX = 'recordGroupTypeTime'
 
+# TODO: rm this model?
+
 defaultGroupRecord = (groupRecord) ->
   unless groupRecord?
     return null
@@ -69,8 +71,10 @@ class GroupRecordModel
       'DAY-' + time.format 'YYYY-MM-DD'
     else if timeScale is 'biweek'
       'BIWEEK-' + time.format('YYYY') + (parseInt(time.format 'YYYY-W') / 2)
-    else
+    else if timeScale is 'week'
       'WEEK-' + time.format 'YYYY-W'
+    else
+      time.format time.format 'YYYY-MM-DD HH:mm'
 
   getRecord: ({groupRecordTypeId, userId, scaledTime}) ->
     r.table GROUP_RECORDS_TABLE

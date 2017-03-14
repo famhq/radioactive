@@ -20,11 +20,11 @@ class CacheService
     USER_DATA_FOLLOWERS: 'user_data:followers'
     USER_DATA_FOLLOWING: 'user_data:following'
     USER_DATA_BLOCKED_USERS: 'user_data:blocked_users'
-    USER_DATA_CLASH_ROYALE_DECK_IDS: 'user_data:clash_royale_deck_ids'
-    CLASH_ROYALE_CARD: 'clash_royale_card7'
+    USER_DATA_CLASH_ROYALE_DECK_IDS: 'user_data:clash_royale_deck_ids1'
+    CLASH_ROYALE_CARD: 'clash_royale_card'
     CLASH_ROYALE_CARD_RANK: 'clash_royal_card:rank'
     CLASH_ROYALE_DECK_RANK: 'clash_royal_deck:rank'
-    CLASH_ROYALE_DECK_CARD_KEYS: 'clash_royal_deck:card_keys1'
+    CLASH_ROYALE_DECK_CARD_KEYS: 'clash_royal_deck:card_keys9'
     USERNAME_SEARCH: 'username:search'
 
   constructor: ->

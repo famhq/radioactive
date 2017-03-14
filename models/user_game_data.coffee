@@ -3,9 +3,10 @@ uuid = require 'node-uuid'
 
 r = require '../services/rethinkdb'
 
-GAME_ID_LAST_UPDATE_TIME_INDEX = 'gameIdLastUpdateTime'
+STALE_INDEX = 'stale'
 USER_ID_GAME_ID_INDEX = 'userIdGameId'
 PLAYER_ID_GAME_ID_INDEX = 'playerIdGameId'
+IS_QUEUED_INDEX = 'isQueued'
 
 defaultUserGameData = (userGameData) ->
   unless userGameData?
@@ -15,8 +16,11 @@ defaultUserGameData = (userGameData) ->
     id: uuid.v4()
     gameId: null
     playerId: null
-    userId: null
-    data: {}
+    hasUserId: false
+    userIds: [] # can be multiple users tied to a game user
+    data:
+      stats: {}
+    isQueued: false
     lastUpdateTime: new Date()
   }
 
@@ -27,10 +31,18 @@ class UserGameDataModel
     {
       name: USER_GAME_DATA_TABLE
       indexes: [
-        {name: GAME_ID_LAST_UPDATE_TIME_INDEX, fn: (row) ->
-          [row('gameId'), row('lastUpdateTime')]}
-        {name: USER_ID_GAME_ID_INDEX, fn: (row) ->
-          [row('userId'), row('gameId')]}
+        {name: STALE_INDEX, fn: (row) ->
+          [
+            row('gameId')
+            row('isQueued')
+            row('hasUserId')
+            row('lastUpdateTime')
+          ]
+        }
+        {name: USER_ID_GAME_ID_INDEX
+        options: {multi: true}, fn: (row) ->
+          row('userIds').map (userId) ->
+            [userId, row('gameId')]}
         {name: PLAYER_ID_GAME_ID_INDEX, fn: (row) ->
           [row('playerId'), row('gameId')]}
       ]
@@ -57,9 +69,9 @@ class UserGameDataModel
     .then (userGameData) ->
       _.defaults {playerId}, userGameData
 
-  upsertByUserIdAndGameId: (userId, gameId, diff) ->
+  upsertByPlayerIdAndGameId: (playerId, gameId, diff, {userId} = {}) ->
     r.table USER_GAME_DATA_TABLE
-    .getAll [userId, gameId], {index: USER_ID_GAME_ID_INDEX}
+    .getAll [playerId, gameId], {index: PLAYER_ID_GAME_ID_INDEX}
     .nth 0
     .default null
     .do (userGameData) ->
@@ -67,13 +79,26 @@ class UserGameDataModel
         userGameData.eq null
 
         r.table USER_GAME_DATA_TABLE
-        .insert defaultUserGameData _.defaults _.clone(diff), {userId, gameId}
+        .insert defaultUserGameData _.defaults _.clone(diff), {
+          playerId
+          gameId
+          hasUserId: Boolean userId
+          userIds: if userId then [userId] else []
+        }
 
         r.table USER_GAME_DATA_TABLE
-        .getAll [userId, gameId], {index: USER_ID_GAME_ID_INDEX}
+        .getAll [playerId, gameId], {index: PLAYER_ID_GAME_ID_INDEX}
         .nth 0
         .default null
-        .update diff
+        .update _.defaults _.clone(diff), {
+          # FIXME: figure out why this didn't work
+          # hasUserId:
+          #   r.expr(Boolean userId)
+          #   .or(userGameData('userIds').count().gt(0))
+          userIds: if userId \
+                   then userGameData('userIds').append(userId).distinct()
+                   else userGameData('userIds')
+        }
       )
     .run()
     .then (a) ->
@@ -82,10 +107,12 @@ class UserGameDataModel
   getStale: ({gameId, staleTimeMs}) ->
     r.table USER_GAME_DATA_TABLE
     .between(
-      [gameId, 0]
-      [gameId, r.now().sub(staleTimeMs)]
-      {index: GAME_ID_LAST_UPDATE_TIME_INDEX}
+      [gameId, false, true, 0]
+      [gameId, false, true, r.now().sub(staleTimeMs)]
+      {index: STALE_INDEX}
     )
+    .run()
+    .map defaultUserGameData
 
   updateById: (id, diff) ->
     r.table USER_GAME_DATA_TABLE

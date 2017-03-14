@@ -7,6 +7,14 @@ r = require '../services/rethinkdb'
 config = require '../config'
 
 CLASH_ROYALE_MATCH_TABLE = 'clash_royale_matches'
+
+ARENA_INDEX = 'arena'
+PLAYER_1_USER_IDS_INDEX = 'player1UserIds'
+PLAYER_2_USER_IDS_INDEX = 'player2UserIds'
+WINNING_DECK_ID_INDEX = 'winningDeckID'
+LOSING_DECK_ID_INDEX = 'losingDeckId'
+WINNING_CARD_IDS_INDEX = 'winningCardIds'
+LOSING_CARD_IDS_INDEX = 'losingCardIds'
 TIME_INDEX = 'time'
 
 defaultClashRoyaleMatch = (clashRoyaleMatch) ->
@@ -16,10 +24,12 @@ defaultClashRoyaleMatch = (clashRoyaleMatch) ->
   _.defaults clashRoyaleMatch, {
     id: uuid.v4()
     arena: null
-    player1UserId: null
-    player2UserId: null
+    player1UserIds: []
+    player2UserIds: []
     winningDeckId: null
     losingDeckId: null
+    winningCardIds: []
+    losingCardIds: []
     player1Data:
       deckId: null
       crowns: null
@@ -45,6 +55,13 @@ class ClashRoyaleMatchModel
       name: CLASH_ROYALE_MATCH_TABLE
       options: {}
       indexes: [
+        {name: ARENA_INDEX}
+        {name: PLAYER_1_USER_IDS_INDEX, options: {multi: true}}
+        {name: PLAYER_2_USER_IDS_INDEX, options: {multi: true}}
+        {name: WINNING_DECK_ID_INDEX}
+        {name: LOSING_DECK_ID_INDEX}
+        {name: WINNING_CARD_IDS_INDEX, options: {multi: true}}
+        {name: LOSING_CARD_IDS_INDEX, options: {multi: true}}
         {name: TIME_INDEX}
       ]
     }
@@ -56,8 +73,6 @@ class ClashRoyaleMatchModel
     r.table CLASH_ROYALE_MATCH_TABLE
     .insert clashRoyaleMatch
     .run()
-    .then ->
-      clashRoyaleMatch
 
   getById: (id) ->
     r.table CLASH_ROYALE_MATCH_TABLE
