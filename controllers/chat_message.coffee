@@ -8,7 +8,6 @@ Joi = require 'joi'
 User = require '../models/user'
 ChatMessage = require '../models/chat_message'
 Conversation = require '../models/conversation'
-Group = require '../models/group'
 CacheService = require '../services/cache'
 PushNotificationService = require '../services/push_notification'
 ProfanityService = require '../services/profanity'
@@ -84,12 +83,15 @@ class ChatMessageCtrl
               {isRead: userId is user.id}
           }
           pushBody = if isImage then '[image]' else body
-          PushNotificationService.sendToConversation(
-            conversation, {
-              skipMe: true
-              meUser: user
-              text: pushBody
-            }).catch -> null
+
+          # FIXME FIXME: re-enable notifications
+          unless conversation.groupId is '73ed4af0-a2f2-4371-a893-1360d3989708'
+            PushNotificationService.sendToConversation(
+              conversation, {
+                skipMe: true
+                meUser: user
+                text: pushBody
+              }).catch -> null
 
   updateCard: ({body, params, headers}) ->
     radioactiveHost = config.RADIOACTIVE_API_URL.replace /https?:\/\//i, ''

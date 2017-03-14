@@ -132,7 +132,6 @@ class ClashRoyaleDeckModel extends ClashRoyaleWinTrackerModel
   getByCardKeys: (cardKeys, {useCache} = {}) =>
     cardKeysStr = @getCardKeys cardKeys
     get = =>
-      console.log 'getting', cardKeysStr
       r.table CLASH_ROYALE_DECK_TABLE
       .getAll cardKeysStr, {index: CARD_KEYS_INDEX}
       .nth 0
@@ -154,7 +153,8 @@ class ClashRoyaleDeckModel extends ClashRoyaleWinTrackerModel
             }
       .then defaultClashRoyaleDeck
     if useCache
-      key = CacheService.PREFIXES.CLASH_ROYALE_DECK_CARD_KEYS
+      prefix = CacheService.PREFIXES.CLASH_ROYALE_DECK_CARD_KEYS
+      key = "#{prefix}:#{cardKeysStr}"
       CacheService.preferCache key, get, {expireSeconds: ONE_HOUR_SECONDS}
     else
       get()

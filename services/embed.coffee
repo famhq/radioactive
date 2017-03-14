@@ -14,6 +14,7 @@ ClashRoyaleDeck = require '../models/clash_royale_deck'
 Deck = require '../models/clash_royale_deck'
 Group = require '../models/group'
 GroupRecord = require '../models/group_record'
+GameRecord = require '../models/game_record'
 UserGroupData = require '../models/user_group_data'
 CacheService = require './cache'
 
@@ -45,6 +46,8 @@ TYPES =
     CONVERSATIONS: 'group:conversations'
   GROUP_RECORD_TYPE:
     USER_VALUES: 'groupRecordType:userValues'
+  GAME_RECORD_TYPE:
+    ME_VALUES: 'gameRecordType:userValues'
   THREAD_COMMENT:
     CREATOR: 'threadComment:creator'
   THREAD:
@@ -167,6 +170,20 @@ embedFn = _.curry ({embed, user, groupId}, object) ->
         embedded.userValues = GroupRecord.getAllRecordsByTypeAndTime {
           groupRecordTypeId: embedded.id
           scaledTime: GroupRecord.getScaledTimeByTimeScale embedded.timeScale
+        }
+
+      when TYPES.GAME_RECORD_TYPE.ME_VALUES
+        minScaledTime = GameRecord.getScaledTimeByTimeScale(
+          'minute', moment().subtract(30, 'day')
+        )
+        maxScaledTime = GameRecord.getScaledTimeByTimeScale 'minute'
+
+        embedded.userValues = GameRecord.getRecords {
+          gameRecordTypeId: embedded.id
+          userId: user.id
+          minScaledTime: minScaledTime
+          maxScaledTime: maxScaledTime
+          limit: 50
         }
 
       when TYPES.CONVERSATION.USERS

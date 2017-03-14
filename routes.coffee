@@ -18,6 +18,7 @@ TheadCtrl = require './controllers/thread'
 GroupCtrl = require './controllers/group'
 GroupRecordCtrl = require './controllers/group_record'
 GroupRecordTypeCtrl = require './controllers/group_record_type'
+GameRecordTypeCtrl = require './controllers/game_record_type'
 ThreadCommentCtrl = require './controllers/thread_comment'
 VideoCtrl = require './controllers/video'
 StreamService = require './services/stream'
@@ -102,10 +103,12 @@ module.exports = router
 .on 'groupRecordTypes.create', authed GroupRecordTypeCtrl.create
 .on 'groupRecordTypes.deleteById', authed GroupRecordTypeCtrl.deleteById
 
+.on 'gameRecordTypes.getAllByGameId',
+  authed GameRecordTypeCtrl.getAllByGameId
+
 .on 'userGroupData.updateMeByGroupId', authed UserGroupData.updateMeByGroupId
 .on 'userGroupData.getMeByGroupId', authed UserGroupData.getMeByGroupId
 
-.on 'userGameData.updateMeByGameId', authed UserGameData.updateMeByGameId
 .on 'userGameData.getMeByGameId', authed UserGameData.getMeByGameId
 
 .on 'threadComments.create', authed ThreadCommentCtrl.create

@@ -6,6 +6,8 @@ r = require '../services/rethinkdb'
 
 GROUP_ID_INDEX = 'groupId'
 
+# TODO: rm this model?
+
 defaultGroupRecordType = (groupRecordType) ->
   unless groupRecordType?
     return null

@@ -7,6 +7,7 @@ KueCreateService = require './kue_create'
 ClashTvService = require './clash_tv'
 VideoDiscoveryService = require './video_discovery'
 EventService = require './event'
+ClashRoyaleApiService = require './clash_royale_api'
 ClashRoyaleDeck = require '../models/clash_royale_deck'
 ClashRoyaleCard = require '../models/clash_royale_card'
 r = require './rethinkdb'
@@ -18,10 +19,6 @@ class CronService
   constructor: ->
     @crons = []
 
-    # midnight
-    @addCron 'daily', '0 0 0 * * *', ->
-      r.table('user_daily_data').delete()
-
     # minute
     @addCron 'minute', '0 * * * * *', ->
       EventService.notifyForStart()
@@ -32,6 +29,9 @@ class CronService
 
     @addCron 'hourly', '0 0 * * * *', ->
       VideoDiscoveryService.discover()
+
+    @addCron 'halfHourly', ' 0 12,42 * * * *', ->
+      ClashRoyaleApiService.process()
 
     # daily 6pm PT
     # @addCron 'winRates', '0 0 2 * * *', ->
