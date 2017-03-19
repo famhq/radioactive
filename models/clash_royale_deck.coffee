@@ -129,7 +129,7 @@ class ClashRoyaleDeckModel extends ClashRoyaleWinTrackerModel
   getCardKeys: (cards) ->
     cardKeys = _.sortBy(cards).join '|'
 
-  getByCardKeys: (cardKeys, {useCache} = {}) =>
+  getByCardKeys: (cardKeys, {preferCache} = {}) =>
     cardKeysStr = @getCardKeys cardKeys
     get = =>
       r.table CLASH_ROYALE_DECK_TABLE
@@ -152,7 +152,7 @@ class ClashRoyaleDeckModel extends ClashRoyaleWinTrackerModel
               cardIds: _.filter _.map cards, 'id'
             }
       .then defaultClashRoyaleDeck
-    if useCache
+    if preferCache
       prefix = CacheService.PREFIXES.CLASH_ROYALE_DECK_CARD_KEYS
       key = "#{prefix}:#{cardKeysStr}"
       CacheService.preferCache key, get, {expireSeconds: ONE_HOUR_SECONDS}

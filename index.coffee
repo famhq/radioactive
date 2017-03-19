@@ -185,16 +185,26 @@ app.post '/log', (req, res) ->
 
 app.post '/chatMessage/:id/card', ChatMessageCtrl.updateCard
 
-app.post '/clashRoyaleApi/updatePlayer', ClashRoyaleAPICtrl.updatePlayer
+app.post '/clashRoyaleApi/updatePlayerMatches', (req, res) ->
+  ClashRoyaleAPICtrl.updatePlayerMatches req, res
+  .then ->
+    res.status(200).send()
 
-app.get '/clashTv', (req, res) -> ClashTvService.process()
-app.get '/clashApiProcess', (req, res) -> ClashRoyaleAPICtrl.process()
-app.get '/videoDiscovery', (req, res) -> VideoDiscoveryService.discover()
+app.get '/clashTv', (req, res) ->
+  ClashTvService.process()
+  res.status(200).send()
+app.get '/clashApiProcess', (req, res) ->
+  ClashRoyaleAPICtrl.process()
+  res.status(200).send()
+app.get '/videoDiscovery', (req, res) ->
+  VideoDiscoveryService.discover()
+  res.status(200).send()
 app.get '/updateCards', (req, res) ->
   Promise.all [
     ClashRoyaleCard.updateWinsAndLosses()
     ClashRoyaleDeck.updateWinsAndLosses()
   ]
+  res.status(200).send()
 
 if config.ENV is config.ENVS.PROD
   redisPub = new Redis.Cluster _.filter(config.REDIS.NODES)

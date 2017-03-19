@@ -7,6 +7,7 @@ r = require '../services/rethinkdb'
 GAME_RECORD_TYPE_ID_INDEX = 'gameRecordTypeId'
 SCALED_TIME_INDEX = 'scaledTime'
 USER_ID_INDEX = 'userId'
+PLAYER_ID_INDEX = 'playerId'
 GAME_ID_INDEX = 'gameId'
 RECORDS_INDEX = 'records'
 RECORD_INDEX = 'record'
@@ -19,6 +20,7 @@ defaultGameRecord = (gameRecord) ->
   _.defaults gameRecord, {
     id: uuid.v4()
     userId: null
+    playerId: null
     gameRecordTypeId: null
     value: 0
     scaledTime: null
@@ -34,6 +36,7 @@ class GameRecordModel
       indexes: [
         {name: GAME_RECORD_TYPE_ID_INDEX}
         {name: USER_ID_INDEX}
+        {name: PLAYER_ID_INDEX}
         {name: SCALED_TIME_INDEX}
         {name: RECORDS_INDEX, fn: (row) ->
           [row('gameRecordTypeId'), row('userId')]}
@@ -96,6 +99,18 @@ class GameRecordModel
     r.table GAME_RECORDS_TABLE
     .getAll [gameRecordTypeId, scaledTime], {index: GAME_RECORD_TYPE_TIME_INDEX}
     .run()
+
+  duplicateByPlayerId: (playerId, userId) ->
+    r.table GAME_RECORDS_TABLE
+    .getAll playerId, {index: PLAYER_ID_INDEX}
+    .group 'scaledTime'
+    .run()
+    .map ({reduction}) =>
+      record = reduction[0]
+      @create _.defaults {
+        id: uuid.v4()
+        userId: userId
+      }, record
 
   updateById: (id, diff) ->
     r.table GAME_RECORDS_TABLE
