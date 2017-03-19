@@ -51,6 +51,8 @@ class ClashRoyaleCardModel extends ClashRoyaleWinTrackerModel
     .then defaultClashRoyaleCard
 
   getByKey: (key) ->
+    unless key
+      Promise.resolve null
     r.table CLASH_ROYALE_CARD_TABLE
     .getAll key, {index: KEY_INDEX}
     .nth 0

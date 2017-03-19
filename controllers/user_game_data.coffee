@@ -13,9 +13,9 @@ schemas = require '../schemas'
 defaultEmbed = []
 
 class UserGameDataCtrl
-  getMeByGameId: ({gameId}, {user}) ->
+  getByUserIdAndGameId: ({userId, gameId}, {user}) ->
     gameId or= config.CLASH_ROYALE_ID
 
-    UserGameData.getByUserIdAndGameId user.id, gameId
+    UserGameData.getByUserIdAndGameId userId, gameId
 
 module.exports = new UserGameDataCtrl()

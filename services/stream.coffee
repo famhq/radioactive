@@ -7,10 +7,12 @@ class StreamService
   constructor: ->
     @openCursors = {}
     setInterval =>
-      console.log 'cursors open: ', _.reduce @openCursors, (count, socket) ->
+      cursorsOpen = _.reduce @openCursors, (count, socket) ->
         count += _.keys(socket).length
         count
       , 0
+      if cursorsOpen > 10
+        console.log 'cursors open: ', cursorsOpen
     , 100000
 
   exoidDisconnect: (socket) =>

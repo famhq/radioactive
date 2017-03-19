@@ -103,13 +103,14 @@ module.exports = router
 .on 'groupRecordTypes.create', authed GroupRecordTypeCtrl.create
 .on 'groupRecordTypes.deleteById', authed GroupRecordTypeCtrl.deleteById
 
-.on 'gameRecordTypes.getAllByGameId',
-  authed GameRecordTypeCtrl.getAllByGameId
+.on 'gameRecordTypes.getAllByUserIdAndGameId',
+  authed GameRecordTypeCtrl.getAllByUserIdAndGameId
 
 .on 'userGroupData.updateMeByGroupId', authed UserGroupData.updateMeByGroupId
 .on 'userGroupData.getMeByGroupId', authed UserGroupData.getMeByGroupId
 
-.on 'userGameData.getMeByGameId', authed UserGameData.getMeByGameId
+.on 'userGameData.getByUserIdAndGameId',
+  authed UserGameData.getByUserIdAndGameId
 
 .on 'threadComments.create', authed ThreadCommentCtrl.create
 .on 'threadComments.flag', authed ThreadCommentCtrl.flag
@@ -131,6 +132,8 @@ module.exports = router
 
 .on 'clashRoyaleUserDecks.create', authed ClashRoyaleUserDeckCtrl.create
 .on 'clashRoyaleUserDecks.getAll', authed ClashRoyaleUserDeckCtrl.getAll
+.on 'clashRoyaleUserDecks.getAllByUserId',
+  authed ClashRoyaleUserDeckCtrl.getAllByUserId
 .on 'clashRoyaleUserDecks.getByDeckId',
   authed ClashRoyaleUserDeckCtrl.getByDeckId
 .on 'clashRoyaleUserDecks.favorite', authed ClashRoyaleUserDeckCtrl.favorite

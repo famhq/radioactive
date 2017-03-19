@@ -10,10 +10,11 @@ config =
   # hardcoded while we just have one game
   CLASH_ROYALE_ID: '319a9065-e3dc-4d02-ad30-62047716a88f'
   CLASH_ROYALE_TROPHIES_RECORD_ID: 'ed3b3643-039b-4a3f-9d44-0742b86e0a2c'
+  MAIN_GROUP_ID: '73ed4af0-a2f2-4371-a893-1360d3989708' # TODO: remove?
 
   VERBOSE: if env.VERBOSE then env.VERBOSE is '1' else true
   PORT: env.RADIOACTIVE_PORT or 50000
-  ENV: env.NODE_ENV
+  ENV: env.DEBUG_ENV or env.NODE_ENV
   IS_STAGING: env.IS_STAGING is '1'
   JWT_ES256_PRIVATE_KEY: env.JWT_ES256_PRIVATE_KEY
   JWT_ES256_PUBLIC_KEY: env.JWT_ES256_PUBLIC_KEY
@@ -51,7 +52,8 @@ config =
     PREFIX: 'radioactive'
     PORT: REDIS_PORT
     NODES: if env.REDIS_CLUSTER_HOSTS \
-           then _.map env.REDIS_CLUSTER_HOSTS.split(','), (host) -> {host, port: REDIS_PORT}
+           then _.map env.REDIS_CLUSTER_HOSTS.split(','), (host) ->
+             {host, port: REDIS_PORT}
            else [env.REDIS_HOST]
   CDN_HOST: env.CDN_HOST
   AWS:

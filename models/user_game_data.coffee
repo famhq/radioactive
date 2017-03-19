@@ -104,7 +104,7 @@ class UserGameDataModel
     .then (a) ->
       null
 
-  getStale: ({gameId, staleTimeMs}) ->
+  getStaleByGameId: (gameId, {staleTimeMs}) ->
     r.table USER_GAME_DATA_TABLE
     .between(
       [gameId, false, true, 0]
@@ -113,6 +113,14 @@ class UserGameDataModel
     )
     .run()
     .map defaultUserGameData
+
+  updateByPlayerIdsAndGameId: (playerIds, gameId, diff) ->
+    playerIdGameIds = _.map playerIds, (playerId) ->
+      [playerId, gameId]
+    r.table USER_GAME_DATA_TABLE
+    .getAll r.args(playerIdGameIds), {index: PLAYER_ID_GAME_ID_INDEX}
+    .update diff
+    .run()
 
   updateById: (id, diff) ->
     r.table USER_GAME_DATA_TABLE

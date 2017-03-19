@@ -2,62 +2,150 @@ _ = require 'lodash'
 Promise = require 'bluebird'
 xRay = require 'x-ray'
 tabletojson = require 'tabletojson'
+request = require 'request-promise'
 
 Card = require '../models/clash_royale_card'
 
-x = new xRay()
-find = {
-  cardNames: ['.su-column-inner li a']
-  hrefs: ['.su-column-inner li a@href']
-}
-i = 0
-x('http://clashroyalearena.com/cards', find) (err, {cardNames, hrefs}) ->
-  cards = _.zip cardNames, hrefs
-  # return console.log cards.length
-  cards = _.map cards, ([cardName, href]) ->
-    cardKey = _.snakeCase cardName.toLowerCase().replace /\./g, ''
-    cardKey = cardKey.replace 'the_log', 'log'
-    x(href, ['.su-table@html']) (err, tables) ->
+getStats = (href) ->
+  new Promise (resolve) ->
+    x(href, ['#unit-attributes-table@html']) (err, table) ->
       if err
         console.log err
-      unless tables
-        return
-      i += 1
-      statsTable =  tabletojson.convert tables[0]
-      levelsTable = tabletojson.convert tables[1]
+      table = tabletojson.convert "<table>#{table}</table"
 
-      statsHeaders = _.values statsTable[0][0]
-      statsValues = statsTable[0][1]
-      stats = _.reduce statsHeaders, (obj, statName, i) ->
-        obj[_.camelCase(statName)] = statsValues[i]
+      table = table[0][0]
+      resolve _.reduce table, (obj, value, key) ->
+        obj[_.camelCase(key)] = if isNaN(parseInt(value)) \
+                                then value
+                                else parseInt(value)
         obj
       , {}
 
-      levelsHeaders = _.values levelsTable[0][0]
-      levelsHeaders = _.map levelsHeaders, _.camelCase
-      levels = _.takeRight levelsTable[0], levelsTable[0].length - 1
-      levels = _.map levels, (levelValues) ->
-        levelValues = _.values levelValues
-        levelValues = _.map levelValues, (value) ->
-          if _.isInteger parseInt(value)
-            value = parseInt value
-          value
-        _.zipObject levelsHeaders, levelValues
+getLevels = (href) ->
+  new Promise (resolve) ->
+    x(href, ['#unit-statistics-table@html']) (err, table) ->
+      if err
+        console.log err
+      table = tabletojson.convert "<table>#{table}</table"
 
-      cardData = _.defaults stats, {levels}
+      table = table[0]
+      resolve  _.map table, (level) ->
+        _.reduce level, (obj, value, key) ->
+          obj[_.camelCase(key)] = if isNaN(parseInt(value)) \
+                                  then value
+                                  else parseInt(value)
+          obj
+        , {}
 
-      Card.getByKey cardKey
-      .then (card) ->
-        if card
-          console.log 'update', cardKey
-          Card.updateByKey cardKey, {data: cardData}
-        else
-          console.log 'create', cardKey
-          Card.create {
-            key: cardKey
-            name: _.startCase cardKey
-            data: cardData
-          }
+
+x = new xRay()
+request 'http://clashroyale.wikia.com/api/v1/Navigation/Data', {json: true}
+.then ({navigation}) ->
+  items = _.find navigation.wiki, {text: 'Cards'}
+  items = _.filter items.children, ({text}) -> text.indexOf('Cards') isnt -1
+  items = _.map items, ({children}) ->
+    _.map children, (rarity) ->
+      _.map rarity.children, ({href, text}) ->
+        href = "http://clashroyale.wikia.com#{href}"
+        Promise.all [
+          getStats href
+          getLevels href
+        ]
+        .then ([stats, levels]) ->
+          cardData = _.defaults stats, {levels}
+
+          cardKey = _.snakeCase text
+          cardKey = cardKey.replace 'p_e_k_k_a', 'pekka'
+          # console.log cardKey, cardData
+
+          Card.getByKey cardKey
+          .then (card) ->
+            if card
+              console.log 'update', cardKey
+              Card.updateByKey cardKey, {data: cardData}
+            else
+              console.log 'create', cardKey
+              Card.create {
+                key: cardKey
+                name: _.startCase cardKey
+                data: cardData
+              }
+
+
+
+
+
+# x = new xRay()
+# find = {
+#   cardNames: ['.su-column-inner li a']
+#   hrefs: ['.su-column-inner li a@href']
+# }
+# i = 0
+# x('http://clashroyalearena.com/cards', find) (err, {cardNames, hrefs}) ->
+#   cards = _.zip cardNames, hrefs
+#   # return console.log cards.length
+#   cards = _.map cards, ([cardName, href]) ->
+#     cardKey = _.snakeCase cardName.toLowerCase().replace /\./g, ''
+#     cardKey = cardKey.replace 'the_log', 'log'
+#     cardKey = cardKey.replace '_spell', ''
+#     cardKey = cardKey.replace /spear_goblin$/, 'spear_goblins'
+#     cardKey = cardKey.replace 'bomber_tower', 'bomb_tower'
+#     x(href, ['.su-table@html']) (err, tables) ->
+#       if err
+#         console.log err
+#       unless tables
+#         return
+#       i += 1
+#       statsTable =  tabletojson.convert tables[0]
+#       levelsTable = tabletojson.convert tables[1]
+#
+#       statsHeaders = _.values statsTable[0][0]
+#       statsValues = statsTable[0][1]
+#       stats = _.reduce statsHeaders, (obj, statName, i) ->
+#         obj[_.camelCase(statName)] = statsValues[i]
+#         obj
+#       , {}
+#
+#       levelsHeaders = _.values levelsTable[0][0]
+#       levelsHeaders = _.map levelsHeaders, _.camelCase
+#       levels = _.takeRight levelsTable[0], levelsTable[0].length - 1
+#       levels = _.map levels, (levelValues) ->
+#         levelValues = _.values levelValues
+#         levelValues = _.map levelValues, (value) ->
+#           if _.isInteger parseInt(value)
+#             value = parseInt value
+#           value
+#         _.zipObject levelsHeaders, levelValues
+#
+#       cardData = _.defaults stats, {levels}
+#
+#       Card.getByKey cardKey
+#       .then (card) ->
+#         if card
+#           console.log 'update', cardKey
+#           Card.updateByKey cardKey, {data: cardData}
+#         else
+#           console.log 'create', cardKey
+#           Card.create {
+#             key: cardKey
+#             name: _.startCase cardKey
+#             data: cardData
+#           }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 # return
 #
 # snakeToCamel = (card) ->

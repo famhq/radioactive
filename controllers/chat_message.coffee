@@ -48,6 +48,9 @@ class ChatMessageCtrl
     .then (conversation) =>
       Conversation.hasPermission conversation, user.id
       .then (hasPermission) =>
+        # FIXME FIXME
+        if conversation.groupId is config.MAIN_GROUP_ID
+          hasPermission = true
         unless hasPermission
           router.throw status: 401, info: 'unauthorized'
 
@@ -85,7 +88,7 @@ class ChatMessageCtrl
           pushBody = if isImage then '[image]' else body
 
           # FIXME FIXME: re-enable notifications
-          unless conversation.groupId is '73ed4af0-a2f2-4371-a893-1360d3989708'
+          unless conversation.groupId is config.MAIN_GROUP_ID
             PushNotificationService.sendToConversation(
               conversation, {
                 skipMe: true
@@ -103,24 +106,28 @@ class ChatMessageCtrl
     Conversation.getById conversationId
     .then (conversation) ->
       Conversation.hasPermission conversation, user.id
-    .then (hasPermission) ->
-      unless hasPermission
-        router.throw status: 401, info: 'unauthorized'
+      .then (hasPermission) ->
+        # FIXME FIXME
+        if conversation.groupId is config.MAIN_GROUP_ID
+          console.log 'is main group'
+          hasPermission = true
+        unless hasPermission
+          router.throw status: 401, info: 'unauthorized'
 
-      StreamService.stream {
-        emit
-        socket
-        route
-        limit: 30
-        promise: ChatMessage.getAllByConversationId conversationId, {
-          isStreamed: true
+        StreamService.stream {
+          emit
+          socket
+          route
+          limit: 30
+          promise: ChatMessage.getAllByConversationId conversationId, {
+            isStreamed: true
+          }
+          postFn: (item) ->
+            EmbedService.embed {embed: defaultEmbed}, ChatMessage.default(item)
+            .then (item) ->
+              if item.user?.flags?.isChatBanned isnt true
+                item
         }
-        postFn: (item) ->
-          EmbedService.embed {embed: defaultEmbed}, ChatMessage.default(item)
-          .then (item) ->
-            if item.user?.flags?.isChatBanned isnt true
-              item
-      }
 
   uploadImage: ({}, {user, file}) ->
     router.assert {file}, {

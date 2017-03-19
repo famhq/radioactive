@@ -6,6 +6,7 @@ Conversation = require '../models/conversation'
 Group = require '../models/group'
 Event = require '../models/event'
 EmbedService = require '../services/embed'
+config = require '../config'
 
 defaultEmbed = [EmbedService.TYPES.CONVERSATION.USERS]
 lastMessageEmbed = [
@@ -73,6 +74,9 @@ class ConversationCtrl
         # FIXME FIXME: channel perms
         Group.hasPermissionByIdAndUser conversation.groupId, user
         .then (hasPermission) ->
+          # FIXME FIXME
+          if conversation.groupId is config.MAIN_GROUP_ID
+            hasPermission = true
           unless hasPermission
             router.throw status: 400, info: 'no permission'
       else if conversation.eventId

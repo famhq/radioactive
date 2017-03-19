@@ -18,6 +18,11 @@ class ClashRoyaleUserDeckCtrl
     .map EmbedService.embed {embed: defaultEmbed}
     .map ClashRoyaleUserDeck.sanitize null
 
+  getAllByUserId: ({userId, sort, filter}, {user}) ->
+    ClashRoyaleUserDeck.getAllByUserId userId
+    .map EmbedService.embed {embed: defaultEmbed}
+    .map ClashRoyaleUserDeck.sanitize null
+
   getByDeckId: ({deckId}, {user}) ->
     ClashRoyaleUserDeck.getByDeckIdAndUserId deckId, user.id
     .then EmbedService.embed {embed: defaultEmbed}

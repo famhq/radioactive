@@ -11,6 +11,7 @@ ADD_TIME_INDEX = 'addTime'
 DECK_ID_INDEX = 'deckId'
 USER_ID_IS_FAVORITED_INDEX = 'userIdIsFavorited'
 USER_ID_INDEX = 'userId'
+PLAYER_ID_INDEX = 'playerId'
 
 defaultClashRoyaleUserDeck = (clashRoyaleUserDeck) ->
   unless clashRoyaleUserDeck?
@@ -24,7 +25,8 @@ defaultClashRoyaleUserDeck = (clashRoyaleUserDeck) ->
     wins: 0
     losses: 0
     draws: 0
-    creatorId: null
+    userId: null
+    playerId: null
     addTime: new Date()
   }
 
@@ -42,13 +44,13 @@ class ClashRoyaleUserDeckModel
         }
         {name: USER_ID_INDEX}
         {name: DECK_ID_INDEX}
+        {name: PLAYER_ID_INDEX}
       ]
     }
   ]
 
   create: (clashRoyaleUserDeck) ->
     clashRoyaleUserDeck = defaultClashRoyaleUserDeck clashRoyaleUserDeck
-
     r.table CLASH_ROYALE_USER_DECK_TABLE
     .insert clashRoyaleUserDeck
     .run()
@@ -86,7 +88,6 @@ class ClashRoyaleUserDeckModel
     .map defaultClashRoyaleUserDeck
 
   getAllByUserId: (userId, {limit} = {}) ->
-    console.log 'get all', userId
     limit ?= 10
     r.table CLASH_ROYALE_USER_DECK_TABLE
     .getAll userId, {index: USER_ID_INDEX}
@@ -129,31 +130,46 @@ class ClashRoyaleUserDeckModel
     .run()
 
   upsertByDeckIdAndUserId: (deckId, userId, diff) ->
+    prefix = CacheService.PREFIXES.CLASH_ROYALE_USER_DECK_DECK_ID_USER_ID
+    key = "#{prefix}:#{deckId}:#{userId}"
+
+    CacheService.preferCache key, ->
+      r.table CLASH_ROYALE_USER_DECK_TABLE
+      .getAll userId, {index: USER_ID_INDEX}
+      .filter {deckId}
+      .nth 0
+      .default null
+      .do (userDeck) ->
+        r.branch(
+          userDeck.eq null
+
+          r.table CLASH_ROYALE_USER_DECK_TABLE
+          .insert defaultClashRoyaleUserDeck _.defaults(_.clone(diff), {
+            userId, deckId
+          })
+
+          r.table CLASH_ROYALE_USER_DECK_TABLE
+          .getAll userId, {index: USER_ID_INDEX}
+          .filter {deckId}
+          .nth 0
+          .default null
+          .update diff
+        )
+      .run()
+      .then ->
+        null
+
+  duplicateByPlayerId: (playerId, userId) ->
     r.table CLASH_ROYALE_USER_DECK_TABLE
-    .getAll userId, {index: USER_ID_INDEX}
-    .filter {deckId}
-    .nth 0
-    .default null
-    .do (userDeck) ->
-      r.branch(
-        userDeck.eq null
-
-        r.table CLASH_ROYALE_USER_DECK_TABLE
-        .insert defaultClashRoyaleUserDeck _.defaults(_.clone(diff), {
-          userId, deckId
-        })
-
-        r.table CLASH_ROYALE_USER_DECK_TABLE
-        .getAll userId, {index: USER_ID_INDEX}
-        .filter {deckId}
-        .nth 0
-        .default null
-        .update diff
-      )
+    .getAll playerId, {index: PLAYER_ID_INDEX}
+    .group 'deckId'
     .run()
-    .then ->
-      null
-
+    .map ({reduction}) =>
+      userDeck = reduction[0]
+      @create _.defaults {
+        id: uuid.v4()
+        userId: userId
+      }, userDeck
 
   deleteById: (id) ->
     r.table CLASH_ROYALE_USER_DECK_TABLE
