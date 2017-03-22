@@ -153,6 +153,7 @@ class UserModel
       'isMember'
       'flags'
       'data'
+      'gameData'
       'embedded'
     ]
     sanitizedUser.flags = _.pick user.flags, [

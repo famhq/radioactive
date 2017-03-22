@@ -42,6 +42,23 @@ class UserCtrl
 
     User.updateById user.id, {flags}
 
+  setFlagsById: ({flags, id}, {user}) ->
+    unless user.flags.isModerator
+      router.throw status: 400, info: 'no permission'
+
+    flagsSchema =
+      isChatBanned: Joi.boolean().optional()
+
+    updateValid = Joi.validate flags, flagsSchema
+
+    if updateValid.error
+      router.throw status: 400, info: updateValid.error.message
+
+    User.updateById id, {flags}
+    .then ->
+      key = "#{CacheService.PREFIXES.CHAT_USER}:#{id}"
+      CacheService.deleteByKey key
+
   updateById: ({id, diff}, {user}) ->
     flagsSchema =
       lastPlatform: Joi.string().optional()

@@ -21,6 +21,7 @@ TYPES =
   NEW_CARD: 'newCard'
   NEW_PROMOTION: 'sale'
   REWARD: 'reward'
+  DAILY_RECAP: 'dailyRecap'
   NEW_TRADE: 'newTrade'
   EVENT: 'event'
   TRADE_UPDATE: 'tradeUpdate'

@@ -51,6 +51,7 @@ module.exports = router
 .on 'users.setUsername', authed UserCtrl.setUsername
 .on 'users.setAvatarImage', authed UserCtrl.setAvatarImage
 .on 'users.setFlags', authed UserCtrl.setFlags
+.on 'users.setFlagsById', authed UserCtrl.setFlagsById
 
 .on 'userData.getMe', authed UserDataCtrl.getMe
 .on 'userData.getByUserId', authed UserDataCtrl.getByUserId
@@ -132,6 +133,8 @@ module.exports = router
 
 .on 'clashRoyaleUserDecks.create', authed ClashRoyaleUserDeckCtrl.create
 .on 'clashRoyaleUserDecks.getAll', authed ClashRoyaleUserDeckCtrl.getAll
+.on 'clashRoyaleUserDecks.getFavoritedDeckIds',
+  authed ClashRoyaleUserDeckCtrl.getFavoritedDeckIds
 .on 'clashRoyaleUserDecks.getAllByUserId',
   authed ClashRoyaleUserDeckCtrl.getAllByUserId
 .on 'clashRoyaleUserDecks.getByDeckId',

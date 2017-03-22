@@ -16,6 +16,7 @@ Group = require '../models/group'
 GroupRecord = require '../models/group_record'
 GameRecord = require '../models/game_record'
 UserGroupData = require '../models/user_group_data'
+UserGameData = require '../models/user_game_data'
 CacheService = require './cache'
 
 TYPES =
@@ -23,12 +24,12 @@ TYPES =
     DATA: 'user:data'
     IS_ONLINE: 'user:isOnline'
     GROUP_DATA: 'user:groupData'
+    GAME_DATA: 'user:gameData'
   USER_DATA:
     CONVERSATION_USERS: 'userData:conversationUsers'
     FOLLOWERS: 'userData:followers'
     FOLLOWING: 'userData:following'
     BLOCKED_USERS: 'userData:blockedUsers'
-    CLASH_ROYALE_DECK_IDS: 'userData:clashRoyaleDeckIds'
   CHAT_MESSAGE:
     USER: 'chatMessage:user'
   CONVERSATION:
@@ -80,7 +81,7 @@ getUserDataItems = (userData) ->
       .filter ({item}) -> Boolean item
   , {expireSeconds: ONE_HOUR_SECONDS}
 
-embedFn = _.curry ({embed, user, groupId}, object) ->
+embedFn = _.curry ({embed, user, groupId, gameId}, object) ->
   embedded = _.cloneDeep object
   unless embedded
     return Promise.resolve null
@@ -92,33 +93,21 @@ embedFn = _.curry ({embed, user, groupId}, object) ->
         embedded.data = UserData.getByUserId(embedded.id)
         .then (userData) ->
           _.defaults {userId: embedded.id}, userData
-        .then embedFn {
-          embed: [
-            TYPES.USER_DATA.CLASH_ROYALE_DECK_IDS
-          ]
-        }
 
       when TYPES.USER.GROUP_DATA
         embedded.groupData = UserGroupData.getByUserIdAndGroupId(
           embedded.id, groupId
         )
 
+      when TYPES.USER.GAME_DATA
+        embedded.gameData = UserGameData.getByUserIdAndGameId(
+          embedded.id, gameId
+        )
+
       when TYPES.USER.IS_ONLINE
         embedded.isOnline = moment(embedded.lastActiveTime)
                             .add(LAST_ACTIVE_TIME_MS)
                             .isAfter moment()
-
-      when TYPES.USER_DATA.CLASH_ROYALE_DECK_IDS
-        key = CacheService.PREFIXES.USER_DATA_CLASH_ROYALE_DECK_IDS +
-              ':' + embedded.userId
-        embedded.clashRoyaleDeckIds =
-          CacheService.preferCache key, ->
-            if embedded.userId
-              ClashRoyaleUserDeck.getAllFavoritedByUserId embedded.userId
-              .map (deck) -> deck?.deckId
-            else
-              Promise.resolve null
-          , {expireSeconds: TEN_DAYS_SECONDS}
 
       when TYPES.USER_DATA.FOLLOWING
         #
@@ -267,6 +256,9 @@ embedFn = _.curry ({embed, user, groupId}, object) ->
           embedded.user =
             CacheService.preferCache key, ->
               User.getById embedded.userId
+              .then embedFn {
+                embed: [TYPES.USER.GAME_DATA], gameId: config.CLASH_ROYALE_ID
+              }
               .then User.sanitizePublic(null)
             , {expireSeconds: FIVE_MINUTES_SECONDS}
         else
@@ -280,11 +272,19 @@ embedFn = _.curry ({embed, user, groupId}, object) ->
             .then ClashRoyaleCard.sanitize(null)
           , {expireSeconds: FIVE_MINUTES_SECONDS}
         embedded.averageElixirCost = embedded.cards.then (cards) ->
-          mean = _.meanBy cards, (card) ->
-            card.data?.elixirCost
+          count = cards.length
+          sum = _.sumBy cards, (card) ->
+            if _.isNumber card.data?.cost
+              card.data?.cost
+            else
+              # mirror
+              count -= 1
+              0
+          mean = sum / count
           Math.round(mean * 10) / 10
 
       when TYPES.CLASH_ROYALE_USER_DECK.DECK
+        console.log 'get', embedded.deckId
         embedded.deck = ClashRoyaleDeck.getById embedded.deckId
         .then embedFn {embed: [TYPES.CLASH_ROYALE_DECK.CARDS]}
 

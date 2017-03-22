@@ -5,6 +5,7 @@ Promise = require 'bluebird'
 User = require '../models/user'
 UserData = require '../models/user_data'
 Group = require '../models/group'
+Game = require '../models/game'
 Conversation = require '../models/conversation'
 GroupRecordType = require '../models/group_record_type'
 EmbedService = require '../services/embed'
@@ -152,7 +153,7 @@ class GroupCtrl
       name = User.getDisplayName user
 
       # FIXME FIXME: re-enable notifications
-      unless id is '73ed4af0-a2f2-4371-a893-1360d3989708'
+      if false and id isnt '73ed4af0-a2f2-4371-a893-1360d3989708'
         PushNotificationService.sendToGroup(group, {
           title: 'New group member'
           text: "#{name} joined your group."
