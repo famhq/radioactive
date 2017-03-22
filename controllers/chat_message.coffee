@@ -24,6 +24,8 @@ URL_REGEX = /\b(https?):\/\/[-A-Z0-9+&@#/%?=~_|!:,.;]*[A-Z0-9+&@#/%=~_|]/gi
 IMAGE_REGEX = /\!\[(.*?)\]\((.*?)\)/gi
 CARD_BUILDER_TIMEOUT_MS = 1000
 SMALL_IMAGE_SIZE = 200
+RATE_LIMIT_CHAT_MESSAGES = 6
+RATE_LIMIT_CHAT_MESSAGES_EXPIRE_S = 5
 # LARGE_IMAGE_SIZE = 1000
 
 defaultConversationEmbed = [EmbedService.TYPES.CONVERSATION.USERS]
@@ -31,6 +33,17 @@ defaultConversationEmbed = [EmbedService.TYPES.CONVERSATION.USERS]
 class ChatMessageCtrl
   constructor: ->
     @cardBuilder = new cardBuilder {api: config.DEALER_API_URL}
+
+  checkRateLimit: (userId) ->
+    key = "#{CacheService.PREFIXES.RATE_LIMIT_CHAT_MESSAGES}:#{userId}"
+    CacheService.get key
+    .then (amount) ->
+      amount ?= 0
+      if amount >= RATE_LIMIT_CHAT_MESSAGES
+        router.throw status: 429, info: 'too many requests'
+      CacheService.set key, amount + 1, {
+        expireSeconds: RATE_LIMIT_CHAT_MESSAGES_EXPIRE_S
+      }
 
   create: ({body, conversationId, clientId}, {user, headers, connection}) =>
     userAgent = headers['user-agent']
@@ -43,7 +56,9 @@ class ChatMessageCtrl
     if isProfane or user.flags.isChatBanned
       router.throw status: 400, info: 'unable to post...'
 
-    Conversation.getById conversationId
+    @checkRateLimit user.id
+    .then ->
+      Conversation.getById conversationId
     .then EmbedService.embed {embed: defaultConversationEmbed}
     .then (conversation) =>
       Conversation.hasPermission conversation, user.id

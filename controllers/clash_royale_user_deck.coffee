@@ -18,6 +18,10 @@ class ClashRoyaleUserDeckCtrl
     .map EmbedService.embed {embed: defaultEmbed}
     .map ClashRoyaleUserDeck.sanitize null
 
+  getFavoritedDeckIds: ({}, {user}) ->
+    ClashRoyaleUserDeck.getAllFavoritedByUserId user.id
+    .map ({deckId}) -> deckId
+
   getAllByUserId: ({userId, sort, filter}, {user}) ->
     ClashRoyaleUserDeck.getAllByUserId userId
     .map EmbedService.embed {embed: defaultEmbed}
@@ -36,6 +40,7 @@ class ClashRoyaleUserDeckCtrl
       ClashRoyaleUserDeck.processUpdate user.id
 
   unfavorite: ({deckId}, {user}) ->
+    console.log 'abc', user.id
     ClashRoyaleUserDeck.upsertByDeckIdAndUserId deckId, user.id, {
       isFavorited: false
     }

@@ -98,26 +98,7 @@ module.exports = class ClashRoyaleWinTrackerModel
       r.now().sub(timeOffset)
       {index: 'time'}
     )
-    .map((match) =>
-      table = @RETHINK_TABLES[0].name
-      if table is 'clash_royale_decks'
-        key1 = [match('deck1Id')]
-        key2 = [match('deck2Id')]
-      else
-        key1 = match('deck1CardIds')
-        key2 = match('deck2CardIds')
-      return r.branch(
-        match('deck1Score').gt(match('deck2Score')) # if
-        key1
-        match('deck2Score').gt(match('deck1Score')) # else if
-        key2
-        [] # else
-      )
-    )
-    .concatMap((items) ->
-      return items
-    )
-    .group((itemId) -> return itemId)
+    .group('winningDeckId')
     .count()
     .run()
     .map ({group, reduction}) -> {id: group, count: reduction}
@@ -129,26 +110,7 @@ module.exports = class ClashRoyaleWinTrackerModel
       r.now().sub(timeOffset)
       {index: 'time'}
     )
-    .map((match) =>
-      table = @RETHINK_TABLES[0].name
-      if table is 'clash_royale_decks'
-        key1 = [match('deck1Id')]
-        key2 = [match('deck2Id')]
-      else
-        key1 = match('deck1CardIds')
-        key2 = match('deck2CardIds')
-      return r.branch(
-        match('deck1Score').lt(match('deck2Score')) # if
-        key1
-        match('deck2Score').lt(match('deck1Score')) # else if
-        key2
-        [] # else
-      )
-    )
-    .concatMap((items) ->
-      return items
-    )
-    .group((itemId) -> return itemId)
+    .group('winningDeckId')
     .count()
     .run()
     .map ({group, reduction}) -> {id: group, count: reduction}

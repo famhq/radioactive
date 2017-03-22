@@ -44,7 +44,7 @@ class StreamService
           postFn item.new_val
           .then (newItem) ->
             if isInitial
-              items = items.concat([newItem])
+              items = _.filter items.concat([newItem])
             else
               emit {
                 initial: null

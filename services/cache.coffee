@@ -13,22 +13,25 @@ class CacheService
     BROADCAST: 'broadcast'
   LOCKS: {}
   PREFIXES:
-    CHAT_USER: 'chat:user'
+    CHAT_USER: 'chat:user1'
     THREAD_USER: 'thread:user1'
     THREAD_DECK: 'thread:deck'
     USER_DATA_CONVERSATION_USERS: 'user_data:conversation_users'
     USER_DATA_FOLLOWERS: 'user_data:followers'
     USER_DATA_FOLLOWING: 'user_data:following'
     USER_DATA_BLOCKED_USERS: 'user_data:blocked_users'
-    USER_DATA_CLASH_ROYALE_DECK_IDS: 'user_data:clash_royale_deck_ids1'
-    CLASH_ROYALE_MATCHES_ID: 'clash_royale_matches:id3'
+    USER_DATA_CLASH_ROYALE_DECK_IDS: 'user_data:clash_royale_deck_ids6'
+    CLASH_ROYALE_MATCHES_ID: 'clash_royale_matches:id6'
     CLASH_ROYALE_CARD: 'clash_royale_card'
     CLASH_ROYALE_CARD_RANK: 'clash_royal_card:rank'
     CLASH_ROYALE_DECK_RANK: 'clash_royal_deck:rank'
-    CLASH_ROYALE_DECK_CARD_KEYS: 'clash_royal_deck:card_keys9'
+    CLASH_ROYALE_DECK_CARD_KEYS: 'clash_royal_deck:card_keys6'
     CLASH_ROYALE_USER_DECK_DECK_ID_USER_ID:
-      'clash_royale_user_deck:deck_id:card_id2'
+      'clash_royale_user_deck:deck_id:user_id'
+    CLASH_ROYALE_USER_DECK_DECK_ID_PLAYER_ID:
+      'clash_royale_user_deck:deck_id:player_id'
     USERNAME_SEARCH: 'username:search'
+    RATE_LIMIT_CHAT_MESSAGES: 'rate_limit:chat_messages'
 
   constructor: ->
     @redlock = new Redlock [RedisService], {

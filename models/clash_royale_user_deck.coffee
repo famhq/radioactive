@@ -11,6 +11,8 @@ ADD_TIME_INDEX = 'addTime'
 DECK_ID_INDEX = 'deckId'
 USER_ID_IS_FAVORITED_INDEX = 'userIdIsFavorited'
 USER_ID_INDEX = 'userId'
+DECK_ID_USER_ID_INDEX = 'deckIdUserId'
+DECK_ID_PLAYER_ID_INDEX = 'deckIdPlayerId'
 PLAYER_ID_INDEX = 'playerId'
 
 defaultClashRoyaleUserDeck = (clashRoyaleUserDeck) ->
@@ -41,6 +43,16 @@ class ClashRoyaleUserDeckModel
           name: USER_ID_IS_FAVORITED_INDEX
           fn: (row) ->
             [row('userId'), row('isFavorited')]
+        }
+        {
+          name: DECK_ID_USER_ID_INDEX
+          fn: (row) ->
+            [row('deckId'), row('userId')]
+        }
+        {
+          name: DECK_ID_PLAYER_ID_INDEX
+          fn: (row) ->
+            [row('deckId'), row('playerId')]
         }
         {name: USER_ID_INDEX}
         {name: DECK_ID_INDEX}
@@ -87,10 +99,20 @@ class ClashRoyaleUserDeckModel
     .run()
     .map defaultClashRoyaleUserDeck
 
-  getAllByUserId: (userId, {limit} = {}) ->
-    limit ?= 10
+  getAllByUserId: (userId, {limit, sort} = {}) ->
+    limit ?= 25
+
+    console.log 'get all', userId, limit
+
+    sortQ = if sort is 'recent' \
+            then r.desc(ADD_TIME_INDEX)
+            else if sort is 'popular'
+            then r.desc(r.row('wins').add(r.row('losses')))
+            else r.desc(ADD_TIME_INDEX)
+
     r.table CLASH_ROYALE_USER_DECK_TABLE
     .getAll userId, {index: USER_ID_INDEX}
+    .orderBy sortQ
     .limit limit
     .run()
     .map defaultClashRoyaleUserDeck
@@ -129,35 +151,61 @@ class ClashRoyaleUserDeckModel
     .update diff
     .run()
 
+  # technically current deck is just the most recently used one...
+  # resetCurrentByPlayerId: (playerId, diff) ->
+  #   r.table CLASH_ROYALE_USER_DECK_TABLE
+  #   .getAll playerId, {index: PLAYER_ID_INDEX}
+  #   .filter {isCurrentDeck: true}
+  #   .update {isCurrentDeck: false}
+  #   .run()
+
   upsertByDeckIdAndUserId: (deckId, userId, diff) ->
-    prefix = CacheService.PREFIXES.CLASH_ROYALE_USER_DECK_DECK_ID_USER_ID
-    key = "#{prefix}:#{deckId}:#{userId}"
+    # ideally upserts would use replace for atomicity, but replace doesn't work
+    # with getAll atm
+    r.table CLASH_ROYALE_USER_DECK_TABLE
+    .getAll [deckId, userId], {index: DECK_ID_USER_ID_INDEX}
+    .nth 0
+    .default null
+    .do (userDeck) ->
+      r.branch(
+        userDeck.eq null
 
-    CacheService.preferCache key, ->
-      r.table CLASH_ROYALE_USER_DECK_TABLE
-      .getAll userId, {index: USER_ID_INDEX}
-      .filter {deckId}
-      .nth 0
-      .default null
-      .do (userDeck) ->
-        r.branch(
-          userDeck.eq null
+        r.table CLASH_ROYALE_USER_DECK_TABLE
+        .insert defaultClashRoyaleUserDeck _.defaults(_.clone(diff), {
+          userId, deckId
+        })
 
-          r.table CLASH_ROYALE_USER_DECK_TABLE
-          .insert defaultClashRoyaleUserDeck _.defaults(_.clone(diff), {
-            userId, deckId
-          })
+        r.table CLASH_ROYALE_USER_DECK_TABLE
+        .getAll [deckId, userId], {index: DECK_ID_USER_ID_INDEX}
+        .nth 0
+        .default null
+        .update diff
+      )
+    .run()
+    .then -> null
 
-          r.table CLASH_ROYALE_USER_DECK_TABLE
-          .getAll userId, {index: USER_ID_INDEX}
-          .filter {deckId}
-          .nth 0
-          .default null
-          .update diff
-        )
-      .run()
-      .then ->
-        null
+  upsertByDeckIdAndPlayerId: (deckId, playerId, diff) ->
+    r.table CLASH_ROYALE_USER_DECK_TABLE
+    .getAll [deckId, playerId], {index: DECK_ID_PLAYER_ID_INDEX}
+    .nth 0
+    .default null
+    .do (userDeck) ->
+      r.branch(
+        userDeck.eq null
+
+        r.table CLASH_ROYALE_USER_DECK_TABLE
+        .insert defaultClashRoyaleUserDeck _.defaults(_.clone(diff), {
+          playerId, deckId
+        })
+
+        r.table CLASH_ROYALE_USER_DECK_TABLE
+        .getAll [deckId, playerId], {index: DECK_ID_PLAYER_ID_INDEX}
+        .nth 0
+        .default null
+        .update diff
+      )
+    .run()
+    .then -> null
 
   duplicateByPlayerId: (playerId, userId) ->
     r.table CLASH_ROYALE_USER_DECK_TABLE
@@ -165,7 +213,7 @@ class ClashRoyaleUserDeckModel
     .group 'deckId'
     .run()
     .map ({reduction}) =>
-      userDeck = reduction[0]
+      userDeck = _.maxBy reduction, 'wins'
       @create _.defaults {
         id: uuid.v4()
         userId: userId

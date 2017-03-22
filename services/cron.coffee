@@ -24,19 +24,21 @@ class CronService
     # minute
     @addCron 'minute', '0 * * * * *', ->
       EventService.notifyForStart()
+      ClashRoyaleApiService.updateStalePlayerData()
+      ClashRoyaleApiService.updateStalePlayerMatches()
 
     @addCron 'hourly', '0 0 * * * *', ->
       VideoDiscoveryService.discover()
 
-    @addCron 'halfHourly', ' 0 12,42 * * * *', ->
-      ClashRoyaleApiService.process()
+    # @addCron 'halfHourly', ' 0 12,42 * * * *', ->
+    #   ClashRoyaleApiService.process()
 
     # daily 6pm PT
-    # @addCron 'winRates', '0 0 2 * * *', ->
-    #   Promise.all [
-    #     ClashRoyaleDeck.updateWinsAndLosses()
-    #     ClashRoyaleCard.updateWinsAndLosses()
-    #   ]
+    @addCron 'winRates', '0 0 2 * * *', ->
+      Promise.all [
+        ClashRoyaleDeck.updateWinsAndLosses()
+        # ClashRoyaleCard.updateWinsAndLosses()
+      ]
 
   addCron: (key, time, fn) =>
     @crons.push new CronJob {

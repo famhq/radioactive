@@ -90,15 +90,14 @@ class UserGameDataModel
         .getAll [playerId, gameId], {index: PLAYER_ID_GAME_ID_INDEX}
         .nth 0
         .default null
-        .update _.defaults _.clone(diff), {
-          # FIXME: figure out why this didn't work
-          # hasUserId:
-          #   r.expr(Boolean userId)
-          #   .or(userGameData('userIds').count().gt(0))
+        .update _.defaults {
+          hasUserId:
+            r.expr(Boolean userId)
+            .or(userGameData('userIds').count().gt(0))
           userIds: if userId \
                    then userGameData('userIds').append(userId).distinct()
                    else userGameData('userIds')
-        }
+        }, _.clone(diff)
       )
     .run()
     .then (a) ->
@@ -113,6 +112,17 @@ class UserGameDataModel
     )
     .run()
     .map defaultUserGameData
+
+  removeUserId: (userId, gameId) ->
+    unless userId
+      console.log 'rm userId missing', userId
+      return Promise.resolve null
+    r.table USER_GAME_DATA_TABLE
+    .getAll [userId, gameId], {index: USER_ID_GAME_ID_INDEX}
+    .update {
+      userIds: r.row('userIds').setDifference([userId])
+    }
+    .run()
 
   updateByPlayerIdsAndGameId: (playerIds, gameId, diff) ->
     playerIdGameIds = _.map playerIds, (playerId) ->

@@ -24,6 +24,7 @@ CronService = require './services/cron'
 KueRunnerService = require './services/kue_runner'
 ChatMessageCtrl = require './controllers/chat_message'
 ClashRoyaleAPICtrl = require './controllers/clash_royale_api'
+HealthCtrl = require './controllers/health'
 ClashTvService = require './services/clash_tv'
 VideoDiscoveryService = require './services/video_discovery'
 StreamService = require './services/stream'
@@ -37,7 +38,6 @@ if config.DEV_USE_HTTPS
   certificate = fs.readFileSync './bin/starfire-dev.crt'
   credentials = {key: privateKey, cert: certificate}
 
-HEALTHCHECK_TIMEOUT = 1000
 MAX_FILE_SIZE_BYTES = 20 * 1000 * 1000 # 20MB
 MAX_FIELD_SIZE_BYTES = 100 * 1000 # 100KB
 
@@ -162,19 +162,7 @@ app.use bodyParser.json({type: 'text/plain'})
 
 app.get '/ping', (req, res) -> res.send 'pong'
 
-app.get '/healthcheck', (req, res, next) ->
-  Promise.settle [
-    r.dbList().run().timeout HEALTHCHECK_TIMEOUT
-  ]
-  .spread (rethinkdb) ->
-    result =
-      rethinkdb: rethinkdb.isFulfilled()
-
-    result.healthy = _.every _.values result
-    return result
-  .then (status) ->
-    res.json status
-  .catch next
+app.get '/healthcheck', HealthCtrl.check
 
 app.post '/log', (req, res) ->
   unless req.body?.event is 'client_error'
@@ -190,20 +178,28 @@ app.post '/clashRoyaleApi/updatePlayerMatches', (req, res) ->
   .then ->
     res.status(200).send()
 
+app.post '/clashRoyaleApi/updatePlayerData', (req, res) ->
+  ClashRoyaleAPICtrl.updatePlayerData req, res
+  .then ->
+    res.status(200).send()
+
 app.get '/clashTv', (req, res) ->
   ClashTvService.process()
   res.status(200).send()
+
 app.get '/clashApiProcess', (req, res) ->
   ClashRoyaleAPICtrl.process()
   res.status(200).send()
+
 app.get '/videoDiscovery', (req, res) ->
   VideoDiscoveryService.discover()
   res.status(200).send()
+
 app.get '/updateCards', (req, res) ->
-  Promise.all [
-    ClashRoyaleCard.updateWinsAndLosses()
-    ClashRoyaleDeck.updateWinsAndLosses()
-  ]
+  # Promise.all [
+  #   # ClashRoyaleCard.updateWinsAndLosses()
+  #   ClashRoyaleDeck.updateWinsAndLosses()
+  # ]
   res.status(200).send()
 
 if config.ENV is config.ENVS.PROD
