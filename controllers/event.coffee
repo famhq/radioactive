@@ -31,7 +31,7 @@ class EventCtrl
           id: conversationId
           userIds: [user.id]
           eventId: id
-          type: 'pm'
+          type: 'event'
         }
 
   validateAndCheckPermissions: (diff, {user}) ->

@@ -7,31 +7,52 @@ DEFAULT_LOCK_EXPIRE_SECONDS = 3600 * 24 * 40000 # 100+ years
 DEFAULT_REDLOCK_EXPIRE_SECONDS = 30
 
 class CacheService
-  KEYS: {}
+  KEYS:
+    BROADCAST_FAILSAFE: 'broadcast:failsafe'
+    CLASH_ROYALE_DECK_QUEUED_INCREMENTS_WIN:
+      'clash_royal_deck:queued_increments:win1'
+    CLASH_ROYALE_DECK_QUEUED_INCREMENTS_LOSS:
+      'clash_royal_deck:queued_increments:loss1'
+    CLASH_ROYALE_DECK_QUEUED_INCREMENTS_DRAW:
+      'clash_royal_deck:queued_increments:draw1'
+    CLASH_ROYALE_USER_DECK_QUEUED_INCREMENTS_WIN:
+      'clash_royale_user_deck:queued_increments:win1'
+    CLASH_ROYALE_USER_DECK_QUEUED_INCREMENTS_LOSS:
+      'clash_royal_user_deck:queued_increments:loss1'
+    CLASH_ROYALE_USER_DECK_QUEUED_INCREMENTS_DRAW:
+      'clash_royal_user_deck:queued_increments:draw1'
+    PLAYERS_TOP: 'player:top'
   LOCK_PREFIXES:
     KUE_PROCESS: 'kue:process'
     BROADCAST: 'broadcast'
   LOCKS: {}
   PREFIXES:
-    CHAT_USER: 'chat:user1'
+    CHAT_USER: 'chat:user2'
     THREAD_USER: 'thread:user1'
     THREAD_DECK: 'thread:deck'
     USER_DATA_CONVERSATION_USERS: 'user_data:conversation_users'
     USER_DATA_FOLLOWERS: 'user_data:followers'
     USER_DATA_FOLLOWING: 'user_data:following'
+    USER_DATA_FOLLOWING_PLAYERS: 'user_data:following:players'
     USER_DATA_BLOCKED_USERS: 'user_data:blocked_users'
     USER_DATA_CLASH_ROYALE_DECK_IDS: 'user_data:clash_royale_deck_ids6'
-    CLASH_ROYALE_MATCHES_ID: 'clash_royale_matches:id6'
+    CLASH_ROYALE_MATCHES_ID: 'clash_royale_matches:id81'
     CLASH_ROYALE_CARD: 'clash_royale_card'
+    CLASH_ROYALE_CARD_KEY: 'clash_royale_card_key1'
     CLASH_ROYALE_CARD_RANK: 'clash_royal_card:rank'
     CLASH_ROYALE_DECK_RANK: 'clash_royal_deck:rank'
     CLASH_ROYALE_DECK_CARD_KEYS: 'clash_royal_deck:card_keys6'
+    CLASH_ROYALE_USER_DECK_DECK: 'clash_royale_user_deck:deck'
     CLASH_ROYALE_USER_DECK_DECK_ID_USER_ID:
       'clash_royale_user_deck:deck_id:user_id'
     CLASH_ROYALE_USER_DECK_DECK_ID_PLAYER_ID:
       'clash_royale_user_deck:deck_id:player_id'
+    CLASH_ROYALE_USER_DECK_PLAYER_ID:
+      'clash_royale_user_deck:player_id'
     USERNAME_SEARCH: 'username:search'
-    RATE_LIMIT_CHAT_MESSAGES: 'rate_limit:chat_messages'
+    RATE_LIMIT_CHAT_MESSAGES_TEXT: 'rate_limit:chat_messages:text'
+    RATE_LIMIT_CHAT_MESSAGES_MEDIA: 'rate_limit:chat_messages:media'
+    PLAYER_SEARCH: 'player:search5'
 
   constructor: ->
     @redlock = new Redlock [RedisService], {
@@ -40,11 +61,20 @@ class CacheService
       # retryDelay:  200
     }
 
-  set: (key, value, {expireSeconds}) ->
+  arrayAppend: (key, value) ->
+    key = config.REDIS.PREFIX + ':' + key
+    RedisService.rpush key, JSON.stringify value
+
+  arrayGet: (key, value) ->
+    key = config.REDIS.PREFIX + ':' + key
+    RedisService.lrange key, 0, -1
+
+  set: (key, value, {expireSeconds} = {}) ->
     key = config.REDIS.PREFIX + ':' + key
     RedisService.set key, JSON.stringify value
     .then ->
-      RedisService.expire key, expireSeconds
+      if expireSeconds
+        RedisService.expire key, expireSeconds
 
   get: (key) ->
     key = config.REDIS.PREFIX + ':' + key

@@ -1,14 +1,15 @@
 _ = require 'lodash'
 Promise = require 'bluebird'
+request = require 'request-promise'
 router = require 'exoid-router'
 
 ClashRoyaleAPIService = require '../services/clash_royale_api'
+KueCreateService = require '../services/kue_create'
 User = require '../models/user'
 UserGameData = require '../models/user_game_data'
 UserGameDailyData = require '../models/user_game_daily_data'
 ClashRoyaleUserDeck = require '../models/clash_royale_user_deck'
 GameRecord = require '../models/game_record'
-PushNotificationService = require '../services/push_notification'
 config = require '../config'
 
 defaultEmbed = []
@@ -32,18 +33,7 @@ class ClashRoyaleAPICtrl
           GameRecord.duplicateByPlayerId playerTag, user.id
         ]
     .then ->
-      Promise.all [
-        ClashRoyaleAPIService.getPlayerDataByTag playerTag
-        ClashRoyaleAPIService.getPlayerMatchesByTag playerTag
-      ]
-    .then ([playerData, matches]) ->
-      ClashRoyaleAPIService.updatePlayerData {
-        userId: user.id, playerData, tag: playerTag
-      }
-      .then ->
-        ClashRoyaleAPIService.updatePlayerMatches {
-          matches, tag: playerTag
-        }
+      ClashRoyaleAPIService.refreshByPlayerTag playerTag, {userId: user.id}
     .then ->
       return null
 
@@ -55,30 +45,11 @@ class ClashRoyaleAPICtrl
       {tag, playerData} = body
       unless tag
         return
-      Promise.all [
-        ClashRoyaleAPIService.updatePlayerData {tag, playerData}
-        UserGameDailyData.getByPlayerIdAndGameId tag, config.CLASH_ROYALE_ID
-      ]
-      .then ([userGameData, userGameDailyData]) ->
-        if userGameData and userGameDailyData?.data
-          splits = userGameDailyData.data.splits
-          stats = _.reduce splits, (aggregate, split, gameType) ->
-            aggregate.wins += split.wins
-            aggregate.losses += split.losses
-            aggregate
-          , {wins: 0, losses: 0}
-          userGameDailyData.deleteById userGameDailyData.id
-          Promise.map userGameData.userIds, User.getById
-          .map (user) ->
-            PushNotificationService.send user, {
-              title: 'Daily recap'
-              type: PushNotificationService.TYPES.DAILY_RECAP
-              url: "https://#{config.SUPERNOVA_HOST}"
-              text: "#{stats.wins} wins, #{stats.losses} losses. Post in chat
-                    what else you want to see in the recap :)"
-              data: {path: '/'}
-            }
-          null
+      KueCreateService.createJob {
+        job: {tag, playerData, isDaily: true}
+        type: KueCreateService.JOB_TYPES.UPDATE_PLAYER_DATA
+        priority: 'low'
+      }
 
   updatePlayerMatches: ({body, params, headers}) ->
     radioactiveHost = config.RADIOACTIVE_API_URL.replace /https?:\/\//i, ''
@@ -87,14 +58,37 @@ class ClashRoyaleAPICtrl
       {tag, matches} = body
       unless tag
         return
-      # TODO: problem with this is if job errors, that user never gets updated
-      # ever again
-      # UserGameData.upsertByPlayerIdAndGameId tag, config.CLASH_ROYALE_ID, {
-      #   isQueued: false
-      # }
-      ClashRoyaleAPIService.updatePlayerMatches {tag, matches}
+      KueCreateService.createJob {
+        job: {tag, matches}
+        type: KueCreateService.JOB_TYPES.UPDATE_PLAYER_MATCHES
+        priority: 'low'
+      }
+
+  queuePlayerData: ({params}) ->
+    console.log 'single queue', params.tag
+    request "#{config.CR_API_URL}/players/#{params.tag}", {
+      json: true
+      qs:
+        callbackUrl:
+          "#{config.RADIOACTIVE_API_URL}/clashRoyaleAPI/updatePlayerData"
+    }
+
+  queuePlayerMatches: ({params}) ->
+    console.log 'single queue', params.tag
+    request "#{config.CR_API_URL}/players/#{params.tag}/games", {
+      json: true
+      qs:
+        callbackUrl:
+          "#{config.RADIOACTIVE_API_URL}/clashRoyaleAPI/updatePlayerMatches"
+    }
+
+  updateTopPlayers: ->
+    ClashRoyaleAPIService.updateTopPlayers()
 
   process: ->
+    console.log '============='
+    console.log 'process url called'
+    console.log '============='
     # this triggers daily recap push notification
     # ClashRoyaleAPIService.updateStalePlayerData {force: true}
     ClashRoyaleAPIService.updateStalePlayerMatches {force: true}

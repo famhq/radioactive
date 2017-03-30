@@ -21,7 +21,7 @@ CHAT_MESSAGES_TABLE = 'chat_messages'
 TIME_INDEX = 'time'
 CONVERSATION_ID_INDEX = 'conversationId'
 CONVERSATION_ID_TIME_INDEX = 'conversationIdTime'
-MAX_MESSAGES = 30
+MAX_MESSAGES = 40
 FIVE_MINUTES_SECONDS = 60 * 5
 TWELVE_HOURS_SECONDS = 3600 * 12
 SEVEN_DAYS_SECONDS = 3600 * 24 * 7
@@ -94,6 +94,12 @@ class ChatMessageModel
     .get id
     .run()
     .then defaultChatMessage
+
+  deleteById: (id) ->
+    r.table CHAT_MESSAGES_TABLE
+    .get id
+    .delete()
+    .run()
 
   getLastByConversationId: (conversationId) ->
     r.table CHAT_MESSAGES_TABLE

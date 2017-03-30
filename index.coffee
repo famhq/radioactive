@@ -183,6 +183,18 @@ app.post '/clashRoyaleApi/updatePlayerData', (req, res) ->
   .then ->
     res.status(200).send()
 
+app.get '/queuePlayerData/:tag', (req, res) ->
+  ClashRoyaleAPICtrl.queuePlayerData req, res
+  res.status(200).send()
+
+app.get '/queuePlayerMatches/:tag', (req, res) ->
+  ClashRoyaleAPICtrl.queuePlayerMatches req, res
+  res.status(200).send()
+
+app.get '/updateTopPlayers', (req, res) ->
+  ClashRoyaleAPICtrl.updateTopPlayers req, res
+  res.status(200).send()
+
 app.get '/clashTv', (req, res) ->
   ClashTvService.process()
   res.status(200).send()
@@ -198,9 +210,16 @@ app.get '/videoDiscovery', (req, res) ->
 app.get '/updateCards', (req, res) ->
   # Promise.all [
   #   # ClashRoyaleCard.updateWinsAndLosses()
-  #   ClashRoyaleDeck.updateWinsAndLosses()
+  ClashRoyaleDeck.updateWinsAndLosses()
   # ]
   res.status(200).send()
+
+app.get '/cleanKueFailed', (req, res) ->
+  KueCreateService = require './services/kue_create'
+  KueCreateService.clean()
+  .catch ->
+    console.log 'kue clean route fail'
+  res.sendStatus 200
 
 if config.ENV is config.ENVS.PROD
   redisPub = new Redis.Cluster _.filter(config.REDIS.NODES)

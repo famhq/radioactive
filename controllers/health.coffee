@@ -6,7 +6,7 @@ ClashRoyaleAPIService = require '../services/clash_royale_api'
 r = require '../services/rethinkdb'
 config = require '../config'
 
-HEALTHCHECK_TIMEOUT = 1000
+HEALTHCHECK_TIMEOUT = 5000
 AUSTIN_TAG = '22CJ9CQC0'
 
 class HealthCtrl

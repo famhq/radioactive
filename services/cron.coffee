@@ -10,6 +10,7 @@ EventService = require './event'
 ClashRoyaleApiService = require './clash_royale_api'
 ClashRoyaleDeck = require '../models/clash_royale_deck'
 ClashRoyaleCard = require '../models/clash_royale_card'
+ClashRoyaleUserDeck = require '../models/clash_royale_user_deck'
 r = require './rethinkdb'
 config = require '../config'
 
@@ -26,6 +27,15 @@ class CronService
       EventService.notifyForStart()
       ClashRoyaleApiService.updateStalePlayerData()
       ClashRoyaleApiService.updateStalePlayerMatches()
+
+    # minute on half minute
+    @addCron 'halfMinute', '30 * * * * *', ->
+      ClashRoyaleUserDeck.processIncrementByDeckIdAndPlayerId()
+      ClashRoyaleDeck.processIncrementById()
+
+    # minute on 3/4 minute
+    @addCron 'threeQuarterMinute', '45 * * * * *', ->
+      ClashRoyaleApiService.updateTopPlayers()
 
     @addCron 'hourly', '0 0 * * * *', ->
       VideoDiscoveryService.discover()

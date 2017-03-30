@@ -3,6 +3,7 @@ router = require 'exoid-router'
 bcrypt = require 'bcrypt'
 Joi = require 'joi'
 Promise = require 'bluebird'
+geoip = require 'geoip-lite'
 
 Auth = require '../models/auth'
 User = require '../models/user'
@@ -11,8 +12,11 @@ schemas = require '../schemas'
 BCRYPT_ROUNDS = 10
 
 class AuthCtrl
-  login: ->
-    User.create {}
+  login: ({}, {headers, connection}) ->
+    ip = headers['x-forwarded-for'] or
+          connection.remoteAddress
+    country = geoip.lookup(ip)?.country
+    User.create {ip, country}
     .then (user) ->
       Auth.fromUserId user.id
 

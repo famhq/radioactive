@@ -77,6 +77,13 @@ class ClashRoyaleMatchModel
     }
   ]
 
+  batchCreate: (clashRoyaleMatches) ->
+    clashRoyaleMatches = _.map clashRoyaleMatches, defaultClashRoyaleMatch
+
+    r.table CLASH_ROYALE_MATCH_TABLE
+    .insert clashRoyaleMatches
+    .run()
+
   create: (clashRoyaleMatch) ->
     clashRoyaleMatch = defaultClashRoyaleMatch clashRoyaleMatch
 

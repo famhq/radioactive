@@ -4,11 +4,13 @@ uuid = require 'node-uuid'
 
 ClashRoyaleWinTrackerModel = require './clash_royale_win_tracker'
 r = require '../services/rethinkdb'
+CacheService = require '../services/cache'
 config = require '../config'
 
 CLASH_ROYALE_CARD_TABLE = 'clash_royale_cards'
 KEY_INDEX = 'key'
 POPULARITY_INDEX = 'thisWeekPopularity'
+ONE_DAY = 3600 * 24
 
 defaultClashRoyaleCard = (clashRoyaleCard) ->
   unless clashRoyaleCard?
@@ -50,15 +52,23 @@ class ClashRoyaleCardModel extends ClashRoyaleWinTrackerModel
     .run()
     .then defaultClashRoyaleCard
 
-  getByKey: (key) ->
+  getByKey: (key, {preferCache} = {}) ->
     unless key
       Promise.resolve null
-    r.table CLASH_ROYALE_CARD_TABLE
-    .getAll key, {index: KEY_INDEX}
-    .nth 0
-    .default null
-    .run()
-    .then defaultClashRoyaleCard
+    get = ->
+      r.table CLASH_ROYALE_CARD_TABLE
+      .getAll key, {index: KEY_INDEX}
+      .nth 0
+      .default null
+      .run()
+      .then defaultClashRoyaleCard
+
+    if preferCache
+      prefix = CacheService.PREFIXES.CLASH_ROYALE_CARD_KEY
+      cacheKey = "#{prefix}:#{key}"
+      CacheService.preferCache cacheKey, get, {expireSeconds: ONE_DAY}
+    else
+      get()
 
   getAll: ({sort} = {}) ->
     sortQ = if sort is 'popular' \

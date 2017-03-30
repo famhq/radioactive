@@ -1,6 +1,7 @@
 _ = require 'lodash'
 router = require 'exoid-router'
 Joi = require 'joi'
+geoip = require 'geoip-lite'
 
 User = require '../models/user'
 UserData = require '../models/user_data'
@@ -20,15 +21,27 @@ AVATAR_LARGE_IMAGE_HEIGHT = 512
 defaultEmbed = [EmbedService.TYPES.USER.DATA]
 
 class UserCtrl
-  getMe: ({}, {user}) ->
+  getMe: ({}, {user, headers, connection}) ->
     EmbedService.embed {embed: defaultEmbed}, user
     .tap ->
-      User.updateById user.id, {lastActiveTime: new Date()}
+      ip = headers['x-forwarded-for'] or
+            connection.remoteAddress
+      country = geoip.lookup(ip)?.country
+      # FIXME FIXME: rm country after 4/1/2017 when we've updated enough legacy
+      User.updateById user.id, {
+        lastActiveIp: ip
+        country: country
+        lastActiveTime: new Date()
+      }
       null # don't block
     .then User.sanitize null
 
   getById: ({id}) ->
     User.getById id
+    .then User.sanitize(null)
+
+  getByUsername: ({username}) ->
+    User.getByUsername username
     .then User.sanitize(null)
 
   setFlags: (flags, {user}) ->

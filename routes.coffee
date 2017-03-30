@@ -46,6 +46,7 @@ module.exports = router
 ###################
 .on 'users.getMe', authed UserCtrl.getMe
 .on 'users.getById', authed UserCtrl.getById
+.on 'users.getByUsername', authed UserCtrl.getByUsername
 .on 'users.updateById', authed UserCtrl.updateById
 .on 'users.searchByUsername', authed UserCtrl.searchByUsername
 .on 'users.setUsername', authed UserCtrl.setUsername
@@ -65,6 +66,7 @@ module.exports = router
   authed UserDataCtrl.deleteConversationByUserId
 
 .on 'chatMessages.create', authed ChatMessageCtrl.create
+.on 'chatMessages.deleteById', authed ChatMessageCtrl.deleteById
 .on 'chatMessages.uploadImage', authed ChatMessageCtrl.uploadImage
 .on 'chatMessages.getAllByConversationId',
   authed ChatMessageCtrl.getAllByConversationId
@@ -112,6 +114,9 @@ module.exports = router
 
 .on 'userGameData.getByUserIdAndGameId',
   authed UserGameData.getByUserIdAndGameId
+.on 'userGameData.getTop', authed UserGameData.getTop
+.on 'userGameData.search', authed UserGameData.search
+.on 'userGameData.getMeFollowing', authed UserGameData.getMeFollowing
 
 .on 'threadComments.create', authed ThreadCommentCtrl.create
 .on 'threadComments.flag', authed ThreadCommentCtrl.flag

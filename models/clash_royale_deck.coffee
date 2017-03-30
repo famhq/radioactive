@@ -13,7 +13,7 @@ ADD_TIME_INDEX = 'addTime'
 POPULARITY_INDEX = 'thisWeekPopularity'
 NAME_INDEX = 'name'
 CARD_KEYS_INDEX = 'cardKeys'
-ONE_HOUR_SECONDS = 3600
+ONE_DAY = 3600 * 24
 # coffeelint: disable=max_line_length
 # for naming
 TANK_CARD_KEYS = [
@@ -75,11 +75,12 @@ class ClashRoyaleDeckModel extends ClashRoyaleWinTrackerModel
     }
   ]
 
-  create: (clashRoyaleDeck) ->
+  create: (clashRoyaleDeck, {durability} = {}) ->
     clashRoyaleDeck = defaultClashRoyaleDeck clashRoyaleDeck
+    durability ?= 'hard'
 
     r.table CLASH_ROYALE_DECK_TABLE
-    .insert clashRoyaleDeck
+    .insert clashRoyaleDeck, {durability}
     .run()
     .then ->
       clashRoyaleDeck
@@ -143,19 +144,19 @@ class ClashRoyaleDeckModel extends ClashRoyaleWinTrackerModel
         else
           Promise.all [
             @getRandomName(_.map(cardKeys, (key) -> {key}))
-            Promise.map cardKeys, Card.getByKey
+            Promise.map cardKeys, (key) -> Card.getByKey key, {preferCache}
           ]
           .then ([randomName, cards]) =>
             @create {
               cardKeys: cardKeysStr
               name: randomName
-              cardIds: _.filter _.map cards, 'id'
-            }
+              cardIds: _.filter _.map(cards, 'id')
+            }, {durability: 'soft'}
       .then defaultClashRoyaleDeck
     if preferCache
       prefix = CacheService.PREFIXES.CLASH_ROYALE_DECK_CARD_KEYS
       key = "#{prefix}:#{cardKeysStr}"
-      CacheService.preferCache key, get, {expireSeconds: ONE_HOUR_SECONDS}
+      CacheService.preferCache key, get, {expireSeconds: ONE_DAY}
     else
       get()
 

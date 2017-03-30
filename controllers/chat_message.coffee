@@ -21,11 +21,16 @@ defaultEmbed = [EmbedService.TYPES.CHAT_MESSAGE.USER]
 
 MAX_CONVERSATION_USER_IDS = 20
 URL_REGEX = /\b(https?):\/\/[-A-Z0-9+&@#/%?=~_|!:,.;]*[A-Z0-9+&@#/%=~_|]/gi
+STICKER_REGEX = /(:[a-z_]+:)/gi
 IMAGE_REGEX = /\!\[(.*?)\]\((.*?)\)/gi
 CARD_BUILDER_TIMEOUT_MS = 1000
 SMALL_IMAGE_SIZE = 200
-RATE_LIMIT_CHAT_MESSAGES = 6
-RATE_LIMIT_CHAT_MESSAGES_EXPIRE_S = 5
+
+RATE_LIMIT_CHAT_MESSAGES_TEXT = 6
+RATE_LIMIT_CHAT_MESSAGES_TEXT_EXPIRE_S = 5
+
+RATE_LIMIT_CHAT_MESSAGES_MEDIA = 2
+RATE_LIMIT_CHAT_MESSAGES_MEDIA_EXPIRE_S = 10
 # LARGE_IMAGE_SIZE = 1000
 
 defaultConversationEmbed = [EmbedService.TYPES.CONVERSATION.USERS]
@@ -34,15 +39,23 @@ class ChatMessageCtrl
   constructor: ->
     @cardBuilder = new cardBuilder {api: config.DEALER_API_URL}
 
-  checkRateLimit: (userId) ->
-    key = "#{CacheService.PREFIXES.RATE_LIMIT_CHAT_MESSAGES}:#{userId}"
+  checkRateLimit: (userId, isMedia) ->
+    if isMedia
+      key = "#{CacheService.PREFIXES.RATE_LIMIT_CHAT_MESSAGES_MEDIA}:#{userId}"
+      rateLimit = RATE_LIMIT_CHAT_MESSAGES_MEDIA
+      rateLimitExpireS = RATE_LIMIT_CHAT_MESSAGES_MEDIA_EXPIRE_S
+    else
+      key = "#{CacheService.PREFIXES.RATE_LIMIT_CHAT_MESSAGES_TEXT}:#{userId}"
+      rateLimit = RATE_LIMIT_CHAT_MESSAGES_TEXT
+      rateLimitExpireS = RATE_LIMIT_CHAT_MESSAGES_TEXT_EXPIRE_S
+
     CacheService.get key
     .then (amount) ->
       amount ?= 0
-      if amount >= RATE_LIMIT_CHAT_MESSAGES
+      if amount >= rateLimit
         router.throw status: 429, info: 'too many requests'
       CacheService.set key, amount + 1, {
-        expireSeconds: RATE_LIMIT_CHAT_MESSAGES_EXPIRE_S
+        expireSeconds: rateLimitExpireS
       }
 
   create: ({body, conversationId, clientId}, {user, headers, connection}) =>
@@ -50,13 +63,17 @@ class ChatMessageCtrl
     ip = headers['x-forwarded-for'] or
           connection.remoteAddress
 
-    isProfane = false #ProfanityService.isProfane body
+    isProfane = ProfanityService.isProfane body
     msPlayed = Date.now() - user.joinTime?.getTime()
 
     if isProfane or user.flags.isChatBanned
       router.throw status: 400, info: 'unable to post...'
 
-    @checkRateLimit user.id
+    isImage = body.match(IMAGE_REGEX)
+    isSticker = body.match(STICKER_REGEX)
+    isMedia = isImage or isSticker
+
+    @checkRateLimit user.id, isMedia
     .then ->
       Conversation.getById conversationId
     .then EmbedService.embed {embed: defaultConversationEmbed}
@@ -71,7 +88,6 @@ class ChatMessageCtrl
 
         chatMessageId = uuid.v4()
 
-        isImage = body.match(IMAGE_REGEX)
         urls = not isImage and body.match(URL_REGEX)
 
         (if _.isEmpty urls
@@ -97,8 +113,11 @@ class ChatMessageCtrl
           userIds = conversation.userIds
           Conversation.updateById conversation.id, {
             lastUpdateTime: new Date()
-            userData: _.zipObject userIds, _.map userIds, (userId) ->
-              {isRead: userId is user.id}
+            # TODO: different way to track if read (groups get too large)
+            # should store lastReadTime on user for each group
+            userData: unless conversation.groupId
+              _.zipObject userIds, _.map userIds, (userId) ->
+                {isRead: userId is user.id}
           }
           pushBody = if isImage then '[image]' else body
 
@@ -110,6 +129,11 @@ class ChatMessageCtrl
                 meUser: user
                 text: pushBody
               }).catch -> null
+
+  deleteById: ({id}, {user}) ->
+    unless user.flags.isModerator
+      router.throw status: 400, info: 'no permission'
+    ChatMessage.deleteById id
 
   updateCard: ({body, params, headers}) ->
     radioactiveHost = config.RADIOACTIVE_API_URL.replace /https?:\/\//i, ''
@@ -140,7 +164,7 @@ class ChatMessageCtrl
           postFn: (item) ->
             EmbedService.embed {embed: defaultEmbed}, ChatMessage.default(item)
             .then (item) ->
-              if item.user?.flags?.isChatBanned isnt true
+              if item?.user?.flags?.isChatBanned isnt true
                 item
         }
 

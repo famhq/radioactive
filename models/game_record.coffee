@@ -48,6 +48,15 @@ class GameRecordModel
     }
   ]
 
+  batchCreate: (gameRecords) ->
+    gameRecords = _.map gameRecords, defaultGameRecord
+
+    r.table GAME_RECORDS_TABLE
+    .insert gameRecords
+    .run()
+    .then ->
+      gameRecords
+
   create: (gameRecord) ->
     gameRecord = defaultGameRecord gameRecord
 
@@ -91,7 +100,7 @@ class GameRecordModel
       [gameRecordTypeId, userId, maxScaledTime]
       {index: RECORD_INDEX, rightBound: 'closed'}
     )
-    .orderBy {index: r.asc RECORD_INDEX}
+    .orderBy {index: r.desc RECORD_INDEX}
     .limit limit
     .run()
 

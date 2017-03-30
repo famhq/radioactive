@@ -110,14 +110,20 @@ class ThreadCtrl
           upvoteIds: r.row('upvoteIds').append(user.id)
         if hasVotedDown
           diff.downvotes = r.row('downvotes').sub(1)
+          diff.score = r.row('score').add(2)
           diff.downvoteIds = r.row('downvoteIds').difference([user.id])
+        else
+          diff.score = r.row('score').add(1)
       else if vote is 'down'
         diff =
           downvotes: r.row('downvotes').add(1)
           downvoteIds: r.row('downvoteIds').append(user.id)
         if hasVotedUp
           diff.upvotes = r.row('upvotes').sub(1)
+          diff.score = r.row('score').sub(2)
           diff.upvoteIds = r.row('upvoteIds').difference([user.id])
+        else
+          diff.score = r.row('score').sub(1)
 
       Thread.updateById id, diff
 

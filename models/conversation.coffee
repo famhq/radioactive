@@ -26,7 +26,7 @@ defaultConversation = (conversation) ->
     id: uuid.v4()
     userIds: []
     groupId: null
-    type: 'pm' # pm | channel
+    type: 'pm' # pm | channel | event
     name: null
     description: null
     userData: {}

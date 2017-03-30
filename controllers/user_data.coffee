@@ -80,6 +80,8 @@ class UserDataCtrl
         CacheService.deleteByKey key
         key = "#{CacheService.PREFIXES.USER_DATA_FOLLOWING}:#{user.id}"
         CacheService.deleteByKey key
+        key = "#{CacheService.PREFIXES.USER_DATA_FOLLOWING_PLAYERS}:#{user.id}"
+        CacheService.deleteByKey key
         null
 
   unfollowByUserId: ({userId}, {user}) ->

@@ -18,17 +18,13 @@ RETRY_COUNT = 10
 CONSECUTIVE_ERRORS_UNTIL_INACTIVE = 10
 
 TYPES =
-  NEW_CARD: 'newCard'
   NEW_PROMOTION: 'sale'
-  REWARD: 'reward'
+  NEWS: 'news'
   DAILY_RECAP: 'dailyRecap'
-  NEW_TRADE: 'newTrade'
   EVENT: 'event'
-  TRADE_UPDATE: 'tradeUpdate'
   CHAT_MESSAGE: 'chatMessage'
   PRIVATE_MESSAGE: 'privateMessage'
   NEW_FRIEND: 'newFriend'
-  GIFT: 'gift'
   GROUP: 'group'
   STATUS: 'status'
 
@@ -103,13 +99,17 @@ class PushNotificationService
           image: if icon then icon else null
           data: data
           priority: 1
-          actions: [
-            {
-              title: 'REPLY'
-              callback: 'app.pushActions.reply'
-              foreground: false
-              inline: true
-            }
+          actions: _.filter [
+            if type in [
+              @TYPES.CHAT_MESSAGE
+              @TYPES.PRIVATE_MESSAGE
+            ]
+              {
+                title: 'REPLY'
+                callback: 'app.pushActions.reply'
+                foreground: false
+                inline: true
+              }
           ]
           type: type
           icon: 'notification_icon'
@@ -181,7 +181,7 @@ class PushNotificationService
           @send user, message
 
   send: (user, message) =>
-    if config.ENV is config.ENVS.DEV
+    if config.ENV is config.ENVS.DEV and not message.forceDevSend
       console.log 'send notification', user.id, message
 
     unless message and (message.title or message.text)
@@ -189,7 +189,7 @@ class PushNotificationService
 
     message.data ?= {}
 
-    if [@TYPES.NEW_CARD, @TYPES.NEW_PROMOTION].indexOf(message.type) is -1
+    if [@TYPES.NEWS, @TYPES.NEW_PROMOTION].indexOf(message.type) is -1
       Notification.create {
         title: message.title
         text: message.text
