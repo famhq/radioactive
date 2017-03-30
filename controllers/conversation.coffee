@@ -41,10 +41,13 @@ class ConversationCtrl
         groupId
         name
         description
-        userData: _.zipObject userIds, _.map (userId) ->
-          {
-            isRead: userId is user.id
-          }
+        # TODO: different way to track if read (groups get too large)
+        # should store lastReadTime on user for each group
+        userData: unless groupId
+          _.zipObject userIds, _.map (userId) ->
+            {
+              isRead: userId is user.id
+            }
       }
 
   updateById: ({id, name, description}, {user}) ->
@@ -87,7 +90,10 @@ class ConversationCtrl
       else if conversation.userIds.indexOf(user.id) is -1
         router.throw status: 400, info: 'no permission'
 
-      Conversation.markRead conversation, user.id
+      # TODO: different way to track if read (groups get too large)
+      # should store lastReadTime on user for each group
+      unless conversation.groupId
+        Conversation.markRead conversation, user.id
     .then Conversation.sanitize null
 
 

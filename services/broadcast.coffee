@@ -18,8 +18,8 @@ class BroadcastService
       expireSeconds: FIVE_MINUTE_SECONDS
     }
 
-  start: (messages, {isTestRun}) ->
-    console.log 'broadcast start', messages[0].title
+  start: (message, {isTestRun}) ->
+    console.log 'broadcast start', message.title
 
     (if isTestRun
       r.table 'users'
@@ -30,6 +30,8 @@ class BroadcastService
       r.table('users')
       .getAll(true, {index: 'hasPushToken'})
       .pluck(['id'])
+      .map (doc) ->
+        return doc('id')
     )
     .then (userIds) ->
       console.log 'sending to ', userIds.length
@@ -40,7 +42,7 @@ class BroadcastService
         KueCreateService.createJob
           job: {
             userIds: groupUserIds
-            messages: messages
+            message: message
             percentage: i / userGroups.length
           }
           delaySeconds: delay
@@ -48,7 +50,7 @@ class BroadcastService
         delay += TIME_PER_BATCH_SECONDS
       console.log 'batch done'
 
-  batchNotify: ({userIds, messages, percentage}) ->
+  batchNotify: ({userIds, message, percentage}) ->
     console.log 'batch', userIds.length, percentage
     CacheService.get CacheService.KEYS.BROADCAST_FAILSAFE
     .then (failSafe) ->
@@ -58,21 +60,20 @@ class BroadcastService
         Promise.map userIds, (userId) ->
           User.getById userId
           .then (user) ->
-            Promise.each messages, (message) ->
-              PushNotificationService.send user, message
-              .catch (err) ->
-                console.log 'push error', err
+            PushNotificationService.send user, message
+            .catch (err) ->
+              console.log 'push error', err
         .catch (err) ->
           console.log err
           console.log 'map error'
 
-  broadcast: (messages, {isTestRun, uniqueId}) =>
+  broadcast: (message, {isTestRun, uniqueId}) =>
     key = "#{CacheService.LOCK_PREFIXES.BROADCAST}:#{uniqueId}"
     console.log 'broadcast.broadcast', key
-    if messages.allowRebroadcast
-      @start messages, {isTestRun}
+    if message.allowRebroadcast
+      @start message, {isTestRun}
     else
       CacheService.runOnce key, =>
-        @start messages, {isTestRun}
+        @start message, {isTestRun}
 
 module.exports = new BroadcastService()

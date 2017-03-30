@@ -3,10 +3,12 @@ Promise = require 'bluebird'
 uuid = require 'node-uuid'
 
 r = require '../services/rethinkdb'
+CacheService = require '../services/cache'
 config = require '../config'
 
 TWO_WEEKS_S = 3600 * 24 * 14
 ONE_WEEK_S = 3600 * 24 * 7
+MAX_ROWS_FOR_GROUP = 20000
 
 module.exports = class ClashRoyaleWinTrackerModel
   constructor: ->
@@ -98,6 +100,7 @@ module.exports = class ClashRoyaleWinTrackerModel
       r.now().sub(timeOffset)
       {index: 'time'}
     )
+    .limit MAX_ROWS_FOR_GROUP # otherwise group is super slow
     .group('winningDeckId')
     .count()
     .run()
@@ -110,31 +113,76 @@ module.exports = class ClashRoyaleWinTrackerModel
       r.now().sub(timeOffset)
       {index: 'time'}
     )
-    .group('winningDeckId')
+    .limit MAX_ROWS_FOR_GROUP
+    .group('losingDeckId')
     .count()
     .run()
     .map ({group, reduction}) -> {id: group, count: reduction}
 
-  incrementById: (id, state) =>
+
+  # the fact that this actually works is a little peculiar. technically, it
+  # should only increment a batched deck by max of 1, but getAll
+  # for multiple of same id grabs the same id multiple times (and updates).
+  # TODO: group by count, separate query to .add(count)
+  processIncrementById: =>
+    states = ['win', 'loss', 'draw']
+    _.map states, (state) =>
+      subKey = "CLASH_ROYALE_DECK_QUEUED_INCREMENTS_#{state.toUpperCase()}"
+      key = CacheService.KEYS[subKey]
+      CacheService.arrayGet key
+      .then (queue) =>
+        CacheService.deleteByKey key
+        console.log 'batch deck', queue.length
+        if _.isEmpty queue
+          return
+
+        queue = _.map queue, JSON.parse
+        if state is 'win'
+          diff = {
+            wins: r.row('wins').add(1)
+          }
+        else if state is 'loss'
+          diff = {
+            losses: r.row('losses').add(1)
+          }
+        else if state is 'draw'
+          diff = {
+            draws: r.row('draws').add(1)
+          }
+        else
+          diff = {}
+
+        r.table @RETHINK_TABLES[0].name
+        .getAll r.args(queue)
+        .update diff
+        .run()
+
+  incrementById: (id, state, {batch} = {}) =>
     unless id
       console.log 'no id'
       return
-    if state is 'win'
-      diff = {
-        wins: r.row('wins').add(1)
-      }
-    else if state is 'loss'
-      diff = {
-        losses: r.row('losses').add(1)
-      }
-    else if state is 'draw'
-      diff = {
-        draws: r.row('draws').add(1)
-      }
+    if batch
+      subKey = "CLASH_ROYALE_DECK_QUEUED_INCREMENTS_#{state.toUpperCase()}"
+      key = CacheService.KEYS[subKey]
+      CacheService.arrayAppend key, id
+      Promise.resolve null # don't wait
     else
-      diff = {}
+      if state is 'win'
+        diff = {
+          wins: r.row('wins').add(1)
+        }
+      else if state is 'loss'
+        diff = {
+          losses: r.row('losses').add(1)
+        }
+      else if state is 'draw'
+        diff = {
+          draws: r.row('draws').add(1)
+        }
+      else
+        diff = {}
 
-    r.table @RETHINK_TABLES[0].name
-    .get id
-    .update _.defaults diff, {lastUpdateTime: new Date()}
-    .run()
+      r.table @RETHINK_TABLES[0].name
+      .get id
+      .update _.defaults diff, {lastUpdateTime: new Date()}
+      .run()

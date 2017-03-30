@@ -5,6 +5,7 @@ r = require '../services/rethinkdb'
 
 THREADS_TABLE = 'threads'
 CREATOR_ID_INDEX = 'creatorId'
+SCORE_INDEX = 'score'
 LAST_UPDATE_TIME_INDEX = 'lastUpdateTime'
 
 defaultThread = (thread) ->
@@ -22,6 +23,7 @@ defaultThread = (thread) ->
     type: 'text'
     upvotes: 0
     downvotes: 0
+    score: 0
     upvoteIds: []
     downvoteIds: []
     data: {}
@@ -36,6 +38,7 @@ class ThreadModel
       options: {}
       indexes: [
         {name: CREATOR_ID_INDEX}
+        {name: SCORE_INDEX}
         {name: LAST_UPDATE_TIME_INDEX}
       ]
     }
@@ -60,7 +63,7 @@ class ThreadModel
     limit ?= 10
 
     r.table THREADS_TABLE
-    .orderBy {index: r.desc(LAST_UPDATE_TIME_INDEX)}
+    .orderBy {index: r.desc(SCORE_INDEX)}
     .limit limit
     .run()
     .map defaultThread

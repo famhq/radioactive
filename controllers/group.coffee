@@ -33,7 +33,8 @@ class GroupCtrl
   create: ({name, description, badgeId, background, mode, clanId}, {user}) ->
     creatorId = user.id
 
-    Game.getByKey 'clashRoyale'
+    # Game.getByKey 'clashRoyale'
+    Promise.resolve {id: config.CLASH_ROYALE_ID}
     .then ({id}) ->
       Group.create {
         name, description, badgeId, background, creatorId, mode
@@ -48,7 +49,7 @@ class GroupCtrl
         Conversation.create {
           groupId: id
           name: 'general'
-          type: 'group'
+          type: 'channel'
         }
         Promise.map defaultGroupRecordTypes, ({name, timeScale}) ->
           GroupRecordType.create {

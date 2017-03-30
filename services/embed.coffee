@@ -284,9 +284,12 @@ embedFn = _.curry ({embed, user, groupId, gameId}, object) ->
           Math.round(mean * 10) / 10
 
       when TYPES.CLASH_ROYALE_USER_DECK.DECK
-        console.log 'get', embedded.deckId
-        embedded.deck = ClashRoyaleDeck.getById embedded.deckId
-        .then embedFn {embed: [TYPES.CLASH_ROYALE_DECK.CARDS]}
+        prefix = CacheService.PREFIXES.CLASH_ROYALE_USER_DECK_DECK
+        key = "#{prefix}:#{embedded.id}"
+        embedded.deck = CacheService.preferCache key, ->
+          ClashRoyaleDeck.getById embedded.deckId
+          .then embedFn {embed: [TYPES.CLASH_ROYALE_DECK.CARDS]}
+        , {expireSeconds: ONE_DAY_SECONDS}
 
       else
         console.log 'no match found', key

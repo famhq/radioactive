@@ -7,13 +7,15 @@ CacheService = require '../services/cache'
 config = require '../config'
 
 CLASH_ROYALE_USER_DECK_TABLE = 'clash_royale_user_decks'
-ADD_TIME_INDEX = 'addTime'
+LAST_UPDATE_TIME_INDEX = 'lastUpdateTime'
 DECK_ID_INDEX = 'deckId'
 USER_ID_IS_FAVORITED_INDEX = 'userIdIsFavorited'
 USER_ID_INDEX = 'userId'
 DECK_ID_USER_ID_INDEX = 'deckIdUserId'
 DECK_ID_PLAYER_ID_INDEX = 'deckIdPlayerId'
 PLAYER_ID_INDEX = 'playerId'
+
+ONE_HOUR_SECONDS = 3600
 
 defaultClashRoyaleUserDeck = (clashRoyaleUserDeck) ->
   unless clashRoyaleUserDeck?
@@ -30,6 +32,7 @@ defaultClashRoyaleUserDeck = (clashRoyaleUserDeck) ->
     userId: null
     playerId: null
     addTime: new Date()
+    lastUpdateTime: new Date()
   }
 
 class ClashRoyaleUserDeckModel
@@ -38,7 +41,7 @@ class ClashRoyaleUserDeckModel
       name: CLASH_ROYALE_USER_DECK_TABLE
       options: {}
       indexes: [
-        {name: ADD_TIME_INDEX}
+        {name: LAST_UPDATE_TIME_INDEX}
         {
           name: USER_ID_IS_FAVORITED_INDEX
           fn: (row) ->
@@ -84,11 +87,25 @@ class ClashRoyaleUserDeckModel
     .run()
     .then defaultClashRoyaleUserDeck
 
+  getAllByPlayerId: (playerId, {preferCache} = {}) ->
+    get = ->
+      r.table CLASH_ROYALE_USER_DECK_TABLE
+      .getAll playerId, {index: PLAYER_ID_INDEX}
+      .run()
+      .map defaultClashRoyaleUserDeck
+
+    if preferCache
+      prefix = CacheService.PREFIXES.CLASH_ROYALE_USER_DECK_PLAYER_ID
+      key = "#{prefix}:#{playerId}"
+      CacheService.preferCache key, get, {expireSeconds: ONE_HOUR_SECONDS}
+    else
+      get()
+
   getAll: ({limit, sort} = {}) ->
     limit ?= 10
 
     sortQ = if sort is 'recent' \
-            then {index: r.desc(ADD_TIME_INDEX)}
+            then {index: r.desc(LAST_UPDATE_TIME_INDEX)}
             else if sort is 'popular'
             then r.desc(r.row('wins').add(r.row('losses')))
             else r.row('wins').add(r.row('losses'))
@@ -102,13 +119,11 @@ class ClashRoyaleUserDeckModel
   getAllByUserId: (userId, {limit, sort} = {}) ->
     limit ?= 25
 
-    console.log 'get all', userId, limit
-
     sortQ = if sort is 'recent' \
-            then r.desc(ADD_TIME_INDEX)
+            then r.desc(LAST_UPDATE_TIME_INDEX)
             else if sort is 'popular'
             then r.desc(r.row('wins').add(r.row('losses')))
-            else r.desc(ADD_TIME_INDEX)
+            else r.desc(LAST_UPDATE_TIME_INDEX)
 
     r.table CLASH_ROYALE_USER_DECK_TABLE
     .getAll userId, {index: USER_ID_INDEX}
@@ -129,27 +144,72 @@ class ClashRoyaleUserDeckModel
     key = CacheService.PREFIXES.USER_DATA_CLASH_ROYALE_DECK_IDS + ':' + userId
     CacheService.deleteByKey key
 
-  incrementByDeckIdAndUserId: (deckId, userId, state) ->
-    if state is 'win'
-      diff = {
-        wins: r.row('wins').add(1)
-      }
-    else if state is 'loss'
-      diff = {
-        losses: r.row('losses').add(1)
-      }
-    else if state is 'draw'
-      diff = {
-        draws: r.row('draws').add(1)
-      }
-    else
-      diff = {}
+  # the fact that this actually works is a little peculiar. technically, it
+  # should only increment a batched deck by max of 1, but getAll
+  # for multiple of same id grabs the same id multiple times (and updates).
+  # TODO: group by count, separate query to .add(count)
+  processIncrementByDeckIdAndPlayerId: ->
+    states = ['win', 'loss', 'draw']
+    _.map states, (state) ->
+      subKey = "CLASH_ROYALE_USER_DECK_QUEUED_INCREMENTS_#{state.toUpperCase()}"
+      key = CacheService.KEYS[subKey]
+      CacheService.arrayGet key
+      .then (queue) ->
+        CacheService.deleteByKey key
+        console.log 'batch', queue.length
+        if _.isEmpty queue
+          return
 
-    r.table CLASH_ROYALE_USER_DECK_TABLE
-    .getAll userId, {index: USER_ID_INDEX}
-    .filter {deckId}
-    .update diff
-    .run()
+        queue = _.map queue, JSON.parse
+        if state is 'win'
+          diff = {
+            wins: r.row('wins').add(1)
+          }
+        else if state is 'loss'
+          diff = {
+            losses: r.row('losses').add(1)
+          }
+        else if state is 'draw'
+          diff = {
+            draws: r.row('draws').add(1)
+          }
+        else
+          diff = {}
+
+        diff.lastUpdateTime = new Date()
+
+        r.table CLASH_ROYALE_USER_DECK_TABLE
+        .getAll r.args(queue), {index: DECK_ID_PLAYER_ID_INDEX}
+        .update diff
+        .run()
+
+
+  incrementByDeckIdAndPlayerId: (deckId, playerId, state, {batch} = {}) ->
+    if batch
+      subKey = "CLASH_ROYALE_USER_DECK_QUEUED_INCREMENTS_#{state.toUpperCase()}"
+      key = CacheService.KEYS[subKey]
+      CacheService.arrayAppend key, [deckId, playerId]
+      Promise.resolve null # don't wait
+    else
+      if state is 'win'
+        diff = {
+          wins: r.row('wins').add(1)
+        }
+      else if state is 'loss'
+        diff = {
+          losses: r.row('losses').add(1)
+        }
+      else if state is 'draw'
+        diff = {
+          draws: r.row('draws').add(1)
+        }
+      else
+        diff = {}
+
+      r.table CLASH_ROYALE_USER_DECK_TABLE
+      .getAll [deckId, playerId], {index: DECK_ID_PLAYER_ID_INDEX}
+      .update diff
+      .run()
 
   # technically current deck is just the most recently used one...
   # resetCurrentByPlayerId: (playerId, diff) ->
@@ -184,7 +244,8 @@ class ClashRoyaleUserDeckModel
     .run()
     .then -> null
 
-  upsertByDeckIdAndPlayerId: (deckId, playerId, diff) ->
+  upsertByDeckIdAndPlayerId: (deckId, playerId, diff, {durability} = {}) ->
+    durability ?= 'hard'
     r.table CLASH_ROYALE_USER_DECK_TABLE
     .getAll [deckId, playerId], {index: DECK_ID_PLAYER_ID_INDEX}
     .nth 0
@@ -194,15 +255,15 @@ class ClashRoyaleUserDeckModel
         userDeck.eq null
 
         r.table CLASH_ROYALE_USER_DECK_TABLE
-        .insert defaultClashRoyaleUserDeck _.defaults(_.clone(diff), {
+        .insert defaultClashRoyaleUserDeck(_.defaults(_.clone(diff), {
           playerId, deckId
-        })
+        })), {durability}
 
         r.table CLASH_ROYALE_USER_DECK_TABLE
         .getAll [deckId, playerId], {index: DECK_ID_PLAYER_ID_INDEX}
         .nth 0
         .default null
-        .update diff
+        .update diff, {durability}
       )
     .run()
     .then -> null

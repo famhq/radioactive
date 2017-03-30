@@ -12,16 +12,10 @@ IDLE_PROCESS_KILL_TIME_MS = 300 * 1000 # 5 min
 PAUSE_EXTEND_BUFFER_MS = 5000
 
 JOB_TYPES =
-  DEFAULT: 'pulsar:default'
-  BOT_PROCESS_MESSAGE: 'pulsar:bot:process_message'
-  BOT_DISCORD_SEND_MESSAGE: 'pulsar:bot:discord_send_message'
-  BOT_TELEGRAM_SEND_MESSAGE: 'pulsar:bot:telegram_send_message'
-  BOT_MESSENGER_SEND_MESSAGE: 'pulsar:bot:messenger_send_message'
-  BOT_KIK_SEND_MESSAGES: 'pulsar:bot:kik_send_message'
-  BOT_FREE_CHEST: 'pulsar:bot:free_chest'
-  INDECENCY_END_ROUND: 'pulsar:indecency:end_round'
-  GAME_VOTE: 'pulsar:bot:game_vote'
-  BATCH_NOTIFICATION: 'pulsar:batch_notification'
+  DEFAULT: 'radioactive:default'
+  UPDATE_PLAYER_MATCHES: 'radioactive:update_player_matches'
+  UPDATE_PLAYER_DATA: 'radioactive:update_player_data'
+  BATCH_NOTIFICATION: 'radioactive:batch_notification'
 
 
 class KueCreateService
@@ -31,7 +25,6 @@ class KueCreateService
     @workers = {} # pause/resume with this
 
   clean: ->
-    console.log 'clean'
     types = ['failed', 'complete', 'inactive', 'active']
     Promise.map types, (type) ->
       new Promise (resolve, reject) ->
@@ -115,8 +108,8 @@ class KueCreateService
         lastUpdateTime = Date.now()
         @workers[kueWorkerId] = {ctx, lock, id: job.id}
         @createJob _.defaults {isSynchronous: false}, job.data
-        .then ->
-          done()
+        .then (response) ->
+          done null, response
         .catch (err) ->
           done err
     , {
@@ -149,7 +142,7 @@ class KueCreateService
         delayMs ?= 0
 
         kueJob
-        .priority DEFAULT_PRIORITY
+        .priority priority
         .ttl ttlMs
         .removeOnComplete true
 
@@ -164,12 +157,17 @@ class KueCreateService
 
         kueJob.save (err) ->
           if err
+            console.log 'save err', err
             reject err
           else if not waitForCompletion
             resolve()
 
         if waitForCompletion
-          kueJob.on 'complete', resolve
-          kueJob.on 'failed', reject
+          kueJob.on 'complete', (response) ->
+            console.log 'completed', type
+            resolve response
+          kueJob.on 'failed', (err) ->
+            console.log 'job failed', type, err
+            reject()
 
 module.exports = new KueCreateService()

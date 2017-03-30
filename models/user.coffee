@@ -13,6 +13,7 @@ NUMERIC_ID_INDEX = 'numericId'
 FACEBOOK_ID_INDEX = 'facebookId'
 IS_MEMBER_INDEX = 'isMember'
 LAST_ACTIVE_TIME_INDEX = 'lastActiveTime'
+HAS_PUSH_TOKEN_INDEX = 'hasPushToken'
 
 defaultUser = (user) ->
   unless user?
@@ -43,6 +44,7 @@ class UserModel
         {name: FACEBOOK_ID_INDEX}
         {name: IS_MEMBER_INDEX}
         {name: LAST_ACTIVE_TIME_INDEX}
+        {name: HAS_PUSH_TOKEN_INDEX}
       ]
     }
   ]
@@ -78,6 +80,10 @@ class UserModel
     .limit limit
     .run()
     .map defaultUser
+
+  getOrCreateVerifiedByPlayerTag: (playerTag) ->
+    null
+    # TODO
 
   getCardCode: (user) ->
     random = new PcgRandom config.PCG_SEED

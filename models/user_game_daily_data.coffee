@@ -33,6 +33,13 @@ class UserGameDailyDataModel
     }
   ]
 
+  batchCreate: (userGameDailyData) ->
+    userGameDailyData = _.map userGameDailyData, defaultUserGameDailyData
+
+    r.table USER_GAME_DATA_DAILY_TABLE
+    .insert userGameDailyData
+    .run()
+
   getByPlayerIdAndGameId: (playerId, gameId) ->
     r.table USER_GAME_DATA_DAILY_TABLE
     .getAll [playerId, gameId], {index: PLAYER_ID_GAME_ID_INDEX}
@@ -42,6 +49,19 @@ class UserGameDailyDataModel
     .then defaultUserGameDailyData
     .then (userGameDailyData) ->
       _.defaults {playerId}, userGameDailyData
+
+  getAllByPlayerIdsAndGameId: (playerIds, gameId) ->
+    playerIdsGameIds = _.map playerIds, (playerId) -> [playerId, gameId]
+    r.table USER_GAME_DATA_DAILY_TABLE
+    .getAll r.args(playerIdsGameIds), {index: PLAYER_ID_GAME_ID_INDEX}
+    .map defaultUserGameDailyData
+    .run()
+
+  updateByPlayerIdAndGameId: (playerId, gameId, diff) ->
+    r.table USER_GAME_DATA_DAILY_TABLE
+    .getAll [playerId, gameId], {index: PLAYER_ID_GAME_ID_INDEX}
+    .update diff
+    .run()
 
   upsertByPlayerIdAndGameId: (playerId, gameId, diff, {userId} = {}) ->
     r.table USER_GAME_DATA_DAILY_TABLE
