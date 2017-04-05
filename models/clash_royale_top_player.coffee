@@ -46,7 +46,7 @@ class ClashRoyaleTopPlayerModel
 
   getAll: ->
     r.table CLASH_ROYALE_TOP_PLAYERS_TABLE
-    .orderBy r.desc('rank')
+    .orderBy r.asc('rank')
     .run()
     .map defaultClashRoyaleTopPlayer
 

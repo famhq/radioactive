@@ -11,6 +11,7 @@ ClashRoyaleAPICtrl = require './controllers/clash_royale_api'
 ClashRoyaleDeckCtrl = require './controllers/clash_royale_deck'
 ClashRoyaleUserDeckCtrl = require './controllers/clash_royale_user_deck'
 ClashRoyaleCardCtrl = require './controllers/clash_royale_card'
+DynamicImageCtrl = require './controllers/dynamic_image'
 EventCtrl = require './controllers/event'
 PushTokenCtrl = require './controllers/push_token'
 PaymentCtrl = require './controllers/payment'
@@ -73,6 +74,11 @@ module.exports = router
 
 .on 'pushTokens.create', authed PushTokenCtrl.create
 .on 'pushTokens.updateByToken', authed PushTokenCtrl.updateByToken
+
+.on 'dynamicImage.getMeByImageKey',
+  authed DynamicImageCtrl.getMeByImageKey
+.on 'dynamicImage.upsertMeByImageKey',
+  authed DynamicImageCtrl.upsertMeByImageKey
 
 .on 'threads.create', authed TheadCtrl.createOrUpdateById
 .on 'threads.getAll', authed TheadCtrl.getAll

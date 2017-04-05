@@ -8,9 +8,9 @@ KueRunnerService = require '../services/kue_runner'
 PushNotificationService = require '../services/push_notification'
 config = require '../config'
 
-IS_TEST_RUN = true
+IS_TEST_RUN = false
 
-# REDIS_HOST=10.39.244.97  RETHINK_HOST=10.39.246.151
+# REDIS_HOST=10.123.240.149  RETHINK_HOST=10.123.241.180
 # coffee ./bin/broadcast.coffee
 
 
@@ -19,12 +19,11 @@ TYPE = PushNotificationService.TYPES.NEWS
 # TYPE = PushNotificationService.TYPES.NEWS
 # KILL mittens before running this
 TITLE = 'New feature!'
-MESSAGE = 'See how your deck win rates compare to the community\'s averages in
-the profile history tab!'
+MESSAGE = 'Search other players and view the current top 200 global leaderboard'
 IMAGE_URL = null
 # IMAGE_URL = 'https://cdn.wtf/d/images/games/kitten_cards/v2/' +
 #              'full_cards/19918_small.png'
-DATA = {path: '/profile'}
+DATA = {path: '/players'}
 
 console.log if IS_TEST_RUN then 'TEST in 3' else 'PRODUCTION in 3'
 new Promise (resolve) ->

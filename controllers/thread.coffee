@@ -50,6 +50,7 @@ class ThreadCtrl
     .then (deck) =>
       if deck
         diff.data.deckId = deck.id
+        diff.attachmentIds = [deck.id]
       if diff.data.videoUrl
         youtubeId = diff.data.videoUrl.match(YOUTUBE_ID_REGEX)?[1]
         diff.data.videoUrl =
