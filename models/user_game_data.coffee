@@ -128,6 +128,8 @@ class UserGameDataModel
     .run()
 
   upsertByPlayerIdAndGameId: (playerId, gameId, diff, {userId} = {}) ->
+    clonedDiff = _.cloneDeep(diff)
+
     r.table USER_GAME_DATA_TABLE
     .getAll [playerId, gameId], {index: PLAYER_ID_GAME_ID_INDEX}
     .nth 0
@@ -155,7 +157,7 @@ class UserGameDataModel
           userIds: if userId \
                    then userGameData('userIds').append(userId).distinct()
                    else userGameData('userIds')
-        }, _.clone(diff)
+        }, clonedDiff
       )
     .run()
     .then ->

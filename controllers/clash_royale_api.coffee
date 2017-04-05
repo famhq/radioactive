@@ -2,14 +2,17 @@ _ = require 'lodash'
 Promise = require 'bluebird'
 request = require 'request-promise'
 router = require 'exoid-router'
+basicAuth = require 'basic-auth'
 
 ClashRoyaleAPIService = require '../services/clash_royale_api'
 KueCreateService = require '../services/kue_create'
 User = require '../models/user'
+ClashRoyaleDeck = require '../models/clash_royale_deck'
 UserGameData = require '../models/user_game_data'
 UserGameDailyData = require '../models/user_game_daily_data'
 ClashRoyaleUserDeck = require '../models/clash_royale_user_deck'
 GameRecord = require '../models/game_record'
+ClashRoyaleTopPlayer = require '../models/clash_royale_top_player'
 config = require '../config'
 
 defaultEmbed = []
@@ -73,6 +76,18 @@ class ClashRoyaleAPICtrl
           "#{config.RADIOACTIVE_API_URL}/clashRoyaleAPI/updatePlayerData"
     }
 
+  queueTop200: ({params}) ->
+    ClashRoyaleTopPlayer.getAll()
+    .map ({playerId}) -> playerId
+    .then (playerIds) ->
+      console.log playerIds.join(',')
+      request "#{config.CR_API_URL}/players/#{playerIds.join(',')}", {
+        json: true
+        qs:
+          callbackUrl:
+            "#{config.RADIOACTIVE_API_URL}/clashRoyaleAPI/updatePlayerData"
+      }
+
   queuePlayerMatches: ({params}) ->
     console.log 'single queue', params.tag
     request "#{config.CR_API_URL}/players/#{params.tag}/games", {
@@ -84,6 +99,41 @@ class ClashRoyaleAPICtrl
 
   updateTopPlayers: ->
     ClashRoyaleAPIService.updateTopPlayers()
+
+  top200Decks: (req, res) ->
+    credentials = basicAuth req
+    {name, pass} = credentials or {}
+    # insecure (pass is in here, but not a big deal for this)
+    isAuthed = (name is 'sml' and pass is 'biob0t') or
+               (name is 'woody' and pass is 'buzz')
+    unless isAuthed
+      res.setHeader 'WWW-Authenticate', 'Basic realm="radioactive"'
+      console.log 'invalid admin'
+      router.throw  {status: 401, info: 'Access denied'}
+
+    ClashRoyaleTopPlayer.getAll()
+    .map ({playerId}) ->
+      UserGameData.getByPlayerIdAndGameId playerId, config.CLASH_ROYALE_ID
+    .then (userGameDatas) ->
+      decks = _.map userGameDatas, (userGameData) ->
+        userGameData?.data.currentDeck
+
+      cards = _.flatten decks
+      popularCards = _.countBy cards, 'key'
+      popularCards = _.map popularCards, (usage, key) ->
+        {key, usage}
+      popularCards = _.orderBy popularCards, 'usage', 'desc'
+
+      deckStrings = _.map decks, (deck) ->
+        ClashRoyaleDeck.getCardKeys _.map(deck, 'key')
+      console.log deckStrings
+      popularDecks = _.countBy deckStrings
+      popularDecks = _.map popularDecks, (usage, key) ->
+        {key, usage}
+      popularDecks = _.filter popularDecks, ({usage}) -> usage > 1
+      popularDecks = _.orderBy popularDecks, 'usage', 'desc'
+
+      res.status(200).send {popularCards, popularDecks, decks}
 
   process: ->
     console.log '============='

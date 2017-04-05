@@ -25,11 +25,11 @@ KueRunnerService = require './services/kue_runner'
 ChatMessageCtrl = require './controllers/chat_message'
 ClashRoyaleAPICtrl = require './controllers/clash_royale_api'
 HealthCtrl = require './controllers/health'
-ClashTvService = require './services/clash_tv'
 VideoDiscoveryService = require './services/video_discovery'
 StreamService = require './services/stream'
 ClashRoyaleDeck = require './models/clash_royale_deck'
 ClashRoyaleCard = require './models/clash_royale_card'
+ForumSigPage = require './dynamic_images/pages/forum_sig'
 
 if config.DEV_USE_HTTPS
   https = require 'https'
@@ -195,8 +195,11 @@ app.get '/updateTopPlayers', (req, res) ->
   ClashRoyaleAPICtrl.updateTopPlayers req, res
   res.status(200).send()
 
-app.get '/clashTv', (req, res) ->
-  ClashTvService.process()
+app.get '/top200Decks', (req, res) ->
+  ClashRoyaleAPICtrl.top200Decks req, res
+
+app.get '/queueTop200', (req, res) ->
+  ClashRoyaleAPICtrl.queueTop200 req, res
   res.status(200).send()
 
 app.get '/clashApiProcess', (req, res) ->
@@ -220,6 +223,15 @@ app.get '/cleanKueFailed', (req, res) ->
   .catch ->
     console.log 'kue clean route fail'
   res.sendStatus 200
+
+
+app.get '/di/crForumSig/:userId.png', (req, res) ->
+  $page = new ForumSigPage {req, res}
+
+  res.setHeader 'Content-Type', 'image/png'
+  $page.render()
+  .then (stream) ->
+    stream.pipe(res)
 
 if config.ENV is config.ENVS.PROD
   redisPub = new Redis.Cluster _.filter(config.REDIS.NODES)

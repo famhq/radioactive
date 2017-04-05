@@ -11,6 +11,7 @@ config = require '../config'
 CLASH_ROYALE_DECK_TABLE = 'clash_royale_decks'
 ADD_TIME_INDEX = 'addTime'
 POPULARITY_INDEX = 'thisWeekPopularity'
+CARD_IDS_INDEX = 'cardIds'
 NAME_INDEX = 'name'
 CARD_KEYS_INDEX = 'cardKeys'
 ONE_DAY = 3600 * 24
@@ -70,6 +71,7 @@ class ClashRoyaleDeckModel extends ClashRoyaleWinTrackerModel
         {name: ADD_TIME_INDEX}
         {name: NAME_INDEX}
         {name: CARD_KEYS_INDEX}
+        {name: CARD_IDS_INDEX, options: {multi: true}}
         {name: POPULARITY_INDEX}
       ]
     }

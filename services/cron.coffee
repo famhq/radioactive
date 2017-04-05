@@ -4,7 +4,6 @@ Promise = require 'bluebird'
 
 CacheService = require './cache'
 KueCreateService = require './kue_create'
-ClashTvService = require './clash_tv'
 VideoDiscoveryService = require './video_discovery'
 EventService = require './event'
 ClashRoyaleApiService = require './clash_royale_api'

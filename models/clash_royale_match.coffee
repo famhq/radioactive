@@ -11,6 +11,7 @@ CLASH_ROYALE_MATCH_TABLE = 'clash_royale_matches'
 
 ARENA_INDEX = 'arena'
 TYPE_INDEX = 'type'
+# TODO: migrate to PLAYER_IDS index
 PLAYER_1_ID_INDEX = 'player1Id'
 PLAYER_2_ID_INDEX = 'player2Id'
 # PLAYER_1_USER_IDS_INDEX = 'player1UserIds'

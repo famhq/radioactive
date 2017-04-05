@@ -23,6 +23,7 @@ PLAYER_DATA_STALE_TIME_S = 3600 * 12 # 12hr
 PLAYER_MATCHES_STALE_TIME_S = 60 * 60 # 1 hour
 # FIXME: temp fix so queue doesn't grow forever
 MIN_TIME_BETWEEN_UPDATES_MS = 60 * 20 * 1000 # 20min
+TWENTY_THREE_HOURS_S = 3600 * 23
 BATCH_REQUEST_SIZE = 50
 GAME_ID = config.CLASH_ROYALE_ID
 
@@ -86,6 +87,7 @@ class ClashAPIService
       clanName: player.clanName
       clanTag: player.clanTag
       trophies: player.trophies
+      chest: player.chest
     }
 
   upsertUserDecks: ({deckId, userIds, playerId, reqSynchronous}) ->
@@ -463,7 +465,8 @@ class ClashAPIService
       clan: if playerData.clan
       then { \
         tag: playerData.clan.tag, \
-        name: playerData.clan.name
+        name: playerData.clan.name, \
+        badge: playerData.clan.badge
       }
       else null
       level: playerData.level
@@ -541,6 +544,7 @@ class ClashAPIService
       playerId: tag
       data: @getUserGameDataFromPlayerData {playerData}
     }
+    console.log diff
 
     UserGameData.removeUserId userId, GAME_ID
     .then ->
@@ -628,31 +632,34 @@ class ClashAPIService
     @updatePlayerData {userId, tag, playerData}
     .then (userGameData) ->
       if isDaily
-        Promise.all [
-          UserGameData.getByPlayerIdAndGameId tag, GAME_ID
-          UserGameDailyData.getByPlayerIdAndGameId tag, GAME_ID
-        ]
-        .then ([userGameData, userGameDailyData]) ->
-          if userGameData and userGameDailyData?.data
-            splits = userGameDailyData.data.splits
-            stats = _.reduce splits, (aggregate, split, gameType) ->
-              aggregate.wins += split.wins
-              aggregate.losses += split.losses
-              aggregate
-            , {wins: 0, losses: 0}
-            UserGameDailyData.deleteById userGameDailyData.id
-            Promise.map userGameData.userIds, User.getById
-            .map (user) ->
-              PushNotificationService.send user, {
-                title: 'Daily recap'
-                type: PushNotificationService.TYPES.DAILY_RECAP
-                url: "https://#{config.SUPERNOVA_HOST}"
-                text: "#{stats.wins} wins, #{stats.losses} losses. Post in chat
-                      what else you want to see in the recap :)"
-                data: {path: '/'}
-              }
-            null
-
+        key = CacheService.PREFIXES.USER_DAILY_DATA_PUSH + ':' + tag
+        CacheService.runOnce key, ->
+          Promise.all [
+            UserGameData.getByPlayerIdAndGameId tag, GAME_ID
+            UserGameDailyData.getByPlayerIdAndGameId tag, GAME_ID
+          ]
+          .then ([userGameData, userGameDailyData]) ->
+            if userGameData and userGameDailyData?.data
+              console.log 'dailydata'
+              splits = userGameDailyData.data.splits
+              stats = _.reduce splits, (aggregate, split, gameType) ->
+                aggregate.wins += split.wins
+                aggregate.losses += split.losses
+                aggregate
+              , {wins: 0, losses: 0}
+              UserGameDailyData.deleteById userGameDailyData.id
+              Promise.map userGameData.userIds, User.getById
+              .map (user) ->
+                PushNotificationService.send user, {
+                  title: 'Daily recap'
+                  type: PushNotificationService.TYPES.DAILY_RECAP
+                  url: "https://#{config.SUPERNOVA_HOST}"
+                  text: "#{stats.wins} wins, #{stats.losses} losses.
+                        Post in chat what else you want to see in the recap :)"
+                  data: {path: '/'}
+                }
+              null
+        , {expireSeconds: TWENTY_THREE_HOURS_S}
   getTopPlayers: ->
     request "#{config.CR_API_URL}/players/top", {json: true}
 
@@ -665,7 +672,7 @@ class ClashAPIService
         playerId = player.playerTag
         UserGameData.getByPlayerIdAndGameId playerId, GAME_ID
         .then (userGameData) =>
-          if userGameData?.userIds?[0]
+          if userGameData?.verifiedUserId
             UserGameData.updateById userGameData.id, {
               data:
                 trophies: player.trophies
@@ -674,7 +681,19 @@ class ClashAPIService
           else
             User.create {}
             .then ({id}) =>
-              @refreshByPlayerTag playerId, {userId: id, priority: 'normal'}
+              userId = id
+              Promise.all [
+                ClashRoyaleUserDeck.duplicateByPlayerId playerId, userId
+                GameRecord.duplicateByPlayerId playerId, userId
+                UserGameData.upsertByPlayerIdAndGameId playerId, GAME_ID, {
+                  verifiedUserId: userId
+                }, {userId}
+              ]
+              .then =>
+                @refreshByPlayerTag playerId, {
+                  userId: userId, priority: 'normal'
+                }
+
         .then ->
           ClashRoyaleTopPlayer.upsertByRank rank, {
             playerId: playerId
