@@ -4,16 +4,19 @@ kue = require 'kue'
 KueService = require './kue'
 KueCreateService = require './kue_create'
 BroadcastService = require './broadcast'
-ClashRoyaleApiService = require './clash_royale_api'
+ClashRoyalePlayerService = require './clash_royale_player'
+ClashRoyaleClanService = require './clash_royale_clan'
 config = require '../config'
 
 TYPES =
   "#{KueCreateService.JOB_TYPES.BATCH_NOTIFICATION}":
     {fn: BroadcastService.batchNotify, concurrency: 3}
   "#{KueCreateService.JOB_TYPES.UPDATE_PLAYER_MATCHES}":
-    {fn: ClashRoyaleApiService.updatePlayerMatches, concurrency: 4}
+    {fn: ClashRoyalePlayerService.updatePlayerMatches, concurrency: 10}
   "#{KueCreateService.JOB_TYPES.UPDATE_PLAYER_DATA}":
-    {fn: ClashRoyaleApiService.processUpdatePlayerData, concurrency: 4}
+    {fn: ClashRoyalePlayerService.processUpdatePlayerData, concurrency: 4}
+  "#{KueCreateService.JOB_TYPES.UPDATE_CLAN_DATA}":
+    {fn: ClashRoyaleClanService.processUpdateClan, concurrency: 4}
 
 class KueRunnerService
   listen: ->
@@ -26,6 +29,7 @@ class KueRunnerService
           .then (response) ->
             done null, response
           .catch (err) ->
+            console.log 'err', err
             done err
 
 module.exports = new KueRunnerService()

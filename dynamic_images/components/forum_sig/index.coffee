@@ -7,7 +7,7 @@ s = require '../s'
 module.exports = class ForumSig extends Component
   getHeight: -> 100
 
-  render: ({userGameData} = {}) ->
+  render: ({player} = {}) ->
     # coffeelint: disable=max_line_length,cyclomatic_complexity
     s 'g', {
       fill: 'none'
@@ -51,7 +51,7 @@ module.exports = class ForumSig extends Component
           x: '0'
           y: '24'
         },
-          userGameData?.data?.name
+          player?.data?.name?.toUpperCase()
 
       s 'text', {
         fill: '#000'
@@ -64,7 +64,7 @@ module.exports = class ForumSig extends Component
           x: '0'
           y: '23'
         },
-          userGameData?.data?.name
+          player?.data?.name?.toUpperCase()
 
       s 'text', {
         fill: '#FFF'
@@ -78,7 +78,7 @@ module.exports = class ForumSig extends Component
           x: '0'
           y: '22'
         },
-          userGameData?.data?.name
+          player?.data?.name?.toUpperCase()
 
       s 'text', {
         fill: '#FFF'
@@ -91,9 +91,9 @@ module.exports = class ForumSig extends Component
           x: '0'
           y: '49'
         },
-          '#' + userGameData?.data?.clan?.tag
+          '#' + player?.data?.clan?.tag
           ' · '
-          userGameData?.data?.clan?.name
+          player?.data?.clan?.name
 
 
     # coffeelint: enable=max_line_length,cyclomatic_complexity

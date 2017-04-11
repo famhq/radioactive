@@ -6,7 +6,7 @@ UserGroupData = require '../models/user_group_data'
 Group = require '../models/group'
 EmbedService = require '../services/embed'
 
-class UserGroupData
+class UserGroupDataCtrl
   getMeByGroupId: ({groupId}, {user}) ->
     Group.hasPermissionByIdAndUserId groupId, user.id, {level: 'member'}
     .then (hasPermission) ->
@@ -25,4 +25,4 @@ class UserGroupData
         globalBlockedNotifications: globalBlockedNotifications
       }
 
-module.exports = new UserGroupData()
+module.exports = new UserGroupDataCtrl()

@@ -5,11 +5,11 @@ r = require '../services/rethinkdb'
 
 USER_ID_IMAGE_KEY_INDEX = 'userIdGameId'
 
-defaultDynamicImages = (userGameDailyData) ->
-  unless userGameDailyData?
+defaultDynamicImages = (playersDaily) ->
+  unless playersDaily?
     return null
 
-  _.defaults userGameDailyData, {
+  _.defaults playersDaily, {
     id: uuid.v4()
     imageKey: null
     userId: null
@@ -36,17 +36,17 @@ class DynamicImagesModel
     .default null
     .run()
     .then defaultDynamicImages
-    .then (userGameDailyData) ->
-      _.defaults {userId}, userGameDailyData
+    .then (playersDaily) ->
+      _.defaults {userId}, playersDaily
 
   upsertByUserIdAndImageKey: (userId, imageKey, diff) ->
     r.table DYNAMIC_IMAGES_TABLE
     .getAll [userId, imageKey], {index: USER_ID_IMAGE_KEY_INDEX}
     .nth 0
     .default null
-    .do (userGameDailyData) ->
+    .do (playersDaily) ->
       r.branch(
-        userGameDailyData.eq null
+        playersDaily.eq null
 
         r.table DYNAMIC_IMAGES_TABLE
         .insert defaultDynamicImages _.defaults _.clone(diff), {

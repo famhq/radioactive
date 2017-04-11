@@ -4,9 +4,9 @@ Joi = require 'joi'
 
 User = require '../models/user'
 UserData = require '../models/user_data'
-UserGameData = require '../models/user_game_data'
+Player = require '../models/player'
 ClashRoyaleTopPlayer = require '../models/clash_royale_top_player'
-ClashRoyaleAPIService = require '../services/clash_royale_api'
+ClashRoyaleKueService = require '../services/clash_royale_kue'
 KueCreateService = require '../services/kue_create'
 CacheService = require '../services/cache'
 config = require '../config'
@@ -17,37 +17,39 @@ GAME_ID = config.CLASH_ROYALE_ID
 TWELVE_HOURS_SECONDS = 12 * 3600
 ONE_MINUTE_SECONDS = 60
 
-class UserGameDataCtrl
+class PlayerCtrl
   getByUserIdAndGameId: ({userId, gameId}, {user}) ->
     gameId or= config.CLASH_ROYALE_ID
 
-    UserGameData.getByUserIdAndGameId userId, gameId
+    Player.getByUserIdAndGameId userId, gameId
 
-  search: ({playerId}, {user}) ->
+  search: ({playerId}, {user, headers, connection}) ->
+    ip = headers['x-forwarded-for'] or
+          connection.remoteAddress
     playerId = playerId.trim().toUpperCase()
                 .replace '#', ''
                 .replace /O/g, '0' # replace capital O with zero
 
     isValidTag = playerId.match /^[0289PYLQGRJCUV]+$/
-    console.log 'search', playerId
+    console.log 'search', playerId, ip
     unless isValidTag
       router.throw {status: 400, info: 'invalid tag'}
 
     key = "#{CacheService.PREFIXES.PLAYER_SEARCH}:#{playerId}"
     CacheService.preferCache key, ->
-      UserGameData.getByPlayerIdAndGameId playerId, config.CLASH_ROYALE_ID
-      .then (userGameData) ->
-        if userGameData?.userIds?[0]
-          userGameData
+      Player.getByPlayerIdAndGameId playerId, config.CLASH_ROYALE_ID
+      .then (player) ->
+        if player?.userIds?[0]
+          player
         else
           User.create {}
           .then ({id}) ->
-            ClashRoyaleAPIService.refreshByPlayerTag playerId, {
+            ClashRoyaleKueService.refreshByPlayerTag playerId, {
               userId: id
               priority: 'normal'
             }
           .then ->
-            UserGameData.getByPlayerIdAndGameId playerId, GAME_ID
+            Player.getByPlayerIdAndGameId playerId, GAME_ID
 
     , {expireSeconds: TWELVE_HOURS_SECONDS}
 
@@ -57,13 +59,13 @@ class UserGameDataCtrl
       ClashRoyaleTopPlayer.getAll()
       .then (topPlayers) ->
         playerIds = _.map topPlayers, 'playerId'
-        UserGameData.getAllByPlayerIdsAndGameId(
+        Player.getAllByPlayerIdsAndGameId(
           playerIds, config.CLASH_ROYALE_ID
         )
-        .then (userGameDatas) ->
-          players = _.map userGameDatas, (userGameData) ->
-            topPlayer = _.find topPlayers, {playerId: userGameData.playerId}
-            {rank: topPlayer?.rank, userGameData}
+        .then (players) ->
+          players = _.map players, (player) ->
+            topPlayer = _.find topPlayers, {playerId: player.playerId}
+            {rank: topPlayer?.rank, player}
           _.orderBy players, 'rank'
     , {expireSeconds: ONE_MINUTE_SECONDS}
 
@@ -74,12 +76,12 @@ class UserGameDataCtrl
       UserData.getByUserId user.id
       .then (userData) ->
         followingIds = userData.followingIds
-        UserGameData.getAllByUserIdsAndGameId(
+        Player.getAllByUserIdsAndGameId(
           followingIds, config.CLASH_ROYALE_ID
         )
-        .then (userGameDatas) ->
-          players = _.map userGameDatas, (userGameData) ->
-            {userGameData}
+        .then (players) ->
+          players = _.map players, (player) ->
+            {player}
     , {expireSeconds: 1} # FIXME FIXME ONE_MINUTE_SECONDS}
 
-module.exports = new UserGameDataCtrl()
+module.exports = new PlayerCtrl()

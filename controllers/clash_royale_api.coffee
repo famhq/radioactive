@@ -4,12 +4,13 @@ request = require 'request-promise'
 router = require 'exoid-router'
 basicAuth = require 'basic-auth'
 
-ClashRoyaleAPIService = require '../services/clash_royale_api'
+ClashRoyalePlayerService = require '../services/clash_royale_player'
+ClashRoyaleKueService = require '../services/clash_royale_kue'
 KueCreateService = require '../services/kue_create'
 User = require '../models/user'
 ClashRoyaleDeck = require '../models/clash_royale_deck'
-UserGameData = require '../models/user_game_data'
-UserGameDailyData = require '../models/user_game_daily_data'
+Player = require '../models/player'
+PlayersDaily = require '../models/player_daily'
 ClashRoyaleUserDeck = require '../models/clash_royale_user_deck'
 GameRecord = require '../models/game_record'
 ClashRoyaleTopPlayer = require '../models/clash_royale_top_player'
@@ -17,26 +18,31 @@ config = require '../config'
 
 defaultEmbed = []
 
+PLAYER_MATCHES_TIMEOUT_MS = 10000
+
 class ClashRoyaleAPICtrl
-  refreshByPlayerTag: ({playerTag}, {user}) ->
+  refreshByPlayerTag: ({playerTag}, {user, headers, connection}) ->
+    ip = headers['x-forwarded-for'] or
+          connection.remoteAddress
+
     playerTag = playerTag.trim().toUpperCase()
                 .replace '#', ''
                 .replace /O/g, '0' # replace capital O with zero
 
     isValidTag = playerTag.match /^[0289PYLQGRJCUV]+$/
-    console.log 'refresh', playerTag
+    console.log 'refresh', playerTag, ip
     unless isValidTag
       router.throw {status: 400, info: 'invalid tag'}
 
-    UserGameData.getByUserIdAndGameId user.id, config.CLASH_ROYALE_ID
-    .then (userGameData) ->
-      unless userGameData?.playerId
+    Player.getByUserIdAndGameId user.id, config.CLASH_ROYALE_ID
+    .then (player) ->
+      unless player?.playerId
         Promise.all [
           ClashRoyaleUserDeck.duplicateByPlayerId playerTag, user.id
           GameRecord.duplicateByPlayerId playerTag, user.id
         ]
     .then ->
-      ClashRoyaleAPIService.refreshByPlayerTag playerTag, {userId: user.id}
+      ClashRoyaleKueService.refreshByPlayerTag playerTag, {userId: user.id}
     .then ->
       return null
 
@@ -54,6 +60,19 @@ class ClashRoyaleAPICtrl
         priority: 'low'
       }
 
+  updateClan: ({body, params, headers}) ->
+    radioactiveHost = config.RADIOACTIVE_API_URL.replace /https?:\/\//i, ''
+    isPrivate = headers.host is radioactiveHost
+    if isPrivate and body.secret is config.CR_API_SECRET
+      {tag, clan} = body
+      unless tag
+        return
+      KueCreateService.createJob {
+        job: {tag, clan}
+        type: KueCreateService.JOB_TYPES.UPDATE_CLAN_DATA
+        priority: 'low'
+      }
+
   updatePlayerMatches: ({body, params, headers}) ->
     radioactiveHost = config.RADIOACTIVE_API_URL.replace /https?:\/\//i, ''
     isPrivate = headers.host is radioactiveHost
@@ -64,8 +83,18 @@ class ClashRoyaleAPICtrl
       KueCreateService.createJob {
         job: {tag, matches}
         type: KueCreateService.JOB_TYPES.UPDATE_PLAYER_MATCHES
+        ttlMs: PLAYER_MATCHES_TIMEOUT_MS
         priority: 'low'
       }
+
+  queueClan: ({params}) ->
+    console.log 'single queue clan', params.tag
+    request "#{config.CR_API_URL}/clans/#{params.tag}", {
+      json: true
+      qs:
+        callbackUrl:
+          "#{config.RADIOACTIVE_API_URL}/clashRoyaleAPI/updateClan"
+    }
 
   queuePlayerData: ({params}) ->
     console.log 'single queue', params.tag
@@ -98,7 +127,7 @@ class ClashRoyaleAPICtrl
     }
 
   updateTopPlayers: ->
-    ClashRoyaleAPIService.updateTopPlayers()
+    ClashRoyalePlayerService.updateTopPlayers()
 
   top200Decks: (req, res) ->
     credentials = basicAuth req
@@ -113,10 +142,10 @@ class ClashRoyaleAPICtrl
 
     ClashRoyaleTopPlayer.getAll()
     .map ({playerId}) ->
-      UserGameData.getByPlayerIdAndGameId playerId, config.CLASH_ROYALE_ID
-    .then (userGameDatas) ->
-      decks = _.map userGameDatas, (userGameData) ->
-        userGameData?.data.currentDeck
+      Player.getByPlayerIdAndGameId playerId, config.CLASH_ROYALE_ID
+    .then (players) ->
+      decks = _.map players, (player) ->
+        player?.data.currentDeck
 
       cards = _.flatten decks
       popularCards = _.countBy cards, 'key'
@@ -140,7 +169,7 @@ class ClashRoyaleAPICtrl
     console.log 'process url called'
     console.log '============='
     # this triggers daily recap push notification
-    # ClashRoyaleAPIService.updateStalePlayerData {force: true}
-    ClashRoyaleAPIService.updateStalePlayerMatches {force: true}
+    # ClashRoyalePlayerService.updateStalePlayerData {force: true}
+    ClashRoyalePlayerService.updateStalePlayerMatches {force: true}
 
 module.exports = new ClashRoyaleAPICtrl()

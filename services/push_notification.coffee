@@ -136,6 +136,8 @@ class PushNotificationService
     else
       Promise.resolve {userIds: conversation.userIds}
     ).then ({group, event, userIds}) =>
+      if event
+        return # FIXME FIXME: re-enable
       message =
         title: event?.name or group?.name or User.getDisplayName meUser
         type: if group or event \

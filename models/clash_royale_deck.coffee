@@ -13,8 +13,7 @@ ADD_TIME_INDEX = 'addTime'
 POPULARITY_INDEX = 'thisWeekPopularity'
 CARD_IDS_INDEX = 'cardIds'
 NAME_INDEX = 'name'
-CARD_KEYS_INDEX = 'cardKeys'
-ONE_DAY = 3600 * 24
+ONE_WEEK_S = 3600 * 24 * 7
 # coffeelint: disable=max_line_length
 # for naming
 TANK_CARD_KEYS = [
@@ -50,9 +49,9 @@ defaultClashRoyaleDeck = (clashRoyaleDeck) ->
     return null
 
   _.defaults clashRoyaleDeck, {
-    id: uuid.v4()
+    # all card keys alphabetized and joined with `|`
+    id: clashRoyaleDeck?.cardKeys
     name: null
-    cardKeys: null # all card keys alphabetized and joined with `|`
     cardIds: []
     wins: 0
     losses: 0
@@ -70,22 +69,33 @@ class ClashRoyaleDeckModel extends ClashRoyaleWinTrackerModel
       indexes: [
         {name: ADD_TIME_INDEX}
         {name: NAME_INDEX}
-        {name: CARD_KEYS_INDEX}
         {name: CARD_IDS_INDEX, options: {multi: true}}
         {name: POPULARITY_INDEX}
       ]
     }
   ]
 
-  create: (clashRoyaleDeck, {durability} = {}) ->
+  batchCreate: (clashRoyaleDecks) ->
+    clashRoyaleDecks = _.map clashRoyaleDecks, defaultClashRoyaleDeck
+
+    r.table CLASH_ROYALE_DECK_TABLE
+    .insert clashRoyaleDecks
+    .run()
+
+  create: (clashRoyaleDeck, {durability, skipWait} = {}) ->
     clashRoyaleDeck = defaultClashRoyaleDeck clashRoyaleDeck
     durability ?= 'hard'
 
-    r.table CLASH_ROYALE_DECK_TABLE
+    query = r.table CLASH_ROYALE_DECK_TABLE
     .insert clashRoyaleDeck, {durability}
     .run()
     .then ->
       clashRoyaleDeck
+
+    if skipWait
+      clashRoyaleDeck
+    else
+      query
 
   getRandomName: (cards, attempts = 0) =>
     cardKeys = _.map(cards, 'key')
@@ -132,33 +142,35 @@ class ClashRoyaleDeckModel extends ClashRoyaleWinTrackerModel
   getCardKeys: (cards) ->
     cardKeys = _.sortBy(cards).join '|'
 
-  getByCardKeys: (cardKeys, {preferCache} = {}) =>
+  getByCardKeys: (cardKeys, {preferCache, cards} = {}) =>
     cardKeysStr = @getCardKeys cardKeys
     get = =>
+      start2 = Date.now()
       r.table CLASH_ROYALE_DECK_TABLE
-      .getAll cardKeysStr, {index: CARD_KEYS_INDEX}
-      .nth 0
-      .default null
+      .get cardKeysStr
       .run()
       .then (deck) =>
         if deck
           return deck
         else
           Promise.all [
-            @getRandomName(_.map(cardKeys, (key) -> {key}))
-            Promise.map cardKeys, (key) -> Card.getByKey key, {preferCache}
+            # too slow...
+            # @getRandomName(_.map(cardKeys, (key) -> {key}))
+            Promise.resolve 'Nameless'
+            Promise.map cardKeys, (key) ->
+              _.find(cards, {key}) or  Card.getByKey(key, {preferCache})
           ]
           .then ([randomName, cards]) =>
             @create {
               cardKeys: cardKeysStr
               name: randomName
               cardIds: _.filter _.map(cards, 'id')
-            }, {durability: 'soft'}
+            }, {skipWait: true}
       .then defaultClashRoyaleDeck
     if preferCache
       prefix = CacheService.PREFIXES.CLASH_ROYALE_DECK_CARD_KEYS
       key = "#{prefix}:#{cardKeysStr}"
-      CacheService.preferCache key, get, {expireSeconds: ONE_DAY}
+      CacheService.preferCache key, get, {expireSeconds: ONE_WEEK_S}
     else
       get()
 

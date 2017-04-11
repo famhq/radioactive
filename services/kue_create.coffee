@@ -15,6 +15,7 @@ JOB_TYPES =
   DEFAULT: 'radioactive:default'
   UPDATE_PLAYER_MATCHES: 'radioactive:update_player_matches'
   UPDATE_PLAYER_DATA: 'radioactive:update_player_data'
+  UPDATE_CLAN_DATA: 'radioactive:update_clan'
   BATCH_NOTIFICATION: 'radioactive:batch_notification'
 
 
@@ -28,15 +29,20 @@ class KueCreateService
     types = ['failed', 'complete', 'inactive', 'active']
     Promise.map types, (type) ->
       new Promise (resolve, reject) ->
-        kue.Job.rangeByState type, 0, -1, 'asc', (err, selectedJobs) ->
+        console.log 'cleaning try', type
+        kue.Job.rangeByState type, 0, 5000, 'asc', (err, selectedJobs) ->
+          console.log 'cleaning ', type, selectedJobs?.length
           if err
             reject err
           resolve Promise.each selectedJobs, (job) ->
-            job.remove (err) ->
-              if err
-                reject(err)
-              else
-                resolve()
+            try
+              job.remove (err) ->
+                if err
+                  reject(err)
+                else
+                  resolve()
+            catch err
+              reject err
 
   pauseWorker: (kueWorkerId, {killTimeMs, resumeAfterTimeMs}) =>
     if resumeAfterTimeMs

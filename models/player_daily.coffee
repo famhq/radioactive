@@ -5,13 +5,13 @@ r = require '../services/rethinkdb'
 
 PLAYER_ID_GAME_ID_INDEX = 'playerIdGameId'
 
-# TODO: create userGameDailyDataRecords to store past days?
+# TODO: create playersDailyRecords to store past days?
 
-defaultUserGameDailyData = (userGameDailyData) ->
-  unless userGameDailyData?
+defaultPlayersDaily = (playersDaily) ->
+  unless playersDaily?
     return null
 
-  _.defaults userGameDailyData, {
+  _.defaults playersDaily, {
     id: uuid.v4()
     gameId: null
     playerId: null
@@ -20,12 +20,12 @@ defaultUserGameDailyData = (userGameDailyData) ->
     lastUpdateTime: new Date()
   }
 
-USER_GAME_DATA_DAILY_TABLE = 'user_game_daily_data'
+PLAYER_DAILY_TABLE = 'players_daily'
 
-class UserGameDailyDataModel
+class PlayersDailyModel
   RETHINK_TABLES: [
     {
-      name: USER_GAME_DATA_DAILY_TABLE
+      name: PLAYER_DAILY_TABLE
       indexes: [
         {name: PLAYER_ID_GAME_ID_INDEX, fn: (row) ->
           [row('playerId'), row('gameId')]}
@@ -33,54 +33,54 @@ class UserGameDailyDataModel
     }
   ]
 
-  batchCreate: (userGameDailyData) ->
-    userGameDailyData = _.map userGameDailyData, defaultUserGameDailyData
+  batchCreate: (playersDaily) ->
+    playersDaily = _.map playersDaily, defaultPlayersDaily
 
-    r.table USER_GAME_DATA_DAILY_TABLE
-    .insert userGameDailyData
+    r.table PLAYER_DAILY_TABLE
+    .insert playersDaily
     .run()
 
   getByPlayerIdAndGameId: (playerId, gameId) ->
-    r.table USER_GAME_DATA_DAILY_TABLE
+    r.table PLAYER_DAILY_TABLE
     .getAll [playerId, gameId], {index: PLAYER_ID_GAME_ID_INDEX}
     .nth 0
     .default null
     .run()
-    .then defaultUserGameDailyData
-    .then (userGameDailyData) ->
-      _.defaults {playerId}, userGameDailyData
+    .then defaultPlayersDaily
+    .then (playersDaily) ->
+      _.defaults {playerId}, playersDaily
 
   getAllByPlayerIdsAndGameId: (playerIds, gameId) ->
     playerIdsGameIds = _.map playerIds, (playerId) -> [playerId, gameId]
-    r.table USER_GAME_DATA_DAILY_TABLE
+    r.table PLAYER_DAILY_TABLE
     .getAll r.args(playerIdsGameIds), {index: PLAYER_ID_GAME_ID_INDEX}
-    .map defaultUserGameDailyData
+    .map defaultPlayersDaily
     .run()
 
   updateByPlayerIdAndGameId: (playerId, gameId, diff) ->
-    r.table USER_GAME_DATA_DAILY_TABLE
+    r.table PLAYER_DAILY_TABLE
     .getAll [playerId, gameId], {index: PLAYER_ID_GAME_ID_INDEX}
     .update diff
     .run()
 
   upsertByPlayerIdAndGameId: (playerId, gameId, diff, {userId} = {}) ->
-    r.table USER_GAME_DATA_DAILY_TABLE
+    r.table PLAYER_DAILY_TABLE
     .getAll [playerId, gameId], {index: PLAYER_ID_GAME_ID_INDEX}
     .nth 0
     .default null
-    .do (userGameDailyData) ->
+    .do (playersDaily) ->
       r.branch(
-        userGameDailyData.eq null
+        playersDaily.eq null
 
-        r.table USER_GAME_DATA_DAILY_TABLE
-        .insert defaultUserGameDailyData _.defaults _.clone(diff), {
+        r.table PLAYER_DAILY_TABLE
+        .insert defaultPlayersDaily _.defaults _.clone(diff), {
           playerId
           gameId
           hasUserId: Boolean userId
           userIds: if userId then [userId] else []
         }
 
-        r.table USER_GAME_DATA_DAILY_TABLE
+        r.table PLAYER_DAILY_TABLE
         .getAll [playerId, gameId], {index: PLAYER_ID_GAME_ID_INDEX}
         .nth 0
         .default null
@@ -91,15 +91,15 @@ class UserGameDailyDataModel
       null
 
   updateById: (id, diff) ->
-    r.table USER_GAME_DATA_DAILY_TABLE
+    r.table PLAYER_DAILY_TABLE
     .get id
     .update diff
     .run()
 
   deleteById: (id) ->
-    r.table USER_GAME_DATA_DAILY_TABLE
+    r.table PLAYER_DAILY_TABLE
     .get id
     .delete()
     .run()
 
-module.exports = new UserGameDailyDataModel()
+module.exports = new PlayersDailyModel()

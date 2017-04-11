@@ -2,7 +2,7 @@ _ = require 'lodash'
 Promise = require 'bluebird'
 router = require 'exoid-router'
 
-ClashRoyaleAPIService = require '../services/clash_royale_api'
+ClashRoyaleKueService = require '../services/clash_royale_kue'
 r = require '../services/rethinkdb'
 config = require '../config'
 
@@ -13,9 +13,9 @@ class HealthCtrl
   check: (req, res, next) ->
     Promise.all [
       r.dbList().run().timeout HEALTHCHECK_TIMEOUT
-      ClashRoyaleAPIService.getPlayerDataByTag AUSTIN_TAG
+      ClashRoyaleKueService.getPlayerDataByTag AUSTIN_TAG
       .catch -> null
-      ClashRoyaleAPIService.getPlayerMatchesByTag AUSTIN_TAG
+      ClashRoyaleKueService.getPlayerMatchesByTag AUSTIN_TAG
       .catch -> null
     ]
     .then ([rethinkdb, playerData, playerMatches]) ->

@@ -1,0 +1,87 @@
+Promise = require 'bluebird'
+_ = require 'lodash'
+request = require 'request-promise'
+
+KueCreateService = require './kue_create'
+Clan = require '../models/clan'
+config = require '../config'
+
+PLAYER_DATA_TIMEOUT_MS = 10000
+PLAYER_MATCHES_TIMEOUT_MS = 5000
+
+processingM = 0
+processingP = 0
+
+class ClashRoyaleKue
+  getPlayerDataByTag: (tag, {priority} = {}) ->
+    console.log 'req', "#{config.CR_API_URL}/players/#{tag}"
+    request "#{config.CR_API_URL}/players/#{tag}", {
+      json: true
+      qs:
+        priority: priority
+    }
+    .then (responses) ->
+      responses?[0]
+    .catch (err) ->
+      console.log 'err playerDataByTag'
+      console.log err
+
+  getPlayerMatchesByTag: (tag) ->
+    console.log 'req', "#{config.CR_API_URL}/players/#{tag}/games"
+    request "#{config.CR_API_URL}/players/#{tag}/games", {json: true}
+    .then (responses) ->
+      responses?[0]
+    .catch (err) ->
+      console.log 'err playerMatchesByTag'
+      console.log err
+
+  refreshByPlayerTag: (playerTag, {userId, priority} = {}) =>
+    Promise.all [
+      @getPlayerDataByTag playerTag, {priority}
+      @getPlayerMatchesByTag playerTag, {priority}
+    ]
+    .then ([playerData, matches]) ->
+      KueCreateService.createJob {
+        job: {userId: userId, tag: playerTag, playerData}
+        type: KueCreateService.JOB_TYPES.UPDATE_PLAYER_DATA
+        ttlMs: PLAYER_DATA_TIMEOUT_MS
+        priority: priority or 'high'
+        waitForCompletion: true
+      }
+      .then ->
+        KueCreateService.createJob {
+          job: {tag: playerTag, matches, reqSynchronous: true}
+          type: KueCreateService.JOB_TYPES.UPDATE_PLAYER_MATCHES
+          ttlMs: PLAYER_MATCHES_TIMEOUT_MS
+          priority: priority or 'high'
+          waitForCompletion: true
+        }
+        .catch -> null
+
+  getClanByTag: (tag, {priority} = {}) ->
+    console.log 'req', "#{config.CR_API_URL}/clans/#{tag}"
+    request "#{config.CR_API_URL}/clans/#{tag}", {
+      json: true
+      qs:
+        priority: priority
+    }
+    .then (responses) ->
+      responses?[0]
+    .catch (err) ->
+      console.log 'err clanByTag'
+      console.log err
+
+  refreshByClanId: (clanId, {userId, priority} = {}) =>
+    @getClanByTag clanId, {priority}
+    .then (clan) ->
+      KueCreateService.createJob {
+        job: {userId: userId, tag: clanId, clan}
+        type: KueCreateService.JOB_TYPES.UPDATE_CLAN_DATA
+        priority: priority or 'high'
+        waitForCompletion: true
+      }
+    .then ->
+      Clan.getByClanIdAndGameId clanId, GAME_ID, {preferCache: true}
+      .then ({id}) -> {id}
+
+module.exports = new ClashRoyaleKue()

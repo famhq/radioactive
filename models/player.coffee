@@ -6,7 +6,6 @@ r = require '../services/rethinkdb'
 STALE_PLAYER_MATCHES_INDEX = 'stalePlayerMatches'
 STALE_PLAYER_DATA_INDEX = 'stale'
 USER_ID_GAME_ID_INDEX = 'userIdGameId'
-PLAYER_ID_GAME_ID_INDEX = 'playerIdGameId'
 IS_QUEUED_INDEX = 'isQueued'
 
 # 500 ids per min = 30,000 per hour
@@ -15,15 +14,19 @@ DEFAULT_PLAYER_MATCHES_STALE_LIMIT = 500
 # 40 players per minute = ~60,000 per day
 DEFAULT_PLAYER_DATA_STALE_LIMIT = 80
 
-defaultUserGameData = (userGameData) ->
-  unless userGameData?
+defaultPlayer = (player) ->
+  unless player?
     return null
 
-  _.defaults userGameData, {
-    id: uuid.v4()
+  id = if player?.playerId and player?.gameId \
+       then "#{player.gameId}:#{player.playerId}"
+       else uuid.v4()
+
+  _.defaults player, {
+    id: id
     gameId: null
     playerId: null
-    hasUserId: false
+    hasUserId: false # alias for isTrackedUser
     verifiedUserId: null
     isClaimed: false
     userIds: [] # can be multiple users tied to a game user
@@ -34,12 +37,12 @@ defaultUserGameData = (userGameData) ->
     lastMatchesUpdateTime: new Date()
   }
 
-USER_GAME_DATA_TABLE = 'user_game_data'
+PLAYER_TABLE = 'players'
 
-class UserGameDataModel
+class PlayerModel
   RETHINK_TABLES: [
     {
-      name: USER_GAME_DATA_TABLE
+      name: PLAYER_TABLE
       indexes: [
         {name: STALE_PLAYER_MATCHES_INDEX, fn: (row) ->
           [
@@ -61,102 +64,80 @@ class UserGameDataModel
         options: {multi: true}, fn: (row) ->
           row('userIds').map (userId) ->
             [userId, row('gameId')]}
-        {name: PLAYER_ID_GAME_ID_INDEX, fn: (row) ->
-          [row('playerId'), row('gameId')]}
       ]
     }
   ]
 
-  create: (userGameData) ->
-    userGameData = defaultUserGameData userGameData
+  batchCreate: (player) ->
+    player = _.map player, defaultPlayer
 
-    r.table USER_GAME_DATA_TABLE
-    .insert userGameData
-    .run()
-    .then ->
-      userGameData
-
-  batchCreate: (userGameData) ->
-    userGameData = _.map userGameData, defaultUserGameData
-
-    r.table USER_GAME_DATA_TABLE
-    .insert userGameData
+    r.table PLAYER_TABLE
+    .insert player
     .run()
 
   getByUserIdAndGameId: (userId, gameId) ->
-    r.table USER_GAME_DATA_TABLE
+    r.table PLAYER_TABLE
     .getAll [userId, gameId], {index: USER_ID_GAME_ID_INDEX}
     .nth 0
     .default null
     .run()
-    .then defaultUserGameData
-    .then (userGameData) ->
-      _.defaults {userId}, userGameData
+    .then defaultPlayer
+    .then (player) ->
+      _.defaults {userId}, player
 
   updateByPlayerIdAndGameId: (playerId, gameId, diff) ->
-    r.table USER_GAME_DATA_TABLE
-    .getAll [playerId, gameId], {index: PLAYER_ID_GAME_ID_INDEX}
-    .nth 0
-    .default null
+    r.table PLAYER_TABLE
+    .get "#{gameId}:#{playerId}"
     .update diff
     .run()
 
   getAllByUserIdsAndGameId: (userIds, gameId) ->
     userIdsGameIds = _.map userIds, (userId) -> [userId, gameId]
-    r.table USER_GAME_DATA_TABLE
+    r.table PLAYER_TABLE
     .getAll r.args(userIdsGameIds), {index: USER_ID_GAME_ID_INDEX}
-    .map defaultUserGameData
+    .map defaultPlayer
     .run()
 
   getByPlayerIdAndGameId: (playerId, gameId) ->
-    r.table USER_GAME_DATA_TABLE
-    .getAll [playerId, gameId], {index: PLAYER_ID_GAME_ID_INDEX}
-    .nth 0
-    .default null
+    r.table PLAYER_TABLE
+    .get "#{gameId}:#{playerId}"
     .run()
-    .then defaultUserGameData
-    .then (userGameData) ->
-      if userGameData
-        _.defaults {playerId}, userGameData
+    .then defaultPlayer
+    .then (player) ->
+      if player
+        _.defaults {playerId}, player
       else null
 
   getAllByPlayerIdsAndGameId: (playerIds, gameId) ->
-    playerIdsGameIds = _.map playerIds, (playerId) -> [playerId, gameId]
-    r.table USER_GAME_DATA_TABLE
-    .getAll r.args(playerIdsGameIds), {index: PLAYER_ID_GAME_ID_INDEX}
-    .map defaultUserGameData
+    playerIdsGameIds = _.map playerIds, (playerId) -> "#{gameId}:#{playerId}"
+    r.table PLAYER_TABLE
+    .getAll r.args(playerIdsGameIds)
+    .map defaultPlayer
     .run()
 
   upsertByPlayerIdAndGameId: (playerId, gameId, diff, {userId} = {}) ->
     clonedDiff = _.cloneDeep(diff)
 
-    r.table USER_GAME_DATA_TABLE
-    .getAll [playerId, gameId], {index: PLAYER_ID_GAME_ID_INDEX}
-    .nth 0
-    .default null
-    .do (userGameData) ->
+    r.table PLAYER_TABLE
+    .get "#{gameId}:#{playerId}"
+    .replace (player) ->
       r.branch(
-        userGameData.eq null
+        player.eq null
 
-        r.table USER_GAME_DATA_TABLE
-        .insert defaultUserGameData _.defaults _.clone(diff), {
+        defaultPlayer _.defaults _.clone(diff), {
           playerId
           gameId
           hasUserId: Boolean userId
           userIds: if userId then [userId] else []
         }
 
-        r.table USER_GAME_DATA_TABLE
-        .getAll [playerId, gameId], {index: PLAYER_ID_GAME_ID_INDEX}
-        .nth 0
-        .default null
-        .update _.defaults {
+        player.merge _.defaults {
           hasUserId:
             r.expr(Boolean userId)
-            .or(userGameData('userIds').count().gt(0))
+            .or(player('userIds').count().gt(0))
           userIds: if userId \
-                   then userGameData('userIds').append(userId).distinct()
-                   else userGameData('userIds')
+                   then player('userIds').append(userId).distinct()
+                   else player('userIds')
         }, clonedDiff
       )
     .run()
@@ -170,7 +151,7 @@ class UserGameDataModel
     else
       index = STALE_PLAYER_DATA_INDEX
       limit ?= DEFAULT_PLAYER_DATA_STALE_LIMIT
-    r.table USER_GAME_DATA_TABLE
+    r.table PLAYER_TABLE
     .between(
       [gameId, false, true, 0]
       [gameId, false, true, r.now().sub(staleTimeS)]
@@ -178,13 +159,13 @@ class UserGameDataModel
     )
     .limit limit
     .run()
-    .map defaultUserGameData
+    .map defaultPlayer
 
   removeUserId: (userId, gameId) ->
     unless userId
       console.log 'rm userId missing', userId
       return Promise.resolve null
-    r.table USER_GAME_DATA_TABLE
+    r.table PLAYER_TABLE
     .getAll [userId, gameId], {index: USER_ID_GAME_ID_INDEX}
     .update {
       userIds: r.row('userIds').setDifference([userId])
@@ -192,17 +173,16 @@ class UserGameDataModel
     .run()
 
   updateByPlayerIdsAndGameId: (playerIds, gameId, diff) ->
-    playerIdGameIds = _.map playerIds, (playerId) ->
-      [playerId, gameId]
-    r.table USER_GAME_DATA_TABLE
-    .getAll r.args(playerIdGameIds), {index: PLAYER_ID_GAME_ID_INDEX}
+    playerIdGameIds = _.map playerIds, (playerId) -> "#{gameId}:#{playerId}"
+    r.table PLAYER_TABLE
+    .getAll r.args(playerIdGameIds)
     .update diff
     .run()
 
   updateById: (id, diff) ->
-    r.table USER_GAME_DATA_TABLE
+    r.table PLAYER_TABLE
     .get id
     .update diff
     .run()
 
-module.exports = new UserGameDataModel()
+module.exports = new PlayerModel()

@@ -8,6 +8,7 @@ GAME_RECORD_TYPE_ID_INDEX = 'gameRecordTypeId'
 SCALED_TIME_INDEX = 'scaledTime'
 USER_ID_INDEX = 'userId'
 PLAYER_ID_INDEX = 'playerId'
+CLAN_ID_INDEX = 'clanId'
 GAME_ID_INDEX = 'gameId'
 RECORDS_INDEX = 'records'
 RECORD_INDEX = 'record'
@@ -21,6 +22,7 @@ defaultGameRecord = (gameRecord) ->
     id: uuid.v4()
     userId: null
     playerId: null
+    clanId: null
     gameRecordTypeId: null
     value: 0
     scaledTime: null
@@ -37,6 +39,7 @@ class GameRecordModel
         {name: GAME_RECORD_TYPE_ID_INDEX}
         {name: USER_ID_INDEX}
         {name: PLAYER_ID_INDEX}
+        {name: CLAN_ID_INDEX}
         {name: SCALED_TIME_INDEX}
         {name: RECORDS_INDEX, fn: (row) ->
           [row('gameRecordTypeId'), row('userId')]}
