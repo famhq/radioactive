@@ -21,6 +21,7 @@ class CacheService
       'clash_royal_user_deck:queued_increments:loss1'
     CLASH_ROYALE_USER_DECK_QUEUED_INCREMENTS_DRAW:
       'clash_royal_user_deck:queued_increments:draw1'
+    CLASH_ROYALE_CARDS: 'clash_royale:cards'
     PLAYERS_TOP: 'player:top'
   LOCK_PREFIXES:
     KUE_PROCESS: 'kue:process'
@@ -29,20 +30,21 @@ class CacheService
   PREFIXES:
     CHAT_USER: 'chat:user2'
     THREAD_USER: 'thread:user1'
-    THREAD_DECK: 'thread:deck'
+    THREAD_DECK: 'thread:deck1'
     USER_DATA_CONVERSATION_USERS: 'user_data:conversation_users'
     USER_DATA_FOLLOWERS: 'user_data:followers'
     USER_DATA_FOLLOWING: 'user_data:following'
     USER_DATA_FOLLOWING_PLAYERS: 'user_data:following:players'
     USER_DATA_BLOCKED_USERS: 'user_data:blocked_users'
     USER_DATA_CLASH_ROYALE_DECK_IDS: 'user_data:clash_royale_deck_ids6'
-    USER_DAILY_DATA_PUSH: 'user_daily_data:push'
-    CLASH_ROYALE_MATCHES_ID: 'clash_royale_matches:id81'
+    USER_DAILY_DATA_PUSH: 'user_daily_data:push3'
+    CLASH_ROYALE_MATCHES_ID: 'clash_royale_matches:id82'
     CLASH_ROYALE_CARD: 'clash_royale_card'
     CLASH_ROYALE_CARD_KEY: 'clash_royale_card_key1'
     CLASH_ROYALE_CARD_RANK: 'clash_royal_card:rank'
+    CLASH_ROYALE_CLAN_CLAN_ID_GAME_ID: 'clash_royale_clan:clan_id_game_id'
     CLASH_ROYALE_DECK_RANK: 'clash_royal_deck:rank'
-    CLASH_ROYALE_DECK_CARD_KEYS: 'clash_royal_deck:card_keys6'
+    CLASH_ROYALE_DECK_CARD_KEYS: 'clash_royal_deck:card_keys10'
     CLASH_ROYALE_USER_DECK_DECK: 'clash_royale_user_deck:deck'
     CLASH_ROYALE_USER_DECK_DECK_ID_USER_ID:
       'clash_royale_user_deck:deck_id:user_id'

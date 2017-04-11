@@ -183,8 +183,17 @@ app.post '/clashRoyaleApi/updatePlayerData', (req, res) ->
   .then ->
     res.status(200).send()
 
+app.post '/clashRoyaleApi/updateClan', (req, res) ->
+  ClashRoyaleAPICtrl.updateClan req, res
+  .then ->
+    res.status(200).send()
+
 app.get '/queuePlayerData/:tag', (req, res) ->
   ClashRoyaleAPICtrl.queuePlayerData req, res
+  res.status(200).send()
+
+app.get '/queueClan/:tag', (req, res) ->
+  ClashRoyaleAPICtrl.queueClan req, res
   res.status(200).send()
 
 app.get '/queuePlayerMatches/:tag', (req, res) ->

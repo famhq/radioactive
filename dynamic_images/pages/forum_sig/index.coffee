@@ -3,7 +3,7 @@ fs = require 'fs'
 Promise = require 'bluebird'
 
 Page = require '../'
-UserGameData = require '../../../models/user_game_data'
+Player = require '../../../models/player'
 DynamicImage = require '../../../models/dynamic_image'
 ForumSig = require '../../components/forum_sig'
 s = require '../../components/s'
@@ -20,7 +20,7 @@ module.exports = class ForumSigPage extends Page
 
     @$component = new ForumSig()
 
-  renderHead: ({userGameData, images}) ->
+  renderHead: ({player, images}) ->
     s 'defs',
       s 'pattern', {
         id: 'clanBadgeImage'
@@ -52,14 +52,14 @@ module.exports = class ForumSigPage extends Page
 
   setup: =>
     Promise.all [
-      UserGameData.getByUserIdAndGameId @userId, config.CLASH_ROYALE_ID
+      Player.getByUserIdAndGameId @userId, config.CLASH_ROYALE_ID
       DynamicImage.getByUserIdAndImageKey @userId, IMAGE_KEY
     ]
-    .then ([userGameData, dynamicImage]) =>
+    .then ([player, dynamicImage]) =>
       color = dynamicImage?.data?.color or 'red'
       favoriteCard = dynamicImage?.data?.favoriteCard or 'sparky'
-      console.log userGameData.data?.clan
-      badge = userGameData?.data?.clan?.badge or 0
+      console.log player.data?.clan
+      badge = player?.data?.clan?.badge or 0
       badge %= 1000
       backgroundPath = PATH + "/forum_signature/background_#{color}.png"
       cardPath = PATH + "/cards/#{favoriteCard}_small.png"
@@ -78,4 +78,4 @@ module.exports = class ForumSigPage extends Page
         }
 
 
-        {userGameData, @query, images}
+        {player, @query, images}

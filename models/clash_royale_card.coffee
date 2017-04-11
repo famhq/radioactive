@@ -10,7 +10,7 @@ config = require '../config'
 CLASH_ROYALE_CARD_TABLE = 'clash_royale_cards'
 KEY_INDEX = 'key'
 POPULARITY_INDEX = 'thisWeekPopularity'
-ONE_DAY = 3600 * 24
+ONE_WEEK_S = 3600 * 24 * 7
 
 defaultClashRoyaleCard = (clashRoyaleCard) ->
   unless clashRoyaleCard?
@@ -66,7 +66,7 @@ class ClashRoyaleCardModel extends ClashRoyaleWinTrackerModel
     if preferCache
       prefix = CacheService.PREFIXES.CLASH_ROYALE_CARD_KEY
       cacheKey = "#{prefix}:#{key}"
-      CacheService.preferCache cacheKey, get, {expireSeconds: ONE_DAY}
+      CacheService.preferCache cacheKey, get, {expireSeconds: ONE_WEEK_S}
     else
       get()
 

@@ -16,7 +16,7 @@ Group = require '../models/group'
 GroupRecord = require '../models/group_record'
 GameRecord = require '../models/game_record'
 UserGroupData = require '../models/user_group_data'
-UserGameData = require '../models/user_game_data'
+Player = require '../models/player'
 CacheService = require './cache'
 
 TYPES =
@@ -35,6 +35,8 @@ TYPES =
   CONVERSATION:
     USERS: 'conversation:users'
     LAST_MESSAGE: 'conversation:lastMessage'
+  CLAN:
+    PLAYERS: 'clan:players'
   CLASH_ROYALE_USER_DECK:
     DECK: 'clashRoyaleUserDeck:deck'
   CLASH_ROYALE_DECK:
@@ -100,7 +102,7 @@ embedFn = _.curry ({embed, user, groupId, gameId}, object) ->
         )
 
       when TYPES.USER.GAME_DATA
-        embedded.gameData = UserGameData.getByUserIdAndGameId(
+        embedded.gameData = Player.getByUserIdAndGameId(
           embedded.id, gameId
         )
 
@@ -174,6 +176,12 @@ embedFn = _.curry ({embed, user, groupId, gameId}, object) ->
           maxScaledTime: maxScaledTime
           limit: 50
         }
+
+      when TYPES.CLAN.PLAYERS
+        embedded.players = Promise.map embedded.players, (player) ->
+          Player.getByPlayerIdAndGameId player.playerId, embedded.gameId
+          .then (playerObj) ->
+            _.defaults {player: playerObj}, player
 
       when TYPES.CONVERSATION.USERS
         embedded.users = Promise.map embedded.userIds, (userId) ->

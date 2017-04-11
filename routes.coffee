@@ -3,9 +3,10 @@ router = require 'exoid-router'
 UserCtrl = require './controllers/user'
 UserDataCtrl = require './controllers/user_data'
 UserGroupData = require './controllers/user_group_data'
-UserGameData = require './controllers/user_game_data'
+PlayerCtrl = require './controllers/player'
 AuthCtrl = require './controllers/auth'
 ChatMessageCtrl = require './controllers/chat_message'
+ClanCtrl = require './controllers/clan'
 ConversationCtrl = require './controllers/conversation'
 ClashRoyaleAPICtrl = require './controllers/clash_royale_api'
 ClashRoyaleDeckCtrl = require './controllers/clash_royale_deck'
@@ -118,11 +119,23 @@ module.exports = router
 .on 'userGroupData.updateMeByGroupId', authed UserGroupData.updateMeByGroupId
 .on 'userGroupData.getMeByGroupId', authed UserGroupData.getMeByGroupId
 
+.on 'players.getByUserIdAndGameId',
+  authed PlayerCtrl.getByUserIdAndGameId
+.on 'players.getTop', authed PlayerCtrl.getTop
+.on 'players.search', authed PlayerCtrl.search
+.on 'players.getMeFollowing', authed PlayerCtrl.getMeFollowing
+
+# FIXME FIXME: rm (legacy). any time
 .on 'userGameData.getByUserIdAndGameId',
-  authed UserGameData.getByUserIdAndGameId
-.on 'userGameData.getTop', authed UserGameData.getTop
-.on 'userGameData.search', authed UserGameData.search
-.on 'userGameData.getMeFollowing', authed UserGameData.getMeFollowing
+  authed PlayerCtrl.getByUserIdAndGameId
+.on 'userGameData.getTop', authed PlayerCtrl.getTop
+.on 'userGameData.search', authed PlayerCtrl.search
+.on 'userGameData.getMeFollowing', authed PlayerCtrl.getMeFollowing
+
+.on 'clan.getById', authed ClanCtrl.getById
+# .on 'clan.getTop', authed ClanCtrl.getTop
+# .on 'clan.search', authed ClanCtrl.search
+# .on 'clan.getMeFollowing', authed ClanCtrl.getMeFollowing
 
 .on 'threadComments.create', authed ThreadCommentCtrl.create
 .on 'threadComments.flag', authed ThreadCommentCtrl.flag

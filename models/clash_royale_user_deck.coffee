@@ -21,8 +21,14 @@ defaultClashRoyaleUserDeck = (clashRoyaleUserDeck) ->
   unless clashRoyaleUserDeck?
     return null
 
+  id = if clashRoyaleUserDeck?.userId and clashRoyaleUserDeck?.deckId \
+       then "#{clashRoyaleUserDeck.userId}:#{clashRoyaleUserDeck.deckId}"
+       else uuid.v4()
+
   _.defaults clashRoyaleUserDeck, {
-    id: uuid.v4()
+    id: id
+    isNewId: true
+
     name: null
     isFavorited: true
     deckId: null
@@ -117,6 +123,10 @@ class ClashRoyaleUserDeckModel
     .map defaultClashRoyaleUserDeck
 
   getAllByUserId: (userId, {limit, sort} = {}) ->
+    unless userId
+      console.log 'user decks getall empty userid'
+      return Promise.resolve null
+
     limit ?= 25
 
     sortQ = if sort is 'recent' \
