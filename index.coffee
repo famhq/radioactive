@@ -156,9 +156,9 @@ app.post '/upload', (req, res, next) ->
     next err
 
 
-app.use bodyParser.json()
+app.use bodyParser.json({limit: '1mb'})
 # Avoid CORS preflight
-app.use bodyParser.json({type: 'text/plain'})
+app.use bodyParser.json({type: 'text/plain', limit: '1mb'})
 
 app.get '/ping', (req, res) -> res.send 'pong'
 

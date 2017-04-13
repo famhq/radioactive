@@ -7,7 +7,7 @@ Clan = require '../models/clan'
 config = require '../config'
 
 PLAYER_DATA_TIMEOUT_MS = 10000
-PLAYER_MATCHES_TIMEOUT_MS = 5000
+PLAYER_MATCHES_TIMEOUT_MS = 10000
 
 processingM = 0
 processingP = 0
@@ -41,6 +41,8 @@ class ClashRoyaleKue
       @getPlayerMatchesByTag playerTag, {priority}
     ]
     .then ([playerData, matches]) ->
+      unless playerTag and playerData
+        console.log 'update missing tag or data', playerTag, playerData
       KueCreateService.createJob {
         job: {userId: userId, tag: playerTag, playerData}
         type: KueCreateService.JOB_TYPES.UPDATE_PLAYER_DATA
@@ -56,6 +58,7 @@ class ClashRoyaleKue
           priority: priority or 'high'
           waitForCompletion: true
         }
+        .timeout PLAYER_MATCHES_TIMEOUT_MS
         .catch -> null
 
   getClanByTag: (tag, {priority} = {}) ->

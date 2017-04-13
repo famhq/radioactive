@@ -139,13 +139,12 @@ class ClashRoyaleDeckModel extends ClashRoyaleWinTrackerModel
     .run()
     .map defaultClashRoyaleDeck
 
-  getCardKeys: (cards) ->
+  getDeckId: (cards) ->
     cardKeys = _.sortBy(cards).join '|'
 
   getByCardKeys: (cardKeys, {preferCache, cards} = {}) =>
-    cardKeysStr = @getCardKeys cardKeys
+    cardKeysStr = @getDeckId cardKeys
     get = =>
-      start2 = Date.now()
       r.table CLASH_ROYALE_DECK_TABLE
       .get cardKeysStr
       .run()

@@ -36,7 +36,11 @@ class ClashRoyaleAPICtrl
 
     Player.getByUserIdAndGameId user.id, config.CLASH_ROYALE_ID
     .then (player) ->
-      unless player?.playerId
+      if player
+        Player.updateByPlayerIdAndGameId player.id, config.CLASH_ROYALE_ID, {
+          lastQueuedTime: new Date()
+        }
+      else
         Promise.all [
           ClashRoyaleUserDeck.duplicateByPlayerId playerTag, user.id
           GameRecord.duplicateByPlayerId playerTag, user.id
@@ -77,11 +81,11 @@ class ClashRoyaleAPICtrl
     radioactiveHost = config.RADIOACTIVE_API_URL.replace /https?:\/\//i, ''
     isPrivate = headers.host is radioactiveHost
     if isPrivate and body.secret is config.CR_API_SECRET
-      {tag, matches} = body
-      unless tag
+      {matches} = body
+      unless matches
         return
       KueCreateService.createJob {
-        job: {tag, matches}
+        job: {matches, isBatched: true}
         type: KueCreateService.JOB_TYPES.UPDATE_PLAYER_MATCHES
         ttlMs: PLAYER_MATCHES_TIMEOUT_MS
         priority: 'low'
@@ -154,7 +158,7 @@ class ClashRoyaleAPICtrl
       popularCards = _.orderBy popularCards, 'usage', 'desc'
 
       deckStrings = _.map decks, (deck) ->
-        ClashRoyaleDeck.getCardKeys _.map(deck, 'key')
+        ClashRoyaleDeck.getDeckId _.map(deck, 'key')
       console.log deckStrings
       popularDecks = _.countBy deckStrings
       popularDecks = _.map popularDecks, (usage, key) ->

@@ -9,9 +9,13 @@ ClashRoyaleTopPlayer = require '../models/clash_royale_top_player'
 ClashRoyaleKueService = require '../services/clash_royale_kue'
 KueCreateService = require '../services/kue_create'
 CacheService = require '../services/cache'
+EmbedService = require '../services/embed'
 config = require '../config'
 
-defaultEmbed = []
+defaultEmbed = [
+  EmbedService.TYPES.PLAYER.CHEST_CYCLE
+  EmbedService.TYPES.PLAYER.IS_UPDATABLE
+]
 
 GAME_ID = config.CLASH_ROYALE_ID
 TWELVE_HOURS_SECONDS = 12 * 3600
@@ -22,6 +26,7 @@ class PlayerCtrl
     gameId or= config.CLASH_ROYALE_ID
 
     Player.getByUserIdAndGameId userId, gameId
+    .then EmbedService.embed {embed: defaultEmbed}
 
   search: ({playerId}, {user, headers, connection}) ->
     ip = headers['x-forwarded-for'] or

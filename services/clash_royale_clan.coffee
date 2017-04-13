@@ -48,18 +48,18 @@ class ClashRoyaleClan
       players: players
     }
 
-    playerIds = _.map players, 'playerId'
-    Player.getAllByPlayerIdsAndGameId playerIds, GAME_ID
-    .then (players) ->
-      Promise.map playerIds, (playerId) ->
-        unless _.find players, {playerId}
-          ClashRoyaleKueService.refreshByPlayerTag playerId, {
-            priority: 'normal'
-          }
-          .then ->
-            Player.upsertByPlayerIdAndGameId playerId, GAME_ID, {
-              hasUserId: true
-            }
+    # playerIds = _.map players, 'playerId'
+    # Player.getAllByPlayerIdsAndGameId playerIds, GAME_ID
+    # .then (players) ->
+    #   Promise.map playerIds, (playerId) ->
+    #     unless _.find players, {playerId}
+    #       ClashRoyaleKueService.refreshByPlayerTag playerId, {
+    #         priority: 'normal'
+    #       }
+    #       .then ->
+    #         Player.upsertByPlayerIdAndGameId playerId, GAME_ID, {
+    #           hasUserId: true
+    #         }
 
     Clan.upsertByClanIdAndGameId tag, GAME_ID, diff
     .catch (err) ->
@@ -90,7 +90,6 @@ class ClashRoyaleClan
           console.log err
 
   processUpdateClan: ({userId, tag, clan}) =>
-    console.log clan
     @updateClan {userId, tag, clan}
 
   # getTopClans: ->

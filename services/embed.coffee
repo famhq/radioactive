@@ -17,7 +17,10 @@ GroupRecord = require '../models/group_record'
 GameRecord = require '../models/game_record'
 UserGroupData = require '../models/user_group_data'
 Player = require '../models/player'
+chestCycle = require '../resources/data/chest_cycle'
 CacheService = require './cache'
+
+doubleCycle = chestCycle.concat chestCycle
 
 TYPES =
   USER:
@@ -51,6 +54,9 @@ TYPES =
     USER_VALUES: 'groupRecordType:userValues'
   GAME_RECORD_TYPE:
     ME_VALUES: 'gameRecordType:userValues'
+  PLAYER:
+    CHEST_CYCLE: 'player:chestCycle'
+    IS_UPDATABLE: 'player:isUpdatable'
   THREAD_COMMENT:
     CREATOR: 'threadComment:creator'
   THREAD:
@@ -65,6 +71,9 @@ ONE_DAY_SECONDS = 3600 * 24
 FIVE_MINUTES_SECONDS = 60 * 5
 LAST_ACTIVE_TIME_MS = 60 * 15
 MAX_FRIENDS = 100 # FIXME add pagination
+NEWBIE_CHEST_COUNT = 6
+CHEST_COUNT = 30
+MIN_TIME_UNTIL_NEXT_UPDATE_MS = 3600 * 1000 # 1hr
 
 # separate service so models don't have to depend on
 # each other (circular). eg user data needing user for
@@ -271,6 +280,24 @@ embedFn = _.curry ({embed, user, groupId, gameId}, object) ->
             , {expireSeconds: FIVE_MINUTES_SECONDS}
         else
           embedded.user = null
+
+      when TYPES.PLAYER.CHEST_CYCLE
+        if embedded.data?.chestCycle
+          startingPos = embedded.data.chestCycle.pos
+          pos -= NEWBIE_CHEST_COUNT
+          pos = startingPos % chestCycle.length
+          chests = doubleCycle.slice pos, pos + CHEST_COUNT
+          embedded.data.chestCycle?.chests = chests
+          embedded.data.chestCycle?.countUntil = {
+            superMagical: embedded.data.chestCycle.superMagicalPos - startingPos
+            epic: embedded.data.chestCycle.epicPos - startingPos
+            legendary: embedded.data.chestCycle.legendaryPos - startingPos
+          }
+
+      when TYPES.PLAYER.IS_UPDATABLE
+        msSinceUpdate = new Date() - new Date(embedded.lastQueuedTime)
+        embedded.isUpdatable = not embedded.lastQueuedTime or
+                                msSinceUpdate >= MIN_TIME_UNTIL_NEXT_UPDATE_MS
 
       when TYPES.CLASH_ROYALE_DECK.CARDS
         embedded.cards = Promise.map embedded.cardIds, (cardId) ->

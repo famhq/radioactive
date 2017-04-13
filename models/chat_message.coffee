@@ -51,14 +51,7 @@ class ChatMessageModel
     .then ->
       chatMessage
 
-  getAll: ->
-    r.table CHAT_MESSAGES_TABLE
-    .orderBy {index: r.desc(TIME_INDEX)}
-    .limit MAX_MESSAGES
-    .filter r.row('toId').default(null).eq(null)
-    .run()
-    .map defaultChatMessage
-
+  # TODO: look into perf of this...
   getAllByConversationId: (conversationId, {isStreamed}) ->
     r.table CHAT_MESSAGES_TABLE
     .between [conversationId], [conversationId + 'z'], {
