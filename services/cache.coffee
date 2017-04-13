@@ -21,7 +21,7 @@ class CacheService
       'clash_royal_user_deck:queued_increments:loss1'
     CLASH_ROYALE_USER_DECK_QUEUED_INCREMENTS_DRAW:
       'clash_royal_user_deck:queued_increments:draw1'
-    CLASH_ROYALE_CARDS: 'clash_royale:cards'
+    CLASH_ROYALE_CARDS: 'clash_royale:cards1'
     PLAYERS_TOP: 'player:top'
   LOCK_PREFIXES:
     KUE_PROCESS: 'kue:process'
@@ -38,7 +38,7 @@ class CacheService
     USER_DATA_BLOCKED_USERS: 'user_data:blocked_users'
     USER_DATA_CLASH_ROYALE_DECK_IDS: 'user_data:clash_royale_deck_ids6'
     USER_DAILY_DATA_PUSH: 'user_daily_data:push3'
-    CLASH_ROYALE_MATCHES_ID: 'clash_royale_matches:id82'
+    CLASH_ROYALE_MATCHES_ID: 'clash_royale_matches:id83'
     CLASH_ROYALE_CARD: 'clash_royale_card'
     CLASH_ROYALE_CARD_KEY: 'clash_royale_card_key1'
     CLASH_ROYALE_CARD_RANK: 'clash_royal_card:rank'

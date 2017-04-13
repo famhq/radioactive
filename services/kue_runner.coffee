@@ -8,13 +8,14 @@ ClashRoyalePlayerService = require './clash_royale_player'
 ClashRoyaleClanService = require './clash_royale_clan'
 config = require '../config'
 
+# concurrency is multiplied by number of replicas (3 as of 4/11/2017)
 TYPES =
   "#{KueCreateService.JOB_TYPES.BATCH_NOTIFICATION}":
     {fn: BroadcastService.batchNotify, concurrency: 3}
   "#{KueCreateService.JOB_TYPES.UPDATE_PLAYER_MATCHES}":
-    {fn: ClashRoyalePlayerService.updatePlayerMatches, concurrency: 10}
+    {fn: ClashRoyalePlayerService.processUpdatePlayerMatches, concurrency: 2}
   "#{KueCreateService.JOB_TYPES.UPDATE_PLAYER_DATA}":
-    {fn: ClashRoyalePlayerService.processUpdatePlayerData, concurrency: 4}
+    {fn: ClashRoyalePlayerService.processUpdatePlayerData, concurrency: 3}
   "#{KueCreateService.JOB_TYPES.UPDATE_CLAN_DATA}":
     {fn: ClashRoyaleClanService.processUpdateClan, concurrency: 4}
 

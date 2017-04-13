@@ -13,8 +13,6 @@ RECORDS_INDEX = 'records'
 RECORD_INDEX = 'record'
 GAME_RECORD_TYPE_TIME_INDEX = 'gameRecordTypeTime'
 
-# TODO: rename userRecord
-
 defaultGameRecord = (gameRecord) ->
   unless gameRecord?
     return null
@@ -29,7 +27,7 @@ defaultGameRecord = (gameRecord) ->
     time: new Date()
   }
 
-GAME_RECORDS_TABLE = 'game_records'
+GAME_RECORDS_TABLE = 'clan_records'
 
 class GameRecordModel
   RETHINK_TABLES: [

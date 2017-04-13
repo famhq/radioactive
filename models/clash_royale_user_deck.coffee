@@ -21,12 +21,13 @@ defaultClashRoyaleUserDeck = (clashRoyaleUserDeck) ->
   unless clashRoyaleUserDeck?
     return null
 
-  id = if clashRoyaleUserDeck?.userId and clashRoyaleUserDeck?.deckId \
-       then "#{clashRoyaleUserDeck.userId}:#{clashRoyaleUserDeck.deckId}"
-       else uuid.v4()
+  # id = if clashRoyaleUserDeck?.userId and clashRoyaleUserDeck?.deckId \
+  #      then "#{clashRoyaleUserDeck.userId}:#{clashRoyaleUserDeck.deckId}"
+  #      else uuid.v4()
 
   _.defaults clashRoyaleUserDeck, {
-    id: id
+    # unforunately can't use userId:deckId format. sometimes > 127 char max
+    id: uuid.v4()
     isNewId: true
 
     name: null
@@ -107,6 +108,13 @@ class ClashRoyaleUserDeckModel
     else
       get()
 
+  getAllByDeckIdPlayerIds: (deckIdPlayerIds) ->
+    r.table CLASH_ROYALE_USER_DECK_TABLE
+    .getAll r.args(deckIdPlayerIds), {index: DECK_ID_PLAYER_ID_INDEX}
+    .run()
+    .map defaultClashRoyaleUserDeck
+
+
   getAll: ({limit, sort} = {}) ->
     limit ?= 10
 
@@ -137,6 +145,9 @@ class ClashRoyaleUserDeckModel
 
     r.table CLASH_ROYALE_USER_DECK_TABLE
     .getAll userId, {index: USER_ID_INDEX}
+    .group('deckId').ungroup()
+    .map (userDeck) ->
+      userDeck('reduction')(0)
     .orderBy sortQ
     .limit limit
     .run()
@@ -218,7 +229,7 @@ class ClashRoyaleUserDeckModel
 
       r.table CLASH_ROYALE_USER_DECK_TABLE
       .getAll [deckId, playerId], {index: DECK_ID_PLAYER_ID_INDEX}
-      .update diff
+      .update diff, {durability: 'soft'}
       .run()
 
   # technically current deck is just the most recently used one...

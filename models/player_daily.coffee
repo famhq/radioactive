@@ -11,8 +11,12 @@ defaultPlayersDaily = (playersDaily) ->
   unless playersDaily?
     return null
 
+  id = if playersDaily?.playerId and playersDaily?.gameId \
+       then "#{playersDaily.gameId}:#{playersDaily.playerId}"
+       else uuid.v4()
+
   _.defaults playersDaily, {
-    id: uuid.v4()
+    id: id
     gameId: null
     playerId: null
     data:
@@ -26,10 +30,7 @@ class PlayersDailyModel
   RETHINK_TABLES: [
     {
       name: PLAYER_DAILY_TABLE
-      indexes: [
-        {name: PLAYER_ID_GAME_ID_INDEX, fn: (row) ->
-          [row('playerId'), row('gameId')]}
-      ]
+      indexes: []
     }
   ]
 
@@ -42,7 +43,7 @@ class PlayersDailyModel
 
   getByPlayerIdAndGameId: (playerId, gameId) ->
     r.table PLAYER_DAILY_TABLE
-    .getAll [playerId, gameId], {index: PLAYER_ID_GAME_ID_INDEX}
+    .getAll "#{gameId}:#{playerId}"
     .nth 0
     .default null
     .run()
@@ -51,43 +52,45 @@ class PlayersDailyModel
       _.defaults {playerId}, playersDaily
 
   getAllByPlayerIdsAndGameId: (playerIds, gameId) ->
-    playerIdsGameIds = _.map playerIds, (playerId) -> [playerId, gameId]
+    playerIdsGameIds = _.map playerIds, (playerId) -> "#{gameId}:#{playerId}"
     r.table PLAYER_DAILY_TABLE
-    .getAll r.args(playerIdsGameIds), {index: PLAYER_ID_GAME_ID_INDEX}
+    .getAll r.args(playerIdsGameIds)
     .map defaultPlayersDaily
     .run()
 
   updateByPlayerIdAndGameId: (playerId, gameId, diff) ->
     r.table PLAYER_DAILY_TABLE
-    .getAll [playerId, gameId], {index: PLAYER_ID_GAME_ID_INDEX}
+    .getAll "#{gameId}:#{playerId}"
     .update diff
     .run()
 
   upsertByPlayerIdAndGameId: (playerId, gameId, diff, {userId} = {}) ->
-    r.table PLAYER_DAILY_TABLE
-    .getAll [playerId, gameId], {index: PLAYER_ID_GAME_ID_INDEX}
-    .nth 0
-    .default null
-    .do (playersDaily) ->
-      r.branch(
-        playersDaily.eq null
+    clonedDiff = _.cloneDeep(diff)
 
-        r.table PLAYER_DAILY_TABLE
-        .insert defaultPlayersDaily _.defaults _.clone(diff), {
+    r.table PLAYER_DAILY_TABLE
+    .get "#{gameId}:#{playerId}"
+    .replace (playerDaily) ->
+      r.branch(
+        playerDaily.eq null
+
+        defaultPlayersDaily _.defaults _.clone(diff), {
           playerId
           gameId
           hasUserId: Boolean userId
           userIds: if userId then [userId] else []
         }
 
-        r.table PLAYER_DAILY_TABLE
-        .getAll [playerId, gameId], {index: PLAYER_ID_GAME_ID_INDEX}
-        .nth 0
-        .default null
-        .update diff
+        playerDaily.merge _.defaults {
+          hasUserId:
+            r.expr(Boolean userId)
+            .or(playerDaily('userIds').count().gt(0))
+          userIds: if userId \
+                   then playerDaily('userIds').append(userId).distinct()
+                   else playerDaily('userIds')
+        }, clonedDiff
       )
     .run()
-    .then (a) ->
+    .then ->
       null
 
   updateById: (id, diff) ->
