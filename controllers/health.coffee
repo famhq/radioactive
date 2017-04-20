@@ -13,9 +13,14 @@ class HealthCtrl
   check: (req, res, next) ->
     Promise.all [
       r.dbList().run().timeout HEALTHCHECK_TIMEOUT
-      ClashRoyaleKueService.getPlayerDataByTag AUSTIN_TAG
+      # FIXME: back to just 'high' priority
+      ClashRoyaleKueService.getPlayerDataByTag AUSTIN_TAG, {
+        priority: 'critical'
+      }
       .catch -> null
-      ClashRoyaleKueService.getPlayerMatchesByTag AUSTIN_TAG
+      ClashRoyaleKueService.getPlayerMatchesByTag AUSTIN_TAG, {
+        priority: 'critical'
+      }
       .catch -> null
     ]
     .then ([rethinkdb, playerData, playerMatches]) ->

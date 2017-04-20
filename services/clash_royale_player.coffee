@@ -83,29 +83,29 @@ class ClashRoyalePlayer
 
     ClashRoyaleUserDeck.getAllByDeckIdPlayerIds deckIdPlayerIds
     .then (existingUserDecks) ->
-      Promise.map userDecks, ({playerId, deckId, userIds}) ->
+      batchUserDecks = _.filter _.flatten _.map userDecks, (userDeck) ->
+        {playerId, deckId, userIds} = userDeck
+
         hasUserIds = not _.isEmpty(userIds)
         if ENABLE_ANON_USER_DECKS and not hasUserIds and
             not _.find existingUserDecks, {deckId, playerId}
-          ClashRoyaleUserDeck.create {
+          return {
             deckId
             playerId
             isFavorited: true
-          }, {durability: 'soft'}
+          }
         else if hasUserIds
-          Promise.map userIds, (userId) ->
+          _.map userIds, (userId) ->
             unless _.find existingUserDecks, {deckId, playerId, userId}
-              ClashRoyaleUserDeck.upsertByDeckIdAndUserId(
+              return {
                 deckId
+                playerId
                 userId
-                {
-                  isFavorited: true
-                  playerId: playerId
-                }
-                {durability: 'soft'}
-              )
+                isFavorited: true
+              }
         else
-          Promise.resolve null
+          null
+      ClashRoyaleUserDeck.batchCreate batchUserDecks
 
   createNewDecks: (matches, cards) ->
     deckKeys = _.uniq _.flatten _.map matches, ({player1, player2}) ->
@@ -178,6 +178,7 @@ class ClashRoyalePlayer
       # batch
       batchGameRecords = []
       batchMatches = []
+      batchUserDecks = {}
 
       start = Date.now()
 
@@ -188,12 +189,17 @@ class ClashRoyalePlayer
       .then ([cards, initialDiffs]) =>
         console.log 'm1', Date.now() - start
 
-        deckCreatePromise = @createNewDecks matches, cards
+        # don't need to block for this
+        @createNewDecks matches, cards
+
         userDeckCreatePromise = @createNewUserDecks matches, playerDiffs
 
         stepStart = Date.now()
+        userDeckCreatePromise.then ->
+          console.log 'm2b', Date.now() - stepStart
+
         (if reqSynchronous
-          Promise.all [deckCreatePromise, userDeckCreatePromise]
+          userDeckCreatePromise
         else
           Promise.resolve null) # don't block
         .then =>
@@ -427,51 +433,58 @@ class ClashRoyalePlayer
             player1HasUserIds = not _.isEmpty player1Player?.userIds
             player2HasUserIds = not _.isEmpty player2Player?.userIds
 
-            CacheService.set(key, matchObj) # don't need to block for this
+            # don't need to block for any of these
+            CacheService.set(key, matchObj)
+            ClashRoyaleDeck.incrementById deck1Id, deck1State, {
+              batch: true
+            }
+            ClashRoyaleDeck.incrementById deck2Id, deck2State, {
+              batch: true
+            }
 
-            stepStart = Date.now()
-            Promise.all [
-              if player1HasUserIds or ENABLE_ANON_USER_DECKS
+            if player1HasUserIds or ENABLE_ANON_USER_DECKS
+              if reqSynchronous and player1IsRequesting
+                batchUserDecks[deck1Id] ?= {win: 0, loss: 0, draw: 0}
+                batchUserDecks[deck1Id][deck1State] += 1
+              else
                 ClashRoyaleUserDeck.incrementByDeckIdAndPlayerId(
                   deck1Id, player1Tag, deck1State, {
-                    batch: not reqSynchronous or not player1IsRequesting
+                    batch: true
                   }
                 )
-              if player2HasUserIds or ENABLE_ANON_USER_DECKS
+            if player2HasUserIds or ENABLE_ANON_USER_DECKS
+              if reqSynchronous and player2IsRequesting
+                batchUserDecks[deck2Id] ?= {win: 0, loss: 0, draw: 0}
+                batchUserDecks[deck2Id][deck2State] += 1
+              else
                 ClashRoyaleUserDeck.incrementByDeckIdAndPlayerId(
                   deck2Id, player2Tag, deck2State, {
-                    batch: not reqSynchronous or not player2IsRequesting
+                    batch: true
                   }
-                )
-            ].concat [
-              if player1HasUserIds or ENABLE_ANON_USER_DECKS
-                ClashRoyaleDeck.incrementById deck1Id, deck1State, {
-                  batch: not reqSynchronous or not player1IsRequesting
-                }
-              if player2HasUserIds or ENABLE_ANON_USER_DECKS
-                ClashRoyaleDeck.incrementById deck2Id, deck2State, {
-                  batch: not reqSynchronous or not player2IsRequesting
-                }
-            ]
+              )
 
-            .catch (err) ->
-              console.log 'err', err
-            .then ->
-              console.log 'm4', Date.now() - stepStart, reqSynchronous
         .then ->
-          # don't need to block for this
+          # don't need to block
           Match.batchCreate batchMatches
 
           processingM -= 1
 
-          recordsCreatePromise = GameRecord.batchCreate batchGameRecords
+          batchPromise = Promise.all [
+            GameRecord.batchCreate batchGameRecords
+          ].concat _.map(batchUserDecks, (changes, deckId) ->
+            ClashRoyaleUserDeck.incrementAllByDeckIdAndPlayerId(
+              deckId, reqPlayerIds[0], changes
+            )
+          )
 
+          stepStart = Date.now()
           if reqSynchronous
-            recordsCreatePromise
+            batchPromise
           else
             null
 
         .then ->
+          console.log 'm5', Date.now() - stepStart, reqSynchronous
           {playerDiffs: playerDiffs.getAll()}
 
   # morph api format to our format
@@ -578,6 +591,7 @@ class ClashRoyalePlayer
         console.log 'matches3', Date.now() - start, isBatched, filteredMatches?.length
         undefined
 
+
   updatePlayerData: ({userId, playerData, tag}) =>
     processingP += 1
     console.log 'processingData', processingP
@@ -615,8 +629,6 @@ class ClashRoyalePlayer
       start = Date.now()
       diff.clanId = clan?.id
 
-      # Player.removeUserId userId, GAME_ID
-      # .then ->
       console.log 'update 3 ', Date.now() - start
       start = Date.now()
       Player.upsertByPlayerIdAndGameId tag, GAME_ID, diff, {userId}
@@ -726,9 +738,9 @@ class ClashRoyalePlayer
         rank = index + 1
         playerId = player.playerTag
         Player.getByPlayerIdAndGameId playerId, GAME_ID
-        .then (player) ->
-          if player?.verifiedUserId
-            Player.updateById player.id, {
+        .then (existingPlayer) ->
+          if existingPlayer?.verifiedUserId
+            Player.updateById existingPlayer.id, {
               data:
                 trophies: player.trophies
                 name: player.name

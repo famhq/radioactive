@@ -7,6 +7,24 @@ r = require '../services/rethinkdb'
 # r.db('radioactive').table('players')
 # .indexCreate('isNewId', function(row) {return row.hasFields('isNewId').not()})
 
+# r.db('radioactive').table('clans')
+# .filter r.row('code').default(null).eq(null)
+# .pluck ['id']
+# .limit 5000
+# .run()
+# .then (clans) ->
+#   console.log 'got', clans.length
+#   Promise.map clans, (clan, i) ->
+#     console.log i
+#     r.db('radioactive').table('clans').get(clan.id)
+#     .update {
+#       code: _.sampleSize('ABCDEFGHIJKLMNOPQRSTUFWXYZ1234567890', 6).join ''
+#     }
+#     .run()
+#   , {concurrency: 100}
+# .then ->
+#   console.log 'done'
+return
 
 r.db('radioactive').table('clash_royale_decks')
 .getAll true, {index: 'isNewId'}

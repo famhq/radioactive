@@ -9,6 +9,7 @@ CLAN_ID_GAME_ID_INDEX = 'clanIdGameId'
 
 DEFAULT_STALE_LIMIT = 80
 ONE_DAY_S = 3600 * 24
+CODE_LENGTH = 6
 
 defaultClan = (clan) ->
   unless clan?
@@ -21,10 +22,14 @@ defaultClan = (clan) ->
     gameId: null
     clanId: null
     groupId: null # can only be tied to 1 group
+    creatorId: null
+    # no 0 or O (avoid confusion)
+    code: _.sampleSize('ABCDEFGHIJKLMNPQRSTUFWXYZ123456789', 6).join ''
     data:
       stats: {}
     players: []
     lastUpdateTime: new Date()
+    lastQueuedTime: null
   }
 
 CLANS_TABLE = 'clans'
@@ -72,8 +77,6 @@ class ClanModel
     else
       get()
 
-
-
   upsertByClanIdAndGameId: (clanId, gameId, diff, {userId} = {}) ->
     r.table CLANS_TABLE
     .getAll [clanId, gameId], {index: CLAN_ID_GAME_ID_INDEX}
@@ -113,5 +116,27 @@ class ClanModel
     .limit limit
     .run()
     .map defaultClan
+
+  updateById: (id, diff) ->
+    r.table CLANS_TABLE
+    .get id
+    .update diff
+    .run()
+
+  sanitizePublic: _.curry (requesterId, clan) ->
+    sanitizedClan = _.pick clan, [
+      'id'
+      'gameId'
+      'clanId'
+      'groupId'
+      'creatorId'
+      'code'
+      'data'
+      'players'
+      'isUpdatable'
+      'lastUpdateTime'
+      'embedded'
+    ]
+    sanitizedClan
 
 module.exports = new ClanModel()

@@ -3,6 +3,34 @@ uuid = require 'node-uuid'
 moment = require 'moment'
 
 r = require '../services/rethinkdb'
+# knex = require 'knex'
+# console.log '123'
+# pg = knex {
+#   client: 'pg',
+#   connection: {
+#     # port: '8080'
+#     # FIXME: diff user
+#     user: 'postgres',
+#     # FIXME FIXME: rm
+#     database: 'postgres' # TODO: radioactive
+#   }
+#   debug: true
+#
+# }
+# pg.schema.createTableIfNotExists 'test', (table) ->
+#   table.increments('uid').primary()
+#   table.string('username')
+#   table.string('password')
+#   table.string('name')
+#   table.string('email')
+#   table.timestamps()
+# .then (l) -> console.log l
+#
+# pg.select().table('test')
+# .timeout 1000
+# .then (r) ->
+#   console.log r
+
 
 GAME_RECORD_TYPE_ID_INDEX = 'gameRecordTypeId'
 SCALED_TIME_INDEX = 'scaledTime'
@@ -32,6 +60,26 @@ defaultGameRecord = (gameRecord) ->
 GAME_RECORDS_TABLE = 'game_records'
 
 class GameRecordModel
+  # POSTGRES_TABLES: [
+  #   {
+  #     name: GAME_RECORDS_TABLE
+  #     indexes: [
+  #       {name: GAME_RECORD_TYPE_ID_INDEX}
+  #       {name: USER_ID_INDEX}
+  #       {name: PLAYER_ID_INDEX}
+  #       {name: SCALED_TIME_INDEX}
+  #       {name: RECORDS_INDEX, array: ['gameRecordTypeId', 'userId']}
+  #       {
+  #         name: RECORD_INDEX,
+  #         array: ['gameRecordTypeId', 'userId', 'scaledTime']
+  #       }
+  #       {
+  #         name: GAME_RECORD_TYPE_TIME_INDEX,
+  #         array: ['gameRecordTypeId', 'scaledTime']
+  #       }
+  #     ]
+  #   }
+  # ]
   RETHINK_TABLES: [
     {
       name: GAME_RECORDS_TABLE

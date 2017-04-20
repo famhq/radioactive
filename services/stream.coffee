@@ -23,8 +23,11 @@ class StreamService
   stream: ({emit, socket, limit, route, promise, postFn}) =>
     limit ?= 30
     isInitial = true
+    start = Date.now()
     promise
     .then (cursor) =>
+      console.log 'cc3', Date.now() - start
+      start = Date.now()
       # TODO: release cursors when switching to tab/page
       # where obs isn't required?
       if @openCursors[socket.id]?[route]
@@ -46,9 +49,18 @@ class StreamService
             if isInitial
               items = _.filter items.concat([newItem])
             else
+              # https://github.com/rethinkdb/rethinkdb/issues/6101
+              # when using a changefeed with an ordered limit, new inserts
+              # are considered changes since it's a change in the list of 30
+              # items (even if it's a new item).
+              # this is a workaround to determine if it's new
+              isInsert = item.old_val?.id isnt newItem?.id
               emit {
                 initial: null
-                changes: [{oldId: item.old_val?.id, newVal: newItem}]
+                changes: [{
+                  oldId: if isInsert then null else item.old_val?.id
+                  newVal: newItem
+                }]
               }
 
 module.exports = new StreamService()

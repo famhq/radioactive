@@ -6,7 +6,7 @@ spawn = require('child_process').spawn
 istanbul = require 'gulp-coffee-istanbul'
 
 paths =
-  serverBin: './bin/server.coffee'
+  serverBin: './bin/radioactive_server.coffee'
   test: './test/**/*.coffee'
   cover: [
     './**/*.coffee'

@@ -13,15 +13,17 @@ Player = require '../models/player'
 PlayersDaily = require '../models/player_daily'
 ClashRoyaleUserDeck = require '../models/clash_royale_user_deck'
 GameRecord = require '../models/game_record'
+Clan = require '../models/clan'
 ClashRoyaleTopPlayer = require '../models/clash_royale_top_player'
 config = require '../config'
 
 defaultEmbed = []
 
 PLAYER_MATCHES_TIMEOUT_MS = 10000
+PLAYER_DATA_TIMEOUT_MS = 10000
 
 class ClashRoyaleAPICtrl
-  refreshByPlayerTag: ({playerTag}, {user, headers, connection}) ->
+  refreshByPlayerTag: ({playerTag, isUpdate}, {user, headers, connection}) ->
     ip = headers['x-forwarded-for'] or
           connection.remoteAddress
 
@@ -34,11 +36,18 @@ class ClashRoyaleAPICtrl
     unless isValidTag
       router.throw {status: 400, info: 'invalid tag'}
 
-    Player.getByUserIdAndGameId user.id, config.CLASH_ROYALE_ID
+    (if isUpdate
+      Player.removeUserId user.id, config.CLASH_ROYALE_ID
+    else
+      Promise.resolve null)
+    .then ->
+      Player.getByUserIdAndGameId user.id, config.CLASH_ROYALE_ID
     .then (player) ->
-      if player
-        Player.updateByPlayerIdAndGameId player.id, config.CLASH_ROYALE_ID, {
+      if player?.id
+        Player.updateById player.id, {
           lastQueuedTime: new Date()
+          # if lastQueuedTime in last 10 min, and kueJobId, sub to that?
+          # TODO: kueJobId: ...
         }
       else
         Promise.all [
@@ -49,6 +58,15 @@ class ClashRoyaleAPICtrl
       ClashRoyaleKueService.refreshByPlayerTag playerTag, {userId: user.id}
     .then ->
       return null
+
+  refreshByClanId: ({clanId}, {user}) ->
+    Clan.getByClanIdAndGameId clanId, config.CLASH_ROYALE_ID
+    .then (clan) ->
+      Clan.updateById clan.id, {
+        lastQueuedTime: new Date()
+      }
+    .then ->
+      ClashRoyaleKueService.refreshByClanId clanId
 
   # should only be called once daily
   updatePlayerData: ({body, params, headers}) ->
@@ -61,6 +79,7 @@ class ClashRoyaleAPICtrl
       KueCreateService.createJob {
         job: {tag, playerData, isDaily: true}
         type: KueCreateService.JOB_TYPES.UPDATE_PLAYER_DATA
+        ttlMs: PLAYER_DATA_TIMEOUT_MS
         priority: 'low'
       }
 

@@ -7,7 +7,7 @@ CacheService = require './cache'
 config = require '../config'
 
 DEFAULT_PRIORITY = 0
-DEFAULT_TTL_MS = 100000000 # 28 hours, sufficiently large for most tasks
+DEFAULT_TTL_MS = 60 * 1000 * 9 # 9 minutes
 IDLE_PROCESS_KILL_TIME_MS = 300 * 1000 # 5 min
 PAUSE_EXTEND_BUFFER_MS = 5000
 
@@ -25,24 +25,26 @@ class KueCreateService
   constructor: ->
     @workers = {} # pause/resume with this
 
-  clean: ->
-    types = ['failed', 'complete', 'inactive', 'active']
+  clean: ({types, minStuckTimeMs} = {}) ->
+    types ?= ['failed', 'complete', 'inactive', 'active']
     Promise.map types, (type) ->
       new Promise (resolve, reject) ->
-        console.log 'cleaning try', type
         kue.Job.rangeByState type, 0, 5000, 'asc', (err, selectedJobs) ->
           console.log 'cleaning ', type, selectedJobs?.length
           if err
             reject err
           resolve Promise.each selectedJobs, (job) ->
-            try
-              job.remove (err) ->
-                if err
-                  reject(err)
-                else
-                  resolve()
-            catch err
-              reject err
+            lastUpdate = Date.now() - parseInt(job?.updated_at)
+            if not minStuckTimeMs or lastUpdate > minStuckTimeMs
+              console.log 'delete stuck active', job.type
+              try
+                job.remove (err) ->
+                  if err
+                    reject(err)
+                  else
+                    resolve()
+              catch err
+                reject err
 
   pauseWorker: (kueWorkerId, {killTimeMs, resumeAfterTimeMs}) =>
     if resumeAfterTimeMs

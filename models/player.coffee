@@ -2,6 +2,7 @@ _ = require 'lodash'
 uuid = require 'node-uuid'
 
 r = require '../services/rethinkdb'
+CacheService = require '../services/cache'
 
 STALE_PLAYER_MATCHES_INDEX = 'stalePlayerMatches'
 STALE_PLAYER_DATA_INDEX = 'stale'
@@ -10,9 +11,10 @@ IS_QUEUED_INDEX = 'isQueued'
 
 # 600 ids per min = 36,000 per hour
 # FIXME FIXME: bump up. see why so many writes happen per small user updates
-DEFAULT_PLAYER_MATCHES_STALE_LIMIT = 600
+DEFAULT_PLAYER_MATCHES_STALE_LIMIT = 10 # 1500
 # 40 players per minute = ~60,000 per day
-DEFAULT_PLAYER_DATA_STALE_LIMIT = 60
+DEFAULT_PLAYER_DATA_STALE_LIMIT = 1 # FIXME 100
+SIX_HOURS_S = 3600 * 6
 
 defaultPlayer = (player) ->
   unless player?
@@ -35,6 +37,7 @@ defaultPlayer = (player) ->
     isQueued: false
     lastUpdateTime: new Date() # playerData
     lastMatchesUpdateTime: new Date()
+    lastQueuedTime: null
   }
 
 PLAYER_TABLE = 'players'
@@ -76,14 +79,22 @@ class PlayerModel
     .run()
 
   getByUserIdAndGameId: (userId, gameId) ->
-    r.table PLAYER_TABLE
-    .getAll [userId, gameId], {index: USER_ID_GAME_ID_INDEX}
-    .nth 0
-    .default null
-    .run()
-    .then defaultPlayer
-    .then (player) ->
-      _.defaults {userId}, player
+    get = ->
+      r.table PLAYER_TABLE
+      .getAll [userId, gameId], {index: USER_ID_GAME_ID_INDEX}
+      .nth 0
+      .default null
+      .run()
+      .then defaultPlayer
+      .then (player) ->
+        _.defaults {userId}, player
+
+    if preferCache
+      prefix = CacheService.PREFIXES.PLAYER_USER_ID_GAME_ID
+      cacheKey = "#{prefix}:#{userId}:#{gameId}"
+      CacheService.preferCache cacheKey, get, {expireSeconds: SIX_HOURS_S}
+    else
+      get()
 
   updateByPlayerIdAndGameId: (playerId, gameId, diff) ->
     r.table PLAYER_TABLE

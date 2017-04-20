@@ -3,9 +3,9 @@ _ = require 'lodash'
 Promise = require 'bluebird'
 
 CacheService = require './cache'
-KueCreateService = require './kue_create'
 VideoDiscoveryService = require './video_discovery'
 EventService = require './event'
+CleanupService = require './cleanup'
 ClashRoyalePlayerService = require './clash_royale_player'
 ClashRoyaleDeck = require '../models/clash_royale_deck'
 ClashRoyaleCard = require '../models/clash_royale_card'
@@ -14,8 +14,6 @@ r = require './rethinkdb'
 config = require '../config'
 
 THIRTY_SECONDS = 30
-
-# ClashRoyalePlayerService.process()
 
 class CronService
   constructor: ->
@@ -27,6 +25,9 @@ class CronService
       ClashRoyalePlayerService.updateStalePlayerData()
       ClashRoyalePlayerService.updateStalePlayerMatches()
 
+    @addCron 'quarterMinute', '15 * * * * *', ->
+      CleanupService.clean()
+
     # minute on half minute
     @addCron 'halfMinute', '30 * * * * *', ->
       ClashRoyaleUserDeck.processIncrementByDeckIdAndPlayerId()
@@ -35,6 +36,7 @@ class CronService
     # minute on 3/4 minute
     @addCron 'threeQuarterMinute', '45 * * * * *', ->
       ClashRoyalePlayerService.updateTopPlayers()
+      CleanupService.clean()
 
     @addCron 'hourly', '0 0 * * * *', ->
       VideoDiscoveryService.discover()

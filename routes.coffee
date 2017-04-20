@@ -133,9 +133,11 @@ module.exports = router
 .on 'userGameData.getMeFollowing', authed PlayerCtrl.getMeFollowing
 
 .on 'clan.getById', authed ClanCtrl.getById
+.on 'clan.claimById', authed ClanCtrl.claimById
+.on 'clan.createGroupById', authed ClanCtrl.createGroupById
+.on 'clan.joinById', authed ClanCtrl.joinById
 # .on 'clan.getTop', authed ClanCtrl.getTop
 # .on 'clan.search', authed ClanCtrl.search
-# .on 'clan.getMeFollowing', authed ClanCtrl.getMeFollowing
 
 .on 'threadComments.create', authed ThreadCommentCtrl.create
 .on 'threadComments.flag', authed ThreadCommentCtrl.flag
@@ -151,6 +153,8 @@ module.exports = router
 
 .on 'clashRoyaleAPI.refreshByPlayerTag',
   authed ClashRoyaleAPICtrl.refreshByPlayerTag
+.on 'clashRoyaleAPI.refreshByClanId',
+  authed ClashRoyaleAPICtrl.refreshByClanId
 
 .on 'clashRoyaleDecks.getAll', authed ClashRoyaleDeckCtrl.getAll
 .on 'clashRoyaleDecks.getById', authed ClashRoyaleDeckCtrl.getById

@@ -8,6 +8,10 @@ module.exports = class ForumSig extends Component
   getHeight: -> 100
 
   render: ({player} = {}) ->
+    playerName = player?.data?.name?.toUpperCase()
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
     # coffeelint: disable=max_line_length,cyclomatic_complexity
     s 'g', {
       fill: 'none'
@@ -51,7 +55,7 @@ module.exports = class ForumSig extends Component
           x: '0'
           y: '24'
         },
-          player?.data?.name?.toUpperCase()
+          playerName
 
       s 'text', {
         fill: '#000'
@@ -64,7 +68,7 @@ module.exports = class ForumSig extends Component
           x: '0'
           y: '23'
         },
-          player?.data?.name?.toUpperCase()
+          playerName
 
       s 'text', {
         fill: '#FFF'
@@ -78,7 +82,7 @@ module.exports = class ForumSig extends Component
           x: '0'
           y: '22'
         },
-          player?.data?.name?.toUpperCase()
+          playerName
 
       s 'text', {
         fill: '#FFF'

@@ -29,15 +29,22 @@ class ClashRoyaleClan
   formatClanPlayer: (player) ->
     {
       playerId: player.tag
+      name: player.name
+      trophies: player.trophies
+      level: player.level
+      arena: player.arena
+      league: player.league
       role: player.role
       donations: player.donations
       clanChestCrowns: player.clanChestCrowns
     }
 
-  updateClan: ({userId, clan, tag}) =>
+  updateClan: ({userId, clan, tag, isDaily}) =>
     unless tag and clan
       processingP -= 1
       return Promise.resolve null
+
+    console.log 'update clan', tag
 
     players = _.map clan.members, @formatClanPlayer
 
@@ -48,31 +55,45 @@ class ClashRoyaleClan
       players: players
     }
 
-    # playerIds = _.map players, 'playerId'
-    # Player.getAllByPlayerIdsAndGameId playerIds, GAME_ID
-    # .then (players) ->
-    #   Promise.map playerIds, (playerId) ->
-    #     unless _.find players, {playerId}
-    #       ClashRoyaleKueService.refreshByPlayerTag playerId, {
-    #         priority: 'normal'
-    #       }
-    #       .then ->
-    #         Player.upsertByPlayerIdAndGameId playerId, GAME_ID, {
-    #           hasUserId: true
-    #         }
+    playerIds = _.map players, 'playerId'
+    Player.getAllByPlayerIdsAndGameId playerIds, GAME_ID
+    .then (existingPlayers) ->
+      Promise.map players, (player) ->
+        # TODO: track donations and clanCrowns
+        # TODO: try to update every clan between 3 and 5pm EST, set the
+        # records then
+        unless _.find existingPlayers, {playerId: player.playerId}
+          # ClashRoyaleKueService.refreshByPlayerTag playerId, {
+          #   priority: 'normal'
+          # }
+          # .then ->
+          Player.upsertByPlayerIdAndGameId player.playerId, GAME_ID, {
+            # only set to true when clan is claimed
+            # hasUserId: true
+            data:
+              name: player.name
+              trophies: player.trophies
+              level: player.level
+              arena: player.arena
+              league: player.league
+              clan:
+                badge: clan.badge
+                name: clan.name
+                tag: tag
+          }
 
     Clan.upsertByClanIdAndGameId tag, GAME_ID, diff
     .catch (err) ->
       console.log 'clan err', err
 
-  updateStaleClan: ({force} = {}) ->
+  updateStaleClans: ({force} = {}) ->
     Clan.getStaleByGameId GAME_ID, {
       type: 'data'
       staleTimeS: if force then 0 else CLAN_STALE_TIME_S
     }
     .map ({clanId}) -> clanId
     .then (clanIds) ->
-      console.log 'staledata', clanIds.length, new Date()
+      console.log 'staleclan', clanIds.length, new Date()
       Clan.updateByClanIdsAndGameId clanIds, GAME_ID, {
         lastUpdateTime: new Date()
       }

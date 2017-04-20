@@ -22,6 +22,7 @@ defaultGroup = (group) ->
     gameIds: []
     userIds: []
     invitedIds: []
+    clanIds: []
   }
 
 class GroupModel
