@@ -71,10 +71,18 @@ class ClashRoyaleUserDeckModel
     }
   ]
 
+
+  batchCreate: (userDecks) ->
+    userDecks = _.map userDecks, defaultClashRoyaleUserDeck
+
+    r.table CLASH_ROYALE_USER_DECK_TABLE
+    .insert userDecks, {durability: 'soft'}
+    .run()
+
   create: (clashRoyaleUserDeck) ->
     clashRoyaleUserDeck = defaultClashRoyaleUserDeck clashRoyaleUserDeck
     r.table CLASH_ROYALE_USER_DECK_TABLE
-    .insert clashRoyaleUserDeck
+    .insert clashRoyaleUserDeck, {durability: 'soft'}
     .run()
     .then ->
       clashRoyaleUserDeck
@@ -231,6 +239,17 @@ class ClashRoyaleUserDeckModel
       .getAll [deckId, playerId], {index: DECK_ID_PLAYER_ID_INDEX}
       .update diff, {durability: 'soft'}
       .run()
+
+  incrementAllByDeckIdAndPlayerId: (deckId, playerId, changes) ->
+    diff = {
+      wins: r.row('wins').add(changes.win)
+      losses: r.row('losses').add(changes.loss)
+      draws: r.row('draws').add(changes.draw)
+    }
+    r.table CLASH_ROYALE_USER_DECK_TABLE
+    .getAll [deckId, playerId], {index: DECK_ID_PLAYER_ID_INDEX}
+    .update diff, {durability: 'soft'}
+    .run()
 
   # technically current deck is just the most recently used one...
   # resetCurrentByPlayerId: (playerId, diff) ->

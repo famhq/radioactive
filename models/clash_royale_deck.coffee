@@ -79,7 +79,7 @@ class ClashRoyaleDeckModel extends ClashRoyaleWinTrackerModel
     clashRoyaleDecks = _.map clashRoyaleDecks, defaultClashRoyaleDeck
 
     r.table CLASH_ROYALE_DECK_TABLE
-    .insert clashRoyaleDecks
+    .insert clashRoyaleDecks, {durability: 'soft'}
     .run()
 
   create: (clashRoyaleDeck, {durability, skipWait} = {}) ->

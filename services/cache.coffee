@@ -31,6 +31,7 @@ class CacheService
     CHAT_USER: 'chat:user2'
     THREAD_USER: 'thread:user1'
     THREAD_DECK: 'thread:deck1'
+    CONVERSATION_ID: 'conversation:id'
     USER_DATA_CONVERSATION_USERS: 'user_data:conversation_users'
     USER_DATA_FOLLOWERS: 'user_data:followers'
     USER_DATA_FOLLOWING: 'user_data:following'
@@ -56,6 +57,8 @@ class CacheService
     RATE_LIMIT_CHAT_MESSAGES_TEXT: 'rate_limit:chat_messages:text'
     RATE_LIMIT_CHAT_MESSAGES_MEDIA: 'rate_limit:chat_messages:media'
     PLAYER_SEARCH: 'player:search5'
+    PLAYER_VERIFIED_USER: 'player:verified_user'
+    PLAYER_USER_ID_GAME_ID: 'player:user_id_game_id'
 
   constructor: ->
     @redlock = new Redlock [RedisService], {

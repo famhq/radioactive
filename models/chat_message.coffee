@@ -21,7 +21,6 @@ CHAT_MESSAGES_TABLE = 'chat_messages'
 TIME_INDEX = 'time'
 CONVERSATION_ID_INDEX = 'conversationId'
 CONVERSATION_ID_TIME_INDEX = 'conversationIdTime'
-MAX_MESSAGES = 40
 FIVE_MINUTES_SECONDS = 60 * 5
 TWELVE_HOURS_SECONDS = 3600 * 12
 SEVEN_DAYS_SECONDS = 3600 * 24 * 7
@@ -51,36 +50,53 @@ class ChatMessageModel
     .then ->
       chatMessage
 
-  # TODO: look into perf of this...
-  getAllByConversationId: (conversationId, {isStreamed}) ->
-    r.table CHAT_MESSAGES_TABLE
+  getAllByConversationId: (conversationId, {limit, isStreamed}) ->
+    q = r.table CHAT_MESSAGES_TABLE
     .between [conversationId], [conversationId + 'z'], {
       index: CONVERSATION_ID_TIME_INDEX
     }
     .orderBy {index: r.desc(CONVERSATION_ID_TIME_INDEX)}
-    # NOTE: a limit on the actual query we subscribe to causes
-    # all inserts to show as 'change's since it's change the top 30 (limit)
-    .limit MAX_MESSAGES
-    .run()
-    .then (messages) ->
-      startTime = _.last(messages)?.time or new Date()
-      endTime = moment(startTime).add(1, 'year').toDate()
-      q = r.table CHAT_MESSAGES_TABLE
-      .between(
-        [conversationId, startTime]
-        [conversationId, endTime]
-        {index: CONVERSATION_ID_TIME_INDEX}
-      )
+    .limit limit
 
-      if isStreamed
-        q = q.changes {
-          includeInitial: true
-          includeTypes: true
-          includeStates: true
-          squash: true
-        }
+    if isStreamed
+      q = q.changes {
+        includeInitial: true
+        includeTypes: true
+        includeStates: true
+        squash: true
+      }
 
-      q.run()
+    q.run()
+
+    # q = r.table CHAT_MESSAGES_TABLE
+    # .between [conversationId], [conversationId + 'z'], {
+    #   index: CONVERSATION_ID_TIME_INDEX
+    # }
+    # .orderBy {index: r.desc(CONVERSATION_ID_TIME_INDEX)}
+    # # NOTE: a limit on the actual query we subscribe to causes
+    # # all inserts to show as 'change's since it's change the top 30 (limit)
+    # .limit limit
+    # .pluck ['time']
+    # .run()
+    # .then (messages) ->
+    #   startTime = _.last(messages)?.time or new Date()
+    #   endTime = moment(startTime).add(1, 'year').toDate()
+    #   q = r.table CHAT_MESSAGES_TABLE
+    #   .between(
+    #     [conversationId, startTime]
+    #     [conversationId, endTime]
+    #     {index: CONVERSATION_ID_TIME_INDEX}
+    #   )
+    #
+    #   if isStreamed
+    #     q = q.changes {
+    #       includeInitial: true
+    #       includeTypes: true
+    #       includeStates: true
+    #       squash: true
+    #     }
+    #
+    #   q.run()
 
   getById: (id) ->
     r.table CHAT_MESSAGES_TABLE

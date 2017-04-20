@@ -26,9 +26,13 @@ class ClashRoyaleKue
       console.log 'err playerDataByTag'
       console.log err
 
-  getPlayerMatchesByTag: (tag) ->
+  getPlayerMatchesByTag: (tag, {priority} = {}) ->
     console.log 'req', "#{config.CR_API_URL}/players/#{tag}/games"
-    request "#{config.CR_API_URL}/players/#{tag}/games", {json: true}
+    request "#{config.CR_API_URL}/players/#{tag}/games", {
+      json: true
+      qs:
+        priority: priority
+    }
     .then (responses) ->
       responses?[0]
     .catch (err) ->
@@ -84,7 +88,9 @@ class ClashRoyaleKue
         waitForCompletion: true
       }
     .then ->
-      Clan.getByClanIdAndGameId clanId, GAME_ID, {preferCache: true}
+      Clan.getByClanIdAndGameId clanId, config.CLASH_ROYALE_ID, {
+        preferCache: true
+      }
       .then ({id}) -> {id}
 
 module.exports = new ClashRoyaleKue()

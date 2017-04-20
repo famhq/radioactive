@@ -40,6 +40,7 @@ TYPES =
     LAST_MESSAGE: 'conversation:lastMessage'
   CLAN:
     PLAYERS: 'clan:players'
+    IS_UPDATABLE: 'clan:isUpdatable'
   CLASH_ROYALE_USER_DECK:
     DECK: 'clashRoyaleUserDeck:deck'
   CLASH_ROYALE_DECK:
@@ -57,6 +58,7 @@ TYPES =
   PLAYER:
     CHEST_CYCLE: 'player:chestCycle'
     IS_UPDATABLE: 'player:isUpdatable'
+    VERIFIED_USER: 'player:verifiedUser'
   THREAD_COMMENT:
     CREATOR: 'threadComment:creator'
   THREAD:
@@ -189,8 +191,14 @@ embedFn = _.curry ({embed, user, groupId, gameId}, object) ->
       when TYPES.CLAN.PLAYERS
         embedded.players = Promise.map embedded.players, (player) ->
           Player.getByPlayerIdAndGameId player.playerId, embedded.gameId
+          .then embedFn {embed: [TYPES.PLAYER.VERIFIED_USER]}
           .then (playerObj) ->
             _.defaults {player: playerObj}, player
+
+      when TYPES.CLAN.IS_UPDATABLE
+        msSinceUpdate = new Date() - new Date(embedded.lastQueuedTime)
+        embedded.isUpdatable = not embedded.lastQueuedTime or
+                                msSinceUpdate >= MIN_TIME_UNTIL_NEXT_UPDATE_MS
 
       when TYPES.CONVERSATION.USERS
         embedded.users = Promise.map embedded.userIds, (userId) ->
@@ -272,6 +280,7 @@ embedFn = _.curry ({embed, user, groupId, gameId}, object) ->
           key = CacheService.PREFIXES.CHAT_USER + ':' + embedded.userId
           embedded.user =
             CacheService.preferCache key, ->
+              console.log 'get chat user / player data'
               User.getById embedded.userId
               .then embedFn {
                 embed: [TYPES.USER.GAME_DATA], gameId: config.CLASH_ROYALE_ID
@@ -284,8 +293,7 @@ embedFn = _.curry ({embed, user, groupId, gameId}, object) ->
       when TYPES.PLAYER.CHEST_CYCLE
         if embedded.data?.chestCycle
           startingPos = embedded.data.chestCycle.pos
-          pos -= NEWBIE_CHEST_COUNT
-          pos = startingPos % chestCycle.length
+          pos = (startingPos - NEWBIE_CHEST_COUNT) % chestCycle.length
           chests = doubleCycle.slice pos, pos + CHEST_COUNT
           embedded.data.chestCycle?.chests = chests
           embedded.data.chestCycle?.countUntil = {
@@ -298,6 +306,18 @@ embedFn = _.curry ({embed, user, groupId, gameId}, object) ->
         msSinceUpdate = new Date() - new Date(embedded.lastQueuedTime)
         embedded.isUpdatable = not embedded.lastQueuedTime or
                                 msSinceUpdate >= MIN_TIME_UNTIL_NEXT_UPDATE_MS
+
+      when TYPES.PLAYER.VERIFIED_USER
+        if embedded.verifiedUserId
+          prefix = CacheService.PREFIXES.PLAYER_VERIFIED_USER
+          key = prefix + ':' + embedded.verifiedUserId
+          embedded.verifiedUser =
+            CacheService.preferCache key, ->
+              User.getById embedded.verifiedUserId
+              .then User.sanitizePublic(null)
+            , {expireSeconds: ONE_HOUR_SECONDS}
+        else
+          embedded.user = null
 
       when TYPES.CLASH_ROYALE_DECK.CARDS
         embedded.cards = Promise.map embedded.cardIds, (cardId) ->

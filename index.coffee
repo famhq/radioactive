@@ -41,6 +41,7 @@ if config.DEV_USE_HTTPS
 MAX_FILE_SIZE_BYTES = 20 * 1000 * 1000 # 20MB
 MAX_FIELD_SIZE_BYTES = 100 * 1000 # 100KB
 
+Promise.config {warnings: false}
 
 # Setup rethinkdb
 createDatabaseIfNotExist = (dbName) ->

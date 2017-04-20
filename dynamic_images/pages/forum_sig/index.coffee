@@ -58,7 +58,6 @@ module.exports = class ForumSigPage extends Page
     .then ([player, dynamicImage]) =>
       color = dynamicImage?.data?.color or 'red'
       favoriteCard = dynamicImage?.data?.favoriteCard or 'sparky'
-      console.log player.data?.clan
       badge = player?.data?.clan?.badge or 0
       badge %= 1000
       backgroundPath = PATH + "/forum_signature/background_#{color}.png"

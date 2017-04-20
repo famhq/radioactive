@@ -3,6 +3,7 @@ Promise = require 'bluebird'
 uuid = require 'node-uuid'
 
 r = require '../services/rethinkdb'
+CacheService = require '../services/cache'
 Group = require './group'
 Event = require './event'
 
@@ -10,6 +11,7 @@ CONVERSATIONS_TABLE = 'conversations'
 USER_IDS_INDEX = 'userIds'
 GROUP_ID_INDEX = 'groupId'
 LAST_UPDATE_TIME_INDEX = 'lastUpdateTime'
+ONE_DAY_S = 3600 * 24
 
 # group, embed channels / conversations
 # get channels i have permission to
@@ -55,11 +57,20 @@ class ConversationModel
     .then ->
       conversation
 
-  getById: (id) ->
-    r.table CONVERSATIONS_TABLE
-    .get id
-    .run()
-    .then defaultConversation
+  getById: (id, {preferCache} = {}) ->
+    preferCache ?= true
+    get = ->
+      r.table CONVERSATIONS_TABLE
+      .get id
+      .run()
+      .then defaultConversation
+
+    if preferCache
+      prefix = CacheService.PREFIXES.CONVERSATION_ID
+      key = "#{prefix}:#{id}"
+      CacheService.preferCache key, get, {expireSeconds: ONE_DAY_S}
+    else
+      get()
 
   getByGroupIdAndName: (groupId, name) ->
     r.table CONVERSATIONS_TABLE
