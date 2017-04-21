@@ -53,6 +53,7 @@ class CacheService
       'clash_royale_user_deck:deck_id:player_id'
     CLASH_ROYALE_USER_DECK_PLAYER_ID:
       'clash_royale_user_deck:player_id'
+    CLASH_ROYALE_API_GET_TAG: 'clash_royale_api:get_tag'
     USERNAME_SEARCH: 'username:search'
     RATE_LIMIT_CHAT_MESSAGES_TEXT: 'rate_limit:chat_messages:text'
     RATE_LIMIT_CHAT_MESSAGES_MEDIA: 'rate_limit:chat_messages:media'
@@ -92,7 +93,7 @@ class CacheService
         value
 
   # for locking
-  runOnce: (key, fn, {expireSeconds} = {}) ->
+  runOnce: (key, fn, {expireSeconds, lockedFn} = {}) ->
     key = config.REDIS.PREFIX + ':' + key
     expireSeconds ?= DEFAULT_LOCK_EXPIRE_SECONDS
     # TODO: use redlock
@@ -101,6 +102,9 @@ class CacheService
     .then (value) ->
       if value isnt null
         fn()
+      else
+        lockedFn?()
+
 
   lock: (key, fn, {expireSeconds, unlockWhenCompleted} = {}) =>
     key = config.REDIS.PREFIX + ':' + key

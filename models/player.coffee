@@ -78,7 +78,7 @@ class PlayerModel
     .insert player
     .run()
 
-  getByUserIdAndGameId: (userId, gameId) ->
+  getByUserIdAndGameId: (userId, gameId, {preferCache} = {}) ->
     get = ->
       r.table PLAYER_TABLE
       .getAll [userId, gameId], {index: USER_ID_GAME_ID_INDEX}
