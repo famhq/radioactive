@@ -7,6 +7,7 @@ basicAuth = require 'basic-auth'
 ClashRoyalePlayerService = require '../services/clash_royale_player'
 ClashRoyaleKueService = require '../services/clash_royale_kue'
 KueCreateService = require '../services/kue_create'
+CacheService = require '../services/cache'
 User = require '../models/user'
 ClashRoyaleDeck = require '../models/clash_royale_deck'
 Player = require '../models/player'
@@ -36,28 +37,36 @@ class ClashRoyaleAPICtrl
     unless isValidTag
       router.throw {status: 400, info: 'invalid tag'}
 
-    (if isUpdate
-      Player.removeUserId user.id, config.CLASH_ROYALE_ID
-    else
-      Promise.resolve null)
-    .then ->
-      Player.getByUserIdAndGameId user.id, config.CLASH_ROYALE_ID
-    .then (player) ->
-      if player?.id
-        Player.updateById player.id, {
-          lastQueuedTime: new Date()
-          # if lastQueuedTime in last 10 min, and kueJobId, sub to that?
-          # TODO: kueJobId: ...
-        }
+    key = "#{CacheService.PREFIXES.CLASH_ROYALE_API_GET_TAG}:#{playerTag}"
+    # TODO store kueJobId and use that instead of runOnce
+    CacheService.runOnce key, ->
+      (if isUpdate
+        Player.removeUserId user.id, config.CLASH_ROYALE_ID
       else
-        Promise.all [
-          ClashRoyaleUserDeck.duplicateByPlayerId playerTag, user.id
-          GameRecord.duplicateByPlayerId playerTag, user.id
-        ]
-    .then ->
-      ClashRoyaleKueService.refreshByPlayerTag playerTag, {userId: user.id}
-    .then ->
-      return null
+        Promise.resolve null)
+      .then ->
+        Player.getByUserIdAndGameId user.id, config.CLASH_ROYALE_ID
+      .then (player) ->
+        if player?.id
+          Player.updateById player.id, {
+            lastQueuedTime: new Date()
+            # if lastQueuedTime in last 10 min, and kueJobId, sub to that?
+            # TODO: kueJobId: ...
+          }
+        else
+          Promise.all [
+            ClashRoyaleUserDeck.duplicateByPlayerId playerTag, user.id
+            GameRecord.duplicateByPlayerId playerTag, user.id
+          ]
+      .then ->
+        ClashRoyaleKueService.refreshByPlayerTag playerTag, {userId: user.id}
+      .then ->
+        return null
+    , {
+      expireSeconds: 60
+      lockedFn: ->
+        router.throw {status: 400, info: 'we\'re already processing that tag'}
+    }
 
   refreshByClanId: ({clanId}, {user}) ->
     Clan.getByClanIdAndGameId clanId, config.CLASH_ROYALE_ID
