@@ -13,12 +13,13 @@ processingM = 0
 processingP = 0
 
 class ClashRoyaleKue
-  getPlayerDataByTag: (tag, {priority} = {}) ->
+  getPlayerDataByTag: (tag, {priority, skipCache} = {}) ->
     console.log 'req', "#{config.CR_API_URL}/players/#{tag}"
     request "#{config.CR_API_URL}/players/#{tag}", {
       json: true
       qs:
         priority: priority
+        skipCache: skipCache
     }
     .then (responses) ->
       responses?[0]

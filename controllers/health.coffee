@@ -6,7 +6,7 @@ ClashRoyaleKueService = require '../services/clash_royale_kue'
 r = require '../services/rethinkdb'
 config = require '../config'
 
-HEALTHCHECK_TIMEOUT = 5000
+HEALTHCHECK_TIMEOUT = 60000
 AUSTIN_TAG = '22CJ9CQC0'
 
 class HealthCtrl
@@ -16,11 +16,14 @@ class HealthCtrl
       # FIXME: back to just 'high' priority
       ClashRoyaleKueService.getPlayerDataByTag AUSTIN_TAG, {
         priority: 'critical'
+        skipCache: true
       }
+      .timeout HEALTHCHECK_TIMEOUT
       .catch -> null
       ClashRoyaleKueService.getPlayerMatchesByTag AUSTIN_TAG, {
         priority: 'critical'
       }
+      .timeout HEALTHCHECK_TIMEOUT
       .catch -> null
     ]
     .then ([rethinkdb, playerData, playerMatches]) ->
