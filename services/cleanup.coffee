@@ -11,7 +11,8 @@ class CleanupService
     console.log 'cleaning...'
     start = Date.now()
     Promise.all [
-      @cleanGameRecords()
+      # @cleanGameRecords()
+      # @cleanClashRoyaleMatches
       @cleanKue()
     ]
     .then ->

@@ -17,6 +17,7 @@ AVATAR_SMALL_IMAGE_WIDTH = 96
 AVATAR_SMALL_IMAGE_HEIGHT = 96
 AVATAR_LARGE_IMAGE_WIDTH = 512
 AVATAR_LARGE_IMAGE_HEIGHT = 512
+LAST_ACTIVE_UPDATE_FREQ_MS = 60 * 10 * 1000 # 10 min
 
 defaultEmbed = [EmbedService.TYPES.USER.DATA]
 
@@ -26,13 +27,11 @@ class UserCtrl
     .tap ->
       ip = headers['x-forwarded-for'] or
             connection.remoteAddress
-      country = geoip.lookup(ip)?.country
-      # FIXME FIXME: rm country after 4/1/2017 when we've updated enough legacy
-      User.updateById user.id, {
-        lastActiveIp: ip
-        country: country
-        lastActiveTime: new Date()
-      }
+      if user.lastActiveTime.getTime() < Date.now() - LAST_ACTIVE_UPDATE_FREQ_MS
+        User.updateById user.id, {
+          lastActiveIp: ip
+          lastActiveTime: new Date()
+        }
       null # don't block
     .then User.sanitize null
 

@@ -125,13 +125,6 @@ module.exports = router
 .on 'players.search', authed PlayerCtrl.search
 .on 'players.getMeFollowing', authed PlayerCtrl.getMeFollowing
 
-# FIXME FIXME: rm (legacy). any time
-.on 'userGameData.getByUserIdAndGameId',
-  authed PlayerCtrl.getByUserIdAndGameId
-.on 'userGameData.getTop', authed PlayerCtrl.getTop
-.on 'userGameData.search', authed PlayerCtrl.search
-.on 'userGameData.getMeFollowing', authed PlayerCtrl.getMeFollowing
-
 .on 'clan.getById', authed ClanCtrl.getById
 .on 'clan.claimById', authed ClanCtrl.claimById
 .on 'clan.createGroupById', authed ClanCtrl.createGroupById
