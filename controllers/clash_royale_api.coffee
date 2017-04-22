@@ -53,11 +53,12 @@ class ClashRoyaleAPICtrl
             # if lastQueuedTime in last 10 min, and kueJobId, sub to that?
             # TODO: kueJobId: ...
           }
-        else
-          Promise.all [
-            ClashRoyaleUserDeck.duplicateByPlayerId playerTag, user.id
-            GameRecord.duplicateByPlayerId playerTag, user.id
-          ]
+        # FIXME FIXME
+        # else
+        #   Promise.all [
+        #     ClashRoyaleUserDeck.duplicateByPlayerId playerTag, user.id
+        #     GameRecord.duplicateByPlayerId playerTag, user.id
+        #   ]
       .then ->
         ClashRoyaleKueService.refreshByPlayerTag playerTag, {userId: user.id}
       .then ->

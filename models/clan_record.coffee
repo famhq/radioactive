@@ -27,12 +27,12 @@ defaultGameRecord = (gameRecord) ->
     time: new Date()
   }
 
-GAME_RECORDS_TABLE = 'clan_records'
+CLAN_RECORDS_TABLE = 'clan_records'
 
 class GameRecordModel
   RETHINK_TABLES: [
     {
-      name: GAME_RECORDS_TABLE
+      name: CLAN_RECORDS_TABLE
       indexes: [
         {name: GAME_RECORD_TYPE_ID_INDEX}
         {name: USER_ID_INDEX}
@@ -51,7 +51,7 @@ class GameRecordModel
   batchCreate: (gameRecords) ->
     gameRecords = _.map gameRecords, defaultGameRecord
 
-    r.table GAME_RECORDS_TABLE
+    r.table CLAN_RECORDS_TABLE
     .insert gameRecords
     .run()
     .then ->
@@ -60,14 +60,14 @@ class GameRecordModel
   create: (gameRecord) ->
     gameRecord = defaultGameRecord gameRecord
 
-    r.table GAME_RECORDS_TABLE
+    r.table CLAN_RECORDS_TABLE
     .insert gameRecord
     .run()
     .then ->
       gameRecord
 
   getAllByUserIdAndGameId: ({userId, gameId}) ->
-    r.table GAME_RECORDS_TABLE
+    r.table CLAN_RECORDS_TABLE
     .getAll userId, {index: USER_ID_INDEX}
     .filter {gameId}
     .run()
@@ -84,7 +84,7 @@ class GameRecordModel
       time.format time.format 'YYYY-MM-DD HH:mm'
 
   getRecord: ({gameRecordTypeId, userId, scaledTime}) ->
-    r.table GAME_RECORDS_TABLE
+    r.table CLAN_RECORDS_TABLE
     .getAll [gameRecordTypeId, userId, scaledTime], {index: RECORD_INDEX}
     .nth 0
     .default null
@@ -94,7 +94,7 @@ class GameRecordModel
     {gameRecordTypeId, userId, minScaledTime, maxScaledTime, limit} = options
     limit ?= 30
 
-    r.table GAME_RECORDS_TABLE
+    r.table CLAN_RECORDS_TABLE
     .between(
       [gameRecordTypeId, userId, minScaledTime]
       [gameRecordTypeId, userId, maxScaledTime]
@@ -105,12 +105,12 @@ class GameRecordModel
     .run()
 
   getAllRecordsByTypeAndTime: ({gameRecordTypeId, scaledTime}) ->
-    r.table GAME_RECORDS_TABLE
+    r.table CLAN_RECORDS_TABLE
     .getAll [gameRecordTypeId, scaledTime], {index: GAME_RECORD_TYPE_TIME_INDEX}
     .run()
 
   duplicateByPlayerId: (playerId, userId) ->
-    r.table GAME_RECORDS_TABLE
+    r.table CLAN_RECORDS_TABLE
     .getAll playerId, {index: PLAYER_ID_INDEX}
     .group 'scaledTime'
     .run()
@@ -122,7 +122,7 @@ class GameRecordModel
       }, record
 
   updateById: (id, diff) ->
-    r.table GAME_RECORDS_TABLE
+    r.table CLAN_RECORDS_TABLE
     .get id
     .update diff
     .run()
