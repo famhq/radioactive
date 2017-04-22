@@ -15,11 +15,11 @@ TYPES =
   "#{KueCreateService.JOB_TYPES.BATCH_NOTIFICATION}":
     {fn: BroadcastService.batchNotify, concurrency: 3}
   "#{KueCreateService.JOB_TYPES.UPDATE_PLAYER_MATCHES}":
-    {fn: ClashRoyalePlayerService.processUpdatePlayerMatches, concurrency: 10}
+    {fn: ClashRoyalePlayerService.processUpdatePlayerMatches, concurrency: 1} # FIXME 4 or 10
   "#{KueCreateService.JOB_TYPES.UPDATE_PLAYER_DATA}":
-    {fn: ClashRoyalePlayerService.processUpdatePlayerData, concurrency: 10}
+    {fn: ClashRoyalePlayerService.processUpdatePlayerData, concurrency: 1} # FIXME 4 or 10
   "#{KueCreateService.JOB_TYPES.UPDATE_CLAN_DATA}":
-    {fn: ClashRoyaleClanService.processUpdateClan, concurrency: 10}
+    {fn: ClashRoyaleClanService.processUpdateClan, concurrency: 1} # FIXME 4 or 10
 
 class KueRunnerService
   listen: ->
