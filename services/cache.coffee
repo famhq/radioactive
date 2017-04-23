@@ -46,7 +46,7 @@ class CacheService
     CLASH_ROYALE_CLAN_CLAN_ID_GAME_ID: 'clash_royale_clan:clan_id_game_id'
     CLASH_ROYALE_DECK_RANK: 'clash_royal_deck:rank'
     CLASH_ROYALE_DECK_CARD_KEYS: 'clash_royal_deck:card_keys10'
-    CLASH_ROYALE_USER_DECK_DECK: 'clash_royale_user_deck:deck'
+    CLASH_ROYALE_USER_DECK_DECK: 'clash_royale_user_deck:deck4'
     CLASH_ROYALE_USER_DECK_DECK_ID_USER_ID:
       'clash_royale_user_deck:deck_id:user_id'
     CLASH_ROYALE_USER_DECK_DECK_ID_PLAYER_ID:

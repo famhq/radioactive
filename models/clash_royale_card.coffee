@@ -2,7 +2,6 @@ _ = require 'lodash'
 Promise = require 'bluebird'
 uuid = require 'node-uuid'
 
-ClashRoyaleWinTrackerModel = require './clash_royale_win_tracker'
 r = require '../services/rethinkdb'
 CacheService = require '../services/cache'
 config = require '../config'
@@ -25,7 +24,7 @@ defaultClashRoyaleCard = (clashRoyaleCard) ->
     draws: 0
   }
 
-class ClashRoyaleCardModel extends ClashRoyaleWinTrackerModel
+class ClashRoyaleCardModel
   RETHINK_TABLES: [
     {
       name: CLASH_ROYALE_CARD_TABLE

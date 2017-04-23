@@ -42,7 +42,7 @@ TYPES =
     PLAYERS: 'clan:players'
     IS_UPDATABLE: 'clan:isUpdatable'
   CLASH_ROYALE_USER_DECK:
-    DECK: 'clashRoyaleUserDeck:deck'
+    DECK: 'clashRoyaleUserDeck:deck1'
   CLASH_ROYALE_DECK:
     CARDS: 'clashRoyaleDeck:cards'
   EVENT:

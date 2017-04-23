@@ -1,0 +1,13 @@
+Should use Cassandra to scale up messages
+https://blog.discordapp.com/how-discord-stores-billions-of-messages-7fa6ec7ee4c7
+Probably with Redis pub sub for streaming new messages
+
+All games' data (for now) will be in postgres
+sql-1:
+  clash_royale
+    players
+    user_decks
+    decks
+    matches
+    user_records
+    clan_records

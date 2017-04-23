@@ -3,7 +3,7 @@ _ = require 'lodash'
 
 config = require '../config'
 
-if config.ENV is config.ENVS.DEV and config.REDIS.NODES.length is 1
+if config.REDIS.NODES.length is 1
   client = new Redis {
     port: config.REDIS.PORT
     host: config.REDIS.NODES[0]

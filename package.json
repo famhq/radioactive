@@ -56,6 +56,7 @@
     "joi": "^6.10.0",
     "jsonwebtoken": "^5.4.1",
     "knex": "^0.12.9",
+    "knex-schema": "git://github.com/claydotio/knex-schema.git",
     "kue": "^0.11.1",
     "librsvg": "^0.7.0",
     "lodash": "^4.16.3",

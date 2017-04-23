@@ -12,7 +12,7 @@ q = kue.createQueue {
     # kue makes 2 instances
     # http://stackoverflow.com/questions/30944960/kue-worker-with-with-createclientfactory-only-subscriber-commands-may-be-used
     createClientFactory: ->
-      if config.ENV is config.ENVS.DEV and config.REDIS.NODES.length is 1
+      if config.REDIS.NODES.length is 1
         new Redis {
           port: config.REDIS.PORT
           host: config.REDIS.NODES[0]

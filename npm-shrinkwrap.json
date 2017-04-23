@@ -2347,6 +2347,23 @@
         }
       }
     },
+    "knex-schema": {
+      "version": "2.2.1",
+      "from": "git://github.com/claydotio/knex-schema.git",
+      "resolved": "git://github.com/claydotio/knex-schema.git#4ce2f21304fa44da1fd62295ade2824cbc5465e8",
+      "dependencies": {
+        "bluebird": {
+          "version": "2.11.0",
+          "from": "bluebird@>=2.10.0 <3.0.0",
+          "resolved": "https://registry.npmjs.org/bluebird/-/bluebird-2.11.0.tgz"
+        },
+        "lodash": {
+          "version": "3.10.1",
+          "from": "lodash@>=3.10.1 <4.0.0",
+          "resolved": "https://registry.npmjs.org/lodash/-/lodash-3.10.1.tgz"
+        }
+      }
+    },
     "koa-is-json": {
       "version": "1.0.0",
       "from": "koa-is-json@>=1.0.0 <2.0.0",
