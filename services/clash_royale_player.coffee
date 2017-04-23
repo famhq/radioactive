@@ -30,6 +30,7 @@ PLAYER_MATCHES_STALE_TIME_S = 60 * 60 # 1 hour
 # FIXME: temp fix so queue doesn't grow forever
 MIN_TIME_BETWEEN_UPDATES_MS = 60 * 20 * 1000 # 20min
 TWENTY_THREE_HOURS_S = 3600 * 23
+SIX_HOURS_S = 3600 * 6
 ONE_HOUR_SECONDS = 60
 PLAYER_DATA_TIMEOUT_MS = 10000
 PLAYER_MATCHES_TIMEOUT_MS = 5000
@@ -117,19 +118,31 @@ class ClashRoyalePlayer
     ClashRoyaleDeck.getByIds deckKeys
     .then (existingDecks) ->
       newDecks = _.filter deckKeys, (key) ->
-        not _.find existingDecks, {key}
+        not _.find existingDecks, {id: key}
 
       batchDecks = _.map newDecks, (keys) ->
         keysArray = keys.split('|')
         cardIds = _.map keysArray, (key) ->
           _.find(cards, {key})?.id
         {
-          cardKeys: keys
+          id: keys
           cardIds: cardIds
           name: 'Nameless'
         }
-      console.log 'batchDecks', batchDecks?.length
       ClashRoyaleDeck.batchCreate batchDecks
+
+  incrementUserDecks: (batchUserDecks) ->
+    Promise.all _.flatten _.map batchUserDecks, (userDecks, playerId) ->
+      _.map userDecks, (changes, deckId) ->
+        ClashRoyaleUserDeck.incrementAllByDeckIdAndPlayerId(
+          deckId, playerId, changes
+        )
+
+  incrementDecks: (batchDecks) ->
+    Promise.all _.map batchDecks, (changes, deckId) ->
+      ClashRoyaleDeck.incrementAllById(
+        deckId, changes
+      )
 
   filterMatches: ({matches, player}) ->
     processingM += 1
@@ -148,6 +161,8 @@ class ClashRoyalePlayer
       type isnt 'clanBattle' and
         new Date(time).getTime() > (new Date(lastMatchTime).getTime() + 15)
 
+  # we should always block this for db writes/reads so the queue
+  # properly throttles db access
   processMatches: ({matches, reqSynchronous, reqPlayers}) ->
     start = Date.now()
     matches = _.uniqBy matches, 'id'
@@ -155,7 +170,7 @@ class ClashRoyalePlayer
     reqPlayerIds = _.map reqPlayers, 'playerId'
 
     Promise.map matches, (match) ->
-      matchId = "cr-#{match.id}"
+      matchId = match.id
       Match.getById matchId, {preferCache: true}
       .then (existingMatch) ->
         if existingMatch then null else match
@@ -179,6 +194,7 @@ class ClashRoyalePlayer
       batchGameRecords = []
       batchMatches = []
       batchUserDecks = {}
+      batchDecks = {}
 
       start = Date.now()
 
@@ -190,23 +206,22 @@ class ClashRoyalePlayer
         console.log 'm1', Date.now() - start
 
         # don't need to block for this
-        @createNewDecks matches, cards
+        # @createNewDecks matches, cards
 
-        userDeckCreatePromise = @createNewUserDecks matches, playerDiffs
-
+        # (if reqSynchronous
+        #   @createNewUserDecks matches, playerDiffs
+        # else
+        #   Promise.resolve null) # don't block
         stepStart = Date.now()
-        userDeckCreatePromise.then ->
-          console.log 'm2b', Date.now() - stepStart
-
-        (if reqSynchronous
-          userDeckCreatePromise
-        else
-          Promise.resolve null) # don't block
+        Promise.all [
+          @createNewUserDecks matches, playerDiffs
+          @createNewDecks matches, cards
+        ]
         .then =>
           console.log 'm2', Date.now() - stepStart
           # needs to be each for streak to work
           Promise.each matches, (match, i) =>
-            matchId = "cr-#{match.id}"
+            matchId = match.id
 
             player1Tag = match.player1.playerTag
             player2Tag = match.player2.playerTag
@@ -282,8 +297,8 @@ class ClashRoyalePlayer
               losingDeckId = deck2Id
               winningDeckCardIds = deck1CardIds
               losingDeckCardIds = deck2CardIds
-              deck1State = 'win'
-              deck2State = 'loss'
+              deck1State = 'wins'
+              deck2State = 'losses'
 
               playerDiffs.incById {id: player1Tag, field: 'wins', type: type}
               playerDiffs.incById {
@@ -309,8 +324,8 @@ class ClashRoyalePlayer
               losingDeckId = deck1Id
               winningDeckCardIds = deck2CardIds
               losingDeckCardIds = deck1CardIds
-              deck1State = 'loss'
-              deck2State = 'win'
+              deck1State = 'losses'
+              deck2State = 'wins'
 
               playerDiffs.incById {id: player2Tag, field: 'wins', type: type}
               playerDiffs.incById {
@@ -334,8 +349,8 @@ class ClashRoyalePlayer
             else
               winningDeckId = null
               losingDeckId = null
-              deck1State = 'draw'
-              deck2State = 'draw'
+              deck1State = 'draws'
+              deck2State = 'draws'
 
               playerDiffs.incById {id: player1Tag, field: 'draws', type: type}
               playerDiffs.setSplitStatById {
@@ -388,7 +403,6 @@ class ClashRoyalePlayer
               id: matchId
               arena: match.arena
               league: match.league
-              matchId: match.id
               type: match.type
               player1Id: match.player1.playerTag
               player2Id: match.player2.playerTag
@@ -434,54 +448,55 @@ class ClashRoyalePlayer
             player2HasUserIds = not _.isEmpty player2Player?.userIds
 
             # don't need to block for any of these
-            CacheService.set(key, matchObj)
-            ClashRoyaleDeck.incrementById deck1Id, deck1State, {
-              batch: true
-            }
-            ClashRoyaleDeck.incrementById deck2Id, deck2State, {
-              batch: true
-            }
+            CacheService.set key, matchObj, {expireSeconds: SIX_HOURS_S}
 
             if player1HasUserIds or ENABLE_ANON_USER_DECKS
-              if reqSynchronous and player1IsRequesting
-                batchUserDecks[deck1Id] ?= {win: 0, loss: 0, draw: 0}
-                batchUserDecks[deck1Id][deck1State] += 1
-              else
-                ClashRoyaleUserDeck.incrementByDeckIdAndPlayerId(
-                  deck1Id, player1Tag, deck1State, {
-                    batch: true
-                  }
-                )
+              batchUserDecks[player1Tag] ?= {}
+              batchUserDecks[player1Tag][deck1Id] ?= {
+                wins: 0, losses: 0, draws: 0
+              }
+              batchUserDecks[player1Tag][deck1Id][deck1State] += 1
+
+              batchDecks[deck1Id] ?= {wins: 0, losses: 0, draws: 0}
+              batchDecks[deck1Id][deck1State] += 1
+
             if player2HasUserIds or ENABLE_ANON_USER_DECKS
-              if reqSynchronous and player2IsRequesting
-                batchUserDecks[deck2Id] ?= {win: 0, loss: 0, draw: 0}
-                batchUserDecks[deck2Id][deck2State] += 1
-              else
-                ClashRoyaleUserDeck.incrementByDeckIdAndPlayerId(
-                  deck2Id, player2Tag, deck2State, {
-                    batch: true
-                  }
-              )
+              batchUserDecks[player2Tag] ?= {}
+              batchUserDecks[player2Tag][deck2Id] ?= {
+                wins: 0, losses: 0, draws: 0
+              }
+              batchUserDecks[player2Tag][deck2Id][deck2State] += 1
 
-        .then ->
-          # don't need to block
-          Match.batchCreate batchMatches
+              batchDecks[deck1Id] ?= {wins: 0, losses: 0, draws: 0}
+              batchDecks[deck1Id][deck1State] += 1
 
-          processingM -= 1
+        .then =>
+          # # don't need to block
+          # Match.batchCreate batchMatches
 
-          batchPromise = Promise.all [
+          # processingM -= 1
+
+          # batchPromise = Promise.all [
+          #   GameRecord.batchCreate batchGameRecords
+          #   @incrementUserDecks batchUserDecks
+          #   @incrementDecks batchDecks
+          # ]
+          #
+          # stepStart = Date.now()
+          # if reqSynchronous
+          #   batchPromise
+          # else
+          #   null
+          console.log 'matches', batchMatches.length
+          console.log 'gameRecords', batchGameRecords.length
+          console.log 'userDecks', _.keys(batchUserDecks).length
+          console.log 'decks', _.keys(batchDecks).length
+          Promise.all [
+            Match.batchCreate batchMatches
             GameRecord.batchCreate batchGameRecords
-          ].concat _.map(batchUserDecks, (changes, deckId) ->
-            ClashRoyaleUserDeck.incrementAllByDeckIdAndPlayerId(
-              deckId, reqPlayerIds[0], changes
-            )
-          )
-
-          stepStart = Date.now()
-          if reqSynchronous
-            batchPromise
-          else
-            null
+            @incrementUserDecks batchUserDecks
+            @incrementDecks batchDecks
+          ]
 
         .then ->
           console.log 'm5', Date.now() - stepStart, reqSynchronous

@@ -19,6 +19,9 @@ Joi = require 'joi'
 config = require './config'
 routes = require './routes'
 r = require './services/rethinkdb'
+knex = require './services/knex'
+RethinkSetupService = require './services/rethink_setup'
+PostgresSetupService = require './services/postgres_setup'
 AuthService = require './services/auth'
 CronService = require './services/cron'
 KueRunnerService = require './services/kue_runner'
@@ -43,55 +46,19 @@ MAX_FIELD_SIZE_BYTES = 100 * 1000 # 100KB
 
 Promise.config {warnings: false}
 
-# Setup rethinkdb
-createDatabaseIfNotExist = (dbName) ->
-  r.dbList()
-  .contains dbName
-  .do (result) ->
-    r.branch result,
-      {created: 0},
-      r.dbCreate dbName
-  .run()
-
-createTableIfNotExist = (tableName, options) ->
-  r.tableList()
-  .contains tableName
-  .do (result) ->
-    r.branch result,
-      {created: 0},
-      r.tableCreate tableName, options
-  .run()
-
-createIndexIfNotExist = (tableName, indexName, indexFn, indexOpts) ->
-  r.table tableName
-  .indexList()
-  .contains indexName
-  .run() # can't use r.branch() with r.row() compound indexes
-  .then (isCreated) ->
-    unless isCreated
-      (if indexFn?
-        r.table tableName
-        .indexCreate indexName, indexFn, indexOpts
-      else
-        r.table tableName
-        .indexCreate indexName, indexOpts
-      ).run()
-
 setup = ->
-  createDatabaseIfNotExist config.RETHINK.DB
-  .then ->
-    Promise.map fs.readdirSync('./models'), (modelFile) ->
-      model = require('./models/' + modelFile)
-      tables = model?.RETHINK_TABLES or []
+  models = fs.readdirSync('./models')
+  rethinkTables = _.flatten _.map models, (modelFile) ->
+    model = require('./models/' + modelFile)
+    model?.RETHINK_TABLES or []
+  postgresTables = _.flatten _.map models, (modelFile) ->
+    model = require('./models/' + modelFile)
+    model?.POSTGRES_TABLES or []
 
-      Promise.map tables, (table) ->
-        createTableIfNotExist table.name, table.options
-        .then ->
-          Promise.map (table.indexes or []), ({name, fn, options}) ->
-            fn ?= null
-            createIndexIfNotExist table.name, name, fn, options
-        .then ->
-          r.table(table.name).indexWait().run()
+  Promise.all [
+    RethinkSetupService.setup rethinkTables
+    PostgresSetupService.setup postgresTables
+  ]
   .tap ->
     CronService.start()
     KueRunnerService.listen()

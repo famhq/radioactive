@@ -3,43 +3,25 @@ uuid = require 'node-uuid'
 moment = require 'moment'
 
 r = require '../services/rethinkdb'
-# knex = require 'knex'
-# console.log '123'
-# pg = knex {
-#   client: 'pg',
-#   connection: {
-#     # port: '8080'
-#     # FIXME: diff user
-#     user: 'postgres',
-#     # FIXME FIXME: rm
-#     database: 'postgres' # TODO: radioactive
-#   }
-#   debug: true
-#
-# }
-# pg.schema.createTableIfNotExists 'test', (table) ->
-#   table.increments('uid').primary()
-#   table.string('username')
-#   table.string('password')
-#   table.string('name')
-#   table.string('email')
-#   table.timestamps()
-# .then (l) -> console.log l
-#
-# pg.select().table('test')
-# .timeout 1000
-# .then (r) ->
-#   console.log r
-
+knex = require '../services/knex'
+config = require '../config'
 
 GAME_RECORD_TYPE_ID_INDEX = 'gameRecordTypeId'
-SCALED_TIME_INDEX = 'scaledTime'
 USER_ID_INDEX = 'userId'
 PLAYER_ID_INDEX = 'playerId'
 GAME_ID_INDEX = 'gameId'
 RECORDS_INDEX = 'records'
 RECORD_INDEX = 'record'
-GAME_RECORD_TYPE_TIME_INDEX = 'gameRecordTypeTime'
+
+fields = [
+  {name: 'id', type: 'bigIncrements', index: 'primary'}
+  {name: 'userId', type: 'uuid'}
+  {name: 'playerId', type: 'string', length: 14, index: 'default'}
+  {name: 'gameRecordTypeId', type: 'uuid'}
+  {name: 'value', type: 'integer'}
+  {name: 'scaledTime', type: 'string', length: 50}
+  {name: 'time', type: 'dateTime', defaultValue: new Date()}
+]
 
 # TODO: rename userRecord
 
@@ -47,39 +29,27 @@ defaultGameRecord = (gameRecord) ->
   unless gameRecord?
     return null
 
-  _.defaults gameRecord, {
-    id: uuid.v4()
-    userId: null
-    playerId: null
-    gameRecordTypeId: null
-    value: 0
-    scaledTime: null
-    time: new Date()
-  }
+  _.defaults gameRecord, _.reduce(fields, (obj, field) ->
+    {name, defaultValue} = field
+    if defaultValue?
+      obj[name] = defaultValue
+    obj
+  , {})
 
 GAME_RECORDS_TABLE = 'game_records'
+POSTGRES_GAME_RECORDS_TABLE = 'user_records'
 
 class GameRecordModel
-  # POSTGRES_TABLES: [
-  #   {
-  #     name: GAME_RECORDS_TABLE
-  #     indexes: [
-  #       {name: GAME_RECORD_TYPE_ID_INDEX}
-  #       {name: USER_ID_INDEX}
-  #       {name: PLAYER_ID_INDEX}
-  #       {name: SCALED_TIME_INDEX}
-  #       {name: RECORDS_INDEX, array: ['gameRecordTypeId', 'userId']}
-  #       {
-  #         name: RECORD_INDEX,
-  #         array: ['gameRecordTypeId', 'userId', 'scaledTime']
-  #       }
-  #       {
-  #         name: GAME_RECORD_TYPE_TIME_INDEX,
-  #         array: ['gameRecordTypeId', 'scaledTime']
-  #       }
-  #     ]
-  #   }
-  # ]
+  POSTGRES_TABLES: [
+    {
+      tableName: POSTGRES_GAME_RECORDS_TABLE
+      fields: fields
+      indexes: [
+        {columns: ['userId', 'gameId']}
+        {columns: ['userId', 'gameRecordTypeId', 'scaledTime']}
+      ]
+    }
+  ]
   RETHINK_TABLES: [
     {
       name: GAME_RECORDS_TABLE
@@ -87,19 +57,20 @@ class GameRecordModel
         {name: GAME_RECORD_TYPE_ID_INDEX}
         {name: USER_ID_INDEX}
         {name: PLAYER_ID_INDEX}
-        {name: SCALED_TIME_INDEX}
         {name: RECORDS_INDEX, fn: (row) ->
           [row('gameRecordTypeId'), row('userId')]}
         {name: RECORD_INDEX, fn: (row) ->
           [row('gameRecordTypeId'), row('userId'), row('scaledTime')]}
-        {name: GAME_RECORD_TYPE_TIME_INDEX, fn: (row) ->
-          [row('gameRecordTypeId'), row('scaledTime')]}
       ]
     }
   ]
 
   batchCreate: (gameRecords) ->
     gameRecords = _.map gameRecords, defaultGameRecord
+
+    knex.insert(gameRecords).into(POSTGRES_GAME_RECORDS_TABLE)
+    .catch (err) ->
+      console.log 'postgres err', err
 
     r.table GAME_RECORDS_TABLE
     .insert gameRecords
@@ -110,6 +81,8 @@ class GameRecordModel
   create: (gameRecord) ->
     gameRecord = defaultGameRecord gameRecord
 
+    knex.insert(gameRecord).into(POSTGRES_GAME_RECORDS_TABLE)
+
     r.table GAME_RECORDS_TABLE
     .insert gameRecord
     .run()
@@ -117,10 +90,14 @@ class GameRecordModel
       gameRecord
 
   getAllByUserIdAndGameId: ({userId, gameId}) ->
-    r.table GAME_RECORDS_TABLE
-    .getAll userId, {index: USER_ID_INDEX}
-    .filter {gameId}
-    .run()
+    if config.IS_POSTGRES
+      knex.select().table POSTGRES_GAME_RECORDS_TABLE
+      .where {userId, gameId}
+    else
+      r.table GAME_RECORDS_TABLE
+      .getAll userId, {index: USER_ID_INDEX}
+      .filter {gameId}
+      .run()
 
   getScaledTimeByTimeScale: (timeScale, time) ->
     time ?= moment()
@@ -134,32 +111,50 @@ class GameRecordModel
       time.format time.format 'YYYY-MM-DD HH:mm'
 
   getRecord: ({gameRecordTypeId, userId, scaledTime}) ->
-    r.table GAME_RECORDS_TABLE
-    .getAll [gameRecordTypeId, userId, scaledTime], {index: RECORD_INDEX}
-    .nth 0
-    .default null
-    .run()
+    if config.IS_POSTGRES
+      knex.table POSTGRES_GAME_RECORDS_TABLE
+      .first '*'
+      .where {userId, gameRecordTypeId, scaledTime}
+    else
+      r.table GAME_RECORDS_TABLE
+      .getAll [gameRecordTypeId, userId, scaledTime], {index: RECORD_INDEX}
+      .nth 0
+      .default null
+      .run()
 
   getRecords: (options) ->
     {gameRecordTypeId, userId, minScaledTime, maxScaledTime, limit} = options
     limit ?= 30
 
-    r.table GAME_RECORDS_TABLE
-    .between(
-      [gameRecordTypeId, userId, minScaledTime]
-      [gameRecordTypeId, userId, maxScaledTime]
-      {index: RECORD_INDEX, rightBound: 'closed'}
-    )
-    .orderBy {index: r.desc RECORD_INDEX}
-    .limit limit
-    .run()
-
-  getAllRecordsByTypeAndTime: ({gameRecordTypeId, scaledTime}) ->
-    r.table GAME_RECORDS_TABLE
-    .getAll [gameRecordTypeId, scaledTime], {index: GAME_RECORD_TYPE_TIME_INDEX}
-    .run()
+    if config.IS_POSTGRES
+      knex.select().table POSTGRES_GAME_RECORDS_TABLE
+      .where {userId, gameRecordTypeId}
+      .andWhere 'scaledTime', '>=', minScaledTime
+      .andWhere 'scaledTime', '<=', maxScaledTime
+      .orderBy 'scaledTime', 'desc'
+      .limit limit
+    else
+      r.table GAME_RECORDS_TABLE
+      .between(
+        [gameRecordTypeId, userId, minScaledTime]
+        [gameRecordTypeId, userId, maxScaledTime]
+        {index: RECORD_INDEX, rightBound: 'closed'}
+      )
+      .orderBy {index: r.desc RECORD_INDEX}
+      .limit limit
+      .run()
 
   duplicateByPlayerId: (playerId, userId) ->
+    # TODO: check perf of this
+    knex.select().table POSTGRES_GAME_RECORDS_TABLE
+    .where {playerId}
+    .distinct(knex.raw('ON ("scaledTime") *'))
+    .map (record) =>
+      delete record.id
+      @create _.defaults {
+        userId: userId
+      }, record
+
     r.table GAME_RECORDS_TABLE
     .getAll playerId, {index: PLAYER_ID_INDEX}
     .group 'scaledTime'
@@ -170,11 +165,5 @@ class GameRecordModel
         id: uuid.v4()
         userId: userId
       }, record
-
-  updateById: (id, diff) ->
-    r.table GAME_RECORDS_TABLE
-    .get id
-    .update diff
-    .run()
 
 module.exports = new GameRecordModel()

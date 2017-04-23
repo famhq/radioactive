@@ -14,6 +14,8 @@ config =
   CLASH_ROYALE_CLAN_CROWNS_RECORD_ID: 'aee6d338-2d6e-4b9a-af65-a48674bce3ef'
   MAIN_GROUP_ID: '73ed4af0-a2f2-4371-a893-1360d3989708' # TODO: remove?
 
+  IS_POSTGRES: env.IS_POSTGRES or false
+
   VERBOSE: if env.VERBOSE then env.VERBOSE is '1' else true
   PORT: env.RADIOACTIVE_PORT or 50000
   ENV: env.DEBUG_ENV or env.NODE_ENV
@@ -50,6 +52,11 @@ config =
   RETHINK:
     DB: env.RETHINK_DB or 'radioactive'
     HOST: env.RETHINK_HOST or 'localhost'
+  POSTGRES:
+    HOST: env.POSTGRES_HOST or 'localhost'
+    USER: env.POSTGRES_USER or 'postgres'
+    PASS: env.POSTGRES_PASS or 'password'
+    DB: env.POSTGRES_DB or 'clash_royale'
   REDIS:
     PREFIX: 'radioactive'
     PORT: REDIS_PORT

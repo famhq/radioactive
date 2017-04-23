@@ -29,9 +29,9 @@ class CronService
       CleanupService.clean()
 
     # minute on half minute
-    @addCron 'halfMinute', '30 * * * * *', ->
-      ClashRoyaleUserDeck.processIncrementByDeckIdAndPlayerId()
-      ClashRoyaleDeck.processIncrementById()
+    # @addCron 'halfMinute', '30 * * * * *', ->
+      # ClashRoyaleUserDeck.processIncrementByDeckIdAndPlayerId()
+      # ClashRoyaleDeck.processIncrementById()
 
     # minute on 3/4 minute
     @addCron 'threeQuarterMinute', '45 * * * * *', ->
