@@ -12,7 +12,11 @@ knexInstance = knex {
   }
   useNullAsDefault: true
   debug: false
-
+  pool:
+    min: 1
+    max: 2 # 4 * 15 replicas is 60 connections. can have up to 100
+           # TODO bump up when 100 connection limit is increased
+           # https://issuetracker.google.com/issues/37271935
 }
 
 module.exports = knexInstance

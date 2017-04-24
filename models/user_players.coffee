@@ -6,6 +6,7 @@ r = require '../services/rethinkdb'
 USER_PLAYERS_TABLE = 'user_players'
 USER_ID_GAME_ID_INDEX = 'userIdGameId'
 PLAYER_ID_GAME_ID_INDEX = 'playerIdGameId'
+PLAYER_ID_GAME_ID_IS_VERIFIED_INDEX = 'playerIdGameIdIsVerified'
 
 defaultUserPlayer = (userPlayer) ->
   unless userPlayer?
@@ -16,6 +17,7 @@ defaultUserPlayer = (userPlayer) ->
     userId: null
     gameId: null
     playerId: null
+    isVerified: false
   }
 
 class UserPlayer
@@ -25,6 +27,7 @@ class UserPlayer
       indexes: [
         {name: USER_ID_GAME_ID_INDEX}
         {name: PLAYER_ID_GAME_ID_INDEX}
+        {name: PLAYER_ID_GAME_ID_IS_VERIFIED_INDEX}
       ]
     }
   ]

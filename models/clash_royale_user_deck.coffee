@@ -27,7 +27,7 @@ fields = [
   {name: 'losses', type: 'integer', defaultValue: 0}
   {name: 'draws', type: 'integer', defaultValue: 0}
   # indexed by userIdIsFavorited
-  {name: 'userId', type: 'uuid', index: 'default'}
+  {name: 'userId', type: 'uuid'}
   {name: 'isFavorited', type: 'boolean', defaultValue: true}
   {name: 'playerId', type: 'string', length: 14, index: 'default'}
   {name: 'deckIdPlayerId', type: 'string', index: 'default'}
@@ -70,7 +70,7 @@ class ClashRoyaleUserDeckModel
       fields: fields
       indexes: [
         {columns: ['userId', 'isFavorited']}
-        {columns: ['deckId', 'userId']}
+        {columns: ['deckId', 'userId'], type: 'unique'}
       ]
     }
   ]
@@ -210,13 +210,13 @@ class ClashRoyaleUserDeckModel
               then r.desc(r.row('wins').add(r.row('losses')))
               else r.row('wins').add(r.row('losses'))
 
-      q = r.table CLASH_ROYALE_USER_DECK_TABLE
-      if userId
-        q.getAll userId, {index: USER_ID_INDEX}
-        .group('deckId').ungroup()
-        .map (userDeck) ->
-          userDeck('reduction')(0)
-      q.orderBy sortQ
+      r.table CLASH_ROYALE_USER_DECK_TABLE
+      # if userId or true
+      .getAll userId, {index: USER_ID_INDEX}
+      .group('deckId').ungroup()
+      .map (userDeck) ->
+        userDeck('reduction')(0)
+      .orderBy sortQ
       .limit limit
       .run()
       .map defaultClashRoyaleUserDeck
@@ -341,11 +341,13 @@ class ClashRoyaleUserDeckModel
   #   .run()
 
   upsertByDeckIdAndUserId: (deckId, userId, diff) ->
+    unless deckId and userId
+      return Promise.resolve null
     # postgres
     upsert {
       table: POSTGRES_USER_DECKS_TABLE
       diff: diff
-      constraint: '(deckId, userId)'
+      constraint: '("deckId", "userId")'
     }
 
     # ideally upserts would use replace for atomicity, but replace doesn't work
@@ -399,7 +401,7 @@ class ClashRoyaleUserDeckModel
   duplicateByPlayerId: (playerId, userId) ->
     # TODO: check perf of this
     knex POSTGRES_USER_DECKS_TABLE
-    .select '*'
+    .select()
     .where {playerId}
     .distinct(knex.raw('ON ("deckId") *'))
     .map (record) =>
