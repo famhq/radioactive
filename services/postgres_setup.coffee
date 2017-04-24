@@ -30,9 +30,24 @@ class PostgresSetupService
     manager.sync syncTables
     .then ->
       Promise.map tables, ({tableName, indexes}) ->
-        knex.schema.table tableName, (table) ->
-          Promise.map indexes, ({columns}) ->
-            table.index columns
+        knex('pg_indexes').select()
+        .where {tablename: tableName}
+        .then (existingIndexes) ->
+          knex.schema.table tableName, (table) ->
+            _.map indexes, ({columns, type}) ->
+              def = "(\"#{columns.join('", "')}\")"
+              indexExists = _.find existingIndexes, ({indexdef}) ->
+                indexdef.indexOf(def) isnt -1
+              if indexExists
+                return
+              else if type is 'unique'
+                table.unique columns
+              else
+                table.index columns
+        # pgadmin
+        # just login with radioactive user in pgadmin...
+        # GRANT ALL PRIVILEGES ON kinds TO postgres;
+
 
 
 module.exports = new PostgresSetupService()

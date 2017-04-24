@@ -45,7 +45,6 @@ class GameRecordModel
       tableName: POSTGRES_GAME_RECORDS_TABLE
       fields: fields
       indexes: [
-        {columns: ['userId', 'gameId']}
         {columns: ['userId', 'gameRecordTypeId', 'scaledTime']}
       ]
     }
@@ -72,27 +71,27 @@ class GameRecordModel
     .catch (err) ->
       console.log 'postgres err', err
 
-    r.table GAME_RECORDS_TABLE
-    .insert gameRecords
-    .run()
-    .then ->
-      gameRecords
+    # r.table GAME_RECORDS_TABLE
+    # .insert gameRecords
+    # .run()
+    # .then ->
+    #   gameRecords
 
   create: (gameRecord) ->
     gameRecord = defaultGameRecord gameRecord
 
     knex.insert(gameRecord).into(POSTGRES_GAME_RECORDS_TABLE)
 
-    r.table GAME_RECORDS_TABLE
-    .insert gameRecord
-    .run()
-    .then ->
-      gameRecord
+    # r.table GAME_RECORDS_TABLE
+    # .insert gameRecord
+    # .run()
+    # .then ->
+    #   gameRecord
 
   getAllByUserIdAndGameId: ({userId, gameId}) ->
     if config.IS_POSTGRES
       knex.select().table POSTGRES_GAME_RECORDS_TABLE
-      .where {userId, gameId}
+      .where {userId}
     else
       r.table GAME_RECORDS_TABLE
       .getAll userId, {index: USER_ID_INDEX}
@@ -126,7 +125,7 @@ class GameRecordModel
     {gameRecordTypeId, userId, minScaledTime, maxScaledTime, limit} = options
     limit ?= 30
 
-    if config.IS_POSTGRES
+    if config.IS_POSTGRES or true
       knex.select().table POSTGRES_GAME_RECORDS_TABLE
       .where {userId, gameRecordTypeId}
       .andWhere 'scaledTime', '>=', minScaledTime
@@ -155,15 +154,15 @@ class GameRecordModel
         userId: userId
       }, record
 
-    r.table GAME_RECORDS_TABLE
-    .getAll playerId, {index: PLAYER_ID_INDEX}
-    .group 'scaledTime'
-    .run()
-    .map ({reduction}) =>
-      record = reduction[0]
-      @create _.defaults {
-        id: uuid.v4()
-        userId: userId
-      }, record
+    # r.table GAME_RECORDS_TABLE
+    # .getAll playerId, {index: PLAYER_ID_INDEX}
+    # .group 'scaledTime'
+    # .run()
+    # .map ({reduction}) =>
+    #   record = reduction[0]
+    #   @create _.defaults {
+    #     id: uuid.v4()
+    #     userId: userId
+    #   }, record
 
 module.exports = new GameRecordModel()
