@@ -214,7 +214,11 @@ class ClashRoyalePlayer
         stepStart = Date.now()
         Promise.all [
           @createNewUserDecks matches, playerDiffs
+          .catch (err) ->
+            console.log 'user decks create postgres err', err
           @createNewDecks matches, cards
+          .catch (err) ->
+            console.log 'decks create postgres err', err
         ]
         .then =>
           console.log 'm2', Date.now() - stepStart
@@ -486,15 +490,19 @@ class ClashRoyalePlayer
           #   batchPromise
           # else
           #   null
-          console.log 'matches', batchMatches.length
-          console.log 'gameRecords', batchGameRecords.length
-          console.log 'userDecks', _.keys(batchUserDecks).length
-          console.log 'decks', _.keys(batchDecks).length
           Promise.all [
             Match.batchCreate batchMatches
+            .catch (err) ->
+              console.log 'match create postgres err', err
             GameRecord.batchCreate batchGameRecords
+            .catch (err) ->
+              console.log 'gamerecord create postgres err', err
             @incrementUserDecks batchUserDecks
+            .catch (err) ->
+              console.log 'inc user decks postgres err', err
             @incrementDecks batchDecks
+            .catch (err) ->
+              console.log 'inc decks postgres err', err
           ]
 
         .then ->

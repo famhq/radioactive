@@ -13,6 +13,10 @@ defaultEmbed = [
 ]
 
 class ClashRoyaleUserDeckCtrl
+  import: ({}, {user}) ->
+    console.log 'importing...'
+    ClashRoyaleUserDeck.importByUserId user.id
+
   getAll: ({sort, filter}, {user}) ->
     ClashRoyaleUserDeck.getAllByUserId user.id
     .map EmbedService.embed {embed: defaultEmbed}

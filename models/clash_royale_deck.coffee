@@ -56,6 +56,10 @@ fields = [
   {name: 'losses', type: 'integer', defaultValue: 0}
   {name: 'draws', type: 'integer', defaultValue: 0}
   {name: 'popularity', type: 'integer', defaultValue: 0, index: 'default'}
+  {
+    name: 'thisWeekPopularity', type: 'integer'
+    defaultValue: 0, index: 'default'
+  }
   {name: 'createdByUserId', type: 'uuid'}
   {
     name: 'addTime', type: 'dateTime'
@@ -106,40 +110,44 @@ class ClashRoyaleDeckModel
       .catch (err) ->
         console.log 'postgres err', err
 
-      r.table CLASH_ROYALE_DECK_TABLE
-      .insert clashRoyaleDecks, {durability: 'soft'}
-      .run()
+      # r.table CLASH_ROYALE_DECK_TABLE
+      # .insert clashRoyaleDecks, {durability: 'soft'}
+      # .run()
     ]
 
   create: (clashRoyaleDeck, {durability} = {}) ->
     clashRoyaleDeck = defaultClashRoyaleDeck clashRoyaleDeck
     durability ?= 'hard'
 
-    knex.insert(clashRoyaleDeck).into(POSTGRES_DECKS_TABLE)
+    clashRoyaleDeck = _.pick clashRoyaleDeck, _.map(fields, 'name')
 
-    r.table CLASH_ROYALE_DECK_TABLE
-    .insert clashRoyaleDeck, {durability}
-    .run()
+    knex.insert(clashRoyaleDeck).into(POSTGRES_DECKS_TABLE)
     .then ->
       clashRoyaleDeck
 
-  getRank: ({thisWeekPopularity, lastWeekPopularity}) =>
-    r.table @RETHINK_TABLES[0].name
-    .filter(
-      r.row(
-        if thisWeekPopularity? \
-        then 'thisWeekPopularity'
-        else 'lastWeekPopularity'
-      )
-      .gt(
-        if thisWeekPopularity? \
-        then thisWeekPopularity
-        else  lastWeekPopularity
-      )
-    )
-    .count()
-    .run()
-    .then (rank) -> rank + 1
+    # r.table CLASH_ROYALE_DECK_TABLE
+    # .insert clashRoyaleDeck, {durability}
+    # .run()
+    # .then ->
+    #   clashRoyaleDeck
+
+  # getRank: ({thisWeekPopularity, lastWeekPopularity}) =>
+  #   r.table @RETHINK_TABLES[0].name
+  #   .filter(
+  #     r.row(
+  #       if thisWeekPopularity? \
+  #       then 'thisWeekPopularity'
+  #       else 'lastWeekPopularity'
+  #     )
+  #     .gt(
+  #       if thisWeekPopularity? \
+  #       then thisWeekPopularity
+  #       else  lastWeekPopularity
+  #     )
+  #   )
+  #   .count()
+  #   .run()
+  #   .then (rank) -> rank + 1
 
   getRandomName: (cards, attempts = 0) =>
     cardKeys = _.map(cards, 'key')
@@ -164,7 +172,7 @@ class ClashRoyaleDeckModel
         name
 
   getByName: (name) ->
-    if config.IS_POSTGRES
+    if config.IS_POSTGRES or true
       knex POSTGRES_DECKS_TABLE
       .first '*'
       .where {name}
@@ -178,7 +186,7 @@ class ClashRoyaleDeckModel
       .then defaultClashRoyaleDeck
 
   getById: (id) ->
-    if config.IS_POSTGRES
+    if config.IS_POSTGRES or true
       knex.table POSTGRES_DECKS_TABLE
       .first '*'
       .where {id}
@@ -190,7 +198,7 @@ class ClashRoyaleDeckModel
       .then defaultClashRoyaleDeck
 
   getByIds: (ids) ->
-    if config.IS_POSTGRES
+    if config.IS_POSTGRES or true
       knex POSTGRES_DECKS_TABLE
       .select '*'
       .whereIn 'id', ids
@@ -236,7 +244,7 @@ class ClashRoyaleDeckModel
   getAll: ({limit, sort, timeFrame} = {}) ->
     limit ?= 10
 
-    if config.IS_POSTGRES
+    if config.IS_POSTGRES or true
       sortColumn = if sort is 'recent' then ADD_TIME_INDEX else POPULARITY_INDEX
       q = knex POSTGRES_DECKS_TABLE
       .select '*'
@@ -401,15 +409,15 @@ class ClashRoyaleDeckModel
     .update _.mapValues changes, (increment, key) ->
       knex.raw "\"#{key}\" + #{increment}"
 
-    diff = {
-      wins: r.row('wins').add(changes.wins or 0)
-      losses: r.row('losses').add(changes.losses or 0)
-      draws: r.row('draws').add(changes.draws or 0)
-    }
-    r.table CLASH_ROYALE_DECK_TABLE
-    .get id
-    .update diff, {durability: 'soft'}
-    .run()
+    # diff = {
+    #   wins: r.row('wins').add(changes.wins or 0)
+    #   losses: r.row('losses').add(changes.losses or 0)
+    #   draws: r.row('draws').add(changes.draws or 0)
+    # }
+    # r.table CLASH_ROYALE_DECK_TABLE
+    # .get id
+    # .update diff, {durability: 'soft'}
+    # .run()
 
   # incrementById: (id, state, {batch, amount} = {}) =>
   #   unless id
@@ -457,10 +465,10 @@ class ClashRoyaleDeckModel
     .where {id}
     .update diff
 
-    r.table CLASH_ROYALE_DECK_TABLE
-    .get id
-    .update diff
-    .run()
+    # r.table CLASH_ROYALE_DECK_TABLE
+    # .get id
+    # .update diff
+    # .run()
 
   deleteById: (id) ->
     knex POSTGRES_DECKS_TABLE
@@ -468,10 +476,10 @@ class ClashRoyaleDeckModel
     .limit 1
     .del()
 
-    r.table CLASH_ROYALE_DECK_TABLE
-    .get id
-    .delete()
-    .run()
+    # r.table CLASH_ROYALE_DECK_TABLE
+    # .get id
+    # .delete()
+    # .run()
 
   sanitize: _.curry (requesterId, clashRoyaleDeck) ->
     _.pick clashRoyaleDeck, [

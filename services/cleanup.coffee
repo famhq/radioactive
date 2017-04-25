@@ -20,7 +20,7 @@ class CleanupService
 
   cleanKue: ->
     KueCreateService.clean {
-      types: ['active'], minStuckTimeMs: MIN_KUE_STUCK_TIME_MS
+      types: ['active', 'failed'], minStuckTimeMs: MIN_KUE_STUCK_TIME_MS
     }
 
   cleanClashRoyaleMatches: +
