@@ -10,6 +10,8 @@ DEFAULT_PRIORITY = 0
 DEFAULT_TTL_MS = 60 * 1000 * 9 # 9 minutes
 IDLE_PROCESS_KILL_TIME_MS = 300 * 1000 # 5 min
 PAUSE_EXTEND_BUFFER_MS = 5000
+KUE_LOCK_EXPIRE_SECONDS = 30
+STUCK_JOB_INTERVAL_MS = 5000
 
 JOB_TYPES =
   DEFAULT: 'radioactive:default'
@@ -18,12 +20,20 @@ JOB_TYPES =
   UPDATE_CLAN_DATA: 'radioactive:update_clan'
   BATCH_NOTIFICATION: 'radioactive:batch_notification'
 
+CacheService.runOnce CacheService.KEYS.KUE_WATCH_STUCK, ->
+  console.log 'watching stuck jobs'
+  KueService.watchStuckJobs STUCK_JOB_INTERVAL_MS
+, {expireSeconds: KUE_LOCK_EXPIRE_SECONDS}
 
 class KueCreateService
   JOB_TYPES: JOB_TYPES
 
   constructor: ->
     @workers = {} # pause/resume with this
+
+  # getStats: ->
+  #   redis.client().zrange(redis.client().getKey('jobs:' + type + ':' + state)
+  #   kue.Job.rangeByState 'inactive', 0, 5000, 'asc', (err, selectedJobs) ->
 
   clean: ({types, minStuckTimeMs} = {}) ->
     types ?= ['failed', 'complete', 'inactive', 'active']

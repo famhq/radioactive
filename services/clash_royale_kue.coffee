@@ -48,6 +48,7 @@ class ClashRoyaleKue
     .then ([playerData, matches]) ->
       unless playerTag and playerData
         console.log 'update missing tag or data', playerTag, playerData
+      console.log 'cj'
       KueCreateService.createJob {
         job: {userId: userId, tag: playerTag, playerData}
         type: KueCreateService.JOB_TYPES.UPDATE_PLAYER_DATA

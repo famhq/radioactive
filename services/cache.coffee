@@ -23,6 +23,7 @@ class CacheService
       'clash_royal_user_deck:queued_increments:draw1'
     CLASH_ROYALE_CARDS: 'clash_royale:cards1'
     PLAYERS_TOP: 'player:top'
+    KUE_WATCH_STUCK: 'kue:watch_stuck'
   LOCK_PREFIXES:
     KUE_PROCESS: 'kue:process'
     BROADCAST: 'broadcast'

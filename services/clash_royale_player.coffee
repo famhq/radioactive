@@ -114,7 +114,6 @@ class ClashRoyalePlayer
         ClashRoyaleDeck.getDeckId player1.cardKeys
         ClashRoyaleDeck.getDeckId player2.cardKeys
       ]
-
     ClashRoyaleDeck.getByIds deckKeys
     .then (existingDecks) ->
       newDecks = _.filter deckKeys, (key) ->

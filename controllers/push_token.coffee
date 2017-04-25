@@ -27,6 +27,7 @@ class PushTokensCtrl
         router.throw
           status: 400
           info: 'pushToken exists'
+          ignoreLog: true
 
       Promise.all [
         User.updateSelf userId, {

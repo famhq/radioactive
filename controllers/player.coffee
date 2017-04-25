@@ -42,7 +42,7 @@ class PlayerCtrl
     isValidTag = playerId.match /^[0289PYLQGRJCUV]+$/
     console.log 'search', playerId, ip
     unless isValidTag
-      router.throw {status: 400, info: 'invalid tag'}
+      router.throw {status: 400, info: 'invalid tag', ignoreLog: true}
 
     key = "#{CacheService.PREFIXES.PLAYER_SEARCH}:#{playerId}"
     CacheService.preferCache key, ->

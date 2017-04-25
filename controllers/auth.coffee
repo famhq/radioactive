@@ -31,15 +31,15 @@ class AuthCtrl
     , {presence: 'required'}
 
     if valid.error
-      router.throw {status: 400, info: valid.error.message}
+      router.throw {status: 400, info: valid.error.message, ignoreLog: true}
 
     if user and user.password
-      router.throw {status: 401, info: 'Password already set'}
+      router.throw {status: 401, info: 'Password already set', ignoreLog: true}
     else if user
       User.getByUsername username
       .then (existingUser) ->
         if existingUser
-          router.throw {status: 401, info: 'Username is taken'}
+          router.throw {status: 401, info: 'Username is taken', ignoreLog: true}
 
         Promise.promisify(bcrypt.hash)(insecurePassword, BCRYPT_ROUNDS)
         .then (password) ->
@@ -57,7 +57,7 @@ class AuthCtrl
     , {presence: 'required'}
 
     if valid.error
-      router.throw {status: 400, info: valid.error.message}
+      router.throw {status: 400, info: valid.error.message, ignoreLog: true}
 
     User.getByUsername username
     .then (user) ->

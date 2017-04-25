@@ -60,6 +60,7 @@ config =
   REDIS:
     PREFIX: 'radioactive'
     PORT: REDIS_PORT
+    KUE_HOST: env.REDIS_KUE_HOST
     NODES: if env.REDIS_CLUSTER_HOSTS \
            then _.map env.REDIS_CLUSTER_HOSTS.split(','), (host) ->
              {host, port: REDIS_PORT}

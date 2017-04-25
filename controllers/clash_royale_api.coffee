@@ -35,7 +35,7 @@ class ClashRoyaleAPICtrl
     isValidTag = playerTag.match /^[0289PYLQGRJCUV]+$/
     console.log 'refresh', playerTag, ip
     unless isValidTag
-      router.throw {status: 400, info: 'invalid tag'}
+      router.throw {status: 400, info: 'invalid tag', ignoreLog: true}
 
     key = "#{CacheService.PREFIXES.CLASH_ROYALE_API_GET_TAG}:#{playerTag}"
     # TODO store kueJobId and use that instead of runOnce
@@ -66,7 +66,10 @@ class ClashRoyaleAPICtrl
     , {
       expireSeconds: 60
       lockedFn: ->
-        router.throw {status: 400, info: 'we\'re already processing that tag'}
+        router.throw {
+          status: 400, info: 'we\'re already processing that tag'
+          ignoreLog: true
+        }
     }
 
   refreshByClanId: ({clanId}, {user}) ->
