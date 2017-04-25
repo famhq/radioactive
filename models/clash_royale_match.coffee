@@ -43,7 +43,7 @@ fields = [
   {name: 'winningDeckId', type: 'string', length: 150, index: 'default'}
   {name: 'losingDeckId', type: 'string', length: 150, index: 'default'}
   {
-    name: 'type', type: 'string', length: 14, index: 'default'
+    name: 'type', type: 'string', length: 50, index: 'default'
     defaultValue: 'ladder'
   }
   {name: 'winningCardIds', type: 'array', arrayType: 'text', index: 'gin'}
@@ -56,6 +56,8 @@ fields = [
 defaultClashRoyaleMatch = (clashRoyaleMatch) ->
   unless clashRoyaleMatch?
     return null
+
+  clashRoyaleMatch = _.pick clashRoyaleMatch, _.map(fields, 'name')
 
   _.defaults clashRoyaleMatch, _.reduce(fields, (obj, field) ->
     {name, defaultValue} = field
@@ -97,35 +99,32 @@ class ClashRoyaleMatchModel
 
     knex.insert(clashRoyaleMatches).into(POSTGRES_MATCH_TABLE)
     .catch (err) ->
+      console.log _.map clashRoyaleMatches, (match) ->
+        _.pick match, ['player1Id', 'player2Id']
       console.log 'postgres err', err
 
-    r.table CLASH_ROYALE_MATCH_TABLE
-    .insert clashRoyaleMatches
-    .run()
+    # r.table CLASH_ROYALE_MATCH_TABLE
+    # .insert clashRoyaleMatches
+    # .run()
 
   create: (clashRoyaleMatch) ->
     clashRoyaleMatch = defaultClashRoyaleMatch clashRoyaleMatch
 
     knex.insert(clashRoyaleMatch).into(POSTGRES_MATCH_TABLE)
     .catch (err) ->
+      console.log clashRoyaleMatch
       console.log 'postgres err', err
 
-    r.table CLASH_ROYALE_MATCH_TABLE
-    .insert clashRoyaleMatch
-    .run()
+    # r.table CLASH_ROYALE_MATCH_TABLE
+    # .insert clashRoyaleMatch
+    # .run()
 
   getById: (id, {preferCache} = {}) ->
     get = ->
-      if config.IS_POSTGRES
-        knex.table POSTGRES_MATCH_TABLE
-        .first '*'
-        .where {id}
-        .then defaultClashRoyaleMatch
-      else
-        r.table CLASH_ROYALE_MATCH_TABLE
-        .get id
-        .run()
-        .then defaultClashRoyaleMatch
+      knex.table POSTGRES_MATCH_TABLE
+      .first '*'
+      .where {id}
+      .then defaultClashRoyaleMatch
 
     if preferCache
       prefix = CacheService.PREFIXES.CLASH_ROYALE_MATCHES_ID

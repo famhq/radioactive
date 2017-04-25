@@ -152,6 +152,10 @@ module.exports = router
 .on 'clashRoyaleDecks.getAll', authed ClashRoyaleDeckCtrl.getAll
 .on 'clashRoyaleDecks.getById', authed ClashRoyaleDeckCtrl.getById
 
+# TODO: rm
+.on 'clashRoyaleUserDecks.import', -> Promise.resolve null
+.on 'clashRoyaleUserDecks.importAll', authed ClashRoyaleUserDeckCtrl.import
+
 .on 'clashRoyaleUserDecks.create', authed ClashRoyaleUserDeckCtrl.create
 .on 'clashRoyaleUserDecks.getAll', authed ClashRoyaleUserDeckCtrl.getAll
 .on 'clashRoyaleUserDecks.getFavoritedDeckIds',

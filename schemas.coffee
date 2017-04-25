@@ -17,6 +17,7 @@ user =
   gameData: Joi.object().optional()
   avatarImage: Joi.object()
   embedded: Joi.array().allow(null).optional()
+  joinTime: Joi.date().allow(null)
 
 pushToken =
   id: id

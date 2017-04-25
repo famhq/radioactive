@@ -5,6 +5,8 @@ uuid = require 'node-uuid'
 r = require '../services/rethinkdb'
 knex = require '../services/knex'
 CacheService = require '../services/cache'
+# TODO: rm
+Deck = require './clash_royale_deck'
 config = require '../config'
 
 CLASH_ROYALE_USER_DECK_TABLE = 'clash_royale_user_decks'
@@ -47,6 +49,8 @@ defaultClashRoyaleUserDeck = (clashRoyaleUserDeck) ->
 
   clashRoyaleUserDeck?.deckIdPlayerId =
     "#{clashRoyaleUserDeck?.deckId}:#{clashRoyaleUserDeck?.playerId}"
+
+  clashRoyaleUserDeck = _.pick clashRoyaleUserDeck, _.map(fields, 'name')
 
   _.defaults clashRoyaleUserDeck, _.reduce(fields, (obj, field) ->
     {name, defaultValue} = field
@@ -106,14 +110,15 @@ class ClashRoyaleUserDeckModel
   batchCreate: (userDecks) ->
     userDecks = _.map userDecks, defaultClashRoyaleUserDeck
 
+    console.log 'batchcreate', userDecks.count
     Promise.all [
       knex(POSTGRES_USER_DECKS_TABLE).insert(userDecks)
       .catch (err) ->
         console.log 'postgres err', err
 
-      r.table CLASH_ROYALE_USER_DECK_TABLE
-      .insert userDecks, {durability: 'soft'}
-      .run()
+      # r.table CLASH_ROYALE_USER_DECK_TABLE
+      # .insert userDecks, {durability: 'soft'}
+      # .run()
     ]
 
   create: (clashRoyaleUserDeck) ->
@@ -121,15 +126,35 @@ class ClashRoyaleUserDeckModel
     knex.insert(clashRoyaleUserDeck).into(POSTGRES_USER_DECKS_TABLE)
     .catch (err) ->
       console.log 'postgres', err
-
-    r.table CLASH_ROYALE_USER_DECK_TABLE
-    .insert clashRoyaleUserDeck, {durability: 'soft'}
-    .run()
     .then ->
       clashRoyaleUserDeck
 
+    # r.table CLASH_ROYALE_USER_DECK_TABLE
+    # .insert clashRoyaleUserDeck, {durability: 'soft'}
+    # .run()
+    # .then ->
+    #   clashRoyaleUserDeck
+
+  # FIXME: remove after 5/5/2017
+  importByUserId: (userId) ->
+    r.table CLASH_ROYALE_USER_DECK_TABLE
+    .getAll userId, {index: USER_ID_INDEX}
+    .group('deckId').ungroup()
+    .map (userDeck) ->
+      userDeck('reduction')(0)
+    .run()
+    .map defaultClashRoyaleUserDeck
+    .then (userDecks) =>
+      deckIds = _.map userDecks, ({deckId}) -> deckId?.split('|')
+      Promise.map deckIds, Deck.getByCardKeys
+      .then =>
+        userDecks = _.map userDecks, (deck) ->
+          delete deck.id
+          deck
+        @batchCreate userDecks
+
   getById: (id) ->
-    if config.IS_POSTGRES
+    if config.IS_POSTGRES or true
       knex POSTGRES_USER_DECKS_TABLE
       .first '*'
       .where {id}
@@ -141,7 +166,7 @@ class ClashRoyaleUserDeckModel
       .then defaultClashRoyaleUserDeck
 
   getByDeckIdAndUserId: (deckId, userId) ->
-    if config.IS_POSTGRES
+    if config.IS_POSTGRES or true
       knex POSTGRES_USER_DECKS_TABLE
       .first '*'
       .where {deckId, userId}
@@ -157,7 +182,7 @@ class ClashRoyaleUserDeckModel
 
   getAllByPlayerId: (playerId, {preferCache} = {}) ->
     get = ->
-      if config.IS_POSTGRES
+      if config.IS_POSTGRES or true
         knex POSTGRES_USER_DECKS_TABLE
         .select '*'
         .where {playerId}
@@ -176,7 +201,7 @@ class ClashRoyaleUserDeckModel
       get()
 
   getAllByDeckIdPlayerIds: (deckIdPlayerIds) ->
-    if config.IS_POSTGRES
+    if config.IS_POSTGRES or true
       knex POSTGRES_USER_DECKS_TABLE
       .select '*'
       .whereIn 'deckIdPlayerId', _.map deckIdPlayerIds, ([deckId, playerId]) ->
@@ -191,7 +216,7 @@ class ClashRoyaleUserDeckModel
   getAll: ({limit, sort, userId} = {}) ->
     limit ?= 10
 
-    if config.IS_POSTGRES
+    if config.IS_POSTGRES or true
       # TODO: index on wins?
       sortColumn = if sort is 'recent' then LAST_UPDATE_TIME_INDEX else 'wins'
       q = knex POSTGRES_USER_DECKS_TABLE
@@ -230,7 +255,7 @@ class ClashRoyaleUserDeckModel
 
   getAllFavoritedByUserId: (userId, {limit} = {}) ->
     limit ?= 10
-    if config.IS_POSTGRES
+    if config.IS_POSTGRES or true
       knex POSTGRES_USER_DECKS_TABLE
       .select '*'
       .where {userId, isFavorited: true}
@@ -322,15 +347,15 @@ class ClashRoyaleUserDeckModel
     .catch (err) ->
       console.log 'postgres err', err
 
-    diff = {
-      wins: r.row('wins').add(changes.wins or 0)
-      losses: r.row('losses').add(changes.losses or 0)
-      draws: r.row('draws').add(changes.draws or 0)
-    }
-    r.table CLASH_ROYALE_USER_DECK_TABLE
-    .getAll [deckId, playerId], {index: DECK_ID_PLAYER_ID_INDEX}
-    .update diff, {durability: 'soft'}
-    .run()
+    # diff = {
+    #   wins: r.row('wins').add(changes.wins or 0)
+    #   losses: r.row('losses').add(changes.losses or 0)
+    #   draws: r.row('draws').add(changes.draws or 0)
+    # }
+    # r.table CLASH_ROYALE_USER_DECK_TABLE
+    # .getAll [deckId, playerId], {index: DECK_ID_PLAYER_ID_INDEX}
+    # .update diff, {durability: 'soft'}
+    # .run()
 
   # technically current deck is just the most recently used one...
   # resetCurrentByPlayerId: (playerId, diff) ->
@@ -355,27 +380,27 @@ class ClashRoyaleUserDeckModel
 
       # ideally upserts would use replace for atomicity, but replace doesn't work
       # with getAll atm
-      r.table CLASH_ROYALE_USER_DECK_TABLE
-      .getAll [deckId, userId], {index: DECK_ID_USER_ID_INDEX}
-      .nth 0
-      .default null
-      .do (userDeck) ->
-        r.branch(
-          userDeck.eq null
-
-          r.table CLASH_ROYALE_USER_DECK_TABLE
-          .insert defaultClashRoyaleUserDeck _.defaults(_.clone(diff), {
-            userId, deckId
-          })
-
-          r.table CLASH_ROYALE_USER_DECK_TABLE
-          .getAll [deckId, userId], {index: DECK_ID_USER_ID_INDEX}
-          .nth 0
-          .default null
-          .update diff
-        )
-      .run()
-      .then -> null
+      # r.table CLASH_ROYALE_USER_DECK_TABLE
+      # .getAll [deckId, userId], {index: DECK_ID_USER_ID_INDEX}
+      # .nth 0
+      # .default null
+      # .do (userDeck) ->
+      #   r.branch(
+      #     userDeck.eq null
+      #
+      #     r.table CLASH_ROYALE_USER_DECK_TABLE
+      #     .insert defaultClashRoyaleUserDeck _.defaults(_.clone(diff), {
+      #       userId, deckId
+      #     })
+      #
+      #     r.table CLASH_ROYALE_USER_DECK_TABLE
+      #     .getAll [deckId, userId], {index: DECK_ID_USER_ID_INDEX}
+      #     .nth 0
+      #     .default null
+      #     .update diff
+      #   )
+      # .run()
+      # .then -> null
     ]
 
   # upsertByDeckIdAndPlayerId: (deckId, playerId, diff, {durability} = {}) ->
@@ -413,17 +438,17 @@ class ClashRoyaleUserDeckModel
       @create _.defaults {
         userId: userId
       }, userDeck
-
-    r.table CLASH_ROYALE_USER_DECK_TABLE
-    .getAll playerId, {index: PLAYER_ID_INDEX}
-    .group 'deckId'
-    .run()
-    .map ({reduction}) =>
-      userDeck = _.maxBy reduction, 'wins'
-      @create _.defaults {
-        id: uuid.v4()
-        userId: userId
-      }, userDeck
+    #
+    # r.table CLASH_ROYALE_USER_DECK_TABLE
+    # .getAll playerId, {index: PLAYER_ID_INDEX}
+    # .group 'deckId'
+    # .run()
+    # .map ({reduction}) =>
+    #   userDeck = _.maxBy reduction, 'wins'
+    #   @create _.defaults {
+    #     id: uuid.v4()
+    #     userId: userId
+    #   }, userDeck
 
   deleteById: (id) ->
     knex POSTGRES_USER_DECKS_TABLE
@@ -431,10 +456,10 @@ class ClashRoyaleUserDeckModel
     .limit 1
     .del()
 
-    r.table CLASH_ROYALE_USER_DECK_TABLE
-    .get id
-    .delete()
-    .run()
+    # r.table CLASH_ROYALE_USER_DECK_TABLE
+    # .get id
+    # .delete()
+    # .run()
 
   sanitize: _.curry (requesterId, clashRoyaleUserDeck) ->
     _.pick clashRoyaleUserDeck, [
