@@ -1,4 +1,4 @@
-FROM node:6.9.0
+FROM node:6.10.2
 
 RUN apt-get update && apt-get install -y libcairo2-dev libjpeg-dev libpango1.0-dev libgif-dev build-essential
 

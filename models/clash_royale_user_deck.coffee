@@ -118,8 +118,9 @@ class ClashRoyaleUserDeckModel
 
   create: (clashRoyaleUserDeck) ->
     clashRoyaleUserDeck = defaultClashRoyaleUserDeck clashRoyaleUserDeck
-
     knex.insert(clashRoyaleUserDeck).into(POSTGRES_USER_DECKS_TABLE)
+    .catch (err) ->
+      console.log 'postgres', err
 
     r.table CLASH_ROYALE_USER_DECK_TABLE
     .insert clashRoyaleUserDeck, {durability: 'soft'}
@@ -174,7 +175,6 @@ class ClashRoyaleUserDeckModel
     else
       get()
 
-  # TODO: is this indexed properly?
   getAllByDeckIdPlayerIds: (deckIdPlayerIds) ->
     if config.IS_POSTGRES
       knex POSTGRES_USER_DECKS_TABLE
@@ -344,35 +344,39 @@ class ClashRoyaleUserDeckModel
     unless deckId and userId
       return Promise.resolve null
     # postgres
-    upsert {
-      table: POSTGRES_USER_DECKS_TABLE
-      diff: diff
-      constraint: '("deckId", "userId")'
-    }
-
-    # ideally upserts would use replace for atomicity, but replace doesn't work
-    # with getAll atm
-    r.table CLASH_ROYALE_USER_DECK_TABLE
-    .getAll [deckId, userId], {index: DECK_ID_USER_ID_INDEX}
-    .nth 0
-    .default null
-    .do (userDeck) ->
-      r.branch(
-        userDeck.eq null
-
-        r.table CLASH_ROYALE_USER_DECK_TABLE
-        .insert defaultClashRoyaleUserDeck _.defaults(_.clone(diff), {
+    Promise.all [
+      upsert {
+        table: POSTGRES_USER_DECKS_TABLE
+        diff: defaultClashRoyaleUserDeck _.defaults _.clone(diff), {
           userId, deckId
-        })
+        }
+        constraint: '("deckId", "userId")'
+      }
 
-        r.table CLASH_ROYALE_USER_DECK_TABLE
-        .getAll [deckId, userId], {index: DECK_ID_USER_ID_INDEX}
-        .nth 0
-        .default null
-        .update diff
-      )
-    .run()
-    .then -> null
+      # ideally upserts would use replace for atomicity, but replace doesn't work
+      # with getAll atm
+      r.table CLASH_ROYALE_USER_DECK_TABLE
+      .getAll [deckId, userId], {index: DECK_ID_USER_ID_INDEX}
+      .nth 0
+      .default null
+      .do (userDeck) ->
+        r.branch(
+          userDeck.eq null
+
+          r.table CLASH_ROYALE_USER_DECK_TABLE
+          .insert defaultClashRoyaleUserDeck _.defaults(_.clone(diff), {
+            userId, deckId
+          })
+
+          r.table CLASH_ROYALE_USER_DECK_TABLE
+          .getAll [deckId, userId], {index: DECK_ID_USER_ID_INDEX}
+          .nth 0
+          .default null
+          .update diff
+        )
+      .run()
+      .then -> null
+    ]
 
   # upsertByDeckIdAndPlayerId: (deckId, playerId, diff, {durability} = {}) ->
   #   durability ?= 'hard'
@@ -404,11 +408,11 @@ class ClashRoyaleUserDeckModel
     .select()
     .where {playerId}
     .distinct(knex.raw('ON ("deckId") *'))
-    .map (record) =>
-      delete record.id
+    .map (userDeck) =>
+      delete userDeck.id
       @create _.defaults {
         userId: userId
-      }, record
+      }, userDeck
 
     r.table CLASH_ROYALE_USER_DECK_TABLE
     .getAll playerId, {index: PLAYER_ID_INDEX}

@@ -130,7 +130,7 @@ class ClanCtrl
     isValidTag = clanId.match /^[0289PYLQGRJCUV]+$/
     console.log 'search', clanId
     unless isValidTag
-      router.throw {status: 400, info: 'invalid tag'}
+      router.throw {status: 400, info: 'invalid tag', ignoreLog: true}
 
     key = "#{CacheService.PREFIXES.PLAYER_SEARCH}:#{clanId}"
     CacheService.preferCache key, ->

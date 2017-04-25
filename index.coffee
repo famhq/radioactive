@@ -59,6 +59,8 @@ setup = ->
     RethinkSetupService.setup rethinkTables
     PostgresSetupService.setup postgresTables
   ]
+  .catch (err) ->
+    console.log 'setup', err
   .tap ->
     CronService.start()
     KueRunnerService.listen()
@@ -210,21 +212,23 @@ app.get '/di/crForumSig/:userId.png', (req, res) ->
   .then (stream) ->
     stream.pipe(res)
 
-if config.ENV is config.ENVS.PROD
-  redisPub = new Redis.Cluster _.filter(config.REDIS.NODES)
-  redisSub = new Redis.Cluster _.filter(config.REDIS.NODES), {
-    return_buffers: true
-  }
-else
-  redisPub = new Redis {
-    port: config.REDIS.PORT
-    host: config.REDIS.NODES[0]
-  }
-  redisSub = new Redis {
-    port: config.REDIS.PORT
-    host: config.REDIS.NODES[0]
-    return_buffers: true
-  }
+# for now, this is unnecessary. lightning-rod is clientip,
+# and stickCluster handles the cpus
+# if config.REDIS.NODES.length > 1
+#   redisPub = new Redis.Cluster _.filter(config.REDIS.NODES)
+#   redisSub = new Redis.Cluster _.filter(config.REDIS.NODES), {
+#     return_buffers: true
+#   }
+# else
+#   redisPub = new Redis {
+#     port: config.REDIS.PORT
+#     host: config.REDIS.NODES[0]
+#   }
+#   redisSub = new Redis {
+#     port: config.REDIS.PORT
+#     host: config.REDIS.NODES[0]
+#     return_buffers: true
+#   }
 
 if cluster.isMaster
   setup() # TODO: ideally stickyCluster would start after this...
@@ -234,11 +238,13 @@ stickyCluster ((callback) ->
            then https.createServer credentials, app
            else http.createServer app
   io = socketIO.listen server
-  io.adapter socketIORedis {
-    pubClient: redisPub
-    subClient: redisSub
-    subEvent: config.REDIS.PREFIX + 'socketio:message'
-  }
+  # for now, this is unnecessary. lightning-rod is clientip,
+  # and stickCluster handles the cpus
+  # io.adapter socketIORedis {
+  #   pubClient: redisPub
+  #   subClient: redisSub
+  #   subEvent: config.REDIS.PREFIX + 'socketio:message'
+  # }
   routes.setMiddleware AuthService.exoidMiddleware
   routes.setDisconnect StreamService.exoidDisconnect
   io.on 'connection', routes.onConnection
