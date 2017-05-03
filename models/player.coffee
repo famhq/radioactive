@@ -11,7 +11,7 @@ IS_QUEUED_INDEX = 'isQueued'
 
 # 600 ids per min = 36,000 per hour
 # FIXME FIXME: bump up. see why so many writes happen per small user updates
-DEFAULT_PLAYER_MATCHES_STALE_LIMIT = 1500 # 1500
+DEFAULT_PLAYER_MATCHES_STALE_LIMIT = 1 # 1500
 # 40 players per minute = ~60,000 per day
 DEFAULT_PLAYER_DATA_STALE_LIMIT = 1 # FIXME 100
 SIX_HOURS_S = 3600 * 6

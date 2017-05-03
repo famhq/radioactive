@@ -110,7 +110,6 @@ class ClashRoyaleUserDeckModel
   batchCreate: (userDecks) ->
     userDecks = _.map userDecks, defaultClashRoyaleUserDeck
 
-    console.log 'batchcreate', userDecks.count
     Promise.all [
       knex(POSTGRES_USER_DECKS_TABLE).insert(userDecks)
       .catch (err) ->
@@ -204,7 +203,7 @@ class ClashRoyaleUserDeckModel
     if config.IS_POSTGRES or true
       knex POSTGRES_USER_DECKS_TABLE
       .select '*'
-      .whereIn 'deckIdPlayerId', _.map deckIdPlayerIds, ([deckId, playerId]) ->
+      .whereIn 'deckIdPlayerId', _.map deckIdPlayerIds, ({deckId, playerId}) ->
         "#{deckId}:#{playerId}"
       .map defaultClashRoyaleUserDeck
     else
@@ -340,10 +339,11 @@ class ClashRoyaleUserDeckModel
   #     .run()
 
   incrementAllByDeckIdAndPlayerId: (deckId, playerId, changes) ->
+    changes = _.mapValues changes, (increment, key) ->
+      knex.raw "\"#{key}\" + #{increment}"
     knex POSTGRES_USER_DECKS_TABLE
     .where {deckIdPlayerId: "#{deckId}:#{playerId}"}
-    .update _.mapValues changes, (increment, key) ->
-      knex.raw "\"#{key}\" + #{increment}"
+    .update _.defaults({lastUpdateTime: new Date()}, changes)
     .catch (err) ->
       console.log 'postgres err', err
 

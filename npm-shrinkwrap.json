@@ -3689,6 +3689,11 @@
       "from": "socket.io-redis@latest",
       "resolved": "https://registry.npmjs.org/socket.io-redis/-/socket.io-redis-4.0.0.tgz"
     },
+    "socketio-sticky-session": {
+      "version": "0.4.2",
+      "from": "socketio-sticky-session@>=0.4.2 <0.5.0",
+      "resolved": "https://registry.npmjs.org/socketio-sticky-session/-/socketio-sticky-session-0.4.2.tgz"
+    },
     "source-map": {
       "version": "0.1.43",
       "from": "source-map@>=0.1.0 <0.2.0",
@@ -3761,11 +3766,6 @@
       "from": "stealthy-require@>=1.0.0 <2.0.0",
       "resolved": "https://registry.npmjs.org/stealthy-require/-/stealthy-require-1.0.0.tgz"
     },
-    "sticky-cluster": {
-      "version": "0.3.0",
-      "from": "sticky-cluster@latest",
-      "resolved": "https://registry.npmjs.org/sticky-cluster/-/sticky-cluster-0.3.0.tgz"
-    },
     "stream-consume": {
       "version": "0.1.0",
       "from": "stream-consume@>=0.1.0 <0.2.0",
@@ -3780,11 +3780,6 @@
       "version": "0.10.31",
       "from": "string_decoder@>=0.10.0 <0.11.0",
       "resolved": "https://registry.npmjs.org/string_decoder/-/string_decoder-0.10.31.tgz"
-    },
-    "string-hash": {
-      "version": "1.1.1",
-      "from": "string-hash@>=1.1.0 <2.0.0",
-      "resolved": "https://registry.npmjs.org/string-hash/-/string-hash-1.1.1.tgz"
     },
     "string-template": {
       "version": "1.0.0",

@@ -33,13 +33,13 @@ class ClashRoyaleAPICtrl
                 .replace /O/g, '0' # replace capital O with zero
 
     isValidTag = playerTag.match /^[0289PYLQGRJCUV]+$/
-    console.log 'refresh', playerTag, ip
     unless isValidTag
       router.throw {status: 400, info: 'invalid tag', ignoreLog: true}
 
     key = "#{CacheService.PREFIXES.CLASH_ROYALE_API_GET_TAG}:#{playerTag}"
     # TODO store kueJobId and use that instead of runOnce
     CacheService.runOnce key, ->
+      console.log 'refresh', playerTag, ip, connection.remoteAddress
       (if isUpdate
         Player.removeUserId user.id, config.CLASH_ROYALE_ID
       else
@@ -61,7 +61,6 @@ class ClashRoyaleAPICtrl
       .then ->
         ClashRoyaleKueService.refreshByPlayerTag playerTag, {userId: user.id}
       .then ->
-        console.log 'refresh done'
         return null
     , {
       expireSeconds: 60

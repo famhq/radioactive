@@ -145,7 +145,6 @@ class ChatMessageCtrl
     start = Date.now()
     Conversation.getById conversationId, {preferCache: true}
     .then (conversation) ->
-      console.log 'cc1', Date.now() - start
       start = Date.now()
       # FIXME FIXME
       (if conversation.groupId is config.MAIN_GROUP_ID
@@ -153,7 +152,6 @@ class ChatMessageCtrl
       else
         Conversation.hasPermission conversation, user.id)
       .then (hasPermission) ->
-        console.log 'cc2', Date.now() - start
         start = Date.now()
         unless hasPermission
           router.throw status: 401, info: 'unauthorized'
@@ -175,7 +173,6 @@ class ChatMessageCtrl
                 item
         }
         .tap ->
-          console.log 'cc4', Date.now() - start
           start = Date.now()
 
   uploadImage: ({}, {user, file}) ->

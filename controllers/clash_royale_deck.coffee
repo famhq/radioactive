@@ -30,7 +30,7 @@ class ClashRoyaleDeckCtrl
     .map ClashRoyaleDeck.sanitize null
 
   getById: ({id}, {user}) ->
-    ClashRoyaleDeck.getById id
+    ClashRoyaleDeck.getById decodeURIComponent id
     .then EmbedService.embed {embed: defaultEmbed}
     .then ClashRoyaleDeck.sanitize null
 

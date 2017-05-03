@@ -14,7 +14,7 @@ knexInstance = knex {
   debug: false
   pool:
     min: 1
-    max: 2 # 2 * 7 * 6 cpu replicas is 84 connections. can have up to 100
+    max: 1 # 1 * 6 * 12 cpu replicas is 72 connections. can have up to 100
            # TODO bump up when 100 connection limit is increased
            # https://issuetracker.google.com/issues/37271935
 }

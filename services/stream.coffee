@@ -26,7 +26,6 @@ class StreamService
     start = Date.now()
     promise
     .then (cursor) =>
-      console.log 'cc3', Date.now() - start
       start = Date.now()
       # TODO: release cursors when switching to tab/page
       # where obs isn't required?

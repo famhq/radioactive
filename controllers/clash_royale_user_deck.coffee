@@ -18,7 +18,7 @@ class ClashRoyaleUserDeckCtrl
     ClashRoyaleUserDeck.importByUserId user.id
 
   getAll: ({sort, filter}, {user}) ->
-    ClashRoyaleUserDeck.getAllByUserId user.id
+    ClashRoyaleUserDeck.getAllByUserId user.id, {sort}
     .map EmbedService.embed {embed: defaultEmbed}
     .map ClashRoyaleUserDeck.sanitize null
 
@@ -27,7 +27,7 @@ class ClashRoyaleUserDeckCtrl
     .map ({deckId}) -> deckId
 
   getAllByUserId: ({userId, sort, filter}, {user}) ->
-    ClashRoyaleUserDeck.getAllByUserId userId
+    ClashRoyaleUserDeck.getAllByUserId userId, {sort}
     .map EmbedService.embed {embed: defaultEmbed}
     .map ClashRoyaleUserDeck.sanitize null
 

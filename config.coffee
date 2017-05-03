@@ -3,7 +3,8 @@ assertNoneMissing = require 'assert-none-missing'
 
 env = process.env
 
-REDIS_PORT = if env.IS_STAGING is '1' then 6378 else 6379
+# REDIS_PORT = if env.IS_STAGING is '1' then 6378 else 6379 # for cluster
+REDIS_PORT = 6379
 DEV_USE_HTTPS = process.env.DEV_USE_HTTPS and process.env.DEV_USE_HTTPS isnt '0'
 
 config =
@@ -61,10 +62,11 @@ config =
     PREFIX: 'radioactive'
     PORT: REDIS_PORT
     KUE_HOST: env.REDIS_KUE_HOST
-    NODES: if env.REDIS_CLUSTER_HOSTS \
-           then _.map env.REDIS_CLUSTER_HOSTS.split(','), (host) ->
-             {host, port: REDIS_PORT}
-           else [env.REDIS_HOST]
+    RADIOACTIVE_HOST: env.REDIS_RADIOACTIVE_HOST
+    # NODES: if env.REDIS_CLUSTER_HOSTS \
+    #        then _.map env.REDIS_CLUSTER_HOSTS.split(','), (host) ->
+    #          {host, port: REDIS_PORT}
+    #        else [env.REDIS_HOST]
   CDN_HOST: env.CDN_HOST
   AWS:
     REGION: 'us-west-2'
