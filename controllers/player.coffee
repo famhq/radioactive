@@ -28,8 +28,6 @@ class PlayerCtrl
     start = Date.now()
     # TODO: cache, but need to clear the cache whenever player is updated...
     Player.getByUserIdAndGameId userId, gameId#, {preferCache: true}
-    .tap ->
-      console.log 'pppp1', Date.now() - start, userId
     .then EmbedService.embed {embed: defaultEmbed}
 
   search: ({playerId}, {user, headers, connection}) ->

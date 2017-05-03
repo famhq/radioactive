@@ -32,7 +32,6 @@ r.db('radioactive').table('clash_royale_decks')
 .run()
 .then (decks) ->
   Promise.map decks, (deck, i) ->
-    console.log 'lll', i
     newDeckId = deck.cardKeys
     console.log deck.id, newDeckId
     r.db('radioactive').table('clash_royale_decks')
@@ -58,7 +57,6 @@ r.db('radioactive').table('clash_royale_user_decks')
 .run()
 .then (userDecks) ->
   Promise.map userDecks, (userDeck, i) ->
-    console.log 'ppp', i
     if userDeck.userId
       newUserDeckId = "#{userDeck.userId}:#{userDeck.deckId}"
       r.db('radioactive').table('clash_royale_user_decks')
@@ -116,7 +114,6 @@ r.db('radioactive').table('clash_royale_user_decks')
 # .run()
 # .then (userDecks) ->
 #   Promise.map userDecks, (userDeck, i) ->
-#     console.log 'ppp', i
 #     if userDeck.userId
 #       newUserDeckId = "#{userDeck.userId}:#{userDeck.deckId}"
 #       r.db('radioactive').table('clash_royale_user_decks')

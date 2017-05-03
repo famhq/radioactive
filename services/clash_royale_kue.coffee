@@ -14,7 +14,6 @@ processingP = 0
 
 class ClashRoyaleKue
   getPlayerDataByTag: (tag, {priority, skipCache} = {}) ->
-    console.log 'req', "#{config.CR_API_URL}/players/#{tag}"
     request "#{config.CR_API_URL}/players/#{tag}", {
       json: true
       qs:
@@ -24,11 +23,9 @@ class ClashRoyaleKue
     .then (responses) ->
       responses?[0]
     .catch (err) ->
-      console.log 'err playerDataByTag'
-      console.log err
+      console.log 'err playerDataByTag', err
 
   getPlayerMatchesByTag: (tag, {priority} = {}) ->
-    console.log 'req', "#{config.CR_API_URL}/players/#{tag}/games"
     request "#{config.CR_API_URL}/players/#{tag}/games", {
       json: true
       qs:
@@ -37,8 +34,7 @@ class ClashRoyaleKue
     .then (responses) ->
       responses?[0]
     .catch (err) ->
-      console.log 'err playerMatchesByTag'
-      console.log err
+      console.log 'err playerMatchesByTag', err
 
   refreshByPlayerTag: (playerTag, {userId, priority} = {}) =>
     Promise.all [
@@ -48,7 +44,6 @@ class ClashRoyaleKue
     .then ([playerData, matches]) ->
       unless playerTag and playerData
         console.log 'update missing tag or data', playerTag, playerData
-      console.log 'cj'
       KueCreateService.createJob {
         job: {userId: userId, tag: playerTag, playerData}
         type: KueCreateService.JOB_TYPES.UPDATE_PLAYER_DATA
@@ -68,7 +63,6 @@ class ClashRoyaleKue
         .catch -> null
 
   getClanByTag: (tag, {priority} = {}) ->
-    console.log 'req', "#{config.CR_API_URL}/clans/#{tag}"
     request "#{config.CR_API_URL}/clans/#{tag}", {
       json: true
       qs:
@@ -77,8 +71,7 @@ class ClashRoyaleKue
     .then (responses) ->
       responses?[0]
     .catch (err) ->
-      console.log 'err clanByTag'
-      console.log err
+      console.log 'err clanByTag', err
 
   refreshByClanId: (clanId, {userId, priority} = {}) =>
     @getClanByTag clanId, {priority}

@@ -8,31 +8,33 @@ ClashRoyalePlayerService = require './clash_royale_player'
 ClashRoyaleClanService = require './clash_royale_clan'
 config = require '../config'
 
+# TODO: make separate lib, used by cr-api
+
 # concurrency is multiplied by number of replicas (3 as of 4/11/2017)
 # higher concurrency means more load on rethink nodes, but less on rethink
 # proxies / radioactive (since it's split evenly between replicas)
+# 12 cpus
 TYPES =
   "#{KueCreateService.JOB_TYPES.BATCH_NOTIFICATION}":
-    {fn: BroadcastService.batchNotify, concurrency: 3}
+    {fn: BroadcastService.batchNotify, concurrencyPerCpu: 1}
   "#{KueCreateService.JOB_TYPES.UPDATE_PLAYER_MATCHES}":
-    {fn: ClashRoyalePlayerService.processUpdatePlayerMatches, concurrency: 7} # FIXME 4 or 10
+    {fn: ClashRoyalePlayerService.processUpdatePlayerMatches, concurrencyPerCpu: 2}
   "#{KueCreateService.JOB_TYPES.UPDATE_PLAYER_DATA}":
-    {fn: ClashRoyalePlayerService.processUpdatePlayerData, concurrency: 7} # FIXME 4 or 10
+    {fn: ClashRoyalePlayerService.processUpdatePlayerData, concurrencyPerCpu: 1}
   "#{KueCreateService.JOB_TYPES.UPDATE_CLAN_DATA}":
-    {fn: ClashRoyaleClanService.processUpdateClan, concurrency: 7} # FIXME 4 or 10
+    {fn: ClashRoyaleClanService.processUpdateClan, concurrencyPerCpu: 1}
 
 class KueRunnerService
   listen: ->
-    if config.ENV isnt config.ENVS.DEV or config.REDIS.NODES.length is 1
-      console.log 'listening to kue'
-      _.forEach TYPES, ({fn, concurrency}, type) ->
-        KueService.process type, concurrency, (job, ctx, done) ->
-          # KueCreateService.setCtx type, ctx
-          fn job.data
-          .then (response) ->
-            done null, response
-          .catch (err) ->
-            console.log 'err', err
-            done err
+    console.log 'listening to kue'
+    _.forEach TYPES, ({fn, concurrencyPerCpu}, type) ->
+      KueService.process type, concurrencyPerCpu, (job, ctx, done) ->
+        # KueCreateService.setCtx type, ctx
+        fn job.data
+        .then (response) ->
+          done null, response
+        .catch (err) ->
+          console.log 'err', err
+          done err
 
 module.exports = new KueRunnerService()

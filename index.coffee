@@ -12,7 +12,8 @@ socketIO = require 'socket.io'
 socketIORedis = require 'socket.io-redis'
 Redis = require 'ioredis'
 # http://socket.io/docs/using-multiple-nodes/#using-node.js-cluster
-stickyCluster = require 'sticky-cluster'
+# IMO sticky-cluster is better, but it doesn't support x-forwarded-for
+sticky = require 'socketio-sticky-session'
 
 Joi = require 'joi'
 
@@ -130,6 +131,8 @@ app.use bodyParser.json({limit: '1mb'})
 # Avoid CORS preflight
 app.use bodyParser.json({type: 'text/plain', limit: '1mb'})
 
+app.get '/', (req, res) -> res.status(200).send 'ok'
+
 app.get '/ping', (req, res) -> res.send 'pong'
 
 app.get '/healthcheck', HealthCtrl.check
@@ -231,9 +234,10 @@ app.get '/di/crForumSig/:userId.png', (req, res) ->
 #   }
 
 if cluster.isMaster
-  setup() # TODO: ideally stickyCluster would start after this...
+  setup() # TODO: ideally sticky would start after this...
 
-stickyCluster ((callback) ->
+concurrency = if config.ENV is config.ENVS.DEV then 1 else undefined
+sticky({proxy: true, ignoreMissingHeader: true, concurrency}, ->
   server = if config.DEV_USE_HTTPS \
            then https.createServer credentials, app
            else http.createServer app
@@ -248,9 +252,6 @@ stickyCluster ((callback) ->
   routes.setMiddleware AuthService.exoidMiddleware
   routes.setDisconnect StreamService.exoidDisconnect
   io.on 'connection', routes.onConnection
-  callback server
-), {
-  debug: false
-  concurrency: if config.ENV is config.ENVS.DEV then 1 else undefined
-  port: config.PORT
-}
+  return server
+).listen config.PORT, ->
+  console.log 'listening', config.PORT

@@ -10,7 +10,7 @@ config = require '../config'
 
 IS_TEST_RUN = false
 
-# REDIS_HOST=10.123.240.149  RETHINK_HOST=10.123.241.180
+# REDIS_HOST=10.123.240.149  RETHINK_HOST=10.123.245.23
 # coffee ./bin/broadcast.coffee
 
 

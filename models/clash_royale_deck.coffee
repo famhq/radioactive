@@ -241,10 +241,11 @@ class ClashRoyaleDeckModel
     else
       get()
 
+  # TODO
   getAll: ({limit, sort, timeFrame} = {}) ->
     limit ?= 10
 
-    if config.IS_POSTGRES or true
+    if config.IS_POSTGRES
       sortColumn = if sort is 'recent' then ADD_TIME_INDEX else POPULARITY_INDEX
       q = knex POSTGRES_DECKS_TABLE
       .select '*'

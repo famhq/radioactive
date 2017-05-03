@@ -182,7 +182,6 @@ class KueCreateService
 
         if waitForCompletion
           kueJob.on 'complete', (response) ->
-            console.log 'completed', type
             resolve response
           kueJob.on 'failed', (err) ->
             console.log 'job failed', type, err

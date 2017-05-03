@@ -44,7 +44,9 @@ class UserDataCtrl
     }, {presence: 'required'}
 
     if valid.error
-      router.throw status: 400, info: valid.error.message
+      router.throw {
+        status: 400, info: valid.error.message, ignoreLog: true
+      }
 
     Promise.all [
       UserData.getByUserId user.id
@@ -91,7 +93,11 @@ class UserDataCtrl
     }, {presence: 'required'}
 
     if valid.error
-      router.throw status: 400, info: valid.error.message
+      router.throw {
+        status: 400
+        info: valid.error.message
+        ignoreLog: true
+      }
 
     Promise.all [
       UserData.getByUserId user.id

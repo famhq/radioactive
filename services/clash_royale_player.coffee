@@ -37,9 +37,7 @@ PLAYER_MATCHES_TIMEOUT_MS = 5000
 CLAN_TIMEOUT_MS = 1000
 BATCH_REQUEST_SIZE = 50
 GAME_ID = config.CLASH_ROYALE_ID
-
-processingM = 0
-processingP = 0
+DEBUG = false
 
 class ClashRoyalePlayer
   getMatchPlayerData: ({player, deckId}) ->
@@ -79,8 +77,8 @@ class ClashRoyalePlayer
     # if no users exist yet (so it can be duplicated over to new account)
     start = Date.now()
 
-    deckIdPlayerIds = _.map userDecks, ({deckId, playerId}) ->
-      [deckId, playerId]
+    deckIdPlayerIds = _.map userDecks, (userDeck) ->
+      _.pick userDeck, ['deckId', 'playerId']
 
     ClashRoyaleUserDeck.getAllByDeckIdPlayerIds deckIdPlayerIds
     .then (existingUserDecks) ->
@@ -144,8 +142,8 @@ class ClashRoyalePlayer
       )
 
   filterMatches: ({matches, player}) ->
-    processingM += 1
-    console.log 'filtering matches', processingM
+    if DEBUG
+      console.log 'filtering matches', processingM
     # only grab matches since the last update time
     matches = _.filter matches, (match) ->
       unless match
@@ -157,7 +155,7 @@ class ClashRoyalePlayer
       else
         lastMatchTime = 0
       # the server time isn't 100% accurate, so +- 15 seconds
-      type isnt 'clanBattle' and
+      type in ['ladder', 'classicChallenge', 'grandChallenge'] and
         new Date(time).getTime() > (new Date(lastMatchTime).getTime() + 15)
 
   # we should always block this for db writes/reads so the queue
@@ -175,8 +173,8 @@ class ClashRoyalePlayer
         if existingMatch then null else match
     .then _.filter
     .then (matches) =>
-      console.log 'm0', Date.now() - start
-      console.log 'filtered matches: ' + matches.length + ' ' + reqPlayerIds
+      if DEBUG
+        console.log 'filtered matches: ' + matches.length + ' ' + reqPlayerIds
 
       cardsKey = CacheService.KEYS.CLASH_ROYALE_CARDS
       cards = CacheService.preferCache cardsKey, ->
@@ -197,13 +195,13 @@ class ClashRoyalePlayer
 
       start = Date.now()
 
+      # FIXME FIXME: updated playerDiff userId before passing to
+      # createNewUserDecks, so it checks for that existing deck
       Promise.all [
         cards
         playerDiffs.setInitialDiffs playerIds, reqPlayerIds
       ]
       .then ([cards, initialDiffs]) =>
-        console.log 'm1', Date.now() - start
-
         # don't need to block for this
         # @createNewDecks matches, cards
 
@@ -221,7 +219,6 @@ class ClashRoyalePlayer
             console.log 'decks create postgres err', err
         ]
         .then =>
-          console.log 'm2', Date.now() - stepStart
           # needs to be each for streak to work
           Promise.each matches, (match, i) =>
             matchId = match.id
@@ -477,8 +474,6 @@ class ClashRoyalePlayer
           # # don't need to block
           # Match.batchCreate batchMatches
 
-          # processingM -= 1
-
           # batchPromise = Promise.all [
           #   GameRecord.batchCreate batchGameRecords
           #   @incrementUserDecks batchUserDecks
@@ -506,7 +501,6 @@ class ClashRoyalePlayer
           ]
 
         .then ->
-          console.log 'm5', Date.now() - stepStart, reqSynchronous
           {playerDiffs: playerDiffs.getAll()}
 
   # morph api format to our format
@@ -547,29 +541,21 @@ class ClashRoyalePlayer
     start = Date.now()
     filteredMatches = null
 
-    console.log 'matches0', _.sumBy matches, ({matches}) -> matches?.length
-
     # get before update so we have accurate lastMatchTime
     Player.getAllByPlayerIdsAndGameId tags, GAME_ID
     .then (players) =>
-      console.log 'matches1', Date.now() - start
-
       if isBatched
         filteredMatches = _.flatten _.map(players, (player) =>
           chunkMatches = _.find(matches, {tag: player.playerId})?.matches
           @filterMatches {matches: chunkMatches, player}
         )
       else
-        # console.log '2', matches, tag
         filteredMatches = @filterMatches {matches, player: players[0]}
-
-      console.log 'matches1b', isBatched, players?.length, filteredMatches?.length
 
       @processMatches {
         matches: filteredMatches, reqPlayers: players, reqSynchronous
       }
     .then ({playerDiffs}) ->
-      console.log 'matches2', Date.now() - start
       # no matches processed means no player diffs
       playerDiffs.all[tag] = _.defaults {
         lastMatchesUpdateTime: new Date()
@@ -610,16 +596,18 @@ class ClashRoyalePlayer
       ]
       # kue doesn't complete with object response? needs str/empty?
       .then ->
-        console.log 'matches3', Date.now() - start, isBatched, filteredMatches?.length
+        if DEBUG
+          console.log(
+            'match processing time', Date.now() - start
+            isBatched, filteredMatches?.length
+          )
         undefined
 
 
   updatePlayerData: ({userId, playerData, tag}) =>
-    processingP += 1
-    console.log 'processingData', processingP
-    console.log 'update player data', tag
+    if DEBUG
+      console.log 'update player data', tag
     unless tag and playerData
-      processingP -= 1
       return Promise.resolve null
 
     diff = {
@@ -630,7 +618,6 @@ class ClashRoyalePlayer
 
     start = Date.now()
 
-    # console.log playerData
     (if playerData?.clan?.tag
       Clan.getByClanIdAndGameId playerData.clan.tag, GAME_ID, {
         preferCache: true
@@ -638,7 +625,6 @@ class ClashRoyalePlayer
     else
       Promise.resolve null)
     .then (clan) ->
-      console.log 'update 1 ', Date.now() - start
       start = Date.now()
       if clan
         return clan
@@ -647,19 +633,14 @@ class ClashRoyalePlayer
         .timeout CLAN_TIMEOUT_MS
         .catch -> null
     .then (clan) ->
-      console.log 'update 2 ', Date.now() - start
       start = Date.now()
       diff.clanId = clan?.id
 
-      console.log 'update 3 ', Date.now() - start
       start = Date.now()
       Player.upsertByPlayerIdAndGameId tag, GAME_ID, diff, {userId}
       .catch (err) ->
-        console.log 'errr', err
+        console.log 'err', err
         null
-      .then ->
-        console.log 'update 4 ', Date.now() - start
-        processingP -= 1
 
   updateStalePlayerMatches: ({force} = {}) ->
     Player.getStaleByGameId GAME_ID, {
@@ -668,7 +649,8 @@ class ClashRoyalePlayer
     }
     .map ({playerId}) -> playerId
     .then (playerIds) ->
-      console.log 'stalematch', playerIds.length, new Date()
+      if DEBUG
+        console.log 'stalematch', playerIds.length, new Date()
       Player.updateByPlayerIdsAndGameId playerIds, GAME_ID, {
         lastMatchesUpdateTime: new Date()
       }
@@ -684,8 +666,7 @@ class ClashRoyalePlayer
               "#{config.RADIOACTIVE_API_URL}/clashRoyaleAPI/updatePlayerMatches"
         }
         .catch (err) ->
-          console.log 'err stalePlayerMatches'
-          console.log err
+          console.log 'err stalePlayerMatches', err
 
   updateStalePlayerData: ({force} = {}) ->
     Player.getStaleByGameId GAME_ID, {
@@ -694,7 +675,8 @@ class ClashRoyalePlayer
     }
     .map ({playerId}) -> playerId
     .then (playerIds) ->
-      console.log 'staledata', playerIds.length, new Date()
+      if DEBUG
+        console.log 'staledata', playerIds.length, new Date()
       Player.updateByPlayerIdsAndGameId playerIds, GAME_ID, {
         lastUpdateTime: new Date()
       }
@@ -708,14 +690,12 @@ class ClashRoyalePlayer
               "#{config.RADIOACTIVE_API_URL}/clashRoyaleAPI/updatePlayerData"
         }
         .catch (err) ->
-          console.log 'err stalePlayerData'
-          console.log err
+          console.log 'err stalePlayerData', err
 
   processUpdatePlayerData: ({userId, tag, playerData, isDaily}) =>
     unless tag
       console.log 'tag doesn\'t exist updateplayerdata'
       return Promise.resolve null
-    console.log 'process'
     @updatePlayerData {userId, tag, playerData}
     .then (player) ->
       if isDaily
@@ -727,7 +707,6 @@ class ClashRoyalePlayer
           ]
           .then ([player, playersDaily]) ->
             if player and playersDaily?.data
-              console.log 'dailydata'
               splits = playersDaily.data.splits
               stats = _.reduce splits, (aggregate, split, gameType) ->
                 aggregate.wins += split.wins
