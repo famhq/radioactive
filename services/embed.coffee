@@ -103,7 +103,7 @@ embedFn = _.curry ({embed, user, groupId, gameId}, object) ->
   _.forEach embed, (key) ->
     switch key
       when TYPES.USER.DATA
-        embedded.data = UserData.getByUserId(embedded.id)
+        embedded.data = UserData.getByUserId(embedded.id, {preferCache: true})
         .then (userData) ->
           _.defaults {userId: embedded.id}, userData
 

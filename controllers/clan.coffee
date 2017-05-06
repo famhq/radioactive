@@ -28,7 +28,11 @@ class ClanCtrl
   getById: ({id}, {user}) ->
     Clan.getById id
     .then EmbedService.embed {embed: defaultEmbed}
-    .then Clan.sanitizePublic null
+    .then (clan) ->
+      if clan.creatorId is user.id
+        Clan.sanitize null, clan
+      else
+        Clan.sanitizePublic null, clan
 
   claimById: ({id}, {user}) ->
     Clan.getById id

@@ -4,6 +4,30 @@ Promise = require 'bluebird'
 Deck = require '../models/clash_royale_deck'
 r = require '../services/rethinkdb'
 
+
+r.db('radioactive').table('user_data')
+.filter r.row('isNewId').default(false).eq(false)
+.limit 15000
+.run()
+.then (userDatas) ->
+  Promise.map userDatas, (userData, i) ->
+    console.log i
+    newId = userData.userId
+    r.db('radioactive').table('user_data')
+    .insert _.defaults {id: newId, isNewId: true}, _.clone userData
+    .run()
+    .then ->
+      r.db('radioactive').table('user_data')
+      .get userData.id
+      .delete()
+      .run()
+    .catch ->
+      console.log 'insert err'
+  , {concurrency: 50}
+.then ->
+  console.log 'done'
+return
+
 # r.db('radioactive').table('players')
 # .indexCreate('isNewId', function(row) {return row.hasFields('isNewId').not()})
 

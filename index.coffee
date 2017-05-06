@@ -137,6 +137,8 @@ app.get '/ping', (req, res) -> res.send 'pong'
 
 app.get '/healthcheck', HealthCtrl.check
 
+app.get '/healthcheck/throw', HealthCtrl.checkThrow
+
 app.post '/log', (req, res) ->
   unless req.body?.event is 'client_error'
     return res.status(400).send 'must be type client_error'
@@ -233,25 +235,32 @@ app.get '/di/crForumSig/:userId.png', (req, res) ->
 #     return_buffers: true
 #   }
 
-if cluster.isMaster
-  setup() # TODO: ideally sticky would start after this...
+server = if config.DEV_USE_HTTPS \
+         then https.createServer credentials, app
+         else http.createServer app
+io = socketIO.listen server
+# FIXME: fix socket.io not working for client (works for server)
+# after a period of time (8 hours).
+# Test: go to decks page first, then home tab. see if it loads
+#
+# *might* be one of rethinkdb-proxies crashing, but server
+# hits different pod so it works?
+setInterval ->
+  console.log 'socket.io', io.engine.clientsCount
+, 10000
 
-concurrency = if config.ENV is config.ENVS.DEV then 1 else undefined
-sticky({proxy: true, ignoreMissingHeader: true, concurrency}, ->
-  server = if config.DEV_USE_HTTPS \
-           then https.createServer credentials, app
-           else http.createServer app
-  io = socketIO.listen server
-  # for now, this is unnecessary. lightning-rod is clientip,
-  # and stickCluster handles the cpus
-  # io.adapter socketIORedis {
-  #   pubClient: redisPub
-  #   subClient: redisSub
-  #   subEvent: config.REDIS.PREFIX + 'socketio:message'
-  # }
-  routes.setMiddleware AuthService.exoidMiddleware
-  routes.setDisconnect StreamService.exoidDisconnect
-  io.on 'connection', routes.onConnection
-  return server
-).listen config.PORT, ->
-  console.log 'listening', config.PORT
+# for now, this is unnecessary. lightning-rod is clientip,
+# and stickCluster handles the cpus
+# io.adapter socketIORedis {
+#   pubClient: redisPub
+#   subClient: redisSub
+#   subEvent: config.REDIS.PREFIX + 'socketio:message'
+# }
+routes.setMiddleware AuthService.exoidMiddleware
+routes.setDisconnect StreamService.exoidDisconnect
+io.on 'connection', routes.onConnection
+
+module.exports = {
+  server
+  setup
+}
