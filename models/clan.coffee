@@ -22,6 +22,7 @@ defaultClan = (clan) ->
     gameId: null
     clanId: null
     groupId: null # can only be tied to 1 group
+    password: null
     creatorId: null
     # no 0 or O (avoid confusion)
     code: _.sampleSize('ABCDEFGHIJKLMNPQRSTUFWXYZ123456789', 6).join ''
@@ -132,6 +133,23 @@ class ClanModel
       'creatorId'
       'code'
       'data'
+      'players'
+      'isUpdatable'
+      'lastUpdateTime'
+      'embedded'
+    ]
+    sanitizedClan
+
+  sanitize: _.curry (requesterId, clan) ->
+    sanitizedClan = _.pick clan, [
+      'id'
+      'gameId'
+      'clanId'
+      'groupId'
+      'creatorId'
+      'code'
+      'data'
+      'password'
       'players'
       'isUpdatable'
       'lastUpdateTime'

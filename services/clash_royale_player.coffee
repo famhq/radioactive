@@ -37,7 +37,9 @@ PLAYER_MATCHES_TIMEOUT_MS = 5000
 CLAN_TIMEOUT_MS = 1000
 BATCH_REQUEST_SIZE = 50
 GAME_ID = config.CLASH_ROYALE_ID
+
 DEBUG = false
+IS_TEST_RUN = false
 
 class ClashRoyalePlayer
   getMatchPlayerData: ({player, deckId}) ->
@@ -105,6 +107,12 @@ class ClashRoyalePlayer
         else
           null
       ClashRoyaleUserDeck.batchCreate batchUserDecks
+      .catch ->
+        # if a user changes their player id, their old decks
+        # are still tied to old playerId so they aren't pulled
+        # into existingUserDecks and it tries to insert again...
+        if DEBUG
+          console.log 'caught dupe'
 
   createNewDecks: (matches, cards) ->
     deckKeys = _.uniq _.flatten _.map matches, ({player1, player2}) ->
@@ -170,7 +178,7 @@ class ClashRoyalePlayer
       matchId = match.id
       Match.getById matchId, {preferCache: true}
       .then (existingMatch) ->
-        if existingMatch then null else match
+        if existingMatch and not IS_TEST_RUN then null else match
     .then _.filter
     .then (matches) =>
       if DEBUG

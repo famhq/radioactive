@@ -22,8 +22,9 @@ class CronService
     # minute
     @addCron 'minute', '0 * * * * *', ->
       EventService.notifyForStart()
-      ClashRoyalePlayerService.updateStalePlayerData()
-      ClashRoyalePlayerService.updateStalePlayerMatches()
+      if config.ENV is config.ENVS.PROD
+        ClashRoyalePlayerService.updateStalePlayerData()
+        ClashRoyalePlayerService.updateStalePlayerMatches()
 
     @addCron 'quarterMinute', '15 * * * * *', ->
       CleanupService.clean()

@@ -110,15 +110,7 @@ class ClashRoyaleUserDeckModel
   batchCreate: (userDecks) ->
     userDecks = _.map userDecks, defaultClashRoyaleUserDeck
 
-    Promise.all [
-      knex(POSTGRES_USER_DECKS_TABLE).insert(userDecks)
-      .catch (err) ->
-        console.log 'postgres err', err
-
-      # r.table CLASH_ROYALE_USER_DECK_TABLE
-      # .insert userDecks, {durability: 'soft'}
-      # .run()
-    ]
+    knex(POSTGRES_USER_DECKS_TABLE).insert(userDecks)
 
   create: (clashRoyaleUserDeck) ->
     clashRoyaleUserDeck = defaultClashRoyaleUserDeck clashRoyaleUserDeck
@@ -127,12 +119,6 @@ class ClashRoyaleUserDeckModel
       console.log 'postgres', err
     .then ->
       clashRoyaleUserDeck
-
-    # r.table CLASH_ROYALE_USER_DECK_TABLE
-    # .insert clashRoyaleUserDeck, {durability: 'soft'}
-    # .run()
-    # .then ->
-    #   clashRoyaleUserDeck
 
   # FIXME: remove after 5/5/2017
   importByUserId: (userId) ->
@@ -433,11 +419,13 @@ class ClashRoyaleUserDeckModel
     .select()
     .where {playerId}
     .distinct(knex.raw('ON ("deckId") *'))
-    .map (userDeck) =>
+    .map (userDeck) ->
       delete userDeck.id
-      @create _.defaults {
+      _.defaults {
         userId: userId
       }, userDeck
+    .then (userDecks) =>
+      @batchCreate userDecks
     #
     # r.table CLASH_ROYALE_USER_DECK_TABLE
     # .getAll playerId, {index: PLAYER_ID_INDEX}

@@ -7,14 +7,16 @@ schemas = require '../schemas'
 
 USER_DATA_TABLE = 'user_data'
 USER_ID_INDEX = 'userId'
+SIX_HOURS_SECONDS = 3600 * 6
 
 defaultUserData = (userData) ->
   # unless userData?
   #   return {}
 
+  id = userData?.userId or uuid.v4()
+
   _.defaults userData, {
-    id: uuid.v4()
-    userId: null
+    id: id
     followingIds: []
     followerIds: []
     blockedUserIds: []
@@ -33,52 +35,38 @@ class UserDataModel
     }
   ]
 
-  getById: (id) ->
-    r.table USER_DATA_TABLE
-    .get id
-    .run()
-    .then defaultUserData
+  getByUserId: (userId, {preferCache} = {}) ->
+    get = ->
+      r.table USER_DATA_TABLE
+      .get userId
+      .run()
+      .then defaultUserData
+      .then (userData) ->
+        _.defaults {userId}, userData
 
-  getByUserId: (userId) ->
-    r.table USER_DATA_TABLE
-    .getAll userId, {index: USER_ID_INDEX}
-    .nth 0
-    .default null
-    .run()
-    .then defaultUserData
-    .then (userData) ->
-      _.defaults {userId}, userData
+    if preferCache
+      key = "#{CacheService.PREFIXES.USER_DATA}:#{userId}"
+      CacheService.preferCache key, get, {expireSeconds: SIX_HOURS_SECONDS}
+    else
+      get()
 
   upsertByUserId: (userId, diff) ->
     r.table USER_DATA_TABLE
-    .getAll userId, {index: USER_ID_INDEX}
-    .nth 0
-    .default null
-    .do (userData) ->
+    .get userId
+    .replace (userData) ->
       r.branch(
         userData.eq null
 
-        r.table USER_DATA_TABLE
-        .insert defaultUserData _.defaults(_.clone(diff), {userId})
+        defaultUserData _.defaults(_.clone(diff), {userId})
 
-        r.table USER_DATA_TABLE
-        .getAll userId, {index: USER_ID_INDEX}
-        .nth 0
-        .default null
-        .update diff
+        userData.merge diff
       )
     .run()
-    .then (a) ->
+    .then ->
+      key = "#{CacheService.PREFIXES.USER_DATA}:#{userId}"
+      CacheService.deleteByKey key
       null
 
-  create: (userData) ->
-    userData = defaultUserData userData
-
-    r.table USER_DATA_TABLE
-    .insert userData
-    .run()
-    .then ->
-      userData
 
   sanitize: _.curry (requesterId, userData) ->
     _.pick userData, _.keys schemas.userData

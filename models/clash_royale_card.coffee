@@ -50,6 +50,9 @@ class ClashRoyaleCardModel
     .get id
     .run()
     .then defaultClashRoyaleCard
+    .catch (err) ->
+      console.log 'fail', id
+      throw err
 
   getByKey: (key, {preferCache} = {}) ->
     unless key

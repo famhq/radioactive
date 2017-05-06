@@ -9,19 +9,19 @@ config = require '../config'
 HEALTHCHECK_TIMEOUT = 60000
 AUSTIN_TAG = '22CJ9CQC0'
 
+
 class HealthCtrl
   check: (req, res, next) ->
     Promise.all [
       r.dbList().run().timeout HEALTHCHECK_TIMEOUT
-      # FIXME: back to just 'high' priority
       ClashRoyaleKueService.getPlayerDataByTag AUSTIN_TAG, {
-        priority: 'critical'
+        priority: 'high'
         skipCache: true
       }
       .timeout HEALTHCHECK_TIMEOUT
       .catch -> null
       ClashRoyaleKueService.getPlayerMatchesByTag AUSTIN_TAG, {
-        priority: 'critical'
+        priority: 'high'
       }
       .timeout HEALTHCHECK_TIMEOUT
       .catch -> null
@@ -37,5 +37,16 @@ class HealthCtrl
     .then (status) ->
       res.json status
     .catch next
+
+  checkThrow: (req, res, next) ->
+    r.dbList().run()
+    .then (rethinkdb) ->
+      if Boolean rethinkdb
+        res.send 'ok'
+      else
+        throw new Error 'rethink unhealthy'
+    .catch ->
+      # pod will restart from kubernetes probe
+      res.status(400).send 'fail'
 
 module.exports = new HealthCtrl()

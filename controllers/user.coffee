@@ -23,6 +23,7 @@ defaultEmbed = [EmbedService.TYPES.USER.DATA]
 
 class UserCtrl
   getMe: ({}, {user, headers, connection}) ->
+    start = Date.now()
     EmbedService.embed {embed: defaultEmbed}, user
     .tap ->
       ip = headers['x-forwarded-for'] or
@@ -34,6 +35,9 @@ class UserCtrl
         }
       null # don't block
     .then User.sanitize null
+    .tap ->
+      console.log 'getMe', Date.now() - start
+
 
   getById: ({id}) ->
     User.getById id
