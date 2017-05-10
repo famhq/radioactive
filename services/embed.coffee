@@ -17,6 +17,7 @@ GroupRecord = require '../models/group_record'
 GameRecord = require '../models/game_record'
 UserGroupData = require '../models/user_group_data'
 Player = require '../models/player'
+UserPlayer = require '../models/user_player'
 chestCycle = require '../resources/data/chest_cycle'
 CacheService = require './cache'
 
@@ -59,6 +60,7 @@ TYPES =
     CHEST_CYCLE: 'player:chestCycle'
     IS_UPDATABLE: 'player:isUpdatable'
     VERIFIED_USER: 'player:verifiedUser'
+    USER_IDS: 'player:userIds'
   THREAD_COMMENT:
     CREATOR: 'threadComment:creator'
   THREAD:
@@ -222,11 +224,6 @@ embedFn = _.curry ({embed, user, groupId, gameId}, object) ->
       when TYPES.GROUP.CONVERSATIONS
         embedded.conversations = Conversation.getAllByGroupId embedded.id
 
-      when TYPES.GROUP.USER_CONVERSATIONS
-        embedded.conversations = Conversation.getAllByGroupId embedded.id
-        .filter (conversation) ->
-          Group.hasPermission embedded, user, {level: ''} # FIXME
-
       when TYPES.CONVERSATION.LAST_MESSAGE
         embedded.lastMessage = \
           ChatMessage.getLastByConversationId embedded.id
@@ -318,6 +315,15 @@ embedFn = _.curry ({embed, user, groupId, gameId}, object) ->
             , {expireSeconds: ONE_HOUR_SECONDS}
         else
           embedded.user = null
+
+      when TYPES.PLAYER.USER_IDS
+        prefix = CacheService.PREFIXES.PLAYER_USER_IDS
+        key = prefix + ':' + embedded.id
+        embedded.userIds =
+          CacheService.preferCache key, ->
+            UserPlayer.getAllByPlayerIdAndGameId embedded.id, gameId
+            .map ({userId}) -> userId
+          , {expireSeconds: ONE_DAY_SECONDS}
 
       when TYPES.CLASH_ROYALE_DECK.CARDS
         embedded.cards = Promise.map embedded.cardIds, (cardId) ->

@@ -16,8 +16,10 @@ CacheService = require './cache'
 GameRecord = require '../models/game_record'
 PushNotificationService = require './push_notification'
 ClashRoyaleKueService = require './clash_royale_kue'
+EmbedService = require './embed'
 Match = require '../models/clash_royale_match'
 User = require '../models/user'
+UserPlayer = require '../models/user_player'
 config = require '../config'
 
 # for now we're not storing user deck info of players that aren't on starfire.
@@ -38,7 +40,7 @@ CLAN_TIMEOUT_MS = 1000
 BATCH_REQUEST_SIZE = 50
 GAME_ID = config.CLASH_ROYALE_ID
 
-DEBUG = false
+DEBUG = true
 IS_TEST_RUN = false
 
 class ClashRoyalePlayer
@@ -77,7 +79,6 @@ class ClashRoyalePlayer
     userDecks = _.uniqBy userDecks, (obj) -> JSON.stringify obj
     # unique user deck per userId (not per playerId). create one for playerId
     # if no users exist yet (so it can be duplicated over to new account)
-    start = Date.now()
 
     deckIdPlayerIds = _.map userDecks, (userDeck) ->
       _.pick userDeck, ['deckId', 'playerId']
@@ -150,8 +151,6 @@ class ClashRoyalePlayer
       )
 
   filterMatches: ({matches, player}) ->
-    if DEBUG
-      console.log 'filtering matches', processingM
     # only grab matches since the last update time
     matches = _.filter matches, (match) ->
       unless match
@@ -172,7 +171,7 @@ class ClashRoyalePlayer
     start = Date.now()
     matches = _.uniqBy matches, 'id'
     matches = _.orderBy matches, ['time'], ['asc']
-    reqPlayerIds = _.map reqPlayers, 'playerId'
+    reqPlayerIds = _.map reqPlayers, 'id'
 
     Promise.map matches, (match) ->
       matchId = match.id
@@ -182,7 +181,7 @@ class ClashRoyalePlayer
     .then _.filter
     .then (matches) =>
       if DEBUG
-        console.log 'filtered matches: ' + matches.length + ' ' + reqPlayerIds
+        console.log 'filtered matches: ' + matches.length
 
       cardsKey = CacheService.KEYS.CLASH_ROYALE_CARDS
       cards = CacheService.preferCache cardsKey, ->
@@ -554,7 +553,7 @@ class ClashRoyalePlayer
     .then (players) =>
       if isBatched
         filteredMatches = _.flatten _.map(players, (player) =>
-          chunkMatches = _.find(matches, {tag: player.playerId})?.matches
+          chunkMatches = _.find(matches, {tag: player.id})?.matches
           @filterMatches {matches: chunkMatches, player}
         )
       else
@@ -565,46 +564,52 @@ class ClashRoyalePlayer
       }
     .then ({playerDiffs}) ->
       # no matches processed means no player diffs
-      playerDiffs.all[tag] = _.defaults {
-        lastMatchesUpdateTime: new Date()
-      }, playerDiffs.all[tag]
-      playerDiffs.day[tag] = _.defaults {
-        lastMatchesUpdateTime: new Date()
-      }, playerDiffs.day[tag]
+      _.map tags, (tag) ->
+        playerDiffs.all[tag] = _.defaults {
+          lastMatchesUpdateTime: new Date()
+        }, playerDiffs.all[tag]
+        playerDiffs.day[tag] = _.defaults {
+          lastMatchesUpdateTime: new Date()
+        }, playerDiffs.day[tag]
 
-      playerIds = _.keys playerDiffs.all
       # combine into 1 query for inserts instead of update to 25
       {inserts, updates} = _.reduce playerDiffs.all, (obj, diff, playerId) ->
-        if diff.id
+        if diff.preExisting
+          delete diff.preExisting
+          delete diff.id
+          # this kind of sucks because it's not atomic in postgres
+          # would need to use jsonb_set
           obj.updates[playerId] = diff
         else
-          obj.inserts.push _.defaults({playerId, gameId: GAME_ID}, diff)
+          obj.inserts.push _.defaults({id: playerId}, diff)
         obj
       , {inserts: [], updates: {}}
       playerInserts = inserts
       playerUpdates = updates
 
       {inserts, updates} = _.reduce playerDiffs.day, (obj, diff, playerId) ->
-        if diff.id
+        if diff.preExisting
+          delete diff.preExisting
+          delete diff.id
           obj.updates[playerId] = diff
         else
-          obj.inserts.push _.defaults({playerId, gameId: GAME_ID}, diff)
+          obj.inserts.push _.defaults({id: playerId}, diff)
         obj
       , {inserts: [], updates: {}}
       playersDailyInserts = inserts
       playersDailyUpdates = updates
 
       Promise.all [
-        Player.batchCreate playerInserts
+        Player.batchCreateByGameId GAME_ID, playerInserts
         Promise.all _.map playerUpdates, (diff, playerId) ->
           Player.updateByPlayerIdAndGameId playerId, GAME_ID, diff
-        PlayersDaily.batchCreate playersDailyInserts
+        PlayersDaily.batchCreateByGameId GAME_ID, playersDailyInserts
         Promise.all _.map playersDailyUpdates, (diff, playerId) ->
           PlayersDaily.updateByPlayerIdAndGameId playerId, GAME_ID, diff
       ]
       # kue doesn't complete with object response? needs str/empty?
       .then ->
-        if DEBUG
+        if DEBUG and isBatched
           console.log(
             'match processing time', Date.now() - start
             isBatched, filteredMatches?.length
@@ -618,47 +623,47 @@ class ClashRoyalePlayer
     unless tag and playerData
       return Promise.resolve null
 
-    diff = {
-      lastUpdateTime: new Date()
-      playerId: tag
-      data: @getPlayerFromPlayerData {playerData}
-    }
-
-    start = Date.now()
-
-    (if playerData?.clan?.tag
-      Clan.getByClanIdAndGameId playerData.clan.tag, GAME_ID, {
-        preferCache: true
+    Player.getByPlayerIdAndGameId tag, GAME_ID
+    .then (existingPlayer) =>
+      diff = {
+        data: _.defaultsDeep(
+          @getPlayerFromPlayerData({playerData})
+          existingPlayer?.data or {}
+        )
+        lastDataUpdateTime: new Date()
       }
-    else
-      Promise.resolve null)
-    .then (clan) ->
-      start = Date.now()
-      if clan
-        return clan
-      else if playerData?.clan?.tag
-        ClashRoyaleKueService.refreshByClanId playerData.clan.tag
-        .timeout CLAN_TIMEOUT_MS
-        .catch -> null
-    .then (clan) ->
-      start = Date.now()
-      diff.clanId = clan?.id
 
-      start = Date.now()
-      Player.upsertByPlayerIdAndGameId tag, GAME_ID, diff, {userId}
-      .catch (err) ->
-        console.log 'err', err
-        null
+      (if playerData?.clan?.tag
+        Clan.getByClanIdAndGameId playerData.clan.tag, GAME_ID, {
+          preferCache: true
+        }
+      else
+        Promise.resolve null)
+      .then (clan) ->
+        if clan
+          return clan
+        else if playerData?.clan?.tag
+          ClashRoyaleKueService.refreshByClanId playerData.clan.tag
+          .timeout CLAN_TIMEOUT_MS
+          .catch -> null
+      .then (clan) ->
+        # NOTE: any time you update, keep in mind postgress replaces
+        # entire fields (data), so need to merge with old data manually
+        Player.upsertByPlayerIdAndGameId tag, GAME_ID, diff, {userId}
+
+        .catch (err) ->
+          console.log 'err', err
+          null
 
   updateStalePlayerMatches: ({force} = {}) ->
     Player.getStaleByGameId GAME_ID, {
       type: 'matches'
       staleTimeS: if force then 0 else PLAYER_MATCHES_STALE_TIME_S
     }
-    .map ({playerId}) -> playerId
+    .map ({id}) -> id
     .then (playerIds) ->
       if DEBUG
-        console.log 'stalematch', playerIds.length, new Date()
+        console.log 'stalematch', playerIds.length
       Player.updateByPlayerIdsAndGameId playerIds, GAME_ID, {
         lastMatchesUpdateTime: new Date()
       }
@@ -681,12 +686,12 @@ class ClashRoyalePlayer
       type: 'data'
       staleTimeS: if force then 0 else PLAYER_DATA_STALE_TIME_S
     }
-    .map ({playerId}) -> playerId
+    .map ({id}) -> id
     .then (playerIds) ->
       if DEBUG
         console.log 'staledata', playerIds.length, new Date()
       Player.updateByPlayerIdsAndGameId playerIds, GAME_ID, {
-        lastUpdateTime: new Date()
+        lastDataUpdateTime: new Date()
       }
       playerIdChunks = _.chunk playerIds, BATCH_REQUEST_SIZE
       Promise.map playerIdChunks, (playerIds) ->
@@ -711,6 +716,10 @@ class ClashRoyalePlayer
         CacheService.runOnce key, ->
           Promise.all [
             Player.getByPlayerIdAndGameId tag, GAME_ID
+            .then EmbedService.embed {
+              embed: [EmbedService.TYPES.PLAYER.USER_IDS]
+              gameId: GAME_ID
+            }
             PlayersDaily.getByPlayerIdAndGameId tag, GAME_ID
           ]
           .then ([player, playersDaily]) ->
@@ -721,7 +730,10 @@ class ClashRoyalePlayer
                 aggregate.losses += split.losses
                 aggregate
               , {wins: 0, losses: 0}
-              PlayersDaily.deleteById playersDaily.id
+              PlayersDaily.deleteByPlayerIdAndGameId(
+                playersDaily.id
+                GAME_ID
+              )
               Promise.map player.userIds, User.getById
               .map (user) ->
                 if stats.wins > 0 or stats.losses > 0
@@ -740,20 +752,25 @@ class ClashRoyalePlayer
     request "#{config.CR_API_URL}/players/top", {json: true}
 
   updateTopPlayers: =>
-    if config.ENV is config.ENVS.DEV
-      return
     @getTopPlayers().then (topPlayers) ->
       Promise.map topPlayers, (player, index) ->
         rank = index + 1
         playerId = player.playerTag
         Player.getByPlayerIdAndGameId playerId, GAME_ID
+        .then EmbedService.embed {
+          embed: [EmbedService.TYPES.PLAYER.USER_IDS]
+          gameId: GAME_ID
+        }
         .then (existingPlayer) ->
-          if existingPlayer?.verifiedUserId
-            Player.updateById existingPlayer.id, {
+          if existingPlayer?.data and not _.isEmpty existingPlayer?.userIds
+            newPlayer = _.defaultsDeep {
               data:
                 trophies: player.trophies
                 name: player.name
-            }
+            }, existingPlayer
+            # NOTE: any time you update, keep in mind postgress replaces
+            # entire fields (data), so need to merge with old data manually
+            Player.upsertByPlayerIdAndGameId playerId, GAME_ID, newPlayer
           else
             User.create {}
             .then ({id}) ->
@@ -761,9 +778,6 @@ class ClashRoyalePlayer
               Promise.all [
                 ClashRoyaleUserDeck.duplicateByPlayerId playerId, userId
                 GameRecord.duplicateByPlayerId playerId, userId
-                Player.upsertByPlayerIdAndGameId playerId, GAME_ID, {
-                  verifiedUserId: userId
-                }, {userId}
               ]
               .then ->
                 ClashRoyaleKueService.refreshByPlayerTag playerId, {
@@ -781,22 +795,30 @@ class PlayerSplitsDiffs
     @playerDiffs = {all: {}, day: {}}
 
   setInitialDiffs: (playerIds, reqPlayerIds) =>
+    playerIds = _.uniq playerIds.concat reqPlayerIds
     Promise.all [
       Player.getAllByPlayerIdsAndGameId playerIds, GAME_ID
+      .map EmbedService.embed {
+        embed: [EmbedService.TYPES.PLAYER.USER_IDS]
+        gameId: GAME_ID
+      }
+
       PlayersDaily.getAllByPlayerIdsAndGameId playerIds, GAME_ID
     ]
     .then ([players, playersDaily]) =>
       _.map playerIds, (playerId) =>
-        player = _.find players, {playerId}
+        player = _.find players, {id: playerId}
         # only process existing players
-        if player?.hasUserId or reqPlayerIds.indexOf(playerId) isnt -1
+        if (player and player?.updateFrequency isnt 'none') or
+            reqPlayerIds.indexOf(playerId) isnt -1
+
           @playerDiffs['all'][playerId] = _.defaultsDeep player, {
-            data: {splits: {}}, playerId: playerId
+            data: {splits: {}}, preExisting: true
           }
 
-          playerDaily = _.find playersDaily, {playerId}
+          playerDaily = _.find playersDaily, {id: playerId}
           @playerDiffs['day'][playerId] = _.defaultsDeep playerDaily, {
-            data: {splits: {}}, playerId: playerId
+            data: {splits: {}}, preExisting: Boolean playerDaily
           }
 
   getAll: =>

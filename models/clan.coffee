@@ -61,9 +61,7 @@ class ClanModel
   getByClanIdAndGameId: (clanId, gameId, {preferCache} = {}) ->
     get = ->
       r.table CLANS_TABLE
-      .getAll [clanId, gameId], {index: CLAN_ID_GAME_ID_INDEX}
-      .nth 0
-      .default null
+      .get "#{gameId}:#{clanId}"
       .run()
       .then defaultClan
       .then (clan) ->

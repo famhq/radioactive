@@ -18,7 +18,7 @@ TYPES =
   "#{KueCreateService.JOB_TYPES.BATCH_NOTIFICATION}":
     {fn: BroadcastService.batchNotify, concurrencyPerCpu: 1}
   "#{KueCreateService.JOB_TYPES.UPDATE_PLAYER_MATCHES}":
-    {fn: ClashRoyalePlayerService.processUpdatePlayerMatches, concurrencyPerCpu: 2}
+    {fn: ClashRoyalePlayerService.processUpdatePlayerMatches, concurrencyPerCpu: 8}
   "#{KueCreateService.JOB_TYPES.UPDATE_PLAYER_DATA}":
     {fn: ClashRoyalePlayerService.processUpdatePlayerData, concurrencyPerCpu: 1}
   "#{KueCreateService.JOB_TYPES.UPDATE_CLAN_DATA}":

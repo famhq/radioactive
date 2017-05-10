@@ -9,9 +9,6 @@ config = require '../config'
 PLAYER_DATA_TIMEOUT_MS = 10000
 PLAYER_MATCHES_TIMEOUT_MS = 10000
 
-processingM = 0
-processingP = 0
-
 class ClashRoyaleKue
   getPlayerDataByTag: (tag, {priority, skipCache} = {}) ->
     request "#{config.CR_API_URL}/players/#{tag}", {
@@ -44,6 +41,7 @@ class ClashRoyaleKue
     .then ([playerData, matches]) ->
       unless playerTag and playerData
         console.log 'update missing tag or data', playerTag, playerData
+        throw new Error 'unable to find that tag'
       KueCreateService.createJob {
         job: {userId: userId, tag: playerTag, playerData}
         type: KueCreateService.JOB_TYPES.UPDATE_PLAYER_DATA

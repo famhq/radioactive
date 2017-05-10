@@ -19,8 +19,6 @@ TWENTY_THREE_HOURS_S = 3600 * 23
 BATCH_REQUEST_SIZE = 50
 GAME_ID = config.CLASH_ROYALE_ID
 
-processingP = 0
-
 class ClashRoyaleClan
   formatClan: (clan) ->
     _.pick clan, ['name', 'badge', 'type', 'description', 'trophies',
@@ -41,10 +39,7 @@ class ClashRoyaleClan
 
   updateClan: ({userId, clan, tag, isDaily}) =>
     unless tag and clan
-      processingP -= 1
       return Promise.resolve null
-
-    console.log 'update clan', tag
 
     players = _.map clan.members, @formatClanPlayer
 
@@ -58,29 +53,38 @@ class ClashRoyaleClan
     playerIds = _.map players, 'playerId'
     Player.getAllByPlayerIdsAndGameId playerIds, GAME_ID
     .then (existingPlayers) ->
+      console.log 'existing', existingPlayers?.length
       Promise.map players, (player) ->
         # TODO: track donations and clanCrowns
         # TODO: try to update every clan between 3 and 5pm EST, set the
         # records then
-        unless _.find existingPlayers, {playerId: player.playerId}
-          # ClashRoyaleKueService.refreshByPlayerTag playerId, {
-          #   priority: 'normal'
-          # }
-          # .then ->
-          Player.upsertByPlayerIdAndGameId player.playerId, GAME_ID, {
-            # only set to true when clan is claimed
-            # hasUserId: true
-            data:
-              name: player.name
-              trophies: player.trophies
-              level: player.level
-              arena: player.arena
-              league: player.league
-              clan:
-                badge: clan.badge
-                name: clan.name
-                tag: tag
-          }
+        newPlayers = _.filter _.map players, (player) ->
+          unless _.find existingPlayers, {playerId: player.playerId}
+            # ClashRoyaleKueService.refreshByPlayerTag playerId, {
+            #   priority: 'normal'
+            # }
+            # .then ->
+            # NOTE: any time you update, keep in mind postgress replaces
+            # entire fields (data), so need to merge with old data manually
+            {
+              # only set to true when clan is claimed
+              # hasUserId: true
+              id: player.playerId
+              updateFrequency: 'none'
+              data:
+                name: player.name
+                trophies: player.trophies
+                level: player.level
+                arena: player.arena
+                league: player.league
+                stats: {}
+                splits: {}
+                clan:
+                  badge: clan.badge
+                  name: clan.name
+                  tag: tag
+            }
+        Player.batchCreateByGameId GAME_ID, newPlayers
 
     Clan.upsertByClanIdAndGameId tag, GAME_ID, diff
     .catch (err) ->

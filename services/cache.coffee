@@ -22,14 +22,14 @@ class CacheService
     CLASH_ROYALE_USER_DECK_QUEUED_INCREMENTS_DRAW:
       'clash_royal_user_deck:queued_increments:draw1'
     CLASH_ROYALE_CARDS: 'clash_royale:cards1'
-    PLAYERS_TOP: 'player:top'
+    PLAYERS_TOP: 'player:top1'
     KUE_WATCH_STUCK: 'kue:watch_stuck'
   LOCK_PREFIXES:
     KUE_PROCESS: 'kue:process'
     BROADCAST: 'broadcast'
   LOCKS: {}
   PREFIXES:
-    CHAT_USER: 'chat:user2'
+    CHAT_USER: 'chat:user9'
     THREAD_USER: 'thread:user1'
     THREAD_DECK: 'thread:deck1'
     CONVERSATION_ID: 'conversation:id'
@@ -40,7 +40,7 @@ class CacheService
     USER_DATA_FOLLOWING_PLAYERS: 'user_data:following:players'
     USER_DATA_BLOCKED_USERS: 'user_data:blocked_users'
     USER_DATA_CLASH_ROYALE_DECK_IDS: 'user_data:clash_royale_deck_ids6'
-    USER_DAILY_DATA_PUSH: 'user_daily_data:push3'
+    USER_DAILY_DATA_PUSH: 'user_daily_data:push0'
     CLASH_ROYALE_MATCHES_ID: 'clash_royale_matches:id84'
     CLASH_ROYALE_CARD: 'clash_royale_card'
     CLASH_ROYALE_CARD_KEY: 'clash_royale_card_key1'
@@ -61,7 +61,11 @@ class CacheService
     RATE_LIMIT_CHAT_MESSAGES_MEDIA: 'rate_limit:chat_messages:media'
     PLAYER_SEARCH: 'player:search5'
     PLAYER_VERIFIED_USER: 'player:verified_user'
-    PLAYER_USER_ID_GAME_ID: 'player:user_id_game_id'
+    PLAYER_USER_ID_GAME_ID: 'player:user_id_game_id1'
+    PLAYER_USER_IDS: 'player:user_ids1'
+    PLAYER_CLASH_ROYALE_ID: 'player:clash_royale_id'
+    PLAYER_MIGRATE: 'player:migrate05'
+    USER_PLAYER_USER_ID_GAME_ID: 'user_player:user_id_game_id2'
 
   constructor: ->
     @redlock = new Redlock [RedisService], {
@@ -120,7 +124,7 @@ class CacheService
       # console.log 'redlock err', err
       null
 
-  preferCache: (key, fn, {expireSeconds} = {}) ->
+  preferCache: (key, fn, {expireSeconds, ignoreNull} = {}) ->
     key = config.REDIS.PREFIX + ':' + key
     expireSeconds ?= DEFAULT_CACHE_EXPIRE_SECONDS
 
@@ -130,9 +134,10 @@ class CacheService
         return JSON.parse value
 
       fn().then (value) ->
-        RedisService.set key, JSON.stringify value
-        .then ->
-          RedisService.expire key, expireSeconds
+        if value isnt null or not ignoreNull
+          RedisService.set key, JSON.stringify value
+          .then ->
+            RedisService.expire key, expireSeconds
 
         return value
 
