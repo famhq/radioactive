@@ -26,10 +26,10 @@ ONE_MINUTE_SECONDS = 60
 
 class ClanCtrl
   getById: ({id}, {user}) ->
-    Clan.getById id
+    Clan.getByClanIdAndGameId id, GAME_ID
     .then EmbedService.embed {embed: defaultEmbed}
     .then (clan) ->
-      if clan.creatorId is user.id
+      if clan?.creatorId is user.id
         Clan.sanitize null, clan
       else
         Clan.sanitizePublic null, clan
@@ -55,7 +55,7 @@ class ClanCtrl
         unless isValid
           router.throw {status: 400, info: 'unable to verify'}
 
-        clanPlayer = _.find clan?.players, {playerId: player?.playerId}
+        clanPlayer = _.find clan?.players, {playerId: player?.id}
         isLeader = clanPlayer?.role in ['coLeader', 'leader']
         unless isLeader
           router.throw {status: 400, info: 'must be at least co-leader'}
@@ -64,7 +64,7 @@ class ClanCtrl
           Clan.updateById id, {
             creatorId: user.id
           }
-          Player.updateByPlayerIdAndGameId player.playerId, GAME_ID, {
+          Player.updateByPlayerIdAndGameId player.id, GAME_ID, {
             verifiedUserId: user.id
           }
         ]
@@ -110,7 +110,7 @@ class ClanCtrl
       Player.getByUserIdAndGameId user.id, GAME_ID
     ]
     .then ([clan, player]) ->
-      clanPlayer = _.find clan?.players, {playerId: player?.playerId}
+      clanPlayer = _.find clan?.players, {playerId: player?.id}
       unless clanPlayer
         router.throw {status: 401, info: 'not a clan member'}
 
@@ -120,7 +120,7 @@ class ClanCtrl
       Promise.all [
         Group.updateById clan.groupId,
           userIds: r.row('userIds').append(user.id).distinct()
-        Player.updateByPlayerIdAndGameId player.playerId, GAME_ID, {
+        Player.updateByPlayerIdAndGameId player.id, GAME_ID, {
           verifiedUserId: user.id
         }
       ]

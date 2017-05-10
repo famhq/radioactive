@@ -38,8 +38,8 @@ fields = [
   {name: 'id', type: 'biginteger', index: 'primary'}
   {name: 'arena', type: 'integer', index: 'default'}
   {name: 'league', type: 'integer'}
-  {name: 'player1Id', type: 'string', length: 14, index: 'default'}
-  {name: 'player2Id', type: 'string', length: 14, index: 'default'}
+  {name: 'player1Id', type: 'string', length: 20, index: 'default'}
+  {name: 'player2Id', type: 'string', length: 20, index: 'default'}
   {name: 'winningDeckId', type: 'string', length: 150, index: 'default'}
   {name: 'losingDeckId', type: 'string', length: 150, index: 'default'}
   {
@@ -99,8 +99,6 @@ class ClashRoyaleMatchModel
 
     knex.insert(clashRoyaleMatches).into(POSTGRES_MATCH_TABLE)
     .catch (err) ->
-      console.log _.map clashRoyaleMatches, (match) ->
-        _.pick match, ['player1Id', 'player2Id']
       console.log 'postgres err', err
 
     # r.table CLASH_ROYALE_MATCH_TABLE

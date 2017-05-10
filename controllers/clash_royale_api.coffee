@@ -48,8 +48,11 @@ class ClashRoyaleAPICtrl
         Player.getByUserIdAndGameId user.id, config.CLASH_ROYALE_ID
       .then (player) ->
         if player?.id
-          Player.updateById player.id, {
+          Player.updateByPlayerIdAndGameId player.id, config.CLASH_ROYALE_ID, {
             lastQueuedTime: new Date()
+            updateFrequency: if player.updateFrequency is 'none' \
+                             then 'default'
+                             else player.updateFrequency
             # if lastQueuedTime in last 10 min, and kueJobId, sub to that?
             # TODO: kueJobId: ...
           }
@@ -60,10 +63,15 @@ class ClashRoyaleAPICtrl
           ]
       .then ->
         ClashRoyaleKueService.refreshByPlayerTag playerTag, {userId: user.id}
+        .catch ->
+          router.throw {
+            status: 400, info: 'unable to find that tag (typo?)'
+            ignoreLog: true
+          }
       .then ->
         return null
     , {
-      expireSeconds: 60
+      expireSeconds: 20
       lockedFn: ->
         router.throw {
           status: 400, info: 'we\'re already processing that tag'
@@ -132,7 +140,7 @@ class ClashRoyaleAPICtrl
     }
 
   queuePlayerData: ({params}) ->
-    console.log 'single queue', params.tag
+    console.log 'single queue', params.tag, "#{config.CR_API_URL}/players/#{params.tag}"
     request "#{config.CR_API_URL}/players/#{params.tag}", {
       json: true
       qs:

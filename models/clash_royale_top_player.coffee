@@ -92,10 +92,4 @@ class ClashRoyaleTopPlayerModel
     .delete()
     .run()
 
-  deleteAll: ->
-    r.table CLASH_ROYALE_TOP_PLAYERS_TABLE
-    .delete()
-    .run()
-
-
 module.exports = new ClashRoyaleTopPlayerModel()

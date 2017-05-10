@@ -48,6 +48,7 @@ BLACKLIST = [
   'penis.*',
   'piss',
   'prick',
+  'porn.*',
   'pube',
   'pussy.*',
   'queer',

@@ -25,6 +25,7 @@ STICKER_REGEX = /(:[a-z_]+:)/gi
 IMAGE_REGEX = /\!\[(.*?)\]\((.*?)\)/gi
 CARD_BUILDER_TIMEOUT_MS = 1000
 SMALL_IMAGE_SIZE = 200
+MAX_LENGTH = 5000
 
 RATE_LIMIT_CHAT_MESSAGES_TEXT = 6
 RATE_LIMIT_CHAT_MESSAGES_TEXT_EXPIRE_S = 5
@@ -68,6 +69,9 @@ class ChatMessageCtrl
 
     if isProfane or user.flags.isChatBanned
       router.throw status: 400, info: 'unable to post...'
+
+    if body?.length > MAX_LENGTH
+      router.throw status: 400, info: 'message is too long...'
 
     isImage = body.match(IMAGE_REGEX)
     isSticker = body.match(STICKER_REGEX)

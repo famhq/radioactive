@@ -12,8 +12,10 @@ defaultUserPlayer = (userPlayer) ->
   unless userPlayer?
     return null
 
+  id = "#{userPlayer.gameId}:#{userPlayer.playerId}:#{userPlayer.userId}"
+
   _.defaults userPlayer, {
-    id: uuid.v4()
+    id: id
     userId: null
     gameId: null
     playerId: null
@@ -25,9 +27,18 @@ class UserPlayer
     {
       name: USER_PLAYERS_TABLE
       indexes: [
-        {name: USER_ID_GAME_ID_INDEX}
-        {name: PLAYER_ID_GAME_ID_INDEX}
-        {name: PLAYER_ID_GAME_ID_IS_VERIFIED_INDEX}
+        {
+          name: USER_ID_GAME_ID_INDEX
+          fn: (row) -> [row('userId'), row('gameId')]
+        }
+        {
+          name: PLAYER_ID_GAME_ID_INDEX
+          fn: (row) -> [row('playerId'), row('gameId')]
+        }
+        {
+          name: PLAYER_ID_GAME_ID_IS_VERIFIED_INDEX
+          fn: (row) -> [row('playerId'), row('gameId'), row('isVerified')]
+        }
       ]
     }
   ]
@@ -59,6 +70,12 @@ class UserPlayer
     .delete()
     .run()
 
+  deleteByUserIdAndGameId: (userId, gameId) ->
+    r.table USER_PLAYERS_TABLE
+    .getAll [userId, gameId], {index: USER_ID_GAME_ID_INDEX}
+    .delete()
+    .run()
+
   getByUserIdAndGameId: (userId, gameId) ->
     r.table USER_PLAYERS_TABLE
     .getAll [userId, gameId], {index: USER_ID_GAME_ID_INDEX}
@@ -67,10 +84,62 @@ class UserPlayer
     .run()
     .then defaultUserPlayer
 
+  getByPlayerIdAndGameId: (playerId, gameId) ->
+    r.table USER_PLAYERS_TABLE
+    .getAll [playerId, gameId], {index: PLAYER_ID_GAME_ID_INDEX}
+    .nth 0
+    .default null
+    .run()
+    .then defaultUserPlayer
+
+  getAllByPlayerIdAndGameId: (playerId, gameId) ->
+    r.table USER_PLAYERS_TABLE
+    .getAll [playerId, gameId], {index: PLAYER_ID_GAME_ID_INDEX}
+    .run()
+    .map defaultUserPlayer
+
   getAllByUserIdsAndGameId: (userIds, gameId) ->
+    console.log userIds
+    userIdsGameIds = _.map userIds, (userId) -> [userId, gameId]
     r.table USER_PLAYERS_TABLE
     .getAll r.args(userIdsGameIds), {index: USER_ID_GAME_ID_INDEX}
     .run()
     .map defaultUserPlayer
+
+  upsertByUserIdAndGameId: (userId, gameId, diff) ->
+    r.table USER_PLAYERS_TABLE
+    .getAll [userId, gameId], {index: USER_ID_GAME_ID_INDEX}
+    .nth 0
+    .default null
+    .do (userPlayer) ->
+      r.branch(
+        userPlayer.eq null
+
+        r.table USER_PLAYERS_TABLE
+        .insert defaultUserPlayer _.defaults _.clone(diff), {userId, gameId}
+
+        r.table USER_PLAYERS_TABLE
+        .getAll [userId, gameId], {index: USER_ID_GAME_ID_INDEX}
+        .nth 0
+        .default null
+        .update diff
+      )
+    .run()
+    .then (a) ->
+      null
+
+  updateByPlayerIdAndGameId: (playerId, gameId, diff) ->
+    r.table USER_PLAYERS_TABLE
+    .getAll [playerId, gameId], {index: PLAYER_ID_GAME_ID_INDEX}
+    .update diff
+    .run()
+
+  updateByPlayerIdsAndGameId: (playerIds, gameId, diff) ->
+    playerIdGameIds = _.map playerIds, (playerId) -> [playerId, gameId]
+    r.table USER_PLAYERS_TABLE
+    .getAll r.expr(playerIds), {index: PLAYER_ID_GAME_ID_INDEX}
+    .update diff
+    .run()
+
 
 module.exports = new UserPlayer()

@@ -27,7 +27,7 @@ class PlayerCtrl
 
     start = Date.now()
     # TODO: cache, but need to clear the cache whenever player is updated...
-    Player.getByUserIdAndGameId userId, gameId#, {preferCache: true}
+    Player.getByUserIdAndGameId userId, gameId #, {preferCache: true}
     .then EmbedService.embed {embed: defaultEmbed}
 
   search: ({playerId}, {user, headers, connection}) ->
@@ -69,9 +69,13 @@ class PlayerCtrl
         Player.getAllByPlayerIdsAndGameId(
           playerIds, config.CLASH_ROYALE_ID
         )
+        .map EmbedService.embed {
+          embed: [EmbedService.TYPES.PLAYER.USER_IDS]
+          gameId: config.CLASH_ROYALE_ID
+        }
         .then (players) ->
           players = _.map players, (player) ->
-            topPlayer = _.find topPlayers, {playerId: player.playerId}
+            topPlayer = _.find topPlayers, {playerId: player.id}
             {rank: topPlayer?.rank, player}
           _.orderBy players, 'rank'
     , {expireSeconds: ONE_MINUTE_SECONDS}
