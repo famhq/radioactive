@@ -709,6 +709,7 @@ class ClashRoyalePlayer
     unless tag
       console.log 'tag doesn\'t exist updateplayerdata'
       return Promise.resolve null
+    console.log 'pupdate'
     @updatePlayerData {userId, tag, playerData}
     .then (player) ->
       if isDaily
@@ -717,7 +718,10 @@ class ClashRoyalePlayer
           Promise.all [
             Player.getByPlayerIdAndGameId tag, GAME_ID
             .then EmbedService.embed {
-              embed: [EmbedService.TYPES.PLAYER.USER_IDS]
+              embed: [
+                EmbedService.TYPES.PLAYER.USER_IDS
+                EmbedService.TYPES.PLAYER.CHEST_CYCLE
+              ]
               gameId: GAME_ID
             }
             PlayersDaily.getByPlayerIdAndGameId tag, GAME_ID
@@ -734,6 +738,12 @@ class ClashRoyalePlayer
                 playersDaily.id
                 GAME_ID
               )
+
+              countUntil = player.data.chestCycle?.countUntil
+              nextGoodChest = _.minBy _.keys(countUntil), (key) ->
+                countUntil[key]
+              countUntilNextGoodChest = countUntil[nextGoodChest]
+
               Promise.map player.userIds, User.getById
               .map (user) ->
                 if stats.wins > 0 or stats.losses > 0
@@ -741,9 +751,10 @@ class ClashRoyalePlayer
                     title: 'Daily recap'
                     type: PushNotificationService.TYPES.DAILY_RECAP
                     url: "https://#{config.SUPERNOVA_HOST}"
-                    text: "#{stats.wins} wins, #{stats.losses} losses.
-                          Post in chat what else you want to see in
-                          the recap :)"
+                    text: "#{countUntilNextGoodChest} chests until a
+                      #{_.startCase(nextGoodChest)}.
+                      You had #{stats.wins} wins and
+                      #{stats.losses} losses today."
                     data: {path: '/'}
                   }
               null

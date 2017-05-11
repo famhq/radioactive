@@ -2,6 +2,7 @@ _ = require 'lodash'
 uuid = require 'node-uuid'
 
 r = require '../services/rethinkdb'
+CacheService = require '../services/cache'
 
 USER_PLAYERS_TABLE = 'user_players'
 USER_ID_GAME_ID_INDEX = 'userIdGameId'
@@ -57,12 +58,6 @@ class UserPlayer
     .get id
     .run()
     .then defaultUserPlayer
-
-  updateById: (id, diff) ->
-    r.table USER_PLAYERS_TABLE
-    .get id
-    .update diff
-    .run()
 
   deleteById: (id) ->
     r.table USER_PLAYERS_TABLE
@@ -133,6 +128,18 @@ class UserPlayer
     .getAll [playerId, gameId], {index: PLAYER_ID_GAME_ID_INDEX}
     .update diff
     .run()
+
+  updateByUserIdAndPlayerIdAndGameId: (userId, playerId, gameId, diff) ->
+    prefix = CacheService.PREFIXES.USER_PLAYER_USER_ID_GAME_ID
+    cacheKey = "#{prefix}:#{userId}:#{gameId}"
+
+    r.table USER_PLAYERS_TABLE
+    .get "#{gameId}:#{playerId}:#{userId}"
+    .update diff
+    .run()
+    .tap ->
+      CacheService.deleteByKey cacheKey
+      null
 
   updateByPlayerIdsAndGameId: (playerIds, gameId, diff) ->
     playerIdGameIds = _.map playerIds, (playerId) -> [playerId, gameId]

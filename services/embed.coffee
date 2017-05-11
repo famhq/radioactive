@@ -294,6 +294,8 @@ embedFn = _.curry ({embed, user, groupId, gameId}, object) ->
           chests = doubleCycle.slice pos, pos + CHEST_COUNT
           embedded.data.chestCycle?.chests = chests
           embedded.data.chestCycle?.countUntil = {
+            giant: if (i = chests.indexOf('giant')) isnt -1 then i + 1 else null
+            magical: if (i = chests.indexOf('magic')) isnt -1 then i + 1 else null
             superMagical: embedded.data.chestCycle.superMagicalPos - startingPos
             epic: embedded.data.chestCycle.epicPos - startingPos
             legendary: embedded.data.chestCycle.legendaryPos - startingPos

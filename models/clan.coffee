@@ -1,8 +1,11 @@
 _ = require 'lodash'
-uuid = require 'node-uuid'
+Promise = require 'bluebird'
 
 r = require '../services/rethinkdb'
 CacheService = require '../services/cache'
+GroupClan = require './group_clan'
+ClashRoyaleClan = require './clash_royale_clan'
+config = require '../config'
 
 STALE_INDEX = 'stale'
 CLAN_ID_GAME_ID_INDEX = 'clanIdGameId'
@@ -11,116 +14,84 @@ DEFAULT_STALE_LIMIT = 80
 ONE_DAY_S = 3600 * 24
 CODE_LENGTH = 6
 
-defaultClan = (clan) ->
-  unless clan?
-    return null
-
-  _.defaults clan, {
-    id: if clan?.gameId and clan?.clanId \
-        then "#{clan?.gameId}:#{clan?.clanId}"
-        else uuid.v4()
-    gameId: null
-    clanId: null
-    groupId: null # can only be tied to 1 group
-    password: null
-    creatorId: null
-    # no 0 or O (avoid confusion)
-    code: _.sampleSize('ABCDEFGHIJKLMNPQRSTUFWXYZ123456789', 6).join ''
-    data:
-      stats: {}
-    players: []
-    lastUpdateTime: new Date()
-    lastQueuedTime: null
-  }
-
-CLANS_TABLE = 'clans'
-
 class ClanModel
-  RETHINK_TABLES: [
-    {
-      name: CLANS_TABLE
-      indexes: [
-        {name: STALE_INDEX, fn: (row) ->
-          [
-            row('gameId')
-            row('lastUpdateTime')
-          ]
-        }
-        {name: CLAN_ID_GAME_ID_INDEX, fn: (row) ->
-          [row('clanId'), row('gameId')]}
-      ]
-    }
-  ]
+  constructor: ->
+    @GameClans =
+      "#{config.CLASH_ROYALE_ID}": ClashRoyaleClan
 
-  getById: (id) ->
-    r.table CLANS_TABLE
-    .get id
-    .run()
-    .then defaultClan
-
-  getByClanIdAndGameId: (clanId, gameId, {preferCache} = {}) ->
-    get = ->
-      r.table CLANS_TABLE
+  # TODO: remove after ~June 2017?
+  migrate: ({clanId, gameId, groupClanExists}) =>
+    console.log 'migrate'
+    prefix = CacheService.PREFIXES.CLAN_MIGRATE
+    key = "#{prefix}:#{clanId}"
+    CacheService.runOnce key, =>
+      r.db('radioactive').table('clans')
       .get "#{gameId}:#{clanId}"
       .run()
-      .then defaultClan
-      .then (clan) ->
-        if clan
-          _.defaults {clanId}, clan
-        else null
+      .then (oldClan) =>
+        if oldClan?.id
+          groupClan = {
+            id: oldClan.id
+            creatorId: oldClan.creatorId
+            code: oldClan.code
+            groupId: oldClan.groupId
+            gameId: oldClan.gameId
+            clanId: oldClan.clanId
+            playerIds: _.map oldClan.players, 'playerId'
+          }
+
+          console.log 'create', groupClanExists
+          Promise.all [
+            unless groupClanExists
+              GroupClan.create groupClan
+            @GameClans[gameId].create _.defaults {id: oldClan.clanId}, oldClan
+          ]
+
+  getByClanIdAndGameId: (clanId, gameId, {preferCache, retry} = {}) =>
+    get = =>
+      prefix = CacheService.PREFIXES.GROUP_CLAN_CLAN_ID_GAME_ID
+      cacheKey = "#{prefix}:#{clanId}:#{gameId}"
+      Promise.all [
+        CacheService.preferCache cacheKey, ->
+          GroupClan.getByClanIdAndGameId clanId, gameId
+        , {ignoreNull: true}
+
+        @GameClans[gameId].getById clanId
+      ]
+      .then ([groupClan, gameClan]) =>
+        if groupClan and gameClan
+          _.merge groupClan, gameClan
+        else
+          @migrate {clanId, gameId, groupClanExists: Boolean groupClan}
+          .then =>
+            unless retry
+              @getByClanIdAndGameId clanId, gameId, {retry: true}
+      # .then (clan) ->
+      #   if clan
+      #     _.defaults {clanId}, clan
+      #   else null
 
     if preferCache
-      prefix = CacheService.PREFIXES.CLASH_ROYALE_CLAN_CLAN_ID_GAME_ID
+      prefix = CacheService.PREFIXES.CLAN_CLAN_ID_GAME_ID
       cacheKey = "#{prefix}:#{clanId}:#{gameId}"
       CacheService.preferCache cacheKey, get, {expireSeconds: ONE_DAY_S}
     else
       get()
 
-  upsertByClanIdAndGameId: (clanId, gameId, diff, {userId} = {}) ->
-    r.table CLANS_TABLE
-    .getAll [clanId, gameId], {index: CLAN_ID_GAME_ID_INDEX}
-    .nth 0
-    .default null
-    .do (clan) ->
-      r.branch(
-        clan.eq null
+  upsertByClanIdAndGameId: (clanId, gameId, diff) ->
+    prefix = CacheService.PREFIXES.CLAN_CLAN_ID_GAME_ID
+    cacheKey = "#{prefix}:#{clanId}:#{gameId}"
+    CacheService.preferCache cacheKey, ->
+      GroupClan.create {clanId, gameId}
+    , {ignoreNull: true}
+    .then =>
+      @GameClans[gameId].upsertById clanId, diff
 
-        r.table CLANS_TABLE
-        .insert defaultClan _.defaults _.clone(diff), {
-          clanId
-          gameId
-        }
+  updateByClanIdAndGameId: (clanId, gameId, diff) =>
+    @GameClans[gameId].updateById clanId, diff
 
-        r.table CLANS_TABLE
-        .getAll [clanId, gameId], {index: CLAN_ID_GAME_ID_INDEX}
-        .nth 0
-        .default null
-        .update diff
-      )
-    .run()
-    .then ->
-      prefix = CacheService.PREFIXES.CLASH_ROYALE_CLAN_CLAN_ID_GAME_ID
-      cacheKey = "#{prefix}:#{clanId}:#{gameId}"
-      CacheService.deleteByKey cacheKey
-
-  getStaleByGameId: (gameId, {staleTimeS, type, limit}) ->
-    index = STALE_INDEX
-    limit ?= DEFAULT_STALE_LIMIT
-    r.table CLANS_TABLE
-    .between(
-      [gameId, false, true, 0]
-      [gameId, false, true, r.now().sub(staleTimeS)]
-      {index}
-    )
-    .limit limit
-    .run()
-    .map defaultClan
-
-  updateById: (id, diff) ->
-    r.table CLANS_TABLE
-    .get id
-    .update diff
-    .run()
+  updateByClanIdsAndGameId: (clanIds, gameId, diff) =>
+    @GameClans[gameId].updateAllByIds clanIds, diff
 
   sanitizePublic: _.curry (requesterId, clan) ->
     sanitizedClan = _.pick clan, [

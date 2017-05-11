@@ -4,7 +4,7 @@ r = require './rethinkdb'
 KueCreateService = require './kue_create'
 config = require '../config'
 
-MIN_KUE_STUCK_TIME_MS = 500 # 60 * 10 * 1000 # 10 minutes
+MIN_KUE_STUCK_TIME_MS = 60 * 10 * 1000 # 10 minutes
 
 class CleanupService
   clean: =>

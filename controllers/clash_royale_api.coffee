@@ -82,7 +82,7 @@ class ClashRoyaleAPICtrl
   refreshByClanId: ({clanId}, {user}) ->
     Clan.getByClanIdAndGameId clanId, config.CLASH_ROYALE_ID
     .then (clan) ->
-      Clan.updateById clan.id, {
+      Clan.updateByClanIdAndGameId clanId, config.CLASH_ROYALE_ID, {
         lastQueuedTime: new Date()
       }
     .then ->
