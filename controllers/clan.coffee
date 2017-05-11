@@ -4,8 +4,10 @@ Joi = require 'joi'
 
 User = require '../models/user'
 Clan = require '../models/clan'
+GroupClan = require '../models/group_clan'
 Group = require '../models/group'
 Player = require '../models/player'
+UserPlayer = require '../models/user_player'
 Conversation = require '../models/conversation'
 ClashRoyaleClanService = require '../services/clash_royale_clan'
 ClashRoyaleKueService = require '../services/clash_royale_kue'
@@ -35,7 +37,7 @@ class ClanCtrl
         Clan.sanitizePublic null, clan
 
   claimById: ({id}, {user}) ->
-    Clan.getById id
+    Clan.getByClanIdAndGameId id, GAME_ID
     .then (clan) ->
       unless clan
         router.throw {status: 404, info: 'clan not found'}
@@ -61,17 +63,19 @@ class ClanCtrl
           router.throw {status: 400, info: 'must be at least co-leader'}
 
         Promise.all [
-          Clan.updateById id, {
-            creatorId: user.id
-          }
-          Player.updateByPlayerIdAndGameId player.id, GAME_ID, {
-            verifiedUserId: user.id
-          }
+          GroupClan.updateByClanIdAndGameId id, GAME_ID, {creatorId: user.id}
+          UserPlayer.updateByUserIdAndPlayerIdAndGameId(
+            user.id
+            player.id
+            GAME_ID
+            {isVerified: true}
+          )
         ]
 
   createGroupById: ({id, groupName, clanPassword}, {user}) ->
-    Clan.getById id
+    Clan.getByClanIdAndGameId id, GAME_ID
     .tap (clan) ->
+      console.log clan
       if not clan?.creatorId or clan?.creatorId isnt user.id
         router.throw {status: 401, info: 'invalid permission'}
 
@@ -102,11 +106,13 @@ class ClanCtrl
           type: 'channel'
         }
       .tap (group) ->
-        Clan.updateById clan.id, {password: clanPassword, groupId: group.id}
+        GroupClan.updateByClanIdAndGameId clan.id, GAME_ID, {
+          password: clanPassword, groupId: group.id
+        }
 
   joinById: ({id, clanPassword}, {user}) ->
     Promise.all [
-      Clan.getById id
+      Clan.getByClanIdAndGameId id, GAME_ID
       Player.getByUserIdAndGameId user.id, GAME_ID
     ]
     .then ([clan, player]) ->
@@ -120,9 +126,12 @@ class ClanCtrl
       Promise.all [
         Group.updateById clan.groupId,
           userIds: r.row('userIds').append(user.id).distinct()
-        Player.updateByPlayerIdAndGameId player.id, GAME_ID, {
-          verifiedUserId: user.id
-        }
+        UserPlayer.updateByUserIdAndPlayerIdAndGameId(
+          user.id
+          player.id
+          GAME_ID
+          {isVerified: true}
+        )
       ]
 
 

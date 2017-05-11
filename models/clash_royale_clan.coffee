@@ -6,28 +6,25 @@ knex = require '../services/knex'
 CacheService = require '../services/cache'
 config = require '../config'
 
-# so far can handle 20k per minute (1.2m per hour)
-DEFAULT_PLAYER_MATCHES_STALE_LIMIT = 500
-# 1,000 players per minute = ~1.4m per day
-DEFAULT_PLAYER_DATA_STALE_LIMIT = 1000
+DEFAULT_STALE_LIMIT = 500
 SIX_HOURS_S = 3600 * 6
 
 fields = [
   {name: 'id', type: 'string', length: 20, index: 'primary'}
   {name: 'updateFrequency', type: 'string', length: 20, defaultValue: 'default'}
   {name: 'data', type: 'json'}
+  {name: 'players', type: 'json'}
   {name: 'lastQueuedTime', type: 'dateTime', defaultValue: new Date()}
-  {name: 'lastDataUpdateTime', type: 'dateTime', defaultValue: new Date()}
-  {name: 'lastMatchesUpdateTime', type: 'dateTime', defaultValue: new Date()}
+  {name: 'lastUpdateTime', type: 'dateTime', defaultValue: new Date()}
 ]
 
-defaultPlayer = (player) ->
-  unless player?
+defaultClan = (clan) ->
+  unless clan?
     return null
 
-  player = _.pick player, _.map(fields, 'name')
+  clan = _.pick clan, _.map(fields, 'name')
 
-  _.defaults player, _.reduce(fields, (obj, field) ->
+  _.defaults clan, _.reduce(fields, (obj, field) ->
     {name, defaultValue} = field
     if typeof defaultValue is 'function'
       obj[name] = defaultValue()
@@ -43,8 +40,8 @@ upsert = ({table, diff, constraint}) ->
   knex.raw "? ON CONFLICT #{constraint} DO ? returning *", [insert, update]
   .then (result) -> result.rows[0]
 
-class ClashRoyalePlayerBaseModel
-  TABLE_NAME: 'players'
+class ClashRoyaleClan
+  TABLE_NAME: 'clans'
 
   constructor: ->
     @POSTGRES_TABLES = [
@@ -58,20 +55,26 @@ class ClashRoyalePlayerBaseModel
       }
   ]
 
-  batchCreate: (players) =>
-    players = _.map players, defaultPlayer
+  batchCreate: (clans) =>
+    clans = _.map clans, defaultClan
 
-    knex(@TABLE_NAME).insert(players)
+    knex(@TABLE_NAME).insert(clans)
 
-  create: (player) =>
-    knex(@TABLE_NAME).insert defaultPlayer player
+  create: (clan) =>
+    if clan.data
+      # json has weird bugs if not stringified
+      clan.data = JSON.stringify clan.data
+    if clan.players
+      # json has weird bugs if not stringified
+      clan.players = JSON.stringify clan.players
+    knex(@TABLE_NAME).insert defaultClan clan
 
   getById: (id, {preferCache} = {}) =>
     get = =>
       knex @TABLE_NAME
       .first '*'
       .where {id}
-      .then defaultPlayer
+      .then defaultClan
 
     if preferCache
       prefix = CacheService.PREFIXES.PLAYER_CLASH_ROYALE_ID
@@ -83,7 +86,7 @@ class ClashRoyalePlayerBaseModel
   getAllByIds: (ids, {preferCache} = {}) =>
     knex @TABLE_NAME
     .whereIn 'id', ids
-    .map defaultPlayer
+    .map defaultClan
 
   updateAllByIds: (ids, diff) =>
     knex @TABLE_NAME
@@ -93,26 +96,27 @@ class ClashRoyalePlayerBaseModel
   updateById: (id, diff) =>
     diff = _.pick diff, _.map(fields, 'name')
 
-    if @TABLE_NAME is 'players' and diff.data and not diff.data.stats
-      throw new Error 'player update missing stats'
-
     if diff.data
       # json has weird bugs if not stringified
       diff.data = JSON.stringify diff.data
+    if diff.players
+      # json has weird bugs if not stringified
+      diff.players = JSON.stringify diff.players
+
     knex @TABLE_NAME
     .where {id}
     .limit 1
     .update diff
-    .then defaultPlayer
+    .then defaultClan
 
   upsertById: (id, diff) =>
-    if @TABLE_NAME is 'players' and diff.data and not diff.data.stats
-      throw new Error 'player upsert missing stats'
-
     if diff.data
       # json has weird bugs if not stringified
       diff.data = JSON.stringify diff.data
-    diff = defaultPlayer _.defaults(_.clone(diff), {id})
+    if diff.players
+      # json has weird bugs if not stringified
+      diff.players = JSON.stringify diff.players
+    diff = defaultClan _.defaults(_.clone(diff), {id})
 
     upsert {
       table: @TABLE_NAME
@@ -121,17 +125,13 @@ class ClashRoyalePlayerBaseModel
     }
 
   getStale: ({staleTimeS, type, limit}) =>
-    if type is 'matches'
-      field = 'lastMatchesUpdateTime'
-      limit ?= DEFAULT_PLAYER_MATCHES_STALE_LIMIT
-    else
-      field = 'lastDataUpdateTime'
-      limit ?= DEFAULT_PLAYER_DATA_STALE_LIMIT
+    field = 'lastUpdateTime'
+    limit ?= DEFAULT_STALE_LIMIT
 
     knex @TABLE_NAME
     .where field, '<', new Date(Date.now() - staleTimeS * 1000)
     .limit limit
-    .map defaultPlayer
+    .map defaultClan
 
   deleteById: (id) =>
     knex @TABLE_NAME
@@ -140,4 +140,4 @@ class ClashRoyalePlayerBaseModel
     .delete()
 
 
-module.exports = ClashRoyalePlayerBaseModel
+module.exports = new ClashRoyaleClan()

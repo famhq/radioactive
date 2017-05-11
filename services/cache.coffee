@@ -40,12 +40,11 @@ class CacheService
     USER_DATA_FOLLOWING_PLAYERS: 'user_data:following:players'
     USER_DATA_BLOCKED_USERS: 'user_data:blocked_users'
     USER_DATA_CLASH_ROYALE_DECK_IDS: 'user_data:clash_royale_deck_ids6'
-    USER_DAILY_DATA_PUSH: 'user_daily_data:push0'
+    USER_DAILY_DATA_PUSH: 'user_daily_data:push5'
     CLASH_ROYALE_MATCHES_ID: 'clash_royale_matches:id84'
     CLASH_ROYALE_CARD: 'clash_royale_card'
     CLASH_ROYALE_CARD_KEY: 'clash_royale_card_key1'
     CLASH_ROYALE_CARD_RANK: 'clash_royal_card:rank'
-    CLASH_ROYALE_CLAN_CLAN_ID_GAME_ID: 'clash_royale_clan:clan_id_game_id'
     CLASH_ROYALE_DECK_RANK: 'clash_royal_deck:rank'
     CLASH_ROYALE_DECK_CARD_KEYS: 'clash_royal_deck:card_keys11'
     CLASH_ROYALE_USER_DECK_DECK: 'clash_royale_user_deck:deck5'
@@ -66,6 +65,9 @@ class CacheService
     PLAYER_CLASH_ROYALE_ID: 'player:clash_royale_id'
     PLAYER_MIGRATE: 'player:migrate05'
     USER_PLAYER_USER_ID_GAME_ID: 'user_player:user_id_game_id2'
+    GROUP_CLAN_CLAN_ID_GAME_ID: 'group_clan:clan_id_game_id4'
+    CLAN_CLAN_ID_GAME_ID: 'clan:clan_id_game_id3'
+    CLAN_MIGRATE: 'clan:migrate9'
 
   constructor: ->
     @redlock = new Redlock [RedisService], {
