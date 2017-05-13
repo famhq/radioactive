@@ -4,6 +4,7 @@ gcm = require 'node-gcm'
 Promise = require 'bluebird'
 uuid = require 'node-uuid'
 webpush = require 'web-push'
+ua = require 'universal-analytics'
 
 config = require '../config'
 EmbedService = require './embed'
@@ -188,6 +189,9 @@ class PushNotificationService
 
     unless message and (message.title or message.text)
       return Promise.reject new Error 'missing message'
+
+    ga = ua config.GA_ID, user.id
+    ga.event('push_notification', message.type, 'send').send()
 
     message.data ?= {}
 

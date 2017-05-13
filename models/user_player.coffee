@@ -93,6 +93,13 @@ class UserPlayer
     .run()
     .map defaultUserPlayer
 
+  getAllByPlayerIdsAndGameId: (playerIds, gameId) ->
+    playerIdsAndGameIds = _.map playerIds, (playerId) -> [playerId, gameId]
+    r.table USER_PLAYERS_TABLE
+    .getAll r.args(playerIdsAndGameIds), {index: PLAYER_ID_GAME_ID_INDEX}
+    .run()
+    .map defaultUserPlayer
+
   getAllByUserIdsAndGameId: (userIds, gameId) ->
     console.log userIds
     userIdsGameIds = _.map userIds, (userId) -> [userId, gameId]

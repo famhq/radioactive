@@ -8,6 +8,7 @@ AuthCtrl = require './controllers/auth'
 ChatMessageCtrl = require './controllers/chat_message'
 ClanCtrl = require './controllers/clan'
 ConversationCtrl = require './controllers/conversation'
+ClanRecordTypeCtrl = require './controllers/clan_record_type'
 ClashRoyaleAPICtrl = require './controllers/clash_royale_api'
 ClashRoyaleDeckCtrl = require './controllers/clash_royale_deck'
 ClashRoyaleUserDeckCtrl = require './controllers/clash_royale_user_deck'
@@ -66,6 +67,9 @@ module.exports = router
 .on 'userData.unblockByUserId', authed UserDataCtrl.unblockByUserId
 .on 'userData.deleteConversationByUserId',
   authed UserDataCtrl.deleteConversationByUserId
+
+.on 'clanRecordTypes.getAllByClanIdAndGameId',
+  authed ClanRecordTypeCtrl.getAllByClanIdAndGameId
 
 .on 'chatMessages.create', authed ChatMessageCtrl.create
 .on 'chatMessages.deleteById', authed ChatMessageCtrl.deleteById

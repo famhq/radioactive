@@ -4067,6 +4067,23 @@
       "from": "units-css@>=0.4.0 <0.5.0",
       "resolved": "https://registry.npmjs.org/units-css/-/units-css-0.4.0.tgz"
     },
+    "universal-analytics": {
+      "version": "0.4.13",
+      "from": "universal-analytics@latest",
+      "resolved": "https://registry.npmjs.org/universal-analytics/-/universal-analytics-0.4.13.tgz",
+      "dependencies": {
+        "async": {
+          "version": "1.2.1",
+          "from": "async@>=1.2.0 <1.3.0",
+          "resolved": "https://registry.npmjs.org/async/-/async-1.2.1.tgz"
+        },
+        "uuid": {
+          "version": "3.0.1",
+          "from": "uuid@>=3.0.0 <4.0.0",
+          "resolved": "https://registry.npmjs.org/uuid/-/uuid-3.0.1.tgz"
+        }
+      }
+    },
     "unpipe": {
       "version": "1.0.0",
       "from": "unpipe@1.0.0",

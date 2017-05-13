@@ -2,75 +2,67 @@ _ = require 'lodash'
 uuid = require 'node-uuid'
 moment = require 'moment'
 
-r = require '../services/rethinkdb'
+knex = require '../services/knex'
+config = require '../config'
 
-GAME_RECORD_TYPE_ID_INDEX = 'gameRecordTypeId'
-SCALED_TIME_INDEX = 'scaledTime'
-USER_ID_INDEX = 'userId'
-PLAYER_ID_INDEX = 'playerId'
-GAME_ID_INDEX = 'gameId'
-RECORDS_INDEX = 'records'
-RECORD_INDEX = 'record'
-GAME_RECORD_TYPE_TIME_INDEX = 'gameRecordTypeTime'
+fields = [
+  {name: 'id', type: 'bigIncrements', index: 'primary'}
+  {name: 'clanId', type: 'string', length: 20, index: 'default'}
+  {name: 'clanRecordTypeId', type: 'uuid'}
+  {name: 'value', type: 'integer'}
+  {name: 'scaledTime', type: 'string', length: 50}
+  {name: 'time', type: 'dateTime', defaultValue: new Date()}
+]
 
-defaultGameRecord = (gameRecord) ->
-  unless gameRecord?
+defaultClanRecord = (clanRecord) ->
+  unless clanRecord?
     return null
 
-  _.defaults gameRecord, {
-    id: uuid.v4()
-    userId: null
-    playerId: null
-    gameRecordTypeId: null
-    value: 0
-    scaledTime: null
-    time: new Date()
-  }
+  _.defaults clanRecord, _.reduce(fields, (obj, field) ->
+    {name, defaultValue} = field
+    if defaultValue?
+      obj[name] = defaultValue
+    obj
+  , {})
+
+upsert = ({table, diff, constraint}) ->
+  insert = knex(table).insert(diff)
+  update = knex.queryBuilder().update(diff)
+
+  knex.raw "? ON CONFLICT #{constraint} DO ? returning *", [insert, update]
+  .then (result) -> result.rows[0]
 
 CLAN_RECORDS_TABLE = 'clan_records'
 
-class GameRecordModel
-  RETHINK_TABLES: [
+class ClanRecordModel
+  POSTGRES_TABLES: [
     {
-      name: CLAN_RECORDS_TABLE
+      tableName: CLAN_RECORDS_TABLE
+      fields: fields
       indexes: [
-        {name: GAME_RECORD_TYPE_ID_INDEX}
-        {name: USER_ID_INDEX}
-        {name: PLAYER_ID_INDEX}
-        {name: SCALED_TIME_INDEX}
-        {name: RECORDS_INDEX, fn: (row) ->
-          [row('gameRecordTypeId'), row('userId')]}
-        {name: RECORD_INDEX, fn: (row) ->
-          [row('gameRecordTypeId'), row('userId'), row('scaledTime')]}
-        {name: GAME_RECORD_TYPE_TIME_INDEX, fn: (row) ->
-          [row('gameRecordTypeId'), row('scaledTime')]}
+        {
+          columns: ['clanId', 'clanRecordTypeId', 'scaledTime']
+          type: 'unique'
+        }
       ]
     }
   ]
 
-  batchCreate: (gameRecords) ->
-    gameRecords = _.map gameRecords, defaultGameRecord
+  batchCreate: (clanRecords) ->
+    clanRecords = _.map clanRecords, defaultClanRecord
 
-    r.table CLAN_RECORDS_TABLE
-    .insert gameRecords
-    .run()
-    .then ->
-      gameRecords
+    knex.insert(clanRecords).into(CLAN_RECORDS_TABLE)
+    .catch (err) ->
+      console.log 'postgres err', err
 
-  create: (gameRecord) ->
-    gameRecord = defaultGameRecord gameRecord
+  create: (clanRecord) ->
+    clanRecord = defaultClanRecord clanRecord
 
-    r.table CLAN_RECORDS_TABLE
-    .insert gameRecord
-    .run()
-    .then ->
-      gameRecord
+    knex.insert(clanRecord).into(CLAN_RECORDS_TABLE)
 
-  getAllByUserIdAndGameId: ({userId, gameId}) ->
-    r.table CLAN_RECORDS_TABLE
-    .getAll userId, {index: USER_ID_INDEX}
-    .filter {gameId}
-    .run()
+  getAllByClanIdAndGameId: ({clanId, gameId}) ->
+    knex.select().table CLAN_RECORDS_TABLE
+    .where {clanId}
 
   getScaledTimeByTimeScale: (timeScale, time) ->
     time ?= moment()
@@ -83,48 +75,29 @@ class GameRecordModel
     else
       time.format time.format 'YYYY-MM-DD HH:mm'
 
-  getRecord: ({gameRecordTypeId, userId, scaledTime}) ->
-    r.table CLAN_RECORDS_TABLE
-    .getAll [gameRecordTypeId, userId, scaledTime], {index: RECORD_INDEX}
-    .nth 0
-    .default null
-    .run()
+  getRecord: ({clanRecordTypeId, clanId, scaledTime}) ->
+    knex.table CLAN_RECORDS_TABLE
+    .first '*'
+    .where {clanId, clanRecordTypeId, scaledTime}
 
   getRecords: (options) ->
-    {gameRecordTypeId, userId, minScaledTime, maxScaledTime, limit} = options
+    {clanRecordTypeId, clanId, minScaledTime, maxScaledTime, limit} = options
     limit ?= 30
 
-    r.table CLAN_RECORDS_TABLE
-    .between(
-      [gameRecordTypeId, userId, minScaledTime]
-      [gameRecordTypeId, userId, maxScaledTime]
-      {index: RECORD_INDEX, rightBound: 'closed'}
-    )
-    .orderBy {index: r.desc RECORD_INDEX}
+    knex.select().table CLAN_RECORDS_TABLE
+    .where {clanId, clanRecordTypeId}
+    .andWhere 'scaledTime', '>=', minScaledTime
+    .andWhere 'scaledTime', '<=', maxScaledTime
+    .orderBy 'scaledTime', 'desc'
     .limit limit
-    .run()
 
-  getAllRecordsByTypeAndTime: ({gameRecordTypeId, scaledTime}) ->
-    r.table CLAN_RECORDS_TABLE
-    .getAll [gameRecordTypeId, scaledTime], {index: GAME_RECORD_TYPE_TIME_INDEX}
-    .run()
+  upsert: ({clanId, clanRecordTypeId, scaledTime, diff}) ->
+    upsert {
+      table: CLAN_RECORDS_TABLE
+      diff: defaultClanRecord _.defaults {
+        clanId, clanRecordTypeId, scaledTime
+      }, diff
+      constraint: '("clanId", "clanRecordTypeId", "scaledTime")'
+    }
 
-  duplicateByPlayerId: (playerId, userId) ->
-    r.table CLAN_RECORDS_TABLE
-    .getAll playerId, {index: PLAYER_ID_INDEX}
-    .group 'scaledTime'
-    .run()
-    .map ({reduction}) =>
-      record = reduction[0]
-      @create _.defaults {
-        id: uuid.v4()
-        userId: userId
-      }, record
-
-  updateById: (id, diff) ->
-    r.table CLAN_RECORDS_TABLE
-    .get id
-    .update diff
-    .run()
-
-module.exports = new GameRecordModel()
+module.exports = new ClanRecordModel()

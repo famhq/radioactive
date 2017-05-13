@@ -13,8 +13,9 @@ ClashRoyaleUserDeck = require '../models/clash_royale_user_deck'
 ClashRoyaleDeck = require '../models/clash_royale_deck'
 Deck = require '../models/clash_royale_deck'
 Group = require '../models/group'
+ClanRecord = require '../models/clan_record'
 GroupRecord = require '../models/group_record'
-GameRecord = require '../models/game_record'
+UserRecord = require '../models/user_record'
 UserGroupData = require '../models/user_group_data'
 Player = require '../models/player'
 UserPlayer = require '../models/user_player'
@@ -52,6 +53,8 @@ TYPES =
   GROUP:
     USERS: 'group:users'
     CONVERSATIONS: 'group:conversations'
+  CLAN_RECORD_TYPE:
+    CLAN_VALUES: 'clanRecordType:clanValues'
   GROUP_RECORD_TYPE:
     USER_VALUES: 'groupRecordType:userValues'
   GAME_RECORD_TYPE:
@@ -96,7 +99,7 @@ getUserDataItems = (userData) ->
       .filter ({item}) -> Boolean item
   , {expireSeconds: ONE_HOUR_SECONDS}
 
-embedFn = _.curry ({embed, user, groupId, gameId}, object) ->
+embedFn = _.curry ({embed, user, clanId, groupId, gameId, userId}, object) ->
   embedded = _.cloneDeep object
   unless embedded
     return Promise.resolve null
@@ -176,15 +179,52 @@ embedFn = _.curry ({embed, user, groupId, gameId}, object) ->
           scaledTime: GroupRecord.getScaledTimeByTimeScale embedded.timeScale
         }
 
-      when TYPES.GAME_RECORD_TYPE.ME_VALUES
-        minScaledTime = GameRecord.getScaledTimeByTimeScale(
-          'minute', moment().subtract(30, 'day')
-        )
-        maxScaledTime = GameRecord.getScaledTimeByTimeScale 'minute'
+      # TODO: can probably consolidate a lot of clan/userRecords stuff
+      when TYPES.CLAN_RECORD_TYPE.CLAN_VALUES
+        if embedded.timeScale is 'days'
+          minScaledTime = UserRecord.getScaledTimeByTimeScale(
+            'day', moment().subtract(30, 'day')
+          )
+          maxScaledTime = UserRecord.getScaledTimeByTimeScale 'day'
+        else if embedded.timeScale is 'weeks'
+          minScaledTime = UserRecord.getScaledTimeByTimeScale(
+            'week', moment().subtract(30, 'week')
+          )
+          maxScaledTime = UserRecord.getScaledTimeByTimeScale 'week'
+        else
+          minScaledTime = UserRecord.getScaledTimeByTimeScale(
+            'minute', moment().subtract(30, 'day')
+          )
+          maxScaledTime = UserRecord.getScaledTimeByTimeScale 'minute'
 
-        embedded.userValues = GameRecord.getRecords {
+        embedded.clanValues = ClanRecord.getRecords {
+          clanRecordTypeId: embedded.id
+          clanId: clanId
+          minScaledTime: minScaledTime
+          maxScaledTime: maxScaledTime
+          limit: 50
+        }
+
+      when TYPES.GAME_RECORD_TYPE.ME_VALUES
+        if embedded.timeScale is 'days'
+          minScaledTime = UserRecord.getScaledTimeByTimeScale(
+            'day', moment().subtract(30, 'day')
+          )
+          maxScaledTime = UserRecord.getScaledTimeByTimeScale 'day'
+        else if embedded.timeScale is 'weeks'
+          minScaledTime = UserRecord.getScaledTimeByTimeScale(
+            'week', moment().subtract(30, 'week')
+          )
+          maxScaledTime = UserRecord.getScaledTimeByTimeScale 'week'
+        else
+          minScaledTime = UserRecord.getScaledTimeByTimeScale(
+            'minute', moment().subtract(30, 'day')
+          )
+          maxScaledTime = UserRecord.getScaledTimeByTimeScale 'minute'
+
+        embedded.userValues = UserRecord.getRecords {
           gameRecordTypeId: embedded.id
-          userId: user.id
+          userId: userId
           minScaledTime: minScaledTime
           maxScaledTime: maxScaledTime
           limit: 50
