@@ -23,6 +23,9 @@ ONE_MINUTE_SECONDS = 60
 
 class PlayerCtrl
   getByUserIdAndGameId: ({userId, gameId}, {user}) ->
+    unless userId
+      return
+
     gameId or= config.CLASH_ROYALE_ID
 
     start = Date.now()
@@ -45,6 +48,10 @@ class PlayerCtrl
     key = "#{CacheService.PREFIXES.PLAYER_SEARCH}:#{playerId}"
     CacheService.preferCache key, ->
       Player.getByPlayerIdAndGameId playerId, config.CLASH_ROYALE_ID
+      .then EmbedService.embed {
+        embed: [EmbedService.TYPES.PLAYER.USER_IDS]
+        gameId: config.CLASH_ROYALE_ID
+      }
       .then (player) ->
         if player?.userIds?[0]
           player
@@ -90,6 +97,10 @@ class PlayerCtrl
         Player.getAllByUserIdsAndGameId(
           followingIds, config.CLASH_ROYALE_ID
         )
+        .map EmbedService.embed {
+          embed: [EmbedService.TYPES.PLAYER.USER_IDS]
+          gameId: config.CLASH_ROYALE_ID
+        }
         .then (players) ->
           players = _.map players, (player) ->
             {player}

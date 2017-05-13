@@ -7,6 +7,7 @@ VideoDiscoveryService = require './video_discovery'
 EventService = require './event'
 CleanupService = require './cleanup'
 ClashRoyalePlayerService = require './clash_royale_player'
+ClashRoyaleClanService = require './clash_royale_clan'
 ClashRoyaleDeck = require '../models/clash_royale_deck'
 ClashRoyaleCard = require '../models/clash_royale_card'
 ClashRoyaleUserDeck = require '../models/clash_royale_user_deck'
@@ -25,6 +26,7 @@ class CronService
       if config.ENV is config.ENVS.PROD
         ClashRoyalePlayerService.updateStalePlayerData()
         ClashRoyalePlayerService.updateStalePlayerMatches()
+        ClashRoyaleClanService.updateStale()
 
     @addCron 'quarterMinute', '15 * * * * *', ->
       CleanupService.clean()

@@ -28,6 +28,8 @@ class PostgresSetupService
               column.index()
       }
     manager.sync syncTables
+    .catch (err) ->
+      console.log 'sync err', err
     .then ->
       Promise.map tables, ({tableName, indexes}) ->
         knex('pg_indexes').select()
@@ -44,6 +46,8 @@ class PostgresSetupService
                 table.unique columns
               else
                 table.index columns
+        .catch (err) ->
+          console.log 'index err', err
         # pgadmin
         # just login with radioactive user in pgadmin...
         # GRANT ALL PRIVILEGES ON kinds TO postgres;

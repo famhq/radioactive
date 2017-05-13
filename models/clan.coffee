@@ -10,7 +10,6 @@ config = require '../config'
 STALE_INDEX = 'stale'
 CLAN_ID_GAME_ID_INDEX = 'clanIdGameId'
 
-DEFAULT_STALE_LIMIT = 80
 ONE_DAY_S = 3600 * 24
 CODE_LENGTH = 6
 
@@ -92,6 +91,9 @@ class ClanModel
 
   updateByClanIdsAndGameId: (clanIds, gameId, diff) =>
     @GameClans[gameId].updateAllByIds clanIds, diff
+
+  getStaleByGameId: (gameId, {staleTimeS, type, limit}) =>
+    @GameClans[gameId].getStale {staleTimeS, type, limit}
 
   sanitizePublic: _.curry (requesterId, clan) ->
     sanitizedClan = _.pick clan, [

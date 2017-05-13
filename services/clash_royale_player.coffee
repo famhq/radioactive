@@ -13,7 +13,7 @@ ClashRoyaleCard = require '../models/clash_royale_card'
 ClashRoyaleTopPlayer = require '../models/clash_royale_top_player'
 EmailService = require './email'
 CacheService = require './cache'
-GameRecord = require '../models/game_record'
+UserRecord = require '../models/user_record'
 PushNotificationService = require './push_notification'
 ClashRoyaleKueService = require './clash_royale_kue'
 EmbedService = require './embed'
@@ -195,7 +195,7 @@ class ClashRoyalePlayer
 
       playerDiffs = new PlayerSplitsDiffs()
       # batch
-      batchGameRecords = []
+      batchUserRecords = []
       batchMatches = []
       batchUserDecks = {}
       batchDecks = {}
@@ -400,7 +400,7 @@ class ClashRoyalePlayer
             }
 
             # for records (graph)
-            scaledTime = GameRecord.getScaledTimeByTimeScale(
+            scaledTime = UserRecord.getScaledTimeByTimeScale(
               'minute', moment(match.time)
             )
 
@@ -432,7 +432,7 @@ class ClashRoyalePlayer
             if type is 'ladder'
               # graphs p1
               _.map player1UserIds, (userId) ->
-                batchGameRecords.push {
+                batchUserRecords.push {
                   userId: userId
                   playerId: player1Tag
                   gameRecordTypeId: config.CLASH_ROYALE_TROPHIES_RECORD_ID
@@ -441,7 +441,7 @@ class ClashRoyalePlayer
                 }
               # graphs p2
               _.map player2UserIds, (userId) ->
-                batchGameRecords.push {
+                batchUserRecords.push {
                   userId: userId
                   playerId: player2Tag
                   gameRecordTypeId: config.CLASH_ROYALE_TROPHIES_RECORD_ID
@@ -482,7 +482,7 @@ class ClashRoyalePlayer
           # Match.batchCreate batchMatches
 
           # batchPromise = Promise.all [
-          #   GameRecord.batchCreate batchGameRecords
+          #   UserRecord.batchCreate batchUserRecords
           #   @incrementUserDecks batchUserDecks
           #   @incrementDecks batchDecks
           # ]
@@ -496,7 +496,7 @@ class ClashRoyalePlayer
             Match.batchCreate batchMatches
             .catch (err) ->
               console.log 'match create postgres err', err
-            GameRecord.batchCreate batchGameRecords
+            UserRecord.batchCreate batchUserRecords
             .catch (err) ->
               console.log 'gamerecord create postgres err', err
             @incrementUserDecks batchUserDecks
@@ -706,10 +706,11 @@ class ClashRoyalePlayer
           console.log 'err stalePlayerData', err
 
   processUpdatePlayerData: ({userId, tag, playerData, isDaily}) =>
+    if DEBUG
+      console.log 'process playerdata'
     unless tag
       console.log 'tag doesn\'t exist updateplayerdata'
       return Promise.resolve null
-    console.log 'pupdate'
     @updatePlayerData {userId, tag, playerData}
     .then (player) ->
       if isDaily
@@ -746,17 +747,16 @@ class ClashRoyalePlayer
 
               Promise.map player.userIds, User.getById
               .map (user) ->
-                if stats.wins > 0 or stats.losses > 0
-                  PushNotificationService.send user, {
-                    title: 'Daily recap'
-                    type: PushNotificationService.TYPES.DAILY_RECAP
-                    url: "https://#{config.SUPERNOVA_HOST}"
-                    text: "#{countUntilNextGoodChest} chests until a
-                      #{_.startCase(nextGoodChest)}.
-                      You had #{stats.wins} wins and
-                      #{stats.losses} losses today."
-                    data: {path: '/'}
-                  }
+                PushNotificationService.send user, {
+                  title: 'Daily recap'
+                  type: PushNotificationService.TYPES.DAILY_RECAP
+                  url: "https://#{config.SUPERNOVA_HOST}"
+                  text: "#{countUntilNextGoodChest} chests until a
+                    #{_.startCase(nextGoodChest)}.
+                    You had #{stats.wins} wins and
+                    #{stats.losses} losses today."
+                  data: {path: '/'}
+                }
               null
         , {expireSeconds: TWENTY_THREE_HOURS_S}
   getTopPlayers: ->
@@ -788,7 +788,7 @@ class ClashRoyalePlayer
               userId = id
               Promise.all [
                 ClashRoyaleUserDeck.duplicateByPlayerId playerId, userId
-                GameRecord.duplicateByPlayerId playerId, userId
+                UserRecord.duplicateByPlayerId playerId, userId
               ]
               .then ->
                 ClashRoyaleKueService.refreshByPlayerTag playerId, {

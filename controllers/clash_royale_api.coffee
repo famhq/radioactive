@@ -13,7 +13,7 @@ ClashRoyaleDeck = require '../models/clash_royale_deck'
 Player = require '../models/player'
 PlayersDaily = require '../models/player_daily'
 ClashRoyaleUserDeck = require '../models/clash_royale_user_deck'
-GameRecord = require '../models/game_record'
+UserRecord = require '../models/user_record'
 Clan = require '../models/clan'
 ClashRoyaleTopPlayer = require '../models/clash_royale_top_player'
 config = require '../config'
@@ -59,7 +59,7 @@ class ClashRoyaleAPICtrl
         else
           Promise.all [
             ClashRoyaleUserDeck.duplicateByPlayerId playerTag, user.id
-            GameRecord.duplicateByPlayerId playerTag, user.id
+            UserRecord.duplicateByPlayerId playerTag, user.id
           ]
       .then ->
         ClashRoyaleKueService.refreshByPlayerTag playerTag, {userId: user.id}

@@ -5,11 +5,14 @@ moment = require 'moment'
 
 Clan = require '../models/clan'
 Player = require '../models/player'
+User = require '../models/user'
+ClanRecord = require '../models/clan_record'
+UserRecord = require '../models/user_record'
+UserPlayer = require '../models/user_player'
 # ClashRoyaleTopClan = require '../models/clash_royale_top_clan'
 CacheService = require './cache'
-PushNotificationService = require '../services/push_notification'
-ClashRoyaleKueService = require '../services/clash_royale_kue'
-User = require '../models/user'
+PushNotificationService = require './push_notification'
+ClashRoyaleKueService = require './clash_royale_kue'
 config = require '../config'
 
 MAX_TIME_TO_COMPLETE_MS = 60 * 30 * 1000 # 30min
@@ -50,22 +53,53 @@ class ClashRoyaleClan
       players: players
     }
 
+    ClanRecord.upsert {
+      clanId: tag
+      clanRecordTypeId: config.CLASH_ROYALE_CLAN_DONATIONS_RECORD_ID
+      scaledTime: ClanRecord.getScaledTimeByTimeScale 'week'
+      diff: {value: clan.donations}
+    }
+
+    ClanRecord.upsert {
+      clanId: tag
+      clanRecordTypeId: config.CLASH_ROYALE_CLAN_TROPHIES_RECORD_ID
+      scaledTime: ClanRecord.getScaledTimeByTimeScale 'week'
+      diff: {value: clan.trophies}
+    }
+
     playerIds = _.map players, 'playerId'
-    Player.getAllByPlayerIdsAndGameId playerIds, GAME_ID
-    .then (existingPlayers) ->
-      console.log 'existing', existingPlayers?.length
+    Promise.all [
+      UserPlayer.getAllByPlayerIdsAndGameId playerIds, GAME_ID
+      Player.getAllByPlayerIdsAndGameId playerIds, GAME_ID
+    ]
+    .then ([existingUserPlayers, existingPlayers]) ->
+      _.map existingUserPlayers, (existingUserPlayer) ->
+        player = _.find players, {playerId: existingUserPlayer.playerId}
+        donations = player.donations
+        clanChestCrowns = player.clanChestCrowns
+        UserRecord.upsert {
+          userId: existingUserPlayer.userId
+          gameRecordTypeId: config.CLASH_ROYALE_DONATIONS_RECORD_ID
+          scaledTime: UserRecord.getScaledTimeByTimeScale 'week'
+          diff: {value: donations, playerId: existingUserPlayer.playerId}
+        }
+        UserRecord.upsert {
+          userId: existingUserPlayer.userId
+          gameRecordTypeId: config.CLASH_ROYALE_CLAN_CROWNS_RECORD_ID
+          scaledTime: UserRecord.getScaledTimeByTimeScale 'week'
+          diff: {value: clanChestCrowns, playerId: existingUserPlayer.playerId}
+        }
+
       Promise.map players, (player) ->
         # TODO: track donations and clanCrowns
         # TODO: try to update every clan between 3 and 5pm EST, set the
         # records then
         newPlayers = _.filter _.map players, (player) ->
-          unless _.find existingPlayers, {playerId: player.playerId}
+          unless _.find existingPlayers, {id: player.playerId}
             # ClashRoyaleKueService.refreshByPlayerTag playerId, {
             #   priority: 'normal'
             # }
             # .then ->
-            # NOTE: any time you update, keep in mind postgress replaces
-            # entire fields (data), so need to merge with old data manually
             {
               # only set to true when clan is claimed
               # hasUserId: true
@@ -90,12 +124,12 @@ class ClashRoyaleClan
     .catch (err) ->
       console.log 'clan err', err
 
-  updateStaleClans: ({force} = {}) ->
+  updateStale: ({force} = {}) ->
     Clan.getStaleByGameId GAME_ID, {
       type: 'data'
       staleTimeS: if force then 0 else CLAN_STALE_TIME_S
     }
-    .map ({clanId}) -> clanId
+    .map ({id}) -> id
     .then (clanIds) ->
       console.log 'staleclan', clanIds.length, new Date()
       Clan.updateByClanIdsAndGameId clanIds, GAME_ID, {

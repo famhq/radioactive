@@ -55,7 +55,8 @@ class PlayerModel
       , {ignoreNull: true}
       # TODO: remove after ~June 2017?
       .then (userPlayer) =>
-        (if userPlayer
+        userPlayerExists = Boolean userPlayer?.playerId
+        (if userPlayerExists
           @GamePlayers[gameId].getById userPlayer?.playerId
         else
           Promise.resolve null
@@ -64,7 +65,7 @@ class PlayerModel
           if player
             _.defaults {isVerified: userPlayer.isVerified}, player
           else
-            @migrate {userId, gameId, userPlayerExists: Boolean userPlayer}
+            @migrate {userId, gameId, userPlayerExists}
             .then =>
               unless retry
                 @getByUserIdAndGameId userId, gameId, {retry: true}
