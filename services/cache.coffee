@@ -67,7 +67,7 @@ class CacheService
     USER_RECORDS_MIGRATE: 'user_records:migrate9'
     USER_PLAYER_USER_ID_GAME_ID: 'user_player:user_id_game_id3'
     GROUP_CLAN_CLAN_ID_GAME_ID: 'group_clan:clan_id_game_id4'
-    CLAN_CLAN_ID_GAME_ID: 'clan:clan_id_game_id3'
+    CLAN_CLAN_ID_GAME_ID: 'clan:clan_id_game_id4'
     CLAN_MIGRATE: 'clan:migrate9'
 
   constructor: ->
@@ -134,7 +134,11 @@ class CacheService
     RedisService.get key
     .then (value) ->
       if value?
-        return JSON.parse value
+        try
+          return JSON.parse value
+        catch err
+          console.log 'error parsing', key, value
+          return null
 
       fn().then (value) ->
         if value isnt null or not ignoreNull

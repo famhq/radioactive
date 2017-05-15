@@ -29,6 +29,7 @@ class BroadcastService
     else
       r.table('users')
       .getAll(true, {index: 'hasPushToken'})
+      .limit 100000
       .pluck(['id'])
       .map (doc) ->
         return doc('id')
@@ -60,6 +61,18 @@ class BroadcastService
         Promise.map userIds, (userId) ->
           User.getById userId
           .then (user) ->
+            langCode = if user.country in [
+              'AR', 'BO', 'CR', 'CU', 'DM', 'EC',
+              'SV', 'GQ', 'GT', 'HN', 'MX'
+              'NI', 'PA', 'PE', 'ES', 'UY', 'VE'
+            ]
+            then 'es'
+            else 'en'
+            lang = message.lang[langCode] or message.lang['en']
+            message = _.defaults {
+              title: lang.title
+              text: lang.text
+            }, _.clone(message)
             PushNotificationService.send user, message
             .catch (err) ->
               console.log 'push error', err

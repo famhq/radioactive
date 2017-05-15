@@ -7,7 +7,6 @@ User = require '../models/user'
 UserData = require '../models/user_data'
 Group = require '../models/group'
 Thread = require '../models/thread'
-ThreadComment = require '../models/thread_comment'
 ClashRoyaleDeck = require '../models/clash_royale_deck'
 CacheService = require '../services/cache'
 EmbedService = require '../services/embed'
@@ -18,7 +17,7 @@ config = require '../config'
 
 defaultEmbed = [
   EmbedService.TYPES.THREAD.CREATOR
-  EmbedService.TYPES.THREAD.COMMENT_COUNT
+  # EmbedService.TYPES.THREAD.COMMENT_COUNT
   EmbedService.TYPES.THREAD.SCORE
 ]
 deckEmbed = [
