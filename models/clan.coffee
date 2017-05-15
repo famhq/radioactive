@@ -63,8 +63,10 @@ class ClanModel
         else
           @migrate {clanId, gameId, groupClanExists: Boolean groupClan}
           .then =>
-            unless retry
+            if not retry
               @getByClanIdAndGameId clanId, gameId, {retry: true}
+            else
+              null
       # .then (clan) ->
       #   if clan
       #     _.defaults {clanId}, clan

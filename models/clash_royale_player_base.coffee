@@ -86,6 +86,9 @@ class ClashRoyalePlayerBaseModel
     .map defaultPlayer
 
   updateAllByIds: (ids, diff) =>
+    if @TABLE_NAME is 'players' and diff.data and not diff.data.stats
+      throw new Error 'player updateall missing stats'
+
     knex @TABLE_NAME
     .whereIn 'id', ids
     .update diff

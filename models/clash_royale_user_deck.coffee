@@ -323,6 +323,8 @@ class ClashRoyaleUserDeckModel
       }, userDeck
     .then (userDecks) =>
       @batchCreate userDecks
+      .catch (err) ->
+        console.log err
 
   deleteById: (id) ->
     knex POSTGRES_USER_DECKS_TABLE

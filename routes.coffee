@@ -148,6 +148,8 @@ module.exports = router
 .on 'conversations.getAll', authed ConversationCtrl.getAll
 .on 'conversations.getById', authed ConversationCtrl.getById
 
+.on 'clashRoyaleAPI.setByPlayerTag',
+  authed ClashRoyaleAPICtrl.setByPlayerTag
 .on 'clashRoyaleAPI.refreshByPlayerTag',
   authed ClashRoyaleAPICtrl.refreshByPlayerTag
 .on 'clashRoyaleAPI.refreshByClanId',

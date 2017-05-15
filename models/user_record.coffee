@@ -111,5 +111,7 @@ class UserRecordModel
       @create _.defaults {
         userId: userId
       }, record
+      .catch (err) ->
+        console.log err
 
 module.exports = new UserRecordModel()

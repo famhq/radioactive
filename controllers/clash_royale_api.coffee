@@ -24,7 +24,7 @@ PLAYER_MATCHES_TIMEOUT_MS = 10000
 PLAYER_DATA_TIMEOUT_MS = 10000
 
 class ClashRoyaleAPICtrl
-  refreshByPlayerTag: ({playerTag, isUpdate}, {user, headers, connection}) ->
+  setByPlayerTag: ({playerTag, isUpdate}, {user, headers, connection}) ->
     ip = headers['x-forwarded-for'] or
           connection.remoteAddress
 
@@ -39,7 +39,6 @@ class ClashRoyaleAPICtrl
     key = "#{CacheService.PREFIXES.CLASH_ROYALE_API_GET_TAG}:#{playerTag}"
     # TODO store kueJobId and use that instead of runOnce
     CacheService.runOnce key, ->
-      console.log 'refresh', playerTag, ip, connection.remoteAddress
       (if isUpdate
         Player.removeUserId user.id, config.CLASH_ROYALE_ID
       else
@@ -59,7 +58,11 @@ class ClashRoyaleAPICtrl
         else
           Promise.all [
             ClashRoyaleUserDeck.duplicateByPlayerId playerTag, user.id
+            .catch (err) ->
+              console.log 'duplicate userdeck err', err
             UserRecord.duplicateByPlayerId playerTag, user.id
+            .catch (err) ->
+              console.log 'duplicate userrecord err', err
           ]
       .then ->
         ClashRoyaleKueService.refreshByPlayerTag playerTag, {userId: user.id}
@@ -68,6 +71,38 @@ class ClashRoyaleAPICtrl
             status: 400, info: 'unable to find that tag (typo?)'
             ignoreLog: true
           }
+      .then ->
+        return null
+    , {
+      expireSeconds: 20
+      lockedFn: ->
+        router.throw {
+          status: 400, info: 'we\'re already processing that tag'
+          ignoreLog: true
+        }
+    }
+
+  refreshByPlayerTag: ({playerTag}, {user}) ->
+    playerTag = playerTag.trim().toUpperCase()
+                .replace '#', ''
+                .replace /O/g, '0' # replace capital O with zero
+
+    isValidTag = playerTag.match /^[0289PYLQGRJCUV]+$/
+    unless isValidTag
+      router.throw {status: 400, info: 'invalid tag', ignoreLog: true}
+
+    key = "#{CacheService.PREFIXES.CLASH_ROYALE_API_GET_TAG}:#{playerTag}"
+    # TODO store kueJobId and use that instead of runOnce
+    CacheService.runOnce key, ->
+      Player.updateByPlayerIdAndGameId playerTag, config.CLASH_ROYALE_ID, {
+        lastQueuedTime: new Date()
+      }
+      ClashRoyaleKueService.refreshByPlayerTag playerTag
+      .catch ->
+        router.throw {
+          status: 400, info: 'unable to find that tag (typo?)'
+          ignoreLog: true
+        }
       .then ->
         return null
     , {
