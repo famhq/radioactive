@@ -27,7 +27,7 @@ config = require '../config'
 ENABLE_ANON_USER_DECKS = false
 
 MAX_TIME_TO_COMPLETE_MS = 60 * 30 * 1000 # 30min
-PLAYER_DATA_STALE_TIME_S = 3600 * 12 # 12hr
+PLAYER_DATA_STALE_TIME_S = 3600 * 23 # 23hr
 PLAYER_MATCHES_STALE_TIME_S = 60 * 60 # 1 hour
 # FIXME: temp fix so queue doesn't grow forever
 MIN_TIME_BETWEEN_UPDATES_MS = 60 * 20 * 1000 # 20min
@@ -39,6 +39,14 @@ PLAYER_MATCHES_TIMEOUT_MS = 5000
 CLAN_TIMEOUT_MS = 1000
 BATCH_REQUEST_SIZE = 50
 GAME_ID = config.CLASH_ROYALE_ID
+
+ALLOWED_GAME_TYPES = [
+  'ladder', 'classicChallenge', 'grandChallenge', 'tournament'
+  'friendlyBattle'
+]
+DECK_TRACKED_GAME_TYPES = [
+  'ladder', 'classicChallenge', 'grandChallenge'
+]
 
 DEBUG = true
 IS_TEST_RUN = false
@@ -162,7 +170,7 @@ class ClashRoyalePlayer
       else
         lastMatchTime = 0
       # the server time isn't 100% accurate, so +- 15 seconds
-      type in ['ladder', 'classicChallenge', 'grandChallenge'] and
+      type in ALLOWED_GAME_TYPES and
         new Date(time).getTime() > (new Date(lastMatchTime).getTime() + 15)
 
   # we should always block this for db writes/reads so the queue
@@ -457,25 +465,26 @@ class ClashRoyalePlayer
             # don't need to block for any of these
             CacheService.set key, matchObj, {expireSeconds: SIX_HOURS_S}
 
-            if player1HasUserIds or ENABLE_ANON_USER_DECKS
-              batchUserDecks[player1Tag] ?= {}
-              batchUserDecks[player1Tag][deck1Id] ?= {
-                wins: 0, losses: 0, draws: 0
-              }
-              batchUserDecks[player1Tag][deck1Id][deck1State] += 1
+            if DECK_TRACKED_GAME_TYPES.indexOf(type) isnt -1
+              if player1HasUserIds or ENABLE_ANON_USER_DECKS
+                batchUserDecks[player1Tag] ?= {}
+                batchUserDecks[player1Tag][deck1Id] ?= {
+                  wins: 0, losses: 0, draws: 0
+                }
+                batchUserDecks[player1Tag][deck1Id][deck1State] += 1
 
-              batchDecks[deck1Id] ?= {wins: 0, losses: 0, draws: 0}
-              batchDecks[deck1Id][deck1State] += 1
+                batchDecks[deck1Id] ?= {wins: 0, losses: 0, draws: 0}
+                batchDecks[deck1Id][deck1State] += 1
 
-            if player2HasUserIds or ENABLE_ANON_USER_DECKS
-              batchUserDecks[player2Tag] ?= {}
-              batchUserDecks[player2Tag][deck2Id] ?= {
-                wins: 0, losses: 0, draws: 0
-              }
-              batchUserDecks[player2Tag][deck2Id][deck2State] += 1
+              if player2HasUserIds or ENABLE_ANON_USER_DECKS
+                batchUserDecks[player2Tag] ?= {}
+                batchUserDecks[player2Tag][deck2Id] ?= {
+                  wins: 0, losses: 0, draws: 0
+                }
+                batchUserDecks[player2Tag][deck2Id][deck2State] += 1
 
-              batchDecks[deck1Id] ?= {wins: 0, losses: 0, draws: 0}
-              batchDecks[deck1Id][deck1State] += 1
+                batchDecks[deck1Id] ?= {wins: 0, losses: 0, draws: 0}
+                batchDecks[deck1Id][deck1State] += 1
 
         .then =>
           # # don't need to block
@@ -705,9 +714,10 @@ class ClashRoyalePlayer
         .catch (err) ->
           console.log 'err stalePlayerData', err
 
+
   processUpdatePlayerData: ({userId, tag, playerData, isDaily}) =>
     if DEBUG
-      console.log 'process playerdata'
+      console.log 'process playerdata', isDaily
     unless tag
       console.log 'tag doesn\'t exist updateplayerdata'
       return Promise.resolve null
@@ -727,38 +737,48 @@ class ClashRoyalePlayer
             }
             PlayersDaily.getByPlayerIdAndGameId tag, GAME_ID
           ]
-          .then ([player, playersDaily]) ->
-            if player and playersDaily?.data
-              splits = playersDaily.data.splits
-              stats = _.reduce splits, (aggregate, split, gameType) ->
-                aggregate.wins += split.wins
-                aggregate.losses += split.losses
-                aggregate
-              , {wins: 0, losses: 0}
-              PlayersDaily.deleteByPlayerIdAndGameId(
-                playersDaily.id
-                GAME_ID
-              )
-
+          .then ([player, playerDaily]) ->
+            if player
               countUntil = player.data.chestCycle?.countUntil
               nextGoodChest = _.minBy _.keys(countUntil), (key) ->
                 countUntil[key]
               countUntilNextGoodChest = countUntil[nextGoodChest]
 
+              if playerDaily
+                splits = playerDaily.data.splits
+                stats = _.reduce splits, (aggregate, split, gameType) ->
+                  aggregate.wins += split.wins
+                  aggregate.losses += split.losses
+                  aggregate
+                , {wins: 0, losses: 0}
+                PlayersDaily.deleteByPlayerIdAndGameId(
+                  playerDaily.id
+                  GAME_ID
+                )
+                text = "#{countUntilNextGoodChest} chests until a
+                  #{_.startCase(nextGoodChest)}.
+                  You had #{stats.wins} wins and
+                  #{stats.losses} losses today."
+              else
+                text = "#{countUntilNextGoodChest} chests until a
+                  #{_.startCase(nextGoodChest)}."
+
+              # FIXME FIXME: getStale is still pulling in a ton of
+              # users w/ no userIds. should be sending 500/min, instead of 70
+              console.log 'send push notification1'
               Promise.map player.userIds, User.getById
               .map (user) ->
+                console.log 'send push notification2'
                 PushNotificationService.send user, {
                   title: 'Daily recap'
                   type: PushNotificationService.TYPES.DAILY_RECAP
                   url: "https://#{config.SUPERNOVA_HOST}"
-                  text: "#{countUntilNextGoodChest} chests until a
-                    #{_.startCase(nextGoodChest)}.
-                    You had #{stats.wins} wins and
-                    #{stats.losses} losses today."
+                  text: text
                   data: {path: '/'}
                 }
               null
         , {expireSeconds: TWENTY_THREE_HOURS_S}
+
   getTopPlayers: ->
     request "#{config.CR_API_URL}/players/top", {json: true}
 

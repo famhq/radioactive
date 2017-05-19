@@ -8,8 +8,8 @@ KueCreateService = require './kue_create'
 PushNotificationService = require './push_notification'
 config = require '../config'
 
-AMOUNT_PER_BATCH = 100
-TIME_PER_BATCH_SECONDS = 10
+AMOUNT_PER_BATCH = 500
+TIME_PER_BATCH_SECONDS = 5
 FIVE_MINUTE_SECONDS = 5 * 60
 
 class BroadcastService
@@ -29,7 +29,8 @@ class BroadcastService
     else
       r.table('users')
       .getAll(true, {index: 'hasPushToken'})
-      .limit 100000
+      .skip 50000
+      .limit 50000
       .pluck(['id'])
       .map (doc) ->
         return doc('id')
