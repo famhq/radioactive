@@ -132,7 +132,8 @@ class ClashRoyalePlayerBaseModel
       limit ?= DEFAULT_PLAYER_DATA_STALE_LIMIT
 
     knex @TABLE_NAME
-    .where field, '<', new Date(Date.now() - staleTimeS * 1000)
+    .where {updateFrequency: 'default'}
+    .andWhere field, '<', new Date(Date.now() - staleTimeS * 1000)
     .limit limit
     .map defaultPlayer
 

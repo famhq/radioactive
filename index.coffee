@@ -34,6 +34,7 @@ StreamService = require './services/stream'
 ClashRoyaleDeck = require './models/clash_royale_deck'
 ClashRoyaleCard = require './models/clash_royale_card'
 ForumSigPage = require './dynamic_images/pages/forum_sig'
+ChestCyclePage = require './dynamic_images/pages/chest_cycle'
 
 if config.DEV_USE_HTTPS
   https = require 'https'
@@ -211,6 +212,9 @@ app.get '/cleanKueFailed', (req, res) ->
 
 app.get '/di/crForumSig/:userId.png', (req, res) ->
   $page = new ForumSigPage {req, res}
+
+app.get '/di/crChestCycle/:userId.png', (req, res) ->
+  $page = new ChestCyclePage {req, res}
 
   res.setHeader 'Content-Type', 'image/png'
   $page.render()

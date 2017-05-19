@@ -7,7 +7,7 @@ s = require '../s'
 module.exports = class ChestCycle extends Component
   getHeight: -> 100
 
-  render: ({player} = {}) ->
+  render: ({images, player} = {}) ->
     playerName = player?.data?.name?.toUpperCase()
                 .replace(/&/g, '&amp;')
                 .replace(/</g, '&lt;')
@@ -18,86 +18,147 @@ module.exports = class ChestCycle extends Component
       'fill-rule': 'evenodd'
     },
       s 'rect', {
-        width: '500'
-        height: '100'
-        fill: '#000'
+        width: '360'
+        height: '447'
+        fill: '#1a1a1a'
         rx: '10'
       }
-      s 'rect', {
-        width: '496'
-        height: '94'
-        x: '2'
-        y: '2'
-        # fill: '#FA464E'
-        fill: 'url(#backgroundImage)'
-        rx: '8'
-      }
-      s 'rect', {
-        width: '66'
-        height: '56'
-        transform: 'translate(12, 20)'
-        fill: 'url(#clanBadgeImage)'
-      }
-      s 'rect', {
-        width: '66'
-        height: '88'
-        transform: 'translate(425, 4)'
-        fill: 'url(#favoriteCardImage)'
-      }
-      s 'text', {
-        fill: '#000'
-        'font-family': 'Rubik-Bold, Rubik'
-        'font-size': '24'
-        'font-weight': 'bold'
-        transform: 'translate(91 22)'
-      },
-        s 'tspan', {
-          x: '0'
-          y: '24'
-        },
-          playerName
-
-      s 'text', {
-        fill: '#000'
-        'font-family': 'Rubik-Bold, Rubik'
-        'font-size': '24'
-        'font-weight': 'bold'
-        transform: 'translate(91 22)'
-      },
-        s 'tspan', {
-          x: '0'
-          y: '23'
-        },
-          playerName
-
-      s 'text', {
-        fill: '#FFF'
-        stroke: '#000'
-        'font-family': 'Rubik-Bold, Rubik'
-        'font-size': '24'
-        'font-weight': 'bold'
-        transform: 'translate(91 22)'
-      },
-        s 'tspan', {
-          x: '0'
-          y: '22'
-        },
-          playerName
-
       s 'text', {
         fill: '#FFF'
         'font-family': 'Rubik-Medium, Rubik'
         'font-size': '14'
         'font-weight': '400'
-        transform: 'translate(91 22)'
       },
         s 'tspan', {
-          x: '0'
-          y: '49'
-        },
-          '#' + player?.data?.clan?.tag
-          ' · '
-          player?.data?.clan?.name
+          x: '73.971'
+          y: '29'
+        }, 'These are my upcoming chests!'
 
+      s 'g', {
+        transform: 'translate(16 230)'
+      },
+        s 'text', {
+          fill: '#FFF'
+          'font-family': 'Rubik-Regular, Rubik'
+          'font-size': '12'
+        },
+          s 'tspan', {
+            x: '11.56'
+            y: '116'
+          }, 'Super Magical'
+
+        s 'text', {
+          fill: '#FFF'
+          'font-family': 'Rubik-Regular, Rubik'
+          'font-size': '12'
+        },
+          s 'tspan', {
+            x: '135.27'
+            y: '116'
+          }, 'Legendary'
+
+        s 'text', {
+          fill: '#FFF'
+          'font-family': 'Rubik-Regular, Rubik'
+          'font-size': '12'
+        },
+          s 'tspan', {
+            x: '266.084'
+            y: '116'
+          }, 'Epic'
+
+        s 'text', {
+          fill: '#FFF'
+          'font-family': 'Rubik-Medium, Rubik'
+          'font-size': '14'
+          'font-weight': '400'
+        },
+          s 'tspan', {
+            x: '33.266'
+            y: '138'
+          }, " +#{player.data.chestCycle.countUntil.superMagical + 1}"
+
+        s 'text', {
+          fill: '#FFF'
+          'font-family': 'Rubik-Medium, Rubik'
+          'font-size': '14'
+          'font-weight': '400'
+        },
+          s 'tspan', {
+            x: '148.407'
+            y: '138'
+          }, " +#{player.data.chestCycle.countUntil.legendary + 1}"
+
+        s 'text', {
+          fill: '#FFF'
+          'font-family': 'Rubik-Medium, Rubik'
+          'font-size': '14'
+          'font-weight': '400'
+        },
+          s 'tspan', {
+            x: '260.609'
+            y: '138'
+          }, " +#{player.data.chestCycle.countUntil.epic + 1}"
+
+        s 'image', {
+          width: '101'
+          height: '101'
+          'xlink:href': "data:image/png;base64,#{images.superMagicalChest}"
+        }
+        s 'image', {
+          width: '101'
+          height: '101'
+          'xlink:href': "data:image/png;base64,#{images.legendaryChest}"
+          x: '114'
+        }
+        s 'image', {
+          width: '101'
+          height: '101'
+          'xlink:href': "data:image/png;base64,#{images.epicChest}"
+          x: '227'
+        }
+
+      s 'g', {
+        transform: 'translate(130 52)'
+      },
+        s 'text', {
+          fill: '#FFF'
+          'font-family': 'Rubik-Regular, Rubik'
+          'font-size': '12'
+        },
+          s 'tspan', {
+            x: '29.874'
+            y: '116'
+          }, _.startCase player.data.chestCycle.chests[0]
+
+        s 'text', {
+          fill: '#FFF'
+          'font-family': 'Rubik-Medium, Rubik'
+          'font-size': '14'
+          'font-weight': '400'
+        },
+          s 'tspan', {
+            x: '34.47'
+            y: '138'
+          }, 'Next'
+
+        s 'image', {
+          width: '101'
+          height: '101'
+          'xlink:href': "data:image/png;base64,#{images.nextChest}"
+        }
+
+      s 'path', {
+        fill: '#FFF'
+        'fill-opacity': '.06'
+        d: 'M8 213h344v1H8z'
+      }
+      s 'image', {
+        width: '130'
+        height: '32'
+        x: '116'
+        y: '399'
+        'xlink:href': "data:image/png;base64,#{images.poweredBy}"
+      }
 
     # coffeelint: enable=max_line_length,cyclomatic_complexity

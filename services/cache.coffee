@@ -65,8 +65,8 @@ class CacheService
     PLAYER_CLASH_ROYALE_ID: 'player:clash_royale_id'
     PLAYER_MIGRATE: 'player:migrate07'
     USER_RECORDS_MIGRATE: 'user_records:migrate9'
-    USER_PLAYER_USER_ID_GAME_ID: 'user_player:user_id_game_id3'
-    GROUP_CLAN_CLAN_ID_GAME_ID: 'group_clan:clan_id_game_id4'
+    USER_PLAYER_USER_ID_GAME_ID: 'user_player:user_id_game_id4'
+    GROUP_CLAN_CLAN_ID_GAME_ID: 'group_clan:clan_id_game_id5'
     CLAN_CLAN_ID_GAME_ID: 'clan:clan_id_game_id4'
     CLAN_MIGRATE: 'clan:migrate9'
 

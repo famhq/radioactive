@@ -36,6 +36,7 @@ class ClanModel
             groupId: oldClan.groupId
             gameId: oldClan.gameId
             clanId: oldClan.clanId
+            password: oldClan.password
             playerIds: _.map oldClan.players, 'playerId'
           }
 

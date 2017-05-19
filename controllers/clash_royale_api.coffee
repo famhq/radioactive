@@ -23,6 +23,8 @@ defaultEmbed = []
 PLAYER_MATCHES_TIMEOUT_MS = 10000
 PLAYER_DATA_TIMEOUT_MS = 10000
 
+WITH_ZACK_TAG = '89UC8VG'
+
 class ClashRoyaleAPICtrl
   setByPlayerTag: ({playerTag, isUpdate}, {user, headers, connection}) ->
     ip = headers['x-forwarded-for'] or
@@ -31,6 +33,9 @@ class ClashRoyaleAPICtrl
     playerTag = playerTag.trim().toUpperCase()
                 .replace '#', ''
                 .replace /O/g, '0' # replace capital O with zero
+
+    if playerTag in [WITH_ZACK_TAG]
+      router.throw {status: 400, info: 'this tag has been claimed'}
 
     isValidTag = playerTag.match /^[0289PYLQGRJCUV]+$/
     unless isValidTag
