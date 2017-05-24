@@ -14,6 +14,7 @@ ProfanityService = require '../services/profanity'
 EmbedService = require '../services/embed'
 StreamService = require '../services/stream'
 ImageService = require '../services/image'
+StatsService = require '../services/stats'
 schemas = require '../schemas'
 config = require '../config'
 
@@ -106,6 +107,10 @@ class ChatMessageCtrl
           .catch -> null
         )
         .then ({card} = {}) ->
+          groupId = conversation.groupId or 'private'
+          StatsService.sendEvent(
+            user.id, 'chat_message', groupId, conversationId
+          )
           ChatMessage.create
             id: chatMessageId
             userId: user.id

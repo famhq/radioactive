@@ -3,6 +3,7 @@ _ = require 'lodash'
 request = require 'request-promise'
 moment = require 'moment'
 
+GroupClan = require '../models/group_clan'
 Clan = require '../models/clan'
 Player = require '../models/player'
 User = require '../models/user'
@@ -12,7 +13,7 @@ UserPlayer = require '../models/user_player'
 # ClashRoyaleTopClan = require '../models/clash_royale_top_clan'
 CacheService = require './cache'
 PushNotificationService = require './push_notification'
-ClashRoyaleKueService = require './clash_royale_kue'
+ClashRoyaleAPIService = require './clash_royale_api'
 config = require '../config'
 
 MAX_TIME_TO_COMPLETE_MS = 60 * 30 * 1000 # 30min
@@ -53,50 +54,50 @@ class ClashRoyaleClan
       players: players
     }
 
-    ClanRecord.upsert {
-      clanId: tag
-      clanRecordTypeId: config.CLASH_ROYALE_CLAN_DONATIONS_RECORD_ID
-      scaledTime: ClanRecord.getScaledTimeByTimeScale 'week'
-      diff: {value: clan.donations}
-    }
+    Clan.getByClanIdAndGameId tag, GAME_ID
+    .then (existingClan) ->
+      ClanRecord.upsert {
+        clanId: tag
+        clanRecordTypeId: config.CLASH_ROYALE_CLAN_DONATIONS_RECORD_ID
+        scaledTime: ClanRecord.getScaledTimeByTimeScale 'week'
+        diff: {value: clan.donations}
+      }
 
-    ClanRecord.upsert {
-      clanId: tag
-      clanRecordTypeId: config.CLASH_ROYALE_CLAN_TROPHIES_RECORD_ID
-      scaledTime: ClanRecord.getScaledTimeByTimeScale 'week'
-      diff: {value: clan.trophies}
-    }
+      ClanRecord.upsert {
+        clanId: tag
+        clanRecordTypeId: config.CLASH_ROYALE_CLAN_TROPHIES_RECORD_ID
+        scaledTime: ClanRecord.getScaledTimeByTimeScale 'week'
+        diff: {value: clan.trophies}
+      }
 
-    playerIds = _.map players, 'playerId'
-    Promise.all [
-      UserPlayer.getAllByPlayerIdsAndGameId playerIds, GAME_ID
-      Player.getAllByPlayerIdsAndGameId playerIds, GAME_ID
-    ]
-    .then ([existingUserPlayers, existingPlayers]) ->
-      _.map existingUserPlayers, (existingUserPlayer) ->
-        player = _.find players, {playerId: existingUserPlayer.playerId}
-        donations = player.donations
-        clanChestCrowns = player.clanChestCrowns
-        UserRecord.upsert {
-          userId: existingUserPlayer.userId
-          gameRecordTypeId: config.CLASH_ROYALE_DONATIONS_RECORD_ID
-          scaledTime: UserRecord.getScaledTimeByTimeScale 'week'
-          diff: {value: donations, playerId: existingUserPlayer.playerId}
-        }
-        UserRecord.upsert {
-          userId: existingUserPlayer.userId
-          gameRecordTypeId: config.CLASH_ROYALE_CLAN_CROWNS_RECORD_ID
-          scaledTime: UserRecord.getScaledTimeByTimeScale 'week'
-          diff: {value: clanChestCrowns, playerId: existingUserPlayer.playerId}
-        }
+      playerIds = _.map players, 'playerId'
+      Promise.all [
+        UserPlayer.getAllByPlayerIdsAndGameId playerIds, GAME_ID
+        Player.getAllByPlayerIdsAndGameId playerIds, GAME_ID
+      ]
+      .then ([existingUserPlayers, existingPlayers]) ->
+        _.map existingUserPlayers, (existingUserPlayer) ->
+          player = _.find players, {playerId: existingUserPlayer.playerId}
+          donations = player.donations
+          clanChestCrowns = player.clanChestCrowns
+          UserRecord.upsert {
+            userId: existingUserPlayer.userId
+            gameRecordTypeId: config.CLASH_ROYALE_DONATIONS_RECORD_ID
+            scaledTime: UserRecord.getScaledTimeByTimeScale 'week'
+            diff: {value: donations, playerId: existingUserPlayer.playerId}
+          }
+          UserRecord.upsert {
+            userId: existingUserPlayer.userId
+            gameRecordTypeId: config.CLASH_ROYALE_CLAN_CROWNS_RECORD_ID
+            scaledTime: UserRecord.getScaledTimeByTimeScale 'week'
+            diff: {
+              value: clanChestCrowns, playerId: existingUserPlayer.playerId
+            }
+          }
 
-      Promise.map players, (player) ->
-        # TODO: track donations and clanCrowns
-        # TODO: try to update every clan between 3 and 5pm EST, set the
-        # records then
         newPlayers = _.filter _.map players, (player) ->
           unless _.find existingPlayers, {id: player.playerId}
-            # ClashRoyaleKueService.refreshByPlayerTag playerId, {
+            # ClashRoyaleAPIService.updatePlayerById playerId, {
             #   priority: 'normal'
             # }
             # .then ->
@@ -120,9 +121,21 @@ class ClashRoyaleClan
             }
         Player.batchCreateByGameId GAME_ID, newPlayers
 
-    Clan.upsertByClanIdAndGameId tag, GAME_ID, diff
-    .catch (err) ->
-      console.log 'clan err', err
+
+      (if existingClan
+        Clan.updateByClanIdAndGameId tag, GAME_ID, diff
+      else
+        Clan.createByGameId GAME_ID, _.defaults {id: diff.clanId}, diff
+        .then ({id}) ->
+          Clan.createGroup {
+            userId: userId
+            name: clan.name
+            clanId: diff.clanId
+          }
+          .then (group) ->
+            GroupClan.updateByClanIdAndGameId tag, GAME_ID, {groupId: group.id}
+      ).catch (err) ->
+        console.log 'clan err', err
 
   updateStale: ({force} = {}) ->
     Clan.getStaleByGameId GAME_ID, {
@@ -173,7 +186,7 @@ class ClashRoyaleClan
   #           User.create {}
   #           .then ({id}) =>
   #             userId = id
-  #             @refreshByClanId clanId, {
+  #             @updateByClanId clanId, {
   #               userId: userId, priority: 'normal'
   #             }
   #

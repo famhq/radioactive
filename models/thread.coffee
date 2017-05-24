@@ -9,6 +9,9 @@ ATTACHMENT_IDS_INDEX = 'attachmentIds'
 SCORE_INDEX = 'score'
 LAST_UPDATE_TIME_INDEX = 'lastUpdateTime'
 
+# update the scores for posts up until they're a month old
+SCORE_UPDATE_TIME_RANGE_S = 3600 * 24 * 31
+
 defaultThread = (thread) ->
   unless thread?
     return null
@@ -67,6 +70,8 @@ class ThreadModel
 
     r.table THREADS_TABLE
     .orderBy {index: r.desc(SCORE_INDEX)}
+    # .orderBy (thread) ->
+    #   thread.merge({newScore: thread('upvotes').sub(thread('downvotes')).mul(r.expr(1).div(r.now().sub(thread('addTime')).div(3600 * 24 * 31)))})
     .limit limit
     .run()
     .map defaultThread

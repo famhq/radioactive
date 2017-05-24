@@ -6,7 +6,7 @@ User = require '../models/user'
 UserData = require '../models/user_data'
 Player = require '../models/player'
 ClashRoyaleTopPlayer = require '../models/clash_royale_top_player'
-ClashRoyaleKueService = require '../services/clash_royale_kue'
+ClashRoyaleAPIService = require '../services/clash_royale_api'
 KueCreateService = require '../services/kue_create'
 CacheService = require '../services/cache'
 EmbedService = require '../services/embed'
@@ -58,7 +58,7 @@ class PlayerCtrl
         else
           User.create {}
           .then ({id}) ->
-            ClashRoyaleKueService.refreshByPlayerTag playerId, {
+            ClashRoyaleAPIService.updatePlayerById playerId, {
               userId: id
               priority: 'normal'
             }

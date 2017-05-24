@@ -133,7 +133,7 @@ module.exports = router
 .on 'clan.claimById', authed ClanCtrl.claimById
 .on 'clan.createGroupById', authed ClanCtrl.createGroupById
 .on 'clan.joinById', authed ClanCtrl.joinById
-# .on 'clan.getTop', authed ClanCtrl.getTop
+.on 'clan.updateById', authed ClanCtrl.updateById
 # .on 'clan.search', authed ClanCtrl.search
 
 .on 'threadComments.create', authed ThreadCommentCtrl.create
@@ -149,11 +149,17 @@ module.exports = router
 .on 'conversations.getById', authed ConversationCtrl.getById
 
 .on 'clashRoyaleAPI.setByPlayerTag',
-  authed ClashRoyaleAPICtrl.setByPlayerTag
-.on 'clashRoyaleAPI.refreshByPlayerTag',
-  authed ClashRoyaleAPICtrl.refreshByPlayerTag
-.on 'clashRoyaleAPI.refreshByClanId',
-  authed ClashRoyaleAPICtrl.refreshByClanId
+  authed ClashRoyaleAPICtrl.setByPlayerId
+.on 'clashRoyaleAPI.setByPlayerId', # TODO: rm (legacy) june 2018
+  authed ClashRoyaleAPICtrl.setByPlayerId
+.on 'clashRoyaleAPI.refreshByPlayerTag', # TODO: rm (legacy) june 2018
+  authed ClashRoyaleAPICtrl.refreshByPlayerId
+.on 'clashRoyaleAPI.refreshByPlayerId',
+  authed ClashRoyaleAPICtrl.refreshByPlayerId
+.on 'clashRoyaleAPI.refreshByClanId', # TODO: rm (legacy) june 2018
+  authed ClashRoyaleAPICtrl.updateByClanId
+.on 'clashRoyaleAPI.updateByClanId',
+  authed ClashRoyaleAPICtrl.updateByClanId
 
 .on 'clashRoyaleDecks.getAll', authed ClashRoyaleDeckCtrl.getAll
 .on 'clashRoyaleDecks.getById', authed ClashRoyaleDeckCtrl.getById

@@ -32,7 +32,8 @@ defaultConversation = (conversation) ->
     name: null
     description: null
     userData: {}
-    lastUpdateTime: new Date()
+    # null used to determine if message has been sent in convo
+    lastUpdateTime: null # new Date()
   }
 
 class ConversationModel
@@ -86,7 +87,10 @@ class ConversationModel
 
     r.table CONVERSATIONS_TABLE
     .getAll userId, {index: USER_IDS_INDEX}
-    .filter {type: 'pm'}
+    .filter(
+      r.row('type').eq('pm')
+      .and r.row('lastUpdateTime').default(null).ne(null)
+    )
     .orderBy r.desc(LAST_UPDATE_TIME_INDEX)
     .limit limit
     .run()

@@ -42,11 +42,14 @@ END_VIDEO_COUNT = 10
 MIN_ENGLISH_PERCENT = 85
 BLACKLISTED_WORDS = [
   'free', 'gem', 'hack', 'coins', 'chest', 'deutsch', 'german', '¡', 'pack',
-  'indonesia', 'glitch'
+  'indonesia', 'glitch', 'private', 'statsroyale'
 ]
 blacklistedRegExp = new RegExp "#{BLACKLISTED_WORDS.join('|')}", 'ig'
 # default weight = 1
 channelWeights =
+  'UCjmGtPZMS9kSLheN4MYO2XQ': 4 # withzack
+  'UC4LHNX8d8RqnDX0OezgmCTg': 2 # willyrex
+
   'UC_F8DoJf9MZogEOU51TpTbQ': 2 # clash royale
   'UC3S6nIDGJ5OtpC-mbvFA8Ew': 2 # orange juice
   'UCqS6pRHyPYPZk1jrwakRuTg': 2 # M4SON
@@ -73,9 +76,10 @@ class VideoDisoveryService
       maxResults: 50
       pageToken
       # regionCode: 'US'
-      relevanceLanguage: 'en-us'
+      # relevanceLanguage: 'en-us'
+      relevanceLanguage: 'es-es'
       type: 'video'
-      publishedAfter: moment().subtract(1, 'day').toISOString()
+      publishedAfter: moment().subtract(2, 'day').toISOString()
       videoEmbeddable: true
     }
     .then (results) =>
@@ -114,7 +118,9 @@ class VideoDisoveryService
       .then (result) ->
         # if result.languages[0].name is 'ENGLISH' and title.indexOf('NASIB') isnt -1
         #   console.log result.languages
-        return result.languages[0].name is 'ENGLISH' and
+        # return result.languages[0].name is 'ENGLISH' and
+        #         result.languages[0].percent > MIN_ENGLISH_PERCENT
+        return result.languages[0].name is 'SPANISH' and
                 result.languages[0].percent > MIN_ENGLISH_PERCENT
       .catch ->
         return false
@@ -155,7 +161,7 @@ class VideoDisoveryService
   getScoreByVideo: (item) ->
     {likeCount, dislikeCount, commentCount, viewCount} = item.statistics
     commentScore = log10(commentCount)
-    viewCountScore = log10(commentCount)
+    viewCountScore = log10(viewCount)
     likeCountScore = log10(likeCount)
     likeDislikeScore = if likeCount / dislikeCount > 0.95 then 2 \
                        else if likeCount / dislikeCount < 0.7 then 0

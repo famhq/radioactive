@@ -7,7 +7,7 @@ CacheService = require '../services/cache'
 config = require '../config'
 
 # so far can handle 20k per minute (1.2m per hour)
-DEFAULT_PLAYER_MATCHES_STALE_LIMIT = 500
+DEFAULT_PLAYER_MATCHES_STALE_LIMIT = 2000
 # 1,000 players per minute = ~1.4m per day
 DEFAULT_PLAYER_DATA_STALE_LIMIT = 1000
 SIX_HOURS_S = 3600 * 6

@@ -43,6 +43,7 @@ TYPES =
   CLAN:
     PLAYERS: 'clan:players'
     IS_UPDATABLE: 'clan:isUpdatable'
+    GROUP: 'clan:group'
   CLASH_ROYALE_USER_DECK:
     DECK: 'clashRoyaleUserDeck:deck1'
   CLASH_ROYALE_DECK:
@@ -231,16 +232,25 @@ embedFn = _.curry ({embed, user, clanId, groupId, gameId, userId}, object) ->
         }
 
       when TYPES.CLAN.PLAYERS
-        embedded.players = Promise.map embedded.players, (player) ->
-          Player.getByPlayerIdAndGameId player.playerId, embedded.gameId
-          .then embedFn {embed: [TYPES.PLAYER.VERIFIED_USER]}
-          .then (playerObj) ->
-            _.defaults {player: playerObj}, player
+        if embedded.players
+          embedded.players = Promise.map embedded.players, (player) ->
+            Player.getByPlayerIdAndGameId player.playerId, embedded.gameId
+            .then embedFn {
+              embed: [TYPES.PLAYER.VERIFIED_USER], gameId: embedded.gameId
+            }
+            .then (playerObj) ->
+              _.defaults {player: playerObj}, player
+
+
+      when TYPES.CLAN.GROUP
+        if embedded.groupId
+          embedded.group = Group.getById(embedded.groupId)
+                            .then Group.sanitizePublic null
 
       when TYPES.CLAN.IS_UPDATABLE
         msSinceUpdate = new Date() - new Date(embedded.lastQueuedTime)
-        embedded.isUpdatable = not embedded.lastQueuedTime or
-                                msSinceUpdate >= MIN_TIME_UNTIL_NEXT_UPDATE_MS
+        embedded.isUpdatable = Promise.resolve(not embedded.lastQueuedTime or
+                                msSinceUpdate >= MIN_TIME_UNTIL_NEXT_UPDATE_MS)
 
       when TYPES.CONVERSATION.USERS
         embedded.users = Promise.map embedded.userIds, (userId) ->
@@ -347,16 +357,18 @@ embedFn = _.curry ({embed, user, clanId, groupId, gameId, userId}, object) ->
                                 msSinceUpdate >= MIN_TIME_UNTIL_NEXT_UPDATE_MS
 
       when TYPES.PLAYER.VERIFIED_USER
-        if embedded.verifiedUserId
-          prefix = CacheService.PREFIXES.PLAYER_VERIFIED_USER
-          key = prefix + ':' + embedded.verifiedUserId
-          embedded.verifiedUser =
-            CacheService.preferCache key, ->
-              User.getById embedded.verifiedUserId
-              .then User.sanitizePublic(null)
-            , {expireSeconds: ONE_HOUR_SECONDS}
-        else
-          embedded.user = null
+        prefix = CacheService.PREFIXES.PLAYER_VERIFIED_USER
+        key = prefix + ':' + embedded.verifiedUserId
+        embedded.verifiedUser =
+          CacheService.preferCache key, ->
+            UserPlayer.getVerifiedByPlayerIdAndGameId embedded.id, gameId
+            .then (userPlayer) ->
+              if userPlayer?.userId
+                User.getById userPlayer.userId
+                .then User.sanitizePublic(null)
+              else
+                null
+          , {expireSeconds: ONE_HOUR_SECONDS}
 
       when TYPES.PLAYER.USER_IDS
         prefix = CacheService.PREFIXES.PLAYER_USER_IDS

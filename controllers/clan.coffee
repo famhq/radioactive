@@ -10,7 +10,7 @@ Player = require '../models/player'
 UserPlayer = require '../models/user_player'
 Conversation = require '../models/conversation'
 ClashRoyaleClanService = require '../services/clash_royale_clan'
-ClashRoyaleKueService = require '../services/clash_royale_kue'
+ClashRoyaleAPIService = require '../services/clash_royale_api'
 KueCreateService = require '../services/kue_create'
 CacheService = require '../services/cache'
 EmbedService = require '../services/embed'
@@ -20,6 +20,10 @@ config = require '../config'
 defaultEmbed = [
   EmbedService.TYPES.CLAN.PLAYERS
   EmbedService.TYPES.CLAN.IS_UPDATABLE
+  EmbedService.TYPES.CLAN.GROUP
+]
+groupEmbed = [
+  EmbedService.TYPES.CLAN.GROUP
 ]
 
 GAME_ID = config.CLASH_ROYALE_ID
@@ -31,10 +35,22 @@ class ClanCtrl
     Clan.getByClanIdAndGameId id, GAME_ID
     .then EmbedService.embed {embed: defaultEmbed}
     .then (clan) ->
+      # FIXME FIXME: rm after ~june 2017?
+      isInGroup = clan.group?.userIds
+      if clan.group and clan.group.mode is 'open' and isInGroup
+        Group.addUser clan.groupId, user.id
+      else if not clan.group
+        Clan.createGroup {
+          userId: user.id, name: clan.data.name, clanId: id
+        }
+      # end
+
       if clan?.creatorId is user.id
         Clan.sanitize null, clan
-      else
+      else if clan
         Clan.sanitizePublic null, clan
+      else
+        null
 
   claimById: ({id}, {user}) ->
     Clan.getByClanIdAndGameId id, GAME_ID
@@ -42,12 +58,9 @@ class ClanCtrl
       unless clan
         router.throw {status: 404, info: 'clan not found'}
 
-      if clan?.groupId
-        router.throw {status: 400, info: 'clan already claimed'}
-
       # TODO: make sure api doesn't use cached version
       Promise.all [
-        ClashRoyaleKueService.getClanByTag clan.clanId
+        ClashRoyaleAPIService.getClanByTag clan.clanId
         Player.getByUserIdAndGameId user.id, GAME_ID
       ]
       .then ([updatedClan, player]) ->
@@ -70,49 +83,25 @@ class ClanCtrl
             GAME_ID
             {isVerified: true}
           )
+          Group.updateById clan?.groupId, {creatorId: user.id}
         ]
 
-  createGroupById: ({id, groupName, clanPassword}, {user}) ->
+  updateById: ({id, clanPassword}, {user}) ->
     Clan.getByClanIdAndGameId id, GAME_ID
-    .tap (clan) ->
-      console.log clan
+    .then (clan) ->
       if not clan?.creatorId or clan?.creatorId isnt user.id
         router.throw {status: 401, info: 'invalid permission'}
 
       unless clanPassword
         router.throw {status: 400, info: 'must specify a password'}
 
-      unless groupName
-        router.throw {status: 400, info: 'must specify a name'}
-
-      clanPassword = clanPassword.trim()
-
-      Group.create {
-        name: groupName
-        creatorId: user.id
-        mode: 'private'
-        userIds: [user.id]
-        gameIds: [GAME_ID]
-        clanIds: [clan.id]
-        # TODO: remove? legacy
-        gameData:
-          "#{id}":
-            clanId: clan.id
-      }
-      .tap (group) ->
-        Conversation.create {
-          groupId: group.id
-          name: 'general'
-          type: 'channel'
-        }
-      .tap (group) ->
-        GroupClan.updateByClanIdAndGameId clan.id, GAME_ID, {
-          password: clanPassword, groupId: group.id
-        }
+      GroupClan.updateByClanIdAndGameId id, GAME_ID, {password: clanPassword}
 
   joinById: ({id, clanPassword}, {user}) ->
     Promise.all [
       Clan.getByClanIdAndGameId id, GAME_ID
+      .then EmbedService.embed {embed: groupEmbed}
+
       Player.getByUserIdAndGameId user.id, GAME_ID
     ]
     .then ([clan, player]) ->
@@ -120,7 +109,7 @@ class ClanCtrl
       unless clanPlayer
         router.throw {status: 401, info: 'not a clan member'}
 
-      if not clanPassword or clanPassword isnt clan.password
+      if not clanPassword or clanPassword isnt clan.group.password
         router.throw {status: 401, info: 'incorrect password'}
 
       Promise.all [
