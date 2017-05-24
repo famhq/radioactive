@@ -54,20 +54,20 @@ class CacheService
       'clash_royale_user_deck:deck_id:player_id'
     CLASH_ROYALE_USER_DECK_PLAYER_ID:
       'clash_royale_user_deck:player_id'
-    CLASH_ROYALE_API_GET_TAG: 'clash_royale_api:get_tag'
+    CLASH_ROYALE_API_GET_PLAYER_ID: 'clash_royale_api:get_tag'
     USERNAME_SEARCH: 'username:search'
     RATE_LIMIT_CHAT_MESSAGES_TEXT: 'rate_limit:chat_messages:text'
     RATE_LIMIT_CHAT_MESSAGES_MEDIA: 'rate_limit:chat_messages:media'
     PLAYER_SEARCH: 'player:search6'
-    PLAYER_VERIFIED_USER: 'player:verified_user'
+    PLAYER_VERIFIED_USER: 'player:verified_user2'
     PLAYER_USER_ID_GAME_ID: 'player:user_id_game_id1'
     PLAYER_USER_IDS: 'player:user_ids1'
     PLAYER_CLASH_ROYALE_ID: 'player:clash_royale_id'
     PLAYER_MIGRATE: 'player:migrate07'
     USER_RECORDS_MIGRATE: 'user_records:migrate9'
     USER_PLAYER_USER_ID_GAME_ID: 'user_player:user_id_game_id4'
-    GROUP_CLAN_CLAN_ID_GAME_ID: 'group_clan:clan_id_game_id5'
-    CLAN_CLAN_ID_GAME_ID: 'clan:clan_id_game_id4'
+    GROUP_CLAN_CLAN_ID_GAME_ID: 'group_clan:clan_id_game_id8'
+    CLAN_CLAN_ID_GAME_ID: 'clan:clan_id_game_id8'
     CLAN_MIGRATE: 'clan:migrate9'
 
   constructor: ->
@@ -141,7 +141,7 @@ class CacheService
           return null
 
       fn().then (value) ->
-        if value isnt null or not ignoreNull
+        if (value isnt null and value isnt undefined) or not ignoreNull
           RedisService.set key, JSON.stringify value
           .then ->
             RedisService.expire key, expireSeconds

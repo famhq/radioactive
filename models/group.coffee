@@ -106,14 +106,19 @@ class GroupModel
     .update diff
     .run()
 
+  addUser: (id, userId) =>
+    @updateById id, {
+      userIds: r.row('userIds').append(userId).distinct()
+    }
+
   deleteById: (id) ->
     r.table GROUPS_TABLE
     .get id
     .delete()
     .run()
 
-  sanitize: _.curry (requesterId, group) ->
-    _.pick group, [
+  sanitizePublic: _.curry (requesterId, group) ->
+    sanitizedGroup = _.pick group, [
       'id'
       'creatorId'
       'name'
@@ -126,5 +131,23 @@ class GroupModel
       'conversations'
       'embedded'
     ]
+    sanitizedGroup
+
+  sanitize: _.curry (requesterId, group) ->
+    sanitizedGroup = _.pick group, [
+      'id'
+      'creatorId'
+      'name'
+      'description'
+      'badgeId'
+      'background'
+      'mode'
+      'userIds'
+      'users'
+      'password'
+      'conversations'
+      'embedded'
+    ]
+    sanitizedGroup
 
 module.exports = new GroupModel()

@@ -12,7 +12,7 @@ fields = [
   {name: 'gameRecordTypeId', type: 'uuid'}
   {name: 'value', type: 'integer'}
   {name: 'scaledTime', type: 'string', length: 50, index: 'default'}
-  {name: 'time', type: 'dateTime', defaultValue: new Date()}
+  {name: 'time', type: 'dateTime', defaultValue: new Date(), index: 'default'}
 ]
 
 defaultUserRecord = (userRecord) ->

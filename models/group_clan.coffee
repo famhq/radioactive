@@ -13,12 +13,13 @@ defaultGroupClan = (groupClan) ->
     return null
 
   _.defaults groupClan, {
-    id: if clan?.gameId and clan?.clanId \
-        then "#{clan?.gameId}:#{clan?.clanId}"
+    id: if groupClan?.gameId and groupClan?.clanId \
+        then "#{groupClan?.gameId}:#{groupClan?.clanId}"
         else uuid.v4()
     gameId: null
     clanId: null
     groupId: null # can only be tied to 1 group
+    mode: 'public'
     password: null
     creatorId: null
     # no 0 or O (avoid confusion)
@@ -63,6 +64,8 @@ class GroupClan
 
   updateByClanIdAndGameId: (clanId, gameId, diff) ->
     prefix = CacheService.PREFIXES.GROUP_CLAN_CLAN_ID_GAME_ID
+    groupCacheKey = "#{prefix}:#{clanId}:#{gameId}"
+    prefix = CacheService.PREFIXES.CLAN_CLAN_ID_GAME_ID
     cacheKey = "#{prefix}:#{clanId}:#{gameId}"
 
     r.table GROUP_CLANS_TABLE
@@ -70,8 +73,10 @@ class GroupClan
     .update diff
     .run()
     .tap ->
-      CacheService.deleteByKey cacheKey
-      null
+      Promise.all [
+        CacheService.deleteByKey cacheKey
+        CacheService.deleteByKey groupCacheKey
+      ]
 
   updateByClanIdsAndGameId: (clanIds, gameId, diff) ->
     # TODO: clear cache

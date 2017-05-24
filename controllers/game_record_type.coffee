@@ -24,42 +24,27 @@ class GameRecordTypeCtrl
     embed = _.map embed, (item) ->
       EmbedService.TYPES.GAME_RECORD_TYPE[_.snakeCase(item).toUpperCase()]
 
-    # FIXME FIXME: rm whenever (migration)
-    key = CacheService.PREFIXES.USER_RECORDS_MIGRATE + ':' + userId
-    CacheService.runOnce key, ->
-      knex.select().table 'user_records_old'
-      .where {userId}
-      .distinct(knex.raw('ON ("userId", "gameRecordTypeId", "scaledTime") *'))
-      .then (records) ->
-        records = _.map records, (record) ->
-          delete record.id
-          record
-        UserRecord.batchCreate records
-    .then ->
-
-
-
-      GameRecordType.getAllByGameId gameId
-      Promise.resolve([
-        {
-          id: config.CLASH_ROYALE_TROPHIES_RECORD_ID
-          name: 'Trophies'
-          timeScale: 'minutes'
-          gameId: config.CLASH_ROYALE_ID
-        }
-        {
-          id: config.CLASH_ROYALE_DONATIONS_RECORD_ID
-          name: 'Donations'
-          timeScale: 'weeks'
-          gameId: config.CLASH_ROYALE_ID
-        }
-        {
-          id: config.CLASH_ROYALE_CLAN_CROWNS_RECORD_ID
-          name: 'Clan chest crowns'
-          timeScale: 'weeks'
-          gameId: config.CLASH_ROYALE_ID
-        }
-      ])
-      .map EmbedService.embed {embed, userId}
+    GameRecordType.getAllByGameId gameId
+    Promise.resolve([
+      {
+        id: config.CLASH_ROYALE_TROPHIES_RECORD_ID
+        name: 'Trophies'
+        timeScale: 'minutes'
+        gameId: config.CLASH_ROYALE_ID
+      }
+      {
+        id: config.CLASH_ROYALE_DONATIONS_RECORD_ID
+        name: 'Donations'
+        timeScale: 'weeks'
+        gameId: config.CLASH_ROYALE_ID
+      }
+      {
+        id: config.CLASH_ROYALE_CLAN_CROWNS_RECORD_ID
+        name: 'Clan chest crowns'
+        timeScale: 'weeks'
+        gameId: config.CLASH_ROYALE_ID
+      }
+    ])
+    .map EmbedService.embed {embed, userId}
 
 module.exports = new GameRecordTypeCtrl()

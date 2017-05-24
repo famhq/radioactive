@@ -79,6 +79,15 @@ class UserPlayer
     .run()
     .then defaultUserPlayer
 
+  getVerifiedByPlayerIdAndGameId: (playerId, gameId) ->
+    r.table USER_PLAYERS_TABLE
+    .getAll [playerId, gameId], {index: PLAYER_ID_GAME_ID_INDEX}
+    .filter {isVerified: true}
+    .nth 0
+    .default null
+    .run()
+    .then defaultUserPlayer
+
   getByPlayerIdAndGameId: (playerId, gameId) ->
     r.table USER_PLAYERS_TABLE
     .getAll [playerId, gameId], {index: PLAYER_ID_GAME_ID_INDEX}

@@ -15,7 +15,7 @@ EmailService = require './email'
 CacheService = require './cache'
 UserRecord = require '../models/user_record'
 PushNotificationService = require './push_notification'
-ClashRoyaleKueService = require './clash_royale_kue'
+ClashRoyaleAPIService = require './clash_royale_api'
 EmbedService = require './embed'
 Match = require '../models/clash_royale_match'
 User = require '../models/user'
@@ -36,7 +36,7 @@ SIX_HOURS_S = 3600 * 6
 ONE_HOUR_SECONDS = 60
 PLAYER_DATA_TIMEOUT_MS = 10000
 PLAYER_MATCHES_TIMEOUT_MS = 5000
-CLAN_TIMEOUT_MS = 1000
+CLAN_TIMEOUT_MS = 5000
 BATCH_REQUEST_SIZE = 50
 GAME_ID = config.CLASH_ROYALE_ID
 
@@ -626,13 +626,15 @@ class ClashRoyalePlayer
         undefined
 
 
-  updatePlayerData: ({userId, playerData, tag}) =>
+  updatePlayerData: ({userId, playerData, id}) =>
     if DEBUG
-      console.log 'update player data', tag
-    unless tag and playerData
+      console.log 'update player data', id
+    unless id and playerData
       return Promise.resolve null
 
-    Player.getByPlayerIdAndGameId tag, GAME_ID
+    clanId = playerData?.clan?.tag
+
+    Player.getByPlayerIdAndGameId id, GAME_ID
     .then (existingPlayer) =>
       diff = {
         data: _.defaultsDeep(
@@ -642,26 +644,29 @@ class ClashRoyalePlayer
         lastDataUpdateTime: new Date()
       }
 
-      (if playerData?.clan?.tag
-        Clan.getByClanIdAndGameId playerData.clan.tag, GAME_ID, {
-          preferCache: true
-        }
-      else
-        Promise.resolve null)
-      .then (clan) ->
-        if clan
-          return clan
-        else if playerData?.clan?.tag
-          ClashRoyaleKueService.refreshByClanId playerData.clan.tag
-          .timeout CLAN_TIMEOUT_MS
-          .catch -> null
-      .then (clan) ->
-        # NOTE: any time you update, keep in mind postgress replaces
-        # entire fields (data), so need to merge with old data manually
-        Player.upsertByPlayerIdAndGameId tag, GAME_ID, diff, {userId}
+      # NOTE: any time you update, keep in mind postgress replaces
+      # entire fields (data), so need to merge with old data manually
+      Player.upsertByPlayerIdAndGameId id, GAME_ID, diff, {userId}
+      .then =>
+        if clanId
+          @_setClan {clanId, userId}
+      .catch (err) ->
+        console.log 'err', err
+        null
 
+  _setClan: ({clanId, userId}) ->
+    Clan.getByClanIdAndGameId clanId, GAME_ID, {
+      preferCache: false # FIXME FIXME back to true
+    }
+    .then (clan) ->
+      if clan?.groupId
+        Group.addUser clan.groupId, userId
+        return clan
+      else if not clan and clanId
+        ClashRoyaleAPIService.updateByClanId clanId, {userId}
+        .timeout CLAN_TIMEOUT_MS
         .catch (err) ->
-          console.log 'err', err
+          console.log 'clan refresh err', err
           null
 
   updateStalePlayerMatches: ({force} = {}) ->
@@ -715,19 +720,19 @@ class ClashRoyalePlayer
           console.log 'err stalePlayerData', err
 
 
-  processUpdatePlayerData: ({userId, tag, playerData, isDaily}) =>
+  processUpdatePlayerData: ({userId, id, playerData, isDaily}) =>
     if DEBUG
       console.log 'process playerdata', isDaily
-    unless tag
+    unless id
       console.log 'tag doesn\'t exist updateplayerdata'
       return Promise.resolve null
-    @updatePlayerData {userId, tag, playerData}
+    @updatePlayerData {userId, id, playerData}
     .then (player) ->
       if isDaily
-        key = CacheService.PREFIXES.USER_DAILY_DATA_PUSH + ':' + tag
+        key = CacheService.PREFIXES.USER_DAILY_DATA_PUSH + ':' + id
         CacheService.runOnce key, ->
           Promise.all [
-            Player.getByPlayerIdAndGameId tag, GAME_ID
+            Player.getByPlayerIdAndGameId id, GAME_ID
             .then EmbedService.embed {
               embed: [
                 EmbedService.TYPES.PLAYER.USER_IDS
@@ -735,7 +740,7 @@ class ClashRoyalePlayer
               ]
               gameId: GAME_ID
             }
-            PlayersDaily.getByPlayerIdAndGameId tag, GAME_ID
+            PlayersDaily.getByPlayerIdAndGameId id, GAME_ID
           ]
           .then ([player, playerDaily]) ->
             if player
@@ -763,19 +768,22 @@ class ClashRoyalePlayer
                 text = "#{countUntilNextGoodChest} chests until a
                   #{_.startCase(nextGoodChest)}."
 
-              # FIXME FIXME: getStale is still pulling in a ton of
-              # users w/ no userIds. should be sending 500/min, instead of 70
-              console.log 'send push notification1'
-              Promise.map player.userIds, User.getById
-              .map (user) ->
-                console.log 'send push notification2'
-                PushNotificationService.send user, {
-                  title: 'Daily recap'
-                  type: PushNotificationService.TYPES.DAILY_RECAP
-                  url: "https://#{config.SUPERNOVA_HOST}"
-                  text: text
-                  data: {path: '/'}
-                }
+              # TODO: figure out why some players without userIds are initially
+              # setup with an updateFrequency other than none
+              if _.isEmpty player.userIds
+                diff = _.defaults {updateFrequency: 'none'}, player
+                console.log 'no userIds, setting freq to none'
+                Player.updateByPlayerIdAndGameId player.id, GAME_ID, diff
+              else
+                Promise.map player.userIds, User.getById
+                .map (user) ->
+                  PushNotificationService.send user, {
+                    title: 'Daily recap'
+                    type: PushNotificationService.TYPES.DAILY_RECAP
+                    url: "https://#{config.SUPERNOVA_HOST}"
+                    text: text
+                    data: {path: '/'}
+                  }
               null
         , {expireSeconds: TWENTY_THREE_HOURS_S}
 
@@ -811,7 +819,7 @@ class ClashRoyalePlayer
                 UserRecord.duplicateByPlayerId playerId, userId
               ]
               .then ->
-                ClashRoyaleKueService.refreshByPlayerTag playerId, {
+                ClashRoyaleAPIService.updatePlayerById playerId, {
                   userId: userId, priority: 'normal'
                 }
 
