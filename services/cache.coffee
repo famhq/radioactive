@@ -59,16 +59,18 @@ class CacheService
     RATE_LIMIT_CHAT_MESSAGES_TEXT: 'rate_limit:chat_messages:text'
     RATE_LIMIT_CHAT_MESSAGES_MEDIA: 'rate_limit:chat_messages:media'
     PLAYER_SEARCH: 'player:search6'
-    PLAYER_VERIFIED_USER: 'player:verified_user2'
+    PLAYER_VERIFIED_USER: 'player:verified_user3'
     PLAYER_USER_ID_GAME_ID: 'player:user_id_game_id1'
-    PLAYER_USER_IDS: 'player:user_ids1'
+    PLAYER_USER_IDS: 'player:user_ids2'
     PLAYER_CLASH_ROYALE_ID: 'player:clash_royale_id'
     PLAYER_MIGRATE: 'player:migrate07'
     USER_RECORDS_MIGRATE: 'user_records:migrate9'
-    USER_PLAYER_USER_ID_GAME_ID: 'user_player:user_id_game_id4'
+    USER_PLAYER_USER_ID_GAME_ID: 'user_player:user_id_game_id5'
     GROUP_CLAN_CLAN_ID_GAME_ID: 'group_clan:clan_id_game_id8'
     CLAN_CLAN_ID_GAME_ID: 'clan:clan_id_game_id8'
     CLAN_MIGRATE: 'clan:migrate9'
+    BAN_IP: 'ban:ip'
+    BAN_USER_ID: 'ban:userId1'
 
   constructor: ->
     @redlock = new Redlock [RedisService], {

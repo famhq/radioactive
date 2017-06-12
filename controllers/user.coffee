@@ -28,7 +28,11 @@ class UserCtrl
     .tap ->
       ip = headers['x-forwarded-for'] or
             connection.remoteAddress
-      if user.lastActiveTime.getTime() < Date.now() - LAST_ACTIVE_UPDATE_FREQ_MS
+      isRecent =
+        user.lastActiveTime.getTime() < Date.now() - LAST_ACTIVE_UPDATE_FREQ_MS
+      # rendered via starfire server (wrong ip)
+      isServerSide = ip?.indexOf('::ffff:10.') isnt -1
+      if isRecent and not isServerSide
         User.updateById user.id, {
           lastActiveIp: ip
           lastActiveTime: new Date()

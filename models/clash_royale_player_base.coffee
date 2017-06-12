@@ -53,7 +53,7 @@ class ClashRoyalePlayerBaseModel
         fields: fields
         indexes: [
           {columns: ['updateFrequency', 'lastMatchesUpdateTime']}
-          {columns: ['updateFrequency', 'lastDataupdateTime']}
+          {columns: ['updateFrequency', 'lastDataUpdateTime']}
         ]
       }
   ]

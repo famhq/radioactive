@@ -4,6 +4,7 @@ router = require 'exoid-router'
 
 ClashRoyaleAPIService = require '../services/clash_royale_api'
 r = require '../services/rethinkdb'
+Player = require '../models/player'
 config = require '../config'
 
 HEALTHCHECK_TIMEOUT = 60000
@@ -25,12 +26,14 @@ class HealthCtrl
       }
       .timeout HEALTHCHECK_TIMEOUT
       .catch -> null
+      Player.getByPlayerIdAndGameId AUSTIN_TAG, config.CLASH_ROYALE_ID
     ]
-    .then ([rethinkdb, playerData, playerMatches]) ->
+    .then ([rethinkdb, playerData, playerMatches, player]) ->
       result =
         rethinkdb: Boolean rethinkdb
         playerData: playerData?.tag is AUSTIN_TAG
         playerMatches: Boolean playerMatches
+        postgresPlayer: player?.id is AUSTIN_TAG
 
       result.healthy = _.every _.values result
       return result

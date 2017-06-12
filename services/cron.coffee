@@ -11,6 +11,7 @@ ClashRoyaleClanService = require './clash_royale_clan'
 ClashRoyaleDeck = require '../models/clash_royale_deck'
 ClashRoyaleCard = require '../models/clash_royale_card'
 ClashRoyaleUserDeck = require '../models/clash_royale_user_deck'
+Ban = require '../models/ban'
 r = require './rethinkdb'
 config = require '../config'
 
@@ -40,10 +41,10 @@ class CronService
     @addCron 'threeQuarterMinute', '45 * * * * *', ->
       if config.ENV is config.ENVS.PROD
         ClashRoyalePlayerService.updateTopPlayers()
-      CleanupService.clean()
 
     @addCron 'hourly', '0 0 * * * *', ->
       VideoDiscoveryService.discover()
+      Ban.unbanTemp()
 
     # @addCron 'halfHourly', ' 0 0,30 * * * *', ->
     #   null

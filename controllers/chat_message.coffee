@@ -6,6 +6,7 @@ Promise = require 'bluebird'
 Joi = require 'joi'
 
 User = require '../models/user'
+Ban = require '../models/ban'
 ChatMessage = require '../models/chat_message'
 Conversation = require '../models/conversation'
 CacheService = require '../services/cache'
@@ -41,7 +42,7 @@ class ChatMessageCtrl
   constructor: ->
     @cardBuilder = new cardBuilder {api: config.DEALER_API_URL}
 
-  checkRateLimit: (userId, isMedia) ->
+  checkRateLimit: (userId, isMedia, router) ->
     if isMedia
       key = "#{CacheService.PREFIXES.RATE_LIMIT_CHAT_MESSAGES_MEDIA}:#{userId}"
       rateLimit = RATE_LIMIT_CHAT_MESSAGES_MEDIA
@@ -59,6 +60,16 @@ class ChatMessageCtrl
       CacheService.set key, amount + 1, {
         expireSeconds: rateLimitExpireS
       }
+
+  checkIfBanned: (ipAddr, userId, router) ->
+    ipAddr ?= 'n/a'
+    Promise.all [
+      Ban.getByIp ipAddr, {preferCache: true}
+      Ban.getByUserId userId, {preferCache: true}
+    ]
+    .then ([bannedIp, bannedUserId]) ->
+      if bannedIp?.ip or bannedUserId?.userId
+        router.throw status: 403, 'unable to post'
 
   create: ({body, conversationId, clientId}, {user, headers, connection}) =>
     userAgent = headers['user-agent']
@@ -78,7 +89,9 @@ class ChatMessageCtrl
     isSticker = body.match(STICKER_REGEX)
     isMedia = isImage or isSticker
 
-    @checkRateLimit user.id, isMedia
+    @checkIfBanned ip, user.id, router
+    .then =>
+      @checkRateLimit user.id, isMedia, router
     .then ->
       Conversation.getById conversationId
     .then EmbedService.embed {embed: defaultConversationEmbed}
@@ -117,6 +130,7 @@ class ChatMessageCtrl
             body: body
             clientId: clientId
             conversationId: conversationId
+            groupId: conversation?.groupId
             card: card
         .then ->
           userIds = conversation.userIds

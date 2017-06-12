@@ -13,6 +13,7 @@ defaultChatMessage = (chatMessage) ->
     id: uuid.v4()
     userId: null
     conversationId: null
+    groupId: null
     time: new Date()
     body: ''
   }
@@ -21,6 +22,7 @@ CHAT_MESSAGES_TABLE = 'chat_messages'
 TIME_INDEX = 'time'
 CONVERSATION_ID_INDEX = 'conversationId'
 CONVERSATION_ID_TIME_INDEX = 'conversationIdTime'
+USER_ID_GROUP_ID_INDEX = 'userIdGroupId'
 FIVE_MINUTES_SECONDS = 60 * 5
 TWELVE_HOURS_SECONDS = 3600 * 12
 SEVEN_DAYS_SECONDS = 3600 * 24 * 7
@@ -35,6 +37,8 @@ class ChatMessageModel
         {name: CONVERSATION_ID_INDEX}
         {name: CONVERSATION_ID_TIME_INDEX, fn: (row) ->
           [row('conversationId'), row('time')]}
+        {name: USER_ID_GROUP_ID_INDEX, fn: (row) ->
+          [row('userId'), row('groupId')]}
       ]
     }
   ]
@@ -126,6 +130,14 @@ class ChatMessageModel
     .get id
     .update diff
     .run()
+
+  deleteAllByUserIdAndGroupId: (userId, groupId) ->
+    console.log 'delete', userId, groupId
+    r.table CHAT_MESSAGES_TABLE
+    .getAll [userId, groupId], {index: USER_ID_GROUP_ID_INDEX}
+    .delete()
+    .run()
+
 
   deleteOld: ->
     Promise.all [

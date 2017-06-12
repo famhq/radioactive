@@ -15,7 +15,12 @@ class AuthCtrl
   login: ({}, {headers, connection}) ->
     ip = headers['x-forwarded-for'] or
           connection.remoteAddress
-    country = geoip.lookup(ip)?.country
+    isServerSide = ip?.indexOf('::ffff:10.') isnt -1
+    if isServerSide
+      ip = null
+      country = null
+    else
+      country = geoip.lookup(ip)?.country
     User.create {ip, country}
     .then (user) ->
       Auth.fromUserId user.id

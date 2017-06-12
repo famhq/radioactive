@@ -37,7 +37,8 @@ ONE_HOUR_SECONDS = 60
 PLAYER_DATA_TIMEOUT_MS = 10000
 PLAYER_MATCHES_TIMEOUT_MS = 5000
 CLAN_TIMEOUT_MS = 5000
-BATCH_REQUEST_SIZE = 50
+MATCHES_BATCH_REQUEST_SIZE = 50
+DATA_BATCH_REQUEST_SIZE = 10
 GAME_ID = config.CLASH_ROYALE_ID
 
 ALLOWED_GAME_TYPES = [
@@ -648,7 +649,7 @@ class ClashRoyalePlayer
       # entire fields (data), so need to merge with old data manually
       Player.upsertByPlayerIdAndGameId id, GAME_ID, diff, {userId}
       .then =>
-        if clanId
+        if clanId and userId
           @_setClan {clanId, userId}
       .catch (err) ->
         console.log 'err', err
@@ -656,7 +657,7 @@ class ClashRoyalePlayer
 
   _setClan: ({clanId, userId}) ->
     Clan.getByClanIdAndGameId clanId, GAME_ID, {
-      preferCache: false # FIXME FIXME back to true
+      preferCache: true
     }
     .then (clan) ->
       if clan?.groupId
@@ -681,7 +682,7 @@ class ClashRoyalePlayer
       Player.updateByPlayerIdsAndGameId playerIds, GAME_ID, {
         lastMatchesUpdateTime: new Date()
       }
-      playerIdChunks = _.chunk playerIds, BATCH_REQUEST_SIZE
+      playerIdChunks = _.chunk playerIds, MATCHES_BATCH_REQUEST_SIZE
       Promise.map playerIdChunks, (playerIds) ->
         tagsStr = playerIds.join ','
         request "#{config.CR_API_URL}/players/#{tagsStr}/games", {
@@ -696,6 +697,7 @@ class ClashRoyalePlayer
           console.log 'err stalePlayerMatches', err
 
   updateStalePlayerData: ({force} = {}) ->
+    console.log 'staledata go'
     Player.getStaleByGameId GAME_ID, {
       type: 'data'
       staleTimeS: if force then 0 else PLAYER_DATA_STALE_TIME_S
@@ -707,9 +709,10 @@ class ClashRoyalePlayer
       Player.updateByPlayerIdsAndGameId playerIds, GAME_ID, {
         lastDataUpdateTime: new Date()
       }
-      playerIdChunks = _.chunk playerIds, BATCH_REQUEST_SIZE
+      playerIdChunks = _.chunk playerIds, DATA_BATCH_REQUEST_SIZE
       Promise.map playerIdChunks, (playerIds) ->
         tagsStr = playerIds.join ','
+        console.log 'gpd', "#{config.CR_API_URL}/players/#{tagsStr}"
         request "#{config.CR_API_URL}/players/#{tagsStr}", {
           json: true
           qs:

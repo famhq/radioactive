@@ -813,6 +813,11 @@
       "from": "CSSwhat@>=0.4.0 <0.5.0",
       "resolved": "https://registry.npmjs.org/CSSwhat/-/CSSwhat-0.4.7.tgz"
     },
+    "cuint": {
+      "version": "0.2.2",
+      "from": "cuint@latest",
+      "resolved": "https://registry.npmjs.org/cuint/-/cuint-0.2.2.tgz"
+    },
     "currently-unhandled": {
       "version": "0.4.1",
       "from": "currently-unhandled@>=0.4.1 <0.5.0",
@@ -2328,9 +2333,9 @@
       "resolved": "https://registry.npmjs.org/kind-of/-/kind-of-3.0.4.tgz"
     },
     "knex": {
-      "version": "0.12.9",
+      "version": "0.13.0",
       "from": "knex@latest",
-      "resolved": "https://registry.npmjs.org/knex/-/knex-0.12.9.tgz",
+      "resolved": "https://registry.npmjs.org/knex/-/knex-0.13.0.tgz",
       "dependencies": {
         "interpret": {
           "version": "0.6.6",

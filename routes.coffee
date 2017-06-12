@@ -10,6 +10,7 @@ ClanCtrl = require './controllers/clan'
 ConversationCtrl = require './controllers/conversation'
 ClanRecordTypeCtrl = require './controllers/clan_record_type'
 ClashRoyaleAPICtrl = require './controllers/clash_royale_api'
+ClashRoyaleMatchCtrl = require './controllers/clash_royale_match'
 ClashRoyaleDeckCtrl = require './controllers/clash_royale_deck'
 ClashRoyaleUserDeckCtrl = require './controllers/clash_royale_user_deck'
 ClashRoyaleCardCtrl = require './controllers/clash_royale_card'
@@ -17,11 +18,13 @@ DynamicImageCtrl = require './controllers/dynamic_image'
 EventCtrl = require './controllers/event'
 PushTokenCtrl = require './controllers/push_token'
 PaymentCtrl = require './controllers/payment'
+ModCtrl = require './controllers/mod'
 TheadCtrl = require './controllers/thread'
 GroupCtrl = require './controllers/group'
 GroupRecordCtrl = require './controllers/group_record'
 GroupRecordTypeCtrl = require './controllers/group_record_type'
 GameRecordTypeCtrl = require './controllers/game_record_type'
+StarCtrl = require './controllers/star'
 ThreadCommentCtrl = require './controllers/thread_comment'
 VideoCtrl = require './controllers/video'
 StreamService = require './services/stream'
@@ -128,6 +131,7 @@ module.exports = router
 .on 'players.getTop', authed PlayerCtrl.getTop
 .on 'players.search', authed PlayerCtrl.search
 .on 'players.getMeFollowing', authed PlayerCtrl.getMeFollowing
+.on 'players.verifyMe', authed PlayerCtrl.verifyMe
 
 .on 'clan.getById', authed ClanCtrl.getById
 .on 'clan.claimById', authed ClanCtrl.claimById
@@ -164,12 +168,6 @@ module.exports = router
 .on 'clashRoyaleDecks.getAll', authed ClashRoyaleDeckCtrl.getAll
 .on 'clashRoyaleDecks.getById', authed ClashRoyaleDeckCtrl.getById
 
-# TODO: rm
-.on 'clashRoyaleUserDecks.import', -> Promise.resolve null
-.on 'clashRoyaleUserDecks.importAll', authed ClashRoyaleUserDeckCtrl.import
-
-.on 'clashRoyaleUserDecks.create', authed ClashRoyaleUserDeckCtrl.create
-.on 'clashRoyaleUserDecks.getAll', authed ClashRoyaleUserDeckCtrl.getAll
 .on 'clashRoyaleUserDecks.getFavoritedDeckIds',
   authed ClashRoyaleUserDeckCtrl.getFavoritedDeckIds
 .on 'clashRoyaleUserDecks.getAllByUserId',
@@ -182,6 +180,18 @@ module.exports = router
 .on 'clashRoyaleCards.getAll', authed ClashRoyaleCardCtrl.getAll
 .on 'clashRoyaleCards.getById', authed ClashRoyaleCardCtrl.getById
 .on 'clashRoyaleCards.getByKey', authed ClashRoyaleCardCtrl.getByKey
+
+.on 'clashRoyaleMatches.getAllByUserId',
+  authed ClashRoyaleMatchCtrl.getAllByUserId
+
+.on 'mods.getAllBanned', authed ModCtrl.getAllBanned
+.on 'mods.getAllReportedMessages', authed ModCtrl.getAllReportedMessages
+.on 'mods.banByIp', authed ModCtrl.banByIp
+.on 'mods.banByUserId', authed ModCtrl.banByUserId
+.on 'mods.unbanByUserId', authed ModCtrl.unbanByUserId
+.on 'mods.unflagByChatMessageId', authed ModCtrl.unflagByChatMessageId
+
+.on 'stars.getByUsername', authed StarCtrl.getByUsername
 
 .on 'videos.getAll', authed VideoCtrl.getAll
 .on 'videos.getById', authed VideoCtrl.getById

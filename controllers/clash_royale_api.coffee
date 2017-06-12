@@ -9,6 +9,7 @@ ClashRoyalePlayerService = require '../services/clash_royale_player'
 ClashRoyaleAPIService = require '../services/clash_royale_api'
 KueCreateService = require '../services/kue_create'
 CacheService = require '../services/cache'
+UserPlayer = require '../models/user_player'
 User = require '../models/user'
 ClashRoyaleDeck = require '../models/clash_royale_deck'
 Player = require '../models/player'
@@ -25,37 +26,40 @@ PLAYER_MATCHES_TIMEOUT_MS = 10000
 PLAYER_DATA_TIMEOUT_MS = 10000
 
 WITH_ZACK_TAG = '89UC8VG'
+GAME_ID = config.CLASH_ROYALE_ID
 
 class ClashRoyaleAPICtrl
-  setByPlayerId: ({playerId, playerTag, isUpdate}, {user}) =>
-    @refreshByPlayerId {
-      playerId, playerTag, isUpdate, userId: user.id, priority: 'high'
-    }, {user}
-    .then ->
-      if isUpdate
-        Player.removeUserId user.id, config.CLASH_ROYALE_ID
+  setByPlayerId: ({playerId, isUpdate}, {user}) =>
+    (if isUpdate
+      Player.removeUserId user.id, config.CLASH_ROYALE_ID
+    else
+      Promise.resolve null
+    )
     .then ->
       Player.getByUserIdAndGameId user.id, config.CLASH_ROYALE_ID
-      .then (player) ->
-        if player?.id
-          Player.updateByPlayerIdAndGameId player.id, config.CLASH_ROYALE_ID, {
+    .then (existingPlayer) =>
+      @refreshByPlayerId {
+        playerId, isUpdate, userId: user.id, priority: 'high'
+      }, {user}
+      .then ->
+        if existingPlayer?.id
+          Player.updateByPlayerIdAndGameId existingPlayer.id, GAME_ID, {
             lastQueuedTime: new Date()
-            updateFrequency: if player.updateFrequency is 'none' \
+            updateFrequency: if existingPlayer.updateFrequency is 'none' \
                              then 'default'
-                             else player.updateFrequency
+                             else existingPlayer.updateFrequency
           }
         else
           Promise.all [
-            ClashRoyaleUserDeck.duplicateByPlayerId playerTag, user.id
+            ClashRoyaleUserDeck.duplicateByPlayerId playerId, user.id
             .catch (err) ->
-              console.log 'duplicate userdeck err', err
-            UserRecord.duplicateByPlayerId playerTag, user.id
+              console.log 'duplicate userdeck err', playerId, user.id, err
+            UserRecord.duplicateByPlayerId playerId, user.id
             .catch (err) ->
-              console.log 'duplicate userrecord err', err
+              console.log 'duplicate userrecord err', playerId, user.id, err
           ]
 
-  refreshByPlayerId: ({playerTag, playerId, userId, priority}, {user}) ->
-    playerId ?= playerTag # TODO: rm (legacy) June 2016
+  refreshByPlayerId: ({playerId, userId, priority}, {user}) ->
     playerId = playerId.trim().toUpperCase()
                 .replace '#', ''
                 .replace /O/g, '0' # replace capital O with zero
@@ -64,15 +68,19 @@ class ClashRoyaleAPICtrl
     unless isValidId
       router.throw {status: 400, info: 'invalid tag', ignoreLog: true}
 
-    Player.updateByPlayerIdAndGameId playerId, config.CLASH_ROYALE_ID, {
-      lastQueuedTime: new Date()
-    }
-    ClashRoyaleAPIService.updatePlayerById playerId, {userId, priority}
-    .catch ->
-      router.throw {
-        status: 400, info: 'unable to find that tag (typo?)'
-        ignoreLog: true
+    Player.getByUserIdAndGameId user.id, config.CLASH_ROYALE_ID
+    .then (mePlayer) ->
+      if mePlayer?.id is playerId
+        userId = user.id
+      Player.updateByPlayerIdAndGameId playerId, config.CLASH_ROYALE_ID, {
+        lastQueuedTime: new Date()
       }
+      ClashRoyaleAPIService.updatePlayerById playerId, {userId, priority}
+      .catch ->
+        router.throw {
+          status: 400, info: 'unable to find that tag (typo?)'
+          ignoreLog: true
+        }
     .then ->
       return null
 
@@ -150,6 +158,12 @@ class ClashRoyaleAPICtrl
     .map ({playerId}) -> playerId
     .then (playerIds) ->
       console.log playerIds.join(',')
+      request "#{config.CR_API_URL}/players/#{playerIds.join(',')}/games", {
+        json: true
+        qs:
+          callbackUrl:
+            "#{config.RADIOACTIVE_API_URL}/clashRoyaleAPI/updatePlayerMatches"
+      }
       request "#{config.CR_API_URL}/players/#{playerIds.join(',')}", {
         json: true
         qs:
@@ -180,12 +194,29 @@ class ClashRoyaleAPICtrl
       console.log 'invalid admin'
       router.throw  {status: 401, info: 'Access denied'}
 
+    useRecent = req.query?.useRecent
+
     ClashRoyaleTopPlayer.getAll()
     .map ({playerId}) ->
-      Player.getByPlayerIdAndGameId playerId, config.CLASH_ROYALE_ID
+      Promise.all [
+        if useRecent
+          UserPlayer.getByPlayerIdAndGameId playerId, config.CLASH_ROYALE_ID
+          .then (userPlayer) ->
+            if userPlayer?.userId
+              ClashRoyaleUserDeck.getAllByUserId userPlayer?.userId, {
+                limit: 1, sort: 'recent'
+              }
+        else
+          Promise.resolve null
+        Player.getByPlayerIdAndGameId playerId, config.CLASH_ROYALE_ID
+      ]
     .then (players) ->
-      decks = _.map players, (player) ->
-        player?.data.currentDeck
+      decks = _.map players, ([userDecks, player]) ->
+        deckId = userDecks?[0]?.deckId
+        if deckId and deckId.indexOf('|') isnt -1
+          userDecks?[0]?.deckId?.split('|').map (key) -> {key}
+        else
+          player?.data.currentDeck
 
       cards = _.flatten decks
       popularCards = _.countBy cards, 'key'

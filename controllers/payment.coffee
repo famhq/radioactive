@@ -3,7 +3,6 @@ Promise = require 'bluebird'
 fx = require 'money'
 accounting = require 'accounting'
 stripe = require 'stripe'
-FB = require 'fb'
 router = require 'exoid-router'
 
 User = require '../models/user'
@@ -24,9 +23,6 @@ completeVerifiedPurchase = (user, {productId, revenueCents}) ->
   .then (product) ->
     revenueCents ?= product.price * 100
 
-    isOneTimePurchase = product.isOneTimePurchase
-    subsequentPurchaseGold = product.subsequentPurchaseGold
-
     inGameCurrency = product.type
 
     if product[inGameCurrency]
@@ -36,9 +32,6 @@ completeVerifiedPurchase = (user, {productId, revenueCents}) ->
       currencyAmount = product[inGameCurrency]
       if isOnSale and saleMultiplier > 1
         currencyAmount *= saleMultiplier
-
-      if isOneTimePurchase and user.flags?.oneTimePurchases?[productId]
-        currencyAmount = subsequentPurchaseGold
 
       if isNaN currencyAmount
         console.log 'payment: NaN currencyAmount'
@@ -51,61 +44,44 @@ completeVerifiedPurchase = (user, {productId, revenueCents}) ->
             isPayingUser: true
         }
 
-        if isOneTimePurchase
-          userDiff.flags?.oneTimePurchases = {"#{productId}": true}
-
         User.updateById user.id, userDiff
 
 class PaymentCtrl
   purchase: (options, {user}) ->
-    {productId, stripeToken, facebookSignedRequest, transactionId} = options
-    Product.getByProductId productId
-    .then (product) ->
-      priceCents = product.price * 100
+    {product, stripeToken, transactionId} = options
+    priceCents = product.price * 100
 
-      transaction =
-        userId: user.id
-        amount: product.price
-        productId: productId
-        transactionId: transactionId
+    transaction =
+      userId: user.id
+      amount: product.amount
+      toUsername: product.username
+      transactionId: transactionId
 
-      (if facebookSignedRequest
-        signedRequest = FB.parseSignedRequest(
-          facebookSignedRequest
-          config.FB_APP_SECRET
-        )
-        if signedRequest and signedRequest.payment_id is transactionId
-          Promise.resolve signedRequest
-        else
-          router.throw
-            status: 400
-            info: 'Unable to verify payment'
-      else
-        (if stripeToken
-          stripe.customers.create({
-            source: stripeToken,
-            description: user.id
-          })
-        else if user.privateData.stripeCustomerId
-          Promise.resolve {id: user.privateData.stripeCustomerId}
-        )
-        .then (customer) ->
-          stripe.charges.create({
-            amount: priceCents
-            currency: 'usd'
-            customer: customer.id
-            metadata: {
-              orderId: '' # TODO
-            }
-          })
-          .then ->
-            User.updateSelf user.id, {
-              flags:
-                hasStripeId: true
-              privateData:
-                stripeCustomerId: customer.id
-            }
-      )
+    (if stripeToken
+      stripe.customers.create({
+        source: stripeToken,
+        description: user.id
+      })
+    else if user.privateData.stripeCustomerId
+      Promise.resolve {id: user.privateData.stripeCustomerId}
+    )
+    .then (customer) ->
+      stripe.charges.create({
+        amount: priceCents
+        currency: 'usd'
+        customer: customer.id
+        metadata: {
+          orderId: '' # TODO
+        }
+      })
+      .then ->
+        User.updateSelf user.id, {
+          flags:
+            hasStripeId: true
+          # FIXME FIXME
+          privateData:
+            stripeCustomerId: customer.id
+        }
       .then ->
         completeVerifiedPurchase user, {
           productId
