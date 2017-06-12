@@ -2,7 +2,6 @@ _ = require 'lodash'
 Promise = require 'bluebird'
 uuid = require 'node-uuid'
 
-r = require '../services/rethinkdb'
 knex = require '../services/knex'
 CacheService = require '../services/cache'
 # TODO: rm
@@ -78,33 +77,6 @@ class ClashRoyaleUserDeckModel
       ]
     }
   ]
-  RETHINK_TABLES: [
-    {
-      name: CLASH_ROYALE_USER_DECK_TABLE
-      options: {}
-      indexes: [
-        {name: LAST_UPDATE_TIME_INDEX}
-        {
-          name: USER_ID_IS_FAVORITED_INDEX
-          fn: (row) ->
-            [row('userId'), row('isFavorited')]
-        }
-        {
-          name: DECK_ID_USER_ID_INDEX
-          fn: (row) ->
-            [row('deckId'), row('userId')]
-        }
-        {
-          name: DECK_ID_PLAYER_ID_INDEX
-          fn: (row) ->
-            [row('deckId'), row('playerId')]
-        }
-        {name: USER_ID_INDEX}
-        {name: DECK_ID_INDEX}
-        {name: PLAYER_ID_INDEX}
-      ]
-    }
-  ]
 
 
   batchCreate: (userDecks) ->
@@ -120,24 +92,6 @@ class ClashRoyaleUserDeckModel
     .then ->
       clashRoyaleUserDeck
 
-  # FIXME: remove after 5/5/2017
-  importByUserId: (userId) ->
-    r.table CLASH_ROYALE_USER_DECK_TABLE
-    .getAll userId, {index: USER_ID_INDEX}
-    .group('deckId').ungroup()
-    .map (userDeck) ->
-      userDeck('reduction')(0)
-    .run()
-    .map defaultClashRoyaleUserDeck
-    .then (userDecks) =>
-      deckIds = _.map userDecks, ({deckId}) -> deckId?.split('|')
-      Promise.map deckIds, Deck.getByCardKeys
-      .then =>
-        userDecks = _.map userDecks, (deck) ->
-          delete deck.id
-          deck
-        @batchCreate userDecks
-
   getById: (id) ->
     knex POSTGRES_USER_DECKS_TABLE
     .first '*'
@@ -150,19 +104,6 @@ class ClashRoyaleUserDeckModel
     .where {deckId, userId}
     .then defaultClashRoyaleUserDeck
 
-  getAllByPlayerId: (playerId, {preferCache} = {}) ->
-    get = ->
-      knex POSTGRES_USER_DECKS_TABLE
-      .select '*'
-      .where {playerId}
-      .map defaultClashRoyaleUserDeck
-
-    if preferCache
-      prefix = CacheService.PREFIXES.CLASH_ROYALE_USER_DECK_PLAYER_ID
-      key = "#{prefix}:#{playerId}"
-      CacheService.preferCache key, get, {expireSeconds: ONE_HOUR_SECONDS}
-    else
-      get()
 
   getAllByDeckIdPlayerIds: (deckIdPlayerIds) ->
     knex POSTGRES_USER_DECKS_TABLE

@@ -19,6 +19,7 @@ defaultGroup = (group) ->
     badgeId: null
     background: null
     mode: 'open' # open | private | inviteOnly
+    type: 'general' # general | clan | star
     gameIds: []
     userIds: []
     invitedIds: []
@@ -126,6 +127,7 @@ class GroupModel
       'badgeId'
       'background'
       'mode'
+      'type'
       'userIds'
       'users'
       'conversations'
@@ -142,6 +144,7 @@ class GroupModel
       'badgeId'
       'background'
       'mode'
+      'type'
       'userIds'
       'users'
       'password'

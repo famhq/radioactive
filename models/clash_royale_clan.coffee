@@ -50,7 +50,7 @@ class ClashRoyaleClan
         fields: fields
         indexes: [
           {columns: ['updateFrequency', 'lastMatchesUpdateTime']}
-          {columns: ['updateFrequency', 'lastDataupdateTime']}
+          {columns: ['updateFrequency', 'lastDataUpdateTime']}
         ]
       }
   ]

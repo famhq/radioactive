@@ -41,6 +41,7 @@ class ConversationCtrl
         groupId
         name
         description
+        type: if groupId then 'channel' else 'pm'
         # TODO: different way to track if read (groups get too large)
         # should store lastReadTime on user for each group
         userData: unless groupId

@@ -13,6 +13,8 @@ user =
   country: Joi.string().allow(null)
   flags: Joi.object()
   isMember: Joi.boolean()
+  isOnline: Joi.boolean()
+  isChatBanned: Joi.boolean()
   data: Joi.object()
   gameData: Joi.object().optional()
   avatarImage: Joi.object()

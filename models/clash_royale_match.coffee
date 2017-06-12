@@ -3,7 +3,6 @@ Promise = require 'bluebird'
 uuid = require 'node-uuid'
 moment = require 'moment'
 
-r = require '../services/rethinkdb'
 knex = require '../services/knex'
 CacheService = require '../services/cache'
 config = require '../config'
@@ -74,25 +73,6 @@ class ClashRoyaleMatchModel
       indexes: []
     }
   ]
-  RETHINK_TABLES: [
-    {
-      name: CLASH_ROYALE_MATCH_TABLE
-      options: {}
-      indexes: [
-        {name: ARENA_INDEX}
-        {name: PLAYER_1_ID_INDEX}
-        {name: PLAYER_2_ID_INDEX}
-        # {name: PLAYER_1_USER_IDS_INDEX, options: {multi: true}}
-        # {name: PLAYER_2_USER_IDS_INDEX, options: {multi: true}}
-        {name: TYPE_INDEX}
-        {name: WINNING_DECK_ID_INDEX}
-        {name: LOSING_DECK_ID_INDEX}
-        {name: WINNING_CARD_IDS_INDEX, options: {multi: true}}
-        {name: LOSING_CARD_IDS_INDEX, options: {multi: true}}
-        {name: TIME_INDEX}
-      ]
-    }
-  ]
 
   batchCreate: (clashRoyaleMatches) ->
     clashRoyaleMatches = _.map clashRoyaleMatches, defaultClashRoyaleMatch
@@ -101,9 +81,6 @@ class ClashRoyaleMatchModel
     .catch (err) ->
       console.log 'postgres err', err
 
-    # r.table CLASH_ROYALE_MATCH_TABLE
-    # .insert clashRoyaleMatches
-    # .run()
 
   create: (clashRoyaleMatch) ->
     clashRoyaleMatch = defaultClashRoyaleMatch clashRoyaleMatch
@@ -112,10 +89,6 @@ class ClashRoyaleMatchModel
     .catch (err) ->
       console.log clashRoyaleMatch
       console.log 'postgres err', err
-
-    # r.table CLASH_ROYALE_MATCH_TABLE
-    # .insert clashRoyaleMatch
-    # .run()
 
   getById: (id, {preferCache} = {}) ->
     get = ->
@@ -130,27 +103,6 @@ class ClashRoyaleMatchModel
       CacheService.preferCache key, get, {expireSeconds: SIX_HOURS_S}
     else
       get()
-
-  # getByTimeAndArena: (time, arena) ->
-  #   r.table CLASH_ROYALE_MATCH_TABLE
-  #   .getAll time, {index: TIME_INDEX}
-  #   .filter {arena}
-  #   .nth 0
-  #   .default null
-  #   .run()
-  #   .then defaultClashRoyaleMatch
-
-  # updateById: (id, diff) ->
-  #   r.table CLASH_ROYALE_MATCH_TABLE
-  #   .get id
-  #   .update diff
-  #   .run()
-  #
-  # deleteById: (id) ->
-  #   r.table CLASH_ROYALE_MATCH_TABLE
-  #   .get id
-  #   .delete()
-  #   .run()
 
   sanitize: _.curry (requesterId, clashRoyaleMatch) ->
     _.pick clashRoyaleMatch, [

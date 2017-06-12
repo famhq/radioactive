@@ -5,12 +5,14 @@ moment = require 'moment'
 config = require '../config'
 User = require '../models/user'
 UserData = require '../models/user_data'
+Ban = require '../models/ban'
 Conversation = require '../models/conversation'
 ChatMessage = require '../models/chat_message'
 ThreadComment = require '../models/thread_comment'
 ClashRoyaleCard = require '../models/clash_royale_card'
 ClashRoyaleUserDeck = require '../models/clash_royale_user_deck'
 ClashRoyaleDeck = require '../models/clash_royale_deck'
+ClashRoyaleMatch = require '../models/clash_royale_match'
 Deck = require '../models/clash_royale_deck'
 Group = require '../models/group'
 ClanRecord = require '../models/clan_record'
@@ -21,6 +23,7 @@ Player = require '../models/player'
 UserPlayer = require '../models/user_player'
 chestCycle = require '../resources/data/chest_cycle'
 CacheService = require './cache'
+TagConverterService = require './tag_converter'
 
 doubleCycle = chestCycle.concat chestCycle
 
@@ -30,11 +33,14 @@ TYPES =
     IS_ONLINE: 'user:isOnline'
     GROUP_DATA: 'user:groupData'
     GAME_DATA: 'user:gameData'
+    IS_BANNED: 'user:isBanned'
   USER_DATA:
     CONVERSATION_USERS: 'userData:conversationUsers'
     FOLLOWERS: 'userData:followers'
     FOLLOWING: 'userData:following'
     BLOCKED_USERS: 'userData:blockedUsers'
+  BAN:
+    USER: 'ban:user'
   CHAT_MESSAGE:
     USER: 'chatMessage:user'
   CONVERSATION:
@@ -46,11 +52,16 @@ TYPES =
     GROUP: 'clan:group'
   CLASH_ROYALE_USER_DECK:
     DECK: 'clashRoyaleUserDeck:deck1'
+  CLASH_ROYALE_MATCH:
+    DECK: 'clashRoyaleMatch:deck1'
   CLASH_ROYALE_DECK:
     CARDS: 'clashRoyaleDeck:cards'
   EVENT:
     USERS: 'event:users'
     CREATOR: 'event:creator'
+  STAR:
+    USER: 'star:user'
+    GROUP: 'star:group'
   GROUP:
     USERS: 'group:users'
     CONVERSATIONS: 'group:conversations'
@@ -64,7 +75,8 @@ TYPES =
     CHEST_CYCLE: 'player:chestCycle'
     IS_UPDATABLE: 'player:isUpdatable'
     VERIFIED_USER: 'player:verifiedUser'
-    USER_IDS: 'player:userIds'
+    HI: 'player:hi'
+    USER_IDS: 'player:user_ids'
   THREAD_COMMENT:
     CREATOR: 'threadComment:creator'
   THREAD:
@@ -79,9 +91,11 @@ ONE_DAY_SECONDS = 3600 * 24
 FIVE_MINUTES_SECONDS = 60 * 5
 LAST_ACTIVE_TIME_MS = 60 * 15
 MAX_FRIENDS = 100 # FIXME add pagination
-NEWBIE_CHEST_COUNT = 6
-CHEST_COUNT = 30
+NEWBIE_CHEST_COUNT = 0
+CHEST_COUNT = 300
 MIN_TIME_UNTIL_NEXT_UPDATE_MS = 3600 * 1000 # 1hr
+
+profileDialogUserEmbed = [TYPES.USER.GAME_DATA, TYPES.USER.IS_BANNED]
 
 # separate service so models don't have to depend on
 # each other (circular). eg user data needing user for
@@ -127,6 +141,14 @@ embedFn = _.curry ({embed, user, clanId, groupId, gameId, userId}, object) ->
         embedded.isOnline = moment(embedded.lastActiveTime)
                             .add(LAST_ACTIVE_TIME_MS)
                             .isAfter moment()
+
+      when TYPES.USER.IS_BANNED
+        embedded.isChatBanned = Ban.getByUserId embedded.id, {
+          scope: 'chat'
+          preferCache: true
+        }
+        .then (ban) ->
+          Boolean ban?.userId
 
       when TYPES.USER_DATA.FOLLOWING
         #
@@ -252,6 +274,24 @@ embedFn = _.curry ({embed, user, clanId, groupId, gameId, userId}, object) ->
         embedded.isUpdatable = Promise.resolve(not embedded.lastQueuedTime or
                                 msSinceUpdate >= MIN_TIME_UNTIL_NEXT_UPDATE_MS)
 
+      when TYPES.STAR.USER
+        embedded.user = User.getById embedded.userId
+        .then embedFn {
+          embed: profileDialogUserEmbed, gameId: config.CLASH_ROYALE_ID
+        }
+        .then User.sanitizePublic null
+
+      when TYPES.STAR.GROUP
+        embedded.group = Group.getById embedded.groupId
+        .then Group.sanitizePublic null
+
+      when TYPES.BAN.USER
+        embedded.user = User.getById embedded.userId
+        .then embedFn {
+          embed: profileDialogUserEmbed, gameId: config.CLASH_ROYALE_ID
+        }
+        .then User.sanitizePublic null
+
       when TYPES.CONVERSATION.USERS
         embedded.users = Promise.map embedded.userIds, (userId) ->
           User.getById userId
@@ -330,7 +370,7 @@ embedFn = _.curry ({embed, user, clanId, groupId, gameId, userId}, object) ->
               console.log 'get chat user / player data'
               User.getById embedded.userId
               .then embedFn {
-                embed: [TYPES.USER.GAME_DATA], gameId: config.CLASH_ROYALE_ID
+                embed: profileDialogUserEmbed, gameId: config.CLASH_ROYALE_ID
               }
               .then User.sanitizePublic(null)
             , {expireSeconds: FIVE_MINUTES_SECONDS}
@@ -353,12 +393,17 @@ embedFn = _.curry ({embed, user, clanId, groupId, gameId, userId}, object) ->
 
       when TYPES.PLAYER.IS_UPDATABLE
         msSinceUpdate = new Date() - new Date(embedded.lastQueuedTime)
-        embedded.isUpdatable = not embedded.lastQueuedTime or
-                                msSinceUpdate >= MIN_TIME_UNTIL_NEXT_UPDATE_MS
+        embedded.isUpdatable = Promise.resolve(not embedded.lastQueuedTime or
+                                msSinceUpdate >= MIN_TIME_UNTIL_NEXT_UPDATE_MS)
+
+      when TYPES.PLAYER.HI
+        embedded.hi = Promise.resolve(
+          TagConverterService.getHiLoFromTag(embedded.id)?.hi
+        )
 
       when TYPES.PLAYER.VERIFIED_USER
         prefix = CacheService.PREFIXES.PLAYER_VERIFIED_USER
-        key = prefix + ':' + embedded.verifiedUserId
+        key = prefix + ':' + embedded.id
         embedded.verifiedUser =
           CacheService.preferCache key, ->
             UserPlayer.getVerifiedByPlayerIdAndGameId embedded.id, gameId
@@ -377,7 +422,7 @@ embedFn = _.curry ({embed, user, clanId, groupId, gameId, userId}, object) ->
           CacheService.preferCache key, ->
             UserPlayer.getAllByPlayerIdAndGameId embedded.id, gameId
             .map ({userId}) -> userId
-          , {expireSeconds: ONE_DAY_SECONDS}
+          , {expireSeconds: ONE_DAY_SECONDS, ignoreNull: true}
 
       when TYPES.CLASH_ROYALE_DECK.CARDS
         embedded.cards = Promise.map embedded.cardIds, (cardId) ->

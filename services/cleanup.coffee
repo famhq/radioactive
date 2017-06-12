@@ -8,6 +8,7 @@ config = require '../config'
 
 ONE_WEEK_MS = 3600 * 24 * 7 * 1000
 FOUR_WEEKS_MS = 3600 * 24 * 28 * 1000
+TWO_MIN_MS = 60 * 2 * 1000
 MIN_KUE_STUCK_TIME_MS = 60 * 10 * 1000 # 10 minutes
 
 class CleanupService
@@ -29,12 +30,14 @@ class CleanupService
 
   cleanClashRoyaleMatches: ->
     knex.table 'matches'
-    .where 'time', '<', moment().subtract(ONE_WEEK_MS).toDate()
+    .where 'time', '>', moment().subtract(ONE_WEEK_MS - TWO_MIN_MS).toDate()
+    .andWhere 'time', '<', moment().subtract(ONE_WEEK_MS).toDate()
     .delete()
 
   cleanUserRecords: ->
     knex.table 'user_records'
-    .where 'time', '<', moment().subtract(FOUR_WEEKS_MS).toDate()
+    .where 'time', '>', moment().subtract(FOUR_WEEKS_MS - TWO_MIN_MS).toDate()
+    .andWhere 'time', '<', moment().subtract(FOUR_WEEKS_MS).toDate()
     .delete()
 
 module.exports = new CleanupService()

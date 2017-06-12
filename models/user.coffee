@@ -28,6 +28,7 @@ defaultUser = (user) ->
     name: null
     isMember: 0 # 1 if yes
     hasPushToken: false
+    lastActiveIp: null
     lastActiveTime: new Date()
     counters: {}
     flags: {}
@@ -157,6 +158,8 @@ class UserModel
       'name'
       'avatarImage'
       'isMember'
+      'isChatBanned'
+      'isOnline'
       'flags'
       'data'
       'gameData'

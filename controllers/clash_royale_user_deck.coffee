@@ -5,31 +5,33 @@ User = require '../models/user'
 ClashRoyaleUserDeck = require '../models/clash_royale_user_deck'
 ClashRoyaleDeck = require '../models/clash_royale_deck'
 UserData = require '../models/user_data'
+Player = require '../models/player'
 EmbedService = require '../services/embed'
 schemas = require '../schemas'
+config = require '../config'
 
 defaultEmbed = [
   EmbedService.TYPES.CLASH_ROYALE_USER_DECK.DECK
 ]
 
 class ClashRoyaleUserDeckCtrl
-  import: ({}, {user}) ->
-    console.log 'importing...'
-    ClashRoyaleUserDeck.importByUserId user.id
-
-  getAll: ({sort, filter}, {user}) ->
-    ClashRoyaleUserDeck.getAllByUserId user.id, {sort}
-    .map EmbedService.embed {embed: defaultEmbed}
-    .map ClashRoyaleUserDeck.sanitize null
-
   getFavoritedDeckIds: ({}, {user}) ->
     ClashRoyaleUserDeck.getAllFavoritedByUserId user.id
     .map ({deckId}) -> deckId
 
   getAllByUserId: ({userId, sort, filter}, {user}) ->
-    ClashRoyaleUserDeck.getAllByUserId userId, {sort}
-    .map EmbedService.embed {embed: defaultEmbed}
-    .map ClashRoyaleUserDeck.sanitize null
+    Player.getByUserIdAndGameId userId,  config.CLASH_ROYALE_ID
+    .then EmbedService.embed {
+      embed: [EmbedService.TYPES.PLAYER.VERIFIED_USER]
+      gameId: config.CLASH_ROYALE_ID
+    }
+    .then (player) ->
+      console.log 'got player', user.id, player.verifiedUser
+      if player.data.mode is 'private' and user.id isnt player.verifiedUser?.id
+        router.throw {status: 403, info: 'profile is private'}
+      ClashRoyaleUserDeck.getAllByUserId userId, {sort}
+      .map EmbedService.embed {embed: defaultEmbed}
+      .map ClashRoyaleUserDeck.sanitize null
 
   getByDeckId: ({deckId}, {user}) ->
     ClashRoyaleUserDeck.getByDeckIdAndUserId deckId, user.id
