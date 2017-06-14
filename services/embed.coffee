@@ -9,6 +9,7 @@ Ban = require '../models/ban'
 Conversation = require '../models/conversation'
 ChatMessage = require '../models/chat_message'
 ThreadComment = require '../models/thread_comment'
+ThreadVote = require '../models/thread_vote'
 ClashRoyaleCard = require '../models/clash_royale_card'
 ClashRoyaleUserDeck = require '../models/clash_royale_user_deck'
 ClashRoyaleDeck = require '../models/clash_royale_deck'
@@ -59,6 +60,9 @@ TYPES =
   EVENT:
     USERS: 'event:users'
     CREATOR: 'event:creator'
+  FIND_FRIEND:
+    USER: 'findFriend:user'
+    PLAYER: 'findFriend:player'
   STAR:
     USER: 'star:user'
     GROUP: 'star:group'
@@ -83,6 +87,7 @@ TYPES =
     CREATOR: 'thread:creator'
     COMMENT_COUNT: 'thread:commentCount'
     SCORE: 'thread:score'
+    MY_VOTE: 'thread:myVote'
     DECK: 'thread:deck'
 
 TEN_DAYS_SECONDS = 3600 * 24 * 10
@@ -274,6 +279,26 @@ embedFn = _.curry ({embed, user, clanId, groupId, gameId, userId}, object) ->
         embedded.isUpdatable = Promise.resolve(not embedded.lastQueuedTime or
                                 msSinceUpdate >= MIN_TIME_UNTIL_NEXT_UPDATE_MS)
 
+      when TYPES.FIND_FRIEND.USER
+        key = CacheService.PREFIXES.FIND_FRIEND_USER + ':' + embedded.userId
+        embedded.user =
+          CacheService.preferCache key, ->
+            User.getById embedded.userId
+            .then embedFn {
+              embed: profileDialogUserEmbed, gameId: config.CLASH_ROYALE_ID
+            }
+            .then User.sanitizePublic(null)
+          , {expireSeconds: FIVE_MINUTES_SECONDS}
+
+      when TYPES.FIND_FRIEND.PLAYER
+        key = CacheService.PREFIXES.FIND_FRIEND_PLAYER + ':' + embedded.playerId
+        embedded.player =
+          CacheService.preferCache key, ->
+            embedded.player = Player.getByPlayerIdAndGameId(
+              embedded.playerId, gameId
+            )
+          , {expireSeconds: FIVE_MINUTES_SECONDS}
+
       when TYPES.STAR.USER
         embedded.user = User.getById embedded.userId
         .then embedFn {
@@ -319,19 +344,30 @@ embedFn = _.curry ({embed, user, clanId, groupId, gameId, userId}, object) ->
           ChatMessage.getLastByConversationId embedded.id
 
       when TYPES.THREAD.COMMENTS
-        embedded.comments = ThreadComment.getAllByThreadId embedded.id
-        .map embedFn {embed: [TYPES.THREAD_COMMENT.USER]}
+        embedded.comments = ThreadComment.getAllByParentIdAndParentType(
+          embedded.id, 'thread'
+        ).map embedFn {embed: [TYPES.THREAD_COMMENT.USER]}
 
       when TYPES.THREAD.COMMENT_COUNT
         if embedded.comments
           comments = embedded.comments
         else
-          comments = ThreadComment.getAllByThreadId embedded.id
+          comments = ThreadComment.getAllByParentIdAndParentType(
+            embedded.id, 'thread'
+          )
         embedded.commentCount = comments.then (comments) ->
           comments?.length
 
       when TYPES.THREAD.SCORE
         embedded.score = embedded.upvotes - embedded.downvotes
+
+      when TYPES.THREAD.MY_VOTE
+        if userId
+          embedded.myVote = ThreadVote.getByCreatorIdAndParent(
+            userId
+            embedded.id
+            'thread'
+          )
 
       when TYPES.THREAD.DECK
         key = CacheService.PREFIXES.THREAD_DECK + ':' + embedded.id

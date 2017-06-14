@@ -16,6 +16,7 @@ ClashRoyaleUserDeckCtrl = require './controllers/clash_royale_user_deck'
 ClashRoyaleCardCtrl = require './controllers/clash_royale_card'
 DynamicImageCtrl = require './controllers/dynamic_image'
 EventCtrl = require './controllers/event'
+FindFriendCtrl = require './controllers/find_friend'
 PushTokenCtrl = require './controllers/push_token'
 PaymentCtrl = require './controllers/payment'
 ModCtrl = require './controllers/mod'
@@ -142,7 +143,8 @@ module.exports = router
 
 .on 'threadComments.create', authed ThreadCommentCtrl.create
 .on 'threadComments.flag', authed ThreadCommentCtrl.flag
-.on 'threadComments.getAllByThreadId', authed ThreadCommentCtrl.getAllByThreadId
+.on 'threadComments.getAllByParentIdAndParentType',
+  authed ThreadCommentCtrl.getAllByParentIdAndParentType
 
 .on 'payments.verify', authed PaymentCtrl.verify
 .on 'payments.purchase', authed PaymentCtrl.purchase
@@ -183,6 +185,9 @@ module.exports = router
 
 .on 'clashRoyaleMatches.getAllByUserId',
   authed ClashRoyaleMatchCtrl.getAllByUserId
+
+.on 'findFriends.getAll', authed FindFriendCtrl.getAll
+.on 'findFriends.create', authed FindFriendCtrl.create
 
 .on 'mods.getAllBanned', authed ModCtrl.getAllBanned
 .on 'mods.getAllReportedMessages', authed ModCtrl.getAllReportedMessages

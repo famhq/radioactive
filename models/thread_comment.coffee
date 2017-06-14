@@ -13,8 +13,8 @@ defaultThreadComment = (threadComment) ->
   _.defaults threadComment, {
     id: uuid.v4()
     creatorId: null
-    threadId: null
     parentId: null
+    parentType: 'thread'
     body: ''
     upvotes: 0
     downvotes: 0
@@ -25,7 +25,7 @@ defaultThreadComment = (threadComment) ->
 THREAD_COMMENTS_TABLE = 'thread_comments'
 TIME_INDEX = 'time'
 CREATOR_ID_INDEX = 'creatorId'
-THREAD_ID_INDEX = 'threadId'
+PARENT_ID_PARENT_TYPE_TIME_INDEX = 'parentIdParentTypeTime'
 MAX_MESSAGES = 30
 
 class ThreadCommentModel
@@ -33,15 +33,10 @@ class ThreadCommentModel
     {
       name: THREAD_COMMENTS_TABLE
       indexes: [
-        {
-          name: TIME_INDEX
-        }
-        {
-          name: CREATOR_ID_INDEX
-        }
-        {
-          name: THREAD_ID_INDEX
-        }
+        {name: TIME_INDEX}
+        {name: CREATOR_ID_INDEX}
+        {name: PARENT_ID_PARENT_TYPE_TIME_INDEX, fn: (row) ->
+          [row('parentId'), row('parentType'), row('time')]}
       ]
     }
   ]
@@ -69,10 +64,15 @@ class ThreadCommentModel
     .run()
     .map defaultThreadComment
 
-  getAllByThreadId: (threadId) ->
+  getAllByParentIdAndParentType: (parentId, parentType) ->
     r.table THREAD_COMMENTS_TABLE
-    .getAll threadId, {index: THREAD_ID_INDEX}
-    .orderBy r.asc(TIME_INDEX)
+    .between(
+      [parentId, parentType]
+      [parentId + 'Z', parentType + 'Z']
+      {index: PARENT_ID_PARENT_TYPE_TIME_INDEX}
+    )
+    .orderBy {index: r.desc(PARENT_ID_PARENT_TYPE_TIME_INDEX)}
+    .limit 30
     .run()
     .map defaultThreadComment
 
