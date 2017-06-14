@@ -7,6 +7,7 @@ User = require '../models/user'
 UserData = require '../models/user_data'
 Group = require '../models/group'
 Thread = require '../models/thread'
+ThreadVote = require '../models/thread_vote'
 ClashRoyaleDeck = require '../models/clash_royale_deck'
 CacheService = require '../services/cache'
 EmbedService = require '../services/embed'
@@ -17,8 +18,9 @@ config = require '../config'
 
 defaultEmbed = [
   EmbedService.TYPES.THREAD.CREATOR
-  # EmbedService.TYPES.THREAD.COMMENT_COUNT
+  EmbedService.TYPES.THREAD.COMMENT_COUNT
   EmbedService.TYPES.THREAD.SCORE
+  EmbedService.TYPES.THREAD.MY_VOTE
 ]
 deckEmbed = [
   EmbedService.TYPES.THREAD.DECK
@@ -95,50 +97,72 @@ class ThreadCtrl
       diff
 
   voteById: ({id, vote}, {user}) ->
-    Thread.getById id
-    .then (thread) ->
-      hasVotedUp = thread.upvoteIds.indexOf(user.id) isnt -1
-      hasVotedDown = thread.downvoteIds.indexOf(user.id) isnt -1
-      if hasVotedUp and vote is 'up'
-        router.throw status: 400, info: 'already voted'
-      else if hasVotedDown and vote is 'down'
+    Promise.all [
+      Thread.getById id
+      ThreadVote.getByCreatorIdAndParent user.id, id, 'thread'
+    ]
+    .then ([thread, existingVote]) ->
+      voteNumber = if vote is 'up' then 1 else -1
+
+      hasVotedUp = existingVote?.vote is 1
+      hasVotedDown = existingVote?.vote is -1
+      if existingVote and voteNumber is existingVote.vote
         router.throw status: 400, info: 'already voted'
 
       if vote is 'up'
-        diff =
-          upvotes: r.row('upvotes').add(1)
-          upvoteIds: r.row('upvoteIds').append(user.id)
+        diff = {upvotes: r.row('upvotes').add(1)}
         if hasVotedDown
           diff.downvotes = r.row('downvotes').sub(1)
           diff.score = r.row('score').add(2)
-          diff.downvoteIds = r.row('downvoteIds').difference([user.id])
         else
           diff.score = r.row('score').add(1)
       else if vote is 'down'
-        diff =
-          downvotes: r.row('downvotes').add(1)
-          downvoteIds: r.row('downvoteIds').append(user.id)
+        diff = {downvotes: r.row('downvotes').add(1)}
         if hasVotedUp
           diff.upvotes = r.row('upvotes').sub(1)
           diff.score = r.row('score').sub(2)
-          diff.upvoteIds = r.row('upvoteIds').difference([user.id])
         else
           diff.score = r.row('score').sub(1)
 
-      Thread.updateById id, diff
+      Promise.all [
+        if existingVote
+          ThreadVote.updateById existingVote.id, {vote: voteNumber}
+        else
+          ThreadVote.create {
+            creatorId: user.id
+            parentId: id
+            parentType: 'thread'
+            vote: voteNumber
+          }
 
-  getAll: ({type}, {user}) ->
-    Thread.getAll()
+        Thread.updateById id, diff
+      ]
+
+  getAll: ({category, language}, {user}) ->
+    category ?= 'news'
+
+    Thread.getAll {category}
     .map EmbedService.embed {
-      embed: if type is 'deckGuide' \
+      userId: user.id
+      embed: if category is 'decks' \
              then defaultEmbed.concat deckEmbed
              else defaultEmbed
     }
+    .map (thread) ->
+      if thread?.translations[language]
+        _.defaults thread?.translations[language], thread
+      else
+        thread
     .map Thread.sanitize null
 
-  getById: ({id}, {user}) ->
+  getById: ({id, language}, {user}) ->
     Thread.getById id
-    .then EmbedService.embed {embed: defaultEmbed}
+    .then EmbedService.embed {embed: defaultEmbed, userId: user.id}
+    .then (thread) ->
+      if thread?.translations[language]
+        _.defaults thread?.translations[language], thread
+      else
+        thread
     .then Thread.sanitize null
 
 module.exports = new ThreadCtrl()

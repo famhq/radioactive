@@ -7,6 +7,7 @@ THREADS_TABLE = 'threads'
 CREATOR_ID_INDEX = 'creatorId'
 ATTACHMENT_IDS_INDEX = 'attachmentIds'
 SCORE_INDEX = 'score'
+CATEGORY_SCORE_INDEX = 'categoryScore'
 LAST_UPDATE_TIME_INDEX = 'lastUpdateTime'
 
 # update the scores for posts up until they're a month old
@@ -23,13 +24,13 @@ defaultThread = (thread) ->
     title: null
     body: null
     summary: null
+    translations: {}
     headerImage: null
     type: 'text'
+    category: 'general'
     upvotes: 0
     downvotes: 0
     score: 0
-    upvoteIds: []
-    downvoteIds: []
     data: {}
     attachmentIds: []
     lastUpdateTime: new Date()
@@ -44,6 +45,8 @@ class ThreadModel
       indexes: [
         {name: CREATOR_ID_INDEX}
         {name: SCORE_INDEX}
+          {name: CATEGORY_SCORE_INDEX, fn: (row) ->
+            [row('category'), row('score')]}
         {name: ATTACHMENT_IDS_INDEX}
         {name: LAST_UPDATE_TIME_INDEX}
       ]
@@ -65,11 +68,14 @@ class ThreadModel
     .run()
     .then defaultThread
 
-  getAll: ({limit} = {}) ->
+  getAll: ({category, limit} = {}) ->
     limit ?= 10
 
+    category ?= 'news'
+
     r.table THREADS_TABLE
-    .orderBy {index: r.desc(SCORE_INDEX)}
+    .between [category], [category + 'Z'], {index: CATEGORY_SCORE_INDEX}
+    .orderBy {index: r.desc(CATEGORY_SCORE_INDEX)}
     # .orderBy (thread) ->
     #   thread.merge({newScore: thread('upvotes').sub(thread('downvotes')).mul(r.expr(1).div(r.now().sub(thread('addTime')).div(3600 * 24 * 31)))})
     .limit limit
@@ -131,6 +137,7 @@ class ThreadModel
       'deck'
       'comments'
       'commentCount'
+      'myVote'
       'score'
       'addTime'
       'lastUpdateTime'
