@@ -60,9 +60,6 @@ TYPES =
   EVENT:
     USERS: 'event:users'
     CREATOR: 'event:creator'
-  FIND_FRIEND:
-    USER: 'findFriend:user'
-    PLAYER: 'findFriend:player'
   STAR:
     USER: 'star:user'
     GROUP: 'star:group'
@@ -279,26 +276,6 @@ embedFn = _.curry ({embed, user, clanId, groupId, gameId, userId}, object) ->
         msSinceUpdate = new Date() - new Date(embedded.lastQueuedTime)
         embedded.isUpdatable = Promise.resolve(not embedded.lastQueuedTime or
                                 msSinceUpdate >= MIN_TIME_UNTIL_NEXT_UPDATE_MS)
-
-      when TYPES.FIND_FRIEND.USER
-        key = CacheService.PREFIXES.FIND_FRIEND_USER + ':' + embedded.userId
-        embedded.user =
-          CacheService.preferCache key, ->
-            User.getById embedded.userId
-            .then embedFn {
-              embed: profileDialogUserEmbed, gameId: config.CLASH_ROYALE_ID
-            }
-            .then User.sanitizePublic(null)
-          , {expireSeconds: FIVE_MINUTES_SECONDS}
-
-      when TYPES.FIND_FRIEND.PLAYER
-        key = CacheService.PREFIXES.FIND_FRIEND_PLAYER + ':' + embedded.playerId
-        embedded.player =
-          CacheService.preferCache key, ->
-            embedded.player = Player.getByPlayerIdAndGameId(
-              embedded.playerId, gameId
-            )
-          , {expireSeconds: FIVE_MINUTES_SECONDS}
 
       when TYPES.STAR.USER
         embedded.user = User.getById embedded.userId
