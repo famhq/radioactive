@@ -7,6 +7,7 @@ Joi = require 'joi'
 
 User = require '../models/user'
 Ban = require '../models/ban'
+Group = require '../models/group'
 ChatMessage = require '../models/chat_message'
 Conversation = require '../models/conversation'
 CacheService = require '../services/cache'
@@ -98,9 +99,6 @@ class ChatMessageCtrl
     .then (conversation) =>
       Conversation.hasPermission conversation, user.id
       .then (hasPermission) =>
-        # FIXME FIXME
-        if conversation.groupId is config.MAIN_GROUP_ID
-          hasPermission = true
         unless hasPermission
           router.throw status: 401, info: 'unauthorized'
 
@@ -144,14 +142,21 @@ class ChatMessageCtrl
           }
           pushBody = if isImage then '[image]' else body
 
-          # FIXME FIXME: re-enable notifications
-          unless conversation.groupId is config.MAIN_GROUP_ID
-            PushNotificationService.sendToConversation(
-              conversation, {
-                skipMe: true
-                meUser: user
-                text: pushBody
-              }).catch -> null
+          (if conversation.groupId
+            Group.getById conversation.groupId, {preferCache: true}
+          else
+            Promise.resolve null
+          )
+          .then (group) ->
+            console.log 'try'
+            unless group.type is 'public'
+              console.log 'send'
+              PushNotificationService.sendToConversation(
+                conversation, {
+                  skipMe: true
+                  meUser: user
+                  text: pushBody
+                }).catch -> null
 
   deleteById: ({id}, {user}) ->
     unless user.flags.isModerator
@@ -169,11 +174,7 @@ class ChatMessageCtrl
     Conversation.getById conversationId, {preferCache: true}
     .then (conversation) ->
       start = Date.now()
-      # FIXME FIXME
-      (if conversation.groupId is config.MAIN_GROUP_ID
-        Promise.resolve true
-      else
-        Conversation.hasPermission conversation, user.id)
+      Conversation.hasPermission conversation, user.id
       .then (hasPermission) ->
         start = Date.now()
         unless hasPermission

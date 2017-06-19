@@ -174,10 +174,15 @@ class GroupCtrl
           invitedIds: _.filter group.invitedIds, (id) -> id isnt userId
       ]
 
-  getAll: ({filter}, {user}) ->
+  getAll: ({filter, language}, {user}) ->
     EmbedService.embed {embed: userDataEmbed}, user
     .then (user) ->
-      Group.getAll {filter, user}
+      Group.getAll {filter, user, language}
+      .then (groups) ->
+        if filter is 'public' and _.isEmpty groups
+          Group.getAll {filter, user}
+        else
+          groups
     .map EmbedService.embed {embed: defaultEmbed}
     .map Group.sanitize null
 

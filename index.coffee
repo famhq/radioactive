@@ -213,6 +213,11 @@ app.get '/cleanKueFailed', (req, res) ->
 app.get '/di/crForumSig/:userId.png', (req, res) ->
   $page = new ForumSigPage {req, res}
 
+  res.setHeader 'Content-Type', 'image/png'
+  $page.render()
+  .then (stream) ->
+    stream.pipe(res)
+
 app.get '/di/crChestCycle/:userId.png', (req, res) ->
   $page = new ChestCyclePage {req, res}
 

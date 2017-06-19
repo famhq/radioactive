@@ -51,6 +51,8 @@ thread =
   groupId: id.optional()
   title: Joi.string()
   summary: Joi.string()
+  attachmentIds: Joi.array()
+  attachments: Joi.array()
   body: Joi.string()
   data: Joi.object()
 

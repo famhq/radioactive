@@ -14,8 +14,7 @@ class ModCtrl
     unless user.flags.isModerator
       router.throw status: 400, info: 'You don\'t have permission to do that'
 
-    # TODO
-    groupId = config.MAIN_GROUP_ID
+    groupId ?= config.MAIN_GROUP_ID
     duration ?= '24h'
     scope ?= 'chat'
 
@@ -35,9 +34,7 @@ class ModCtrl
     unless user.flags.isModerator
       router.throw status: 400, info: 'You don\'t have permission to do that'
 
-    groupId ?= config.MAIN_GROUP_ID
-
-    ban = {userId, groupId, duration, scope: 'chat'}
+    ban = {userId, groupId, duration, bannedById: user.id, scope: 'chat'}
 
     User.getById userId
     .then (user) ->
@@ -50,13 +47,11 @@ class ModCtrl
 
       Ban.create ban
     .then ->
-      ChatMessage.deleteAllByUserIdAndGroupId userId, config.MAIN_GROUP_ID
+      ChatMessage.deleteAllByUserIdAndGroupId userId, groupId
 
   unbanByUserId: ({userId, groupId}, {user}) ->
     unless user.flags.isModerator
       router.throw status: 400, info: 'You don\'t have permission to do that'
-
-    groupId ?= config.MAIN_GROUP_ID
 
     Ban.deleteAllByUserId userId
 

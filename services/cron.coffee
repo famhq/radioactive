@@ -8,6 +8,7 @@ EventService = require './event'
 CleanupService = require './cleanup'
 ClashRoyalePlayerService = require './clash_royale_player'
 ClashRoyaleClanService = require './clash_royale_clan'
+Thread = require '../models/thread'
 ClashRoyaleDeck = require '../models/clash_royale_deck'
 ClashRoyaleCard = require '../models/clash_royale_card'
 ClashRoyaleUserDeck = require '../models/clash_royale_user_deck'
@@ -16,7 +17,7 @@ r = require './rethinkdb'
 config = require '../config'
 
 THIRTY_SECONDS = 30
-
+Thread.updateScores()
 class CronService
   constructor: ->
     @crons = []
@@ -31,6 +32,7 @@ class CronService
 
     @addCron 'quarterMinute', '15 * * * * *', ->
       CleanupService.clean()
+      Thread.updateScores()
 
     # minute on half minute
     # @addCron 'halfMinute', '30 * * * * *', ->

@@ -9,6 +9,8 @@ Group = require '../models/group'
 Thread = require '../models/thread'
 ThreadVote = require '../models/thread_vote'
 ClashRoyaleDeck = require '../models/clash_royale_deck'
+Ban = require '../models/ban'
+ProfanityService = require '../services/profanity'
 CacheService = require '../services/cache'
 EmbedService = require '../services/embed'
 ImageService = require '../services/image'
@@ -26,32 +28,71 @@ deckEmbed = [
   EmbedService.TYPES.THREAD.DECK
 ]
 
+MAX_LENGTH = 5000
 YOUTUBE_ID_REGEX = ///
   (?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)
   ([^"&?\/ ]{11})
 ///i
 
 class ThreadCtrl
-  createOrUpdateById: (diff, {user}) =>
+  checkIfBanned: (ipAddr, userId, router) ->
+    ipAddr ?= 'n/a'
+    Promise.all [
+      Ban.getByIp ipAddr, {preferCache: true}
+      Ban.getByUserId userId, {preferCache: true}
+    ]
+    .then ([bannedIp, bannedUserId]) ->
+      if bannedIp?.ip or bannedUserId?.userId
+        router.throw status: 403, 'unable to post'
+
+  addDeck: (deck) ->
+    cardKeys = _.map deck, 'key'
+    cardIds = _.map deck, 'id'
+    name = ClashRoyaleDeck.getRandomName deck
+    ClashRoyaleDeck.getByCardKeys cardKeys
+    .then (deck) ->
+      if deck
+        deck
+      else
+        ClashRoyaleDeck.create {
+          cardIds, name, cardKeys, creatorId: user.id
+        }
+    .then (deck) ->
+      if deck
+        {
+          data:
+            deckId: deck.id
+          attachmentIds: [deck.id]
+        }
+      else
+        {}
+
+
+  createOrUpdateById: (diff, {user, headers, connection}) =>
+    userAgent = headers['user-agent']
+    ip = headers['x-forwarded-for'] or
+          connection.remoteAddress
+
+    isProfane = ProfanityService.isProfane diff.title + diff.body
+    msPlayed = Date.now() - user.joinTime?.getTime()
+
+    if isProfane or user.flags.isChatBanned
+      router.throw status: 400, info: 'unable to post...'
+
+    if diff.body?.length > MAX_LENGTH
+      router.throw status: 400, info: 'message is too long...'
+
+    if not diff.body or not diff.title
+      router.throw status: 400, info: 'can\'t be empty'
+
     diff.data ?= {}
     (if diff.deck
-      cardKeys = _.map diff.deck, 'key'
-      cardIds = _.map diff.deck, 'id'
-      name = ClashRoyaleDeck.getRandomName diff.deck
-      ClashRoyaleDeck.getByCardKeys cardKeys
-      .then (deck) ->
-        if deck
-          deck
-        else
-          ClashRoyaleDeck.create {
-            cardIds, name, cardKeys, creatorId: user.id
-          }
+      @addDeck diff.deck
     else
-      Promise.resolve null)
-    .then (deck) =>
-      if deck
-        diff.data.deckId = deck.id
-        diff.attachmentIds = [deck.id]
+      Promise.resolve {}
+    )
+    .then (deckDiff) =>
+      diff = _.defaultsDeep deckDiff, diff
       if diff.data.videoUrl
         youtubeId = diff.data.videoUrl.match(YOUTUBE_ID_REGEX)?[1]
         diff.data.videoUrl =
@@ -69,14 +110,14 @@ class ThreadCtrl
           Thread.create _.defaults diff, {
             creatorId: user.id
           }
-    .tap (deck) ->
-      if deck.data?.videoUrl
-        keyPrefix = "images/starfire/gv/#{deck.id}"
-        youtubeId = deck.data.videoUrl.match(YOUTUBE_ID_REGEX)?[1]
+    .tap (thread) ->
+      if thread.data?.videoUrl
+        keyPrefix = "images/starfire/gv/#{thread.id}"
+        youtubeId = thread.data.videoUrl.match(YOUTUBE_ID_REGEX)?[1]
         ImageService.getVideoPreview keyPrefix, youtubeId
         .then (videoPreview) ->
           if videoPreview
-            Thread.updateById deck.id, {
+            Thread.updateById thread.id, {
               headerImage: videoPreview
             }
 
@@ -113,16 +154,10 @@ class ThreadCtrl
         diff = {upvotes: r.row('upvotes').add(1)}
         if hasVotedDown
           diff.downvotes = r.row('downvotes').sub(1)
-          diff.score = r.row('score').add(2)
-        else
-          diff.score = r.row('score').add(1)
       else if vote is 'down'
         diff = {downvotes: r.row('downvotes').add(1)}
         if hasVotedUp
           diff.upvotes = r.row('upvotes').sub(1)
-          diff.score = r.row('score').sub(2)
-        else
-          diff.score = r.row('score').sub(1)
 
       Promise.all [
         if existingVote
@@ -138,10 +173,13 @@ class ThreadCtrl
         Thread.updateById id, diff
       ]
 
-  getAll: ({category, language}, {user}) ->
-    category ?= 'news'
+  getAll: ({category, language, sort, limit}, {user}) ->
+    if language is 'es'
+      category = ''
+    else
+      category ?= 'news'
 
-    Thread.getAll {category}
+    Thread.getAll {category, sort, limit}
     .map EmbedService.embed {
       userId: user.id
       embed: if category is 'decks' \

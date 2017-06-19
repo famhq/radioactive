@@ -29,7 +29,7 @@ class CacheService
     BROADCAST: 'broadcast'
   LOCKS: {}
   PREFIXES:
-    CHAT_USER: 'chat:user9'
+    CHAT_USER: 'chat:user1'
     THREAD_USER: 'thread:user1'
     THREAD_DECK: 'thread:deck1'
     CONVERSATION_ID: 'conversation:id'
@@ -58,10 +58,11 @@ class CacheService
     FIND_FRIEND_CREATE: 'find_friend:create'
     FIND_FRIEND_USER: 'find_friend:user'
     FIND_FRIEND_PLAYER: 'find_friend:player'
-    USERNAME_SEARCH: 'username:search'
+    GROUP_ID: 'group:id'
+    USERNAME_SEARCH: 'username:search1'
     RATE_LIMIT_CHAT_MESSAGES_TEXT: 'rate_limit:chat_messages:text'
     RATE_LIMIT_CHAT_MESSAGES_MEDIA: 'rate_limit:chat_messages:media'
-    PLAYER_SEARCH: 'player:search6'
+    PLAYER_SEARCH: 'player:search8'
     PLAYER_VERIFIED_USER: 'player:verified_user3'
     PLAYER_USER_ID_GAME_ID: 'player:user_id_game_id1'
     PLAYER_USER_IDS: 'player:user_ids2'

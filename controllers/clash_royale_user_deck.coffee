@@ -26,7 +26,6 @@ class ClashRoyaleUserDeckCtrl
       gameId: config.CLASH_ROYALE_ID
     }
     .then (player) ->
-      console.log 'got player', user.id, player.verifiedUser
       if player.data.mode is 'private' and user.id isnt player.verifiedUser?.id
         router.throw {status: 403, info: 'profile is private'}
       ClashRoyaleUserDeck.getAllByUserId userId, {sort}

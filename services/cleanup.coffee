@@ -18,6 +18,7 @@ class CleanupService
     Promise.all [
       @cleanUserRecords()
       @cleanClashRoyaleMatches()
+      # TODO: clean user decks somehow?
       @cleanKue()
     ]
     .then ->

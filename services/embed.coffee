@@ -86,7 +86,6 @@ TYPES =
   THREAD:
     CREATOR: 'thread:creator'
     COMMENT_COUNT: 'thread:commentCount'
-    SCORE: 'thread:score'
     MY_VOTE: 'thread:myVote'
     DECK: 'thread:deck'
 
@@ -148,11 +147,13 @@ embedFn = _.curry ({embed, user, clanId, groupId, gameId, userId}, object) ->
                             .isAfter moment()
 
       when TYPES.USER.IS_BANNED
+        console.log 'get chat banned'
         embedded.isChatBanned = Ban.getByUserId embedded.id, {
           scope: 'chat'
           preferCache: true
         }
         .then (ban) ->
+          console.log ban
           Boolean ban?.userId
 
       when TYPES.USER_DATA.FOLLOWING
@@ -357,9 +358,6 @@ embedFn = _.curry ({embed, user, clanId, groupId, gameId, userId}, object) ->
           )
         embedded.commentCount = comments.then (comments) ->
           comments?.length
-
-      when TYPES.THREAD.SCORE
-        embedded.score = embedded.upvotes - embedded.downvotes
 
       when TYPES.THREAD.MY_VOTE
         if userId

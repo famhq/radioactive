@@ -12,7 +12,7 @@ schemas = require '../schemas'
 config = require '../config'
 
 TWELVE_HOURS_SECONDS = 3600 * 12
-GET_ALL_LIMIT = 10
+GET_ALL_LIMIT = 20
 AVATAR_SMALL_IMAGE_WIDTH = 96
 AVATAR_SMALL_IMAGE_HEIGHT = 96
 AVATAR_LARGE_IMAGE_WIDTH = 512
@@ -117,6 +117,9 @@ class UserCtrl
     key = "#{CacheService.PREFIXES.USERNAME_SEARCH}:#{username}"
     CacheService.preferCache key, ->
       User.getAllByUsername username, {limit: GET_ALL_LIMIT}
+      .map EmbedService.embed {
+        embed: [EmbedService.TYPES.USER.IS_BANNED]
+      }
       .map User.sanitizePublic null
     , {expireSeconds: TWELVE_HOURS_SECONDS}
 
