@@ -76,7 +76,7 @@ class BanModel
     .map defaultBan
 
   getByIp: (ip, {scope, preferCache} = {}) ->
-    scope ?= 'all'
+    scope ?= 'chat'
 
     get = ->
       r.table BANS_TABLE
@@ -94,7 +94,7 @@ class BanModel
       get()
 
   getByUserId: (userId, {scope, preferCache} = {}) ->
-    scope ?= 'all'
+    scope ?= 'chat'
 
     get = ->
       r.table BANS_TABLE
@@ -116,6 +116,9 @@ class BanModel
     .getAll ip, {index: IP_INDEX}
     .delete()
     .run()
+    .then ->
+      key = "#{CacheService.PREFIXES.BAN_IP}:#{ip}"
+      CacheService.deleteByKey key
     .then -> null
 
   deleteAllByUserId: (userId) ->
@@ -123,6 +126,9 @@ class BanModel
     .getAll userId, {index: USER_ID_INDEX}
     .delete()
     .run()
+    .then ->
+      key = "#{CacheService.PREFIXES.BAN_USER_ID}:#{userId}"
+      CacheService.deleteByKey key
     .then -> null
 
 module.exports = new BanModel()

@@ -56,7 +56,7 @@ class ClashRoyaleAPIService
       }
       .then ->
         KueCreateService.createJob {
-          job: {tag: playerId, matches, reqSynchronous: true}
+          job: {tag: playerId, matches}
           type: KueCreateService.JOB_TYPES.UPDATE_PLAYER_MATCHES
           ttlMs: PLAYER_MATCHES_TIMEOUT_MS
           priority: priority or 'high'

@@ -1,13 +1,17 @@
 _ = require 'lodash'
 router = require 'exoid-router'
+Promise = require 'bluebird'
 
 ThreadComment = require '../models/thread_comment'
 Thread = require '../models/thread'
 Ban = require '../models/ban'
+ProfanityService = require '../services/profanity'
 EmbedService = require '../services/embed'
 config = require '../config'
 
 creatorId = [EmbedService.TYPES.THREAD_COMMENT.CREATOR]
+
+MAX_LENGTH = 5000
 
 class ThreadCommentCtrl
   checkIfBanned: (ipAddr, userId, router) ->

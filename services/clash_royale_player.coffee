@@ -176,7 +176,7 @@ class ClashRoyalePlayer
 
   # we should always block this for db writes/reads so the queue
   # properly throttles db access
-  processMatches: ({matches, reqSynchronous, reqPlayers}) ->
+  processMatches: ({matches, reqPlayers}) ->
     start = Date.now()
     matches = _.uniqBy matches, 'id'
     matches = _.orderBy matches, ['time'], ['asc']
@@ -218,13 +218,6 @@ class ClashRoyalePlayer
         playerDiffs.setInitialDiffs playerIds, reqPlayerIds
       ]
       .then ([cards, initialDiffs]) =>
-        # don't need to block for this
-        # @createNewDecks matches, cards
-
-        # (if reqSynchronous
-        #   @createNewUserDecks matches, playerDiffs
-        # else
-        #   Promise.resolve null) # don't block
         stepStart = Date.now()
         Promise.all [
           @createNewUserDecks matches, playerDiffs
@@ -488,20 +481,6 @@ class ClashRoyalePlayer
                 batchDecks[deck1Id][deck1State] += 1
 
         .then =>
-          # # don't need to block
-          # Match.batchCreate batchMatches
-
-          # batchPromise = Promise.all [
-          #   UserRecord.batchCreate batchUserRecords
-          #   @incrementUserDecks batchUserDecks
-          #   @incrementDecks batchDecks
-          # ]
-          #
-          # stepStart = Date.now()
-          # if reqSynchronous
-          #   batchPromise
-          # else
-          #   null
           Promise.all [
             Match.batchCreate batchMatches
             .catch (err) ->
@@ -546,7 +525,7 @@ class ClashRoyalePlayer
       }
     }
 
-  processUpdatePlayerMatches: ({matches, isBatched, tag, reqSynchronous}) =>
+  processUpdatePlayerMatches: ({matches, isBatched, tag}) =>
     if _.isEmpty matches
       return Promise.resolve null
 
@@ -570,7 +549,7 @@ class ClashRoyalePlayer
         filteredMatches = @filterMatches {matches, player: players[0]}
 
       @processMatches {
-        matches: filteredMatches, reqPlayers: players, reqSynchronous
+        matches: filteredMatches, reqPlayers: players
       }
     .then ({playerDiffs}) ->
       # no matches processed means no player diffs

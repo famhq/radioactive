@@ -2,10 +2,14 @@ _ = require 'lodash'
 uuid = require 'node-uuid'
 
 r = require '../services/rethinkdb'
+CacheService = require '../services/cache'
 User = require './user'
 
 GROUPS_TABLE = 'groups'
 USER_IDS_INDEX = 'userIds'
+TYPE_LANGUAGE_INDEX = 'typeLanguage'
+
+ONE_DAY_SECONDS = 3600 * 24
 
 defaultGroup = (group) ->
   unless group?
@@ -18,8 +22,9 @@ defaultGroup = (group) ->
     description: null
     badgeId: null
     background: null
+    language: 'en'
     mode: 'open' # open | private | inviteOnly
-    type: 'general' # general | clan | star
+    type: 'general' # public | general | clan | star
     gameIds: []
     userIds: []
     invitedIds: []
@@ -33,6 +38,8 @@ class GroupModel
       options: {}
       indexes: [
         {name: USER_IDS_INDEX, options: {multi: true}}
+        {name: TYPE_LANGUAGE_INDEX, fn: (row) ->
+          [row('type'), row('language')]}
       ]
     }
   ]
@@ -75,15 +82,23 @@ class GroupModel
       when 'admin'
       then group.creatorId is user.id
       # member
-      else group.userIds?.indexOf(user.id) isnt -1
+      else group.type is 'public' or group.userIds?.indexOf(user.id) isnt -1
 
-  getById: (id) ->
-    r.table GROUPS_TABLE
-    .get id
-    .run()
-    .then defaultGroup
+  getById: (id, {preferCache} = {}) ->
+    get = ->
+      r.table GROUPS_TABLE
+      .get id
+      .run()
+      .then defaultGroup
 
-  getAll: ({filter, limit, user} = {}) ->
+    if preferCache
+      key = "#{CacheService.PREFIXES.GROUP_ID}:#{id}"
+      CacheService.preferCache key, get, {expireSeconds: ONE_DAY_SECONDS}
+    else
+      get()
+
+
+  getAll: ({filter, language, limit, user} = {}) ->
     limit ?= 10
 
     q = r.table GROUPS_TABLE
@@ -91,10 +106,13 @@ class GroupModel
     if filter is 'mine'
       q = q.getAll user.id, {index: USER_IDS_INDEX}
     else if filter is 'invited'
-      console.log user.data
       q = q.getAll r.args (user.data.groupInvitedIds or [])
     else if filter is 'open'
       q = q.filter r.row('mode').default('open').eq('open')
+    else if filter is 'public' and language
+      q = q.getAll ['public', language], {index: TYPE_LANGUAGE_INDEX}
+    else if filter is 'public'
+      q = q.getAll ['public'], {index: TYPE_LANGUAGE_INDEX}
 
     q.orderBy r.desc r.row('userIds').count()
     .limit limit
@@ -106,6 +124,10 @@ class GroupModel
     .get id
     .update diff
     .run()
+    .tap ->
+      key = "#{CacheService.PREFIXES.GROUP_ID}:#{id}"
+      CacheService.deleteByKey key
+      null
 
   addUser: (id, userId) =>
     @updateById id, {

@@ -152,6 +152,8 @@ class UserModel
     _.pick user, _.keys schemas.user
 
   sanitizePublic: _.curry (requesterId, user) ->
+    unless user
+      return null
     sanitizedUser = _.pick user, [
       'id'
       'username'

@@ -78,9 +78,6 @@ class ConversationCtrl
         # FIXME FIXME: channel perms
         Group.hasPermissionByIdAndUser conversation.groupId, user
         .then (hasPermission) ->
-          # FIXME FIXME
-          if conversation.groupId is config.MAIN_GROUP_ID
-            hasPermission = true
           unless hasPermission
             router.throw status: 400, info: 'no permission'
       else if conversation.eventId

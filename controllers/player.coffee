@@ -19,6 +19,10 @@ defaultEmbed = [
   EmbedService.TYPES.PLAYER.HI
   EmbedService.TYPES.PLAYER.IS_UPDATABLE
 ]
+userIdsEmbed = [
+  EmbedService.TYPES.PLAYER.USER_IDS
+  EmbedService.TYPES.PLAYER.VERIFIED_USER
+]
 
 GAME_ID = config.CLASH_ROYALE_ID
 TWELVE_HOURS_SECONDS = 12 * 3600
@@ -80,21 +84,33 @@ class PlayerCtrl
     CacheService.preferCache key, ->
       Player.getByPlayerIdAndGameId playerId, GAME_ID
       .then EmbedService.embed {
-        embed: [EmbedService.TYPES.PLAYER.USER_IDS]
+        embed: userIdsEmbed
         gameId: GAME_ID
       }
       .then (player) ->
         if player?.userIds?[0]
+          player.userId = player.verifiedUser?.id or player.userIds?[0]
+          delete player.userIds
           player
         else
           User.create {}
           .then ({id}) ->
+            start = Date.now()
             ClashRoyaleAPIService.updatePlayerById playerId, {
               userId: id
               priority: 'normal'
             }
-          .then ->
-            Player.getByPlayerIdAndGameId playerId, GAME_ID
+            .then ->
+              Player.getByPlayerIdAndGameId playerId, GAME_ID
+              .then EmbedService.embed {
+                embed: userIdsEmbed
+                gameId: GAME_ID
+              }
+              .then (player) ->
+                if player?.userIds?[0]
+                  player.userId = player.verifiedUser?.id or player.userIds?[0]
+                  delete player.userIds
+                  player
 
     , {expireSeconds: TWELVE_HOURS_SECONDS}
 
@@ -108,11 +124,13 @@ class PlayerCtrl
           playerIds, GAME_ID
         )
         .map EmbedService.embed {
-          embed: [EmbedService.TYPES.PLAYER.USER_IDS]
+          embed: userIdsEmbed
           gameId: GAME_ID
         }
         .then (players) ->
           players = _.map players, (player) ->
+            player.userId = player.verifiedUser?.id or player.userIds?[0]
+            delete player.userIds
             topPlayer = _.find topPlayers, {playerId: player.id}
             {rank: topPlayer?.rank, player}
           _.orderBy players, 'rank'
@@ -129,11 +147,13 @@ class PlayerCtrl
           followingIds, GAME_ID
         )
         .map EmbedService.embed {
-          embed: [EmbedService.TYPES.PLAYER.USER_IDS]
+          embed: userIdsEmbed
           gameId: GAME_ID
         }
         .then (players) ->
           players = _.map players, (player) ->
+            player.userId = player.verifiedUser?.id or player.userIds?[0]
+            delete player.userIds
             {player}
     , {expireSeconds: 1} # FIXME FIXME ONE_MINUTE_SECONDS}
 
