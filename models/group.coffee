@@ -4,9 +4,9 @@ uuid = require 'node-uuid'
 r = require '../services/rethinkdb'
 CacheService = require '../services/cache'
 User = require './user'
+GroupUser = require './group_user'
 
 GROUPS_TABLE = 'groups'
-USER_IDS_INDEX = 'userIds'
 TYPE_LANGUAGE_INDEX = 'typeLanguage'
 
 ONE_DAY_SECONDS = 3600 * 24
@@ -26,8 +26,6 @@ defaultGroup = (group) ->
     mode: 'open' # open | private | inviteOnly
     type: 'general' # public | general | clan | star
     gameIds: []
-    userIds: []
-    invitedIds: []
     clanIds: []
   }
 
@@ -37,7 +35,6 @@ class GroupModel
       name: GROUPS_TABLE
       options: {}
       indexes: [
-        {name: USER_IDS_INDEX, options: {multi: true}}
         {name: TYPE_LANGUAGE_INDEX, fn: (row) ->
           [row('type'), row('language')]}
       ]
@@ -88,6 +85,11 @@ class GroupModel
     get = ->
       r.table GROUPS_TABLE
       .get id
+      .merge (group) ->
+        userIds = r.table('group_users').getAll(group('id'), {index: 'groupId'})
+                  .map (groupUser) -> groupUser('userId')
+                  .coerceTo('array')
+        {userIds}
       .run()
       .then defaultGroup
 
@@ -97,25 +99,38 @@ class GroupModel
     else
       get()
 
+  getAllByIds: (ids, {limit} = {}) ->
+    limit ?= 10
+
+    r.table GROUPS_TABLE
+    .getAll r.args(ids)
+    .limit limit
+    .merge (group) ->
+      userIds = r.table('group_users').getAll(group('id'), {index: 'groupId'})
+                .map (groupUser) -> groupUser('userId')
+                .coerceTo('array')
+      {userIds}
+    .run()
 
   getAll: ({filter, language, limit, user} = {}) ->
     limit ?= 10
 
     q = r.table GROUPS_TABLE
 
-    if filter is 'mine'
-      q = q.getAll user.id, {index: USER_IDS_INDEX}
-    else if filter is 'invited'
-      q = q.getAll r.args (user.data.groupInvitedIds or [])
-    else if filter is 'open'
-      q = q.filter r.row('mode').default('open').eq('open')
-    else if filter is 'public' and language
+    if filter is 'public' and language
       q = q.getAll ['public', language], {index: TYPE_LANGUAGE_INDEX}
+    # else if filter is 'invited'
+    #   q = q.getAll r.args (user.data.groupInvitedIds or [])
     else if filter is 'public'
       q = q.getAll ['public'], {index: TYPE_LANGUAGE_INDEX}
 
-    q.orderBy r.desc r.row('userIds').count()
-    .limit limit
+    # q.orderBy r.desc r.row('userIds').count()
+    q.limit limit
+    .merge (group) ->
+      userIds = r.table('group_users').getAll(group('id'), {index: 'groupId'})
+                .map (groupUser) -> groupUser('userId')
+                .coerceTo('array')
+      {userIds}
     .run()
     .map defaultGroup
 
@@ -129,16 +144,27 @@ class GroupModel
       CacheService.deleteByKey key
       null
 
-  addUser: (id, userId) =>
-    @updateById id, {
-      userIds: r.row('userIds').append(userId).distinct()
-    }
+  addUser: (groupId, userId) ->
+    console.log 'add user', groupId, userId
+    GroupUser.create {groupId, userId}
+    .tap ->
+      key = "#{CacheService.PREFIXES.GROUP_ID}:#{groupId}"
+      CacheService.deleteByKey key
+
+  removeUser: (groupId, userId) ->
+    GroupUser.deleteByGroupIdAndUserId groupId, userId
+    .tap ->
+      key = "#{CacheService.PREFIXES.GROUP_ID}:#{groupId}"
+      CacheService.deleteByKey key
 
   deleteById: (id) ->
     r.table GROUPS_TABLE
     .get id
     .delete()
     .run()
+    .tap ->
+      key = "#{CacheService.PREFIXES.GROUP_ID}:#{id}"
+      CacheService.deleteByKey key
 
   sanitizePublic: _.curry (requesterId, group) ->
     sanitizedGroup = _.pick group, [
@@ -151,7 +177,6 @@ class GroupModel
       'mode'
       'type'
       'userIds'
-      'users'
       'conversations'
       'embedded'
     ]
@@ -168,7 +193,6 @@ class GroupModel
       'mode'
       'type'
       'userIds'
-      'users'
       'password'
       'conversations'
       'embedded'

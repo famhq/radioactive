@@ -5,6 +5,7 @@ Promise = require 'bluebird'
 User = require '../models/user'
 UserData = require '../models/user_data'
 Group = require '../models/group'
+GroupUser = require '../models/group_user'
 Game = require '../models/game'
 Conversation = require '../models/conversation'
 GroupRecordType = require '../models/group_record_type'
@@ -38,7 +39,6 @@ class GroupCtrl
     .then ({id}) ->
       Group.create {
         name, description, badgeId, background, creatorId, mode
-        userIds: [creatorId]
         gameIds: [id]
         gameData:
           "#{id}":
@@ -46,6 +46,7 @@ class GroupCtrl
       }
     .tap ({id}) ->
       Promise.all [
+        Group.addUser id, user.id
         Conversation.create {
           groupId: id
           name: 'general'
@@ -68,46 +69,47 @@ class GroupCtrl
 
       Group.updateById id, {name, description, badgeId, background, mode}
 
-  inviteById: ({id, userIds}, {user}) ->
-    groupId = id
-
-    unless groupId
-      router.throw {status: 404, info: 'Group not found'}
-
-    Promise.all [
-      Group.getById groupId
-      Promise.map userIds, User.getById
-    ]
-    .then ([group, toUsers]) ->
-      unless group
-        router.throw {status: 404, info: 'Group not found'}
-      if _.isEmpty toUsers
-        router.throw {status: 404, info: 'User not found'}
-
-      hasPermission = Group.hasPermission group, user
-      unless hasPermission
-        router.throw {status: 400, info: 'You don\'t have permission'}
-
-      Promise.map toUsers, EmbedService.embed userDataEmbed
-      .map (toUser) ->
-        senderName = User.getDisplayName user
-        groupInvitedIds = toUser.data.groupInvitedIds or []
-        unreadGroupInvites = toUser.data.unreadGroupInvites or 0
-        UserData.upsertByUserId toUser.id, {
-          groupInvitedIds: _.uniq groupInvitedIds.concat [id]
-          unreadGroupInvites: unreadGroupInvites + 1
-        }
-        PushNotificationService.send toUser, {
-          title: 'New group invite'
-          text: "#{senderName} invited you to the group, #{group.name}"
-          type: PushNotificationService.TYPES.GROUP
-          url: "https://#{config.CLIENT_HOST}"
-          data:
-            path: "/group/#{group.id}"
-        }
-
-      Group.updateById groupId,
-        invitedIds: _.uniq group.invitedIds.concat(userIds)
+  # FIXME: need to add some notion of invitedIds for group_users
+  # inviteById: ({id, userIds}, {user}) ->
+  #   groupId = id
+  #
+  #   unless groupId
+  #     router.throw {status: 404, info: 'Group not found'}
+  #
+  #   Promise.all [
+  #     Group.getById groupId
+  #     Promise.map userIds, User.getById
+  #   ]
+  #   .then ([group, toUsers]) ->
+  #     unless group
+  #       router.throw {status: 404, info: 'Group not found'}
+  #     if _.isEmpty toUsers
+  #       router.throw {status: 404, info: 'User not found'}
+  #
+  #     hasPermission = Group.hasPermission group, user
+  #     unless hasPermission
+  #       router.throw {status: 400, info: 'You don\'t have permission'}
+  #
+  #     Promise.map toUsers, EmbedService.embed userDataEmbed
+  #     .map (toUser) ->
+  #       senderName = User.getDisplayName user
+  #       groupInvitedIds = toUser.data.groupInvitedIds or []
+  #       unreadGroupInvites = toUser.data.unreadGroupInvites or 0
+  #       UserData.upsertByUserId toUser.id, {
+  #         groupInvitedIds: _.uniq groupInvitedIds.concat [id]
+  #         unreadGroupInvites: unreadGroupInvites + 1
+  #       }
+  #       PushNotificationService.send toUser, {
+  #         title: 'New group invite'
+  #         text: "#{senderName} invited you to the group, #{group.name}"
+  #         type: PushNotificationService.TYPES.GROUP
+  #         url: "https://#{config.CLIENT_HOST}"
+  #         data:
+  #           path: "/group/#{group.id}"
+  #       }
+  #
+  #     Group.updateById groupId,
+  #       invitedIds: _.uniq group.invitedIds.concat(userIds)
 
   leaveById: ({id}, {user}) ->
     groupId = id
@@ -128,9 +130,7 @@ class GroupCtrl
         UserData.upsertByUserId user.id, {
           groupIds: _.filter user.data.groupIds, (id) -> groupId isnt id
         }
-        Group.updateById groupId, {
-          userIds: _.filter group.userIds, (id) -> userId isnt id
-        }
+        Group.removeUser groupId, userId
       ]
 
   joinById: ({id}, {user}) ->
@@ -153,14 +153,13 @@ class GroupCtrl
 
       name = User.getDisplayName user
 
-      # FIXME FIXME: re-enable notifications
-      if false and id isnt '73ed4af0-a2f2-4371-a893-1360d3989708'
+      if group.type isnt 'public'
         PushNotificationService.sendToGroup(group, {
           title: 'New group member'
           text: "#{name} joined your group."
           type: PushNotificationService.TYPES.CREW
           url: "https://#{config.CLIENT_HOST}"
-          path: "/group/#{group.id}"
+          path: "/group/#{group.id}/chat"
         }, {skipMe: true, meUserId: user.id}).catch -> null
 
       groupIds = user.data.groupIds or []
@@ -169,15 +168,24 @@ class GroupCtrl
           groupIds: _.uniq groupIds.concat [groupId]
           invitedIds: _.filter user.data.invitedIds, (id) -> id isnt groupId
         }
-        Group.updateById groupId,
-          userIds: _.uniq group.userIds.concat([userId])
-          invitedIds: _.filter group.invitedIds, (id) -> id isnt userId
+        Group.addUser groupId, userId
+        # Group.updateById groupId,
+        #   userIds: _.uniq group.userIds.concat([userId])
+        #   invitedIds: _.filter group.invitedIds, (id) -> id isnt userId
       ]
 
   getAll: ({filter, language}, {user}) ->
     EmbedService.embed {embed: userDataEmbed}, user
     .then (user) ->
-      Group.getAll {filter, user, language}
+      console.log 'get', user.id
+      (if filter is 'mine'
+        GroupUser.getAllByUserId user.id
+        .map ({groupId}) -> groupId
+        .then (groupIds) ->
+          Group.getAllByIds groupIds
+      else
+        Group.getAll {filter, user, language}
+      )
       .then (groups) ->
         if filter is 'public' and _.isEmpty groups
           Group.getAll {filter, user}
@@ -190,5 +198,7 @@ class GroupCtrl
     Group.getById id
     .then EmbedService.embed {embed: channelsEmbed, user}
     .then Group.sanitize null
+    .tap (g) ->
+      console.log g
 
 module.exports = new GroupCtrl()
