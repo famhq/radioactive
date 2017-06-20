@@ -5,6 +5,7 @@ r = require '../services/rethinkdb'
 CacheService = require '../services/cache'
 GroupClan = require './group_clan'
 Group = require './group'
+GroupUser = require './group_user'
 Conversation = require './conversation'
 ClashRoyaleClan = require './clash_royale_clan'
 config = require '../config'
@@ -115,16 +116,18 @@ class ClanModel
       name: name
       creatorId: creatorId
       mode: 'private'
-      userIds: [userId]
       gameIds: [config.CLASH_ROYALE_ID]
       clanIds: [clanId]
     }
     .tap (group) ->
-      Conversation.create {
-        groupId: group.id
-        name: 'general'
-        type: 'channel'
-      }
+      Promise.all [
+        GroupUser.create {groupId: group.id, userId: userId}
+        Conversation.create {
+          groupId: group.id
+          name: 'general'
+          type: 'channel'
+        }
+      ]
     .tap (group) ->
       GroupClan.updateByClanIdAndGameId clanId, config.CLASH_ROYALE_ID, {
         password: password, groupId: group.id
