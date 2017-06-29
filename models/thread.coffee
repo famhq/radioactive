@@ -9,6 +9,7 @@ CREATOR_ID_INDEX = 'creatorId'
 ATTACHMENT_IDS_INDEX = 'attachmentIds'
 SCORE_INDEX = 'score'
 CATEGORY_SCORE_INDEX = 'categoryScore'
+CATEGORY_ADD_TIME_INDEX = 'categoryAddTime'
 ADD_TIME_INDEX = 'addTime'
 LAST_UPDATE_TIME_INDEX = 'lastUpdateTime'
 
@@ -50,6 +51,8 @@ class ThreadModel
         {name: SCORE_INDEX}
         {name: CATEGORY_SCORE_INDEX, fn: (row) ->
           [row('category'), row('score')]}
+        {name: CATEGORY_ADD_TIME_INDEX, fn: (row) ->
+          [row('category'), row('addTime')]}
         {name: ATTACHMENT_IDS_INDEX}
         {name: ADD_TIME_INDEX}
         {name: LAST_UPDATE_TIME_INDEX}
@@ -93,23 +96,27 @@ class ThreadModel
       , {concurrency: 50}
 
 
-  getAll: ({category, limit, sort} = {}) ->
+  getAll: ({category, limit, language, sort} = {}) ->
     limit ?= 20
 
     if category
+      index = if sort is 'new' \
+              then CATEGORY_ADD_TIME_INDEX
+              else CATEGORY_SCORE_INDEX
       q = r.table THREADS_TABLE
-      .between [category + '!'], [category + '~'], {
-        index: CATEGORY_SCORE_INDEX
+      .between [category], [category + 'Z'], {
+        index: index
       }
-      .orderBy {index: r.desc(CATEGORY_SCORE_INDEX)}
+      .orderBy {index: r.desc(index)}
     else
       q = r.table THREADS_TABLE
       if sort is 'new'
         q = q.orderBy {index: r.desc(ADD_TIME_INDEX)}
       else
         q = q.orderBy {index: r.desc(SCORE_INDEX)}
+
     q.limit limit
-    .filter r.row('score').gt -2
+    .filter r.row('upvotes').sub(r.row('downvotes')).gt -2
     .run()
     .map defaultThread
 
@@ -167,6 +174,7 @@ class ThreadModel
       'body'
       'data'
       'deck'
+      'category'
       'comments'
       'commentCount'
       'attachments'

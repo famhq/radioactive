@@ -6,6 +6,7 @@ User = require '../models/user'
 UserData = require '../models/user_data'
 Group = require '../models/group'
 GroupUser = require '../models/group_user'
+Clan = require '../models/clan'
 Game = require '../models/game'
 Conversation = require '../models/conversation'
 GroupRecordType = require '../models/group_record_type'
@@ -16,11 +17,7 @@ config = require '../config'
 defaultEmbed = [
   EmbedService.TYPES.GROUP.USERS
   EmbedService.TYPES.GROUP.CONVERSATIONS
-]
-channelsEmbed = [
-  EmbedService.TYPES.GROUP.USERS
-  EmbedService.TYPES.GROUP.CHANNELS
-  EmbedService.TYPES.GROUP.CONVERSATIONS
+  EmbedService.TYPES.GROUP.STAR
 ]
 userDataEmbed = [
   EmbedService.TYPES.USER.DATA
@@ -175,9 +172,9 @@ class GroupCtrl
       ]
 
   getAll: ({filter, language}, {user}) ->
+    # TODO: cache!
     EmbedService.embed {embed: userDataEmbed}, user
     .then (user) ->
-      console.log 'get', user.id
       (if filter is 'mine'
         GroupUser.getAllByUserId user.id
         .map ({groupId}) -> groupId
@@ -192,13 +189,19 @@ class GroupCtrl
         else
           groups
     .map EmbedService.embed {embed: defaultEmbed}
+    .map (group) ->
+      if not _.isEmpty group.clanIds
+        group.clan = Clan.getByClanIdAndGameId(
+          group.clanIds[0], config.CLASH_ROYALE_ID
+        )
+
+      Promise.props group
+
     .map Group.sanitize null
 
   getById: ({id}, {user}) ->
     Group.getById id
-    .then EmbedService.embed {embed: channelsEmbed, user}
+    .then EmbedService.embed {embed: defaultEmbed, user}
     .then Group.sanitize null
-    .tap (g) ->
-      console.log g
 
 module.exports = new GroupCtrl()

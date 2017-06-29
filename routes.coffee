@@ -1,9 +1,5 @@
 router = require 'exoid-router'
 
-UserCtrl = require './controllers/user'
-UserDataCtrl = require './controllers/user_data'
-UserGroupData = require './controllers/user_group_data'
-PlayerCtrl = require './controllers/player'
 AuthCtrl = require './controllers/auth'
 ChatMessageCtrl = require './controllers/chat_message'
 ClanCtrl = require './controllers/clan'
@@ -16,9 +12,10 @@ ClashRoyaleUserDeckCtrl = require './controllers/clash_royale_user_deck'
 ClashRoyaleCardCtrl = require './controllers/clash_royale_card'
 DynamicImageCtrl = require './controllers/dynamic_image'
 EventCtrl = require './controllers/event'
-PushTokenCtrl = require './controllers/push_token'
-PaymentCtrl = require './controllers/payment'
 ModCtrl = require './controllers/mod'
+PaymentCtrl = require './controllers/payment'
+PushTokenCtrl = require './controllers/push_token'
+PlayerCtrl = require './controllers/player'
 TheadCtrl = require './controllers/thread'
 GroupCtrl = require './controllers/group'
 GroupRecordCtrl = require './controllers/group_record'
@@ -26,6 +23,10 @@ GroupRecordTypeCtrl = require './controllers/group_record_type'
 GameRecordTypeCtrl = require './controllers/game_record_type'
 StarCtrl = require './controllers/star'
 ThreadCommentCtrl = require './controllers/thread_comment'
+UserCtrl = require './controllers/user'
+UserFollowerCtrl = require './controllers/user_follower'
+UserDataCtrl = require './controllers/user_data'
+UserGroupData = require './controllers/user_group_data'
 VideoCtrl = require './controllers/video'
 StreamService = require './services/stream'
 
@@ -64,12 +65,19 @@ module.exports = router
 .on 'userData.getByUserId', authed UserDataCtrl.getByUserId
 .on 'userData.setAddress', authed UserDataCtrl.setAddress
 .on 'userData.updateMe', authed UserDataCtrl.updateMe
-.on 'userData.followByUserId', authed UserDataCtrl.followByUserId
-.on 'userData.unfollowByUserId', authed UserDataCtrl.unfollowByUserId
 .on 'userData.blockByUserId', authed UserDataCtrl.blockByUserId
 .on 'userData.unblockByUserId', authed UserDataCtrl.unblockByUserId
 .on 'userData.deleteConversationByUserId',
   authed UserDataCtrl.deleteConversationByUserId
+
+.on 'userFollowers.getAllFollowingIds',
+  authed UserFollowerCtrl.getAllFollowingIds
+.on 'userFollowers.getAllFollowerIds',
+  authed UserFollowerCtrl.getAllFollowerIds
+.on 'userFollowers.followByUserId',
+  authed UserFollowerCtrl.followByUserId
+.on 'userFollowers.unfollowByUserId',
+  authed UserFollowerCtrl.unfollowByUserId
 
 .on 'clanRecordTypes.getAllByClanIdAndGameId',
   authed ClanRecordTypeCtrl.getAllByClanIdAndGameId
@@ -93,6 +101,7 @@ module.exports = router
 .on 'threads.getById', authed TheadCtrl.getById
 .on 'threads.voteById', authed TheadCtrl.voteById
 .on 'threads.updateById', authed TheadCtrl.createOrUpdateById
+.on 'threads.deleteById', authed TheadCtrl.deleteById
 
 .on 'events.create', authed EventCtrl.create
 .on 'events.updateById', authed EventCtrl.updateById
@@ -193,6 +202,7 @@ module.exports = router
 .on 'mods.unflagByChatMessageId', authed ModCtrl.unflagByChatMessageId
 
 .on 'stars.getByUsername', authed StarCtrl.getByUsername
+.on 'stars.getAll', authed StarCtrl.getAll
 
 .on 'videos.getAll', authed VideoCtrl.getAll
 .on 'videos.getById', authed VideoCtrl.getById

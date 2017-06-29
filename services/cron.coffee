@@ -41,6 +41,7 @@ class CronService
 
     # minute on 3/4 minute
     @addCron 'threeQuarterMinute', '45 * * * * *', ->
+      CleanupService.clean()
       if config.ENV is config.ENVS.PROD
         ClashRoyalePlayerService.updateTopPlayers()
 

@@ -16,12 +16,14 @@ ClashRoyaleDeck = require '../models/clash_royale_deck'
 ClashRoyaleMatch = require '../models/clash_royale_match'
 Deck = require '../models/clash_royale_deck'
 Group = require '../models/group'
+Star = require '../models/star'
 ClanRecord = require '../models/clan_record'
 GroupRecord = require '../models/group_record'
 UserRecord = require '../models/user_record'
 UserGroupData = require '../models/user_group_data'
 Player = require '../models/player'
 UserPlayer = require '../models/user_player'
+UserFollower = require '../models/user_follower'
 chestCycle = require '../resources/data/chest_cycle'
 CacheService = require './cache'
 TagConverterService = require './tag_converter'
@@ -29,17 +31,6 @@ TagConverterService = require './tag_converter'
 doubleCycle = chestCycle.concat chestCycle
 
 TYPES =
-  USER:
-    DATA: 'user:data'
-    IS_ONLINE: 'user:isOnline'
-    GROUP_DATA: 'user:groupData'
-    GAME_DATA: 'user:gameData'
-    IS_BANNED: 'user:isBanned'
-  USER_DATA:
-    CONVERSATION_USERS: 'userData:conversationUsers'
-    FOLLOWERS: 'userData:followers'
-    FOLLOWING: 'userData:following'
-    BLOCKED_USERS: 'userData:blockedUsers'
   BAN:
     USER: 'ban:user'
   CHAT_MESSAGE:
@@ -66,6 +57,7 @@ TYPES =
   GROUP:
     USERS: 'group:users'
     CONVERSATIONS: 'group:conversations'
+    STAR: 'group:star'
   CLAN_RECORD_TYPE:
     CLAN_VALUES: 'clanRecordType:clanValues'
   GROUP_RECORD_TYPE:
@@ -85,6 +77,18 @@ TYPES =
     COMMENT_COUNT: 'thread:commentCount'
     MY_VOTE: 'thread:myVote'
     DECK: 'thread:deck'
+  USER:
+    DATA: 'user:data'
+    IS_ONLINE: 'user:isOnline'
+    FOLLOWER_COUNT: 'user:followerCount'
+    GROUP_DATA: 'user:groupData'
+    GAME_DATA: 'user:gameData'
+    IS_BANNED: 'user:isBanned'
+  USER_DATA:
+    CONVERSATION_USERS: 'userData:conversationUsers'
+    FOLLOWERS: 'userData:followers'
+    FOLLOWING: 'userData:following'
+    BLOCKED_USERS: 'userData:blockedUsers'
 
 TEN_DAYS_SECONDS = 3600 * 24 * 10
 ONE_HOUR_SECONDS = 3600
@@ -128,6 +132,12 @@ embedFn = _.curry ({embed, user, clanId, groupId, gameId, userId}, object) ->
         .then (userData) ->
           _.defaults {userId: embedded.id}, userData
 
+      when TYPES.USER.FOLLOWER_COUNT
+        key = CacheService.PREFIXES.USER_FOLLOWER_COUNT + ':' + embedded.id
+        embedded.followerCount = CacheService.preferCache key, ->
+          UserFollower.getCountByFollowingId embedded.id
+        , {expireSeconds: FIVE_MINUTES_SECONDS}
+
       when TYPES.USER.GROUP_DATA
         embedded.groupData = UserGroupData.getByUserIdAndGroupId(
           embedded.id, groupId
@@ -144,7 +154,6 @@ embedFn = _.curry ({embed, user, clanId, groupId, gameId, userId}, object) ->
                             .isAfter moment()
 
       when TYPES.USER.IS_BANNED
-        console.log 'get chat banned'
         embedded.isChatBanned = Ban.getByUserId embedded.id, {
           scope: 'chat'
           preferCache: true
@@ -280,7 +289,8 @@ embedFn = _.curry ({embed, user, clanId, groupId, gameId, userId}, object) ->
       when TYPES.STAR.USER
         embedded.user = User.getById embedded.userId
         .then embedFn {
-          embed: profileDialogUserEmbed, gameId: config.CLASH_ROYALE_ID
+          embed: profileDialogUserEmbed.concat [TYPES.USER.FOLLOWER_COUNT]
+          gameId: config.CLASH_ROYALE_ID
         }
         .then User.sanitizePublic null
 
@@ -307,6 +317,14 @@ embedFn = _.curry ({embed, user, clanId, groupId, gameId, userId}, object) ->
 
       when TYPES.EVENT.CREATOR
         embedded.creator = User.getById embedded.creatorId
+
+      when TYPES.GROUP.STAR
+        if embedded.starId
+          key = CacheService.PREFIXES.GROUP_STAR + ':' + embedded.id
+          embedded.star = CacheService.preferCache key, ->
+            Star.getById embedded.starId
+            .then embedFn {embed: [TYPES.STAR.USER]}
+          , {expireSeconds: ONE_HOUR_SECONDS}
 
       when TYPES.GROUP.USERS
         embedded.users = Promise.map embedded.userIds, (userId) ->

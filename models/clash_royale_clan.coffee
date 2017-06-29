@@ -49,8 +49,7 @@ class ClashRoyaleClan
         tableName: @TABLE_NAME
         fields: fields
         indexes: [
-          {columns: ['updateFrequency', 'lastMatchesUpdateTime']}
-          {columns: ['updateFrequency', 'lastDataUpdateTime']}
+          {columns: ['updateFrequency', 'lastUpdateTime']}
         ]
       }
   ]

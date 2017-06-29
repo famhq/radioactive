@@ -27,13 +27,14 @@ config = require '../config'
 ENABLE_ANON_USER_DECKS = false
 
 MAX_TIME_TO_COMPLETE_MS = 60 * 30 * 1000 # 30min
-PLAYER_DATA_STALE_TIME_S = 3600 * 23 # 23hr
+PLAYER_DATA_STALE_TIME_S = 3600 * 24 # 24hr
 PLAYER_MATCHES_STALE_TIME_S = 60 * 60 # 1 hour
 # FIXME: temp fix so queue doesn't grow forever
 MIN_TIME_BETWEEN_UPDATES_MS = 60 * 20 * 1000 # 20min
-TWENTY_THREE_HOURS_S = 3600 * 23
+ONE_DAY_S = 3600 * 24
 SIX_HOURS_S = 3600 * 6
 ONE_HOUR_SECONDS = 60
+ONE_DAY_MS = 3600 * 24 * 1000
 PLAYER_DATA_TIMEOUT_MS = 10000
 PLAYER_MATCHES_TIMEOUT_MS = 5000
 CLAN_TIMEOUT_MS = 5000
@@ -702,72 +703,82 @@ class ClashRoyalePlayer
           console.log 'err stalePlayerData', err
 
 
-  processUpdatePlayerData: ({userId, id, playerData, isDaily}) =>
+  processUpdatePlayerData: ({userId, id, playerData}) =>
     if DEBUG
-      console.log 'process playerdata', isDaily
+      console.log 'process playerdata'
     unless id
       console.log 'tag doesn\'t exist updateplayerdata'
       return Promise.resolve null
-    @updatePlayerData {userId, id, playerData}
-    .then (player) ->
-      if isDaily
-        key = CacheService.PREFIXES.USER_DAILY_DATA_PUSH + ':' + id
-        CacheService.runOnce key, ->
-          Promise.all [
-            Player.getByPlayerIdAndGameId id, GAME_ID
-            .then EmbedService.embed {
-              embed: [
-                EmbedService.TYPES.PLAYER.USER_IDS
-                EmbedService.TYPES.PLAYER.CHEST_CYCLE
-              ]
-              gameId: GAME_ID
+    Promise.all [
+      @updatePlayerData {userId, id, playerData}
+      if userId
+        User.getById userId
+      else
+        Promise.resolve null
+    ]
+    .then ([player, user]) =>
+      key = CacheService.PREFIXES.USER_DAILY_DATA_PUSH + ':' + id
+      CacheService.runOnce key, =>
+        msSinceJoin = Date.now() - user?.joinTime?.getTime()
+        if user and msSinceJoin >= ONE_DAY_MS
+          @sendDailyPush {playerId: id}
+      , {expireSeconds: ONE_DAY_S}
+
+  sendDailyPush: ({playerId}) ->
+    Promise.all [
+      Player.getByPlayerIdAndGameId playerId, GAME_ID
+      .then EmbedService.embed {
+        embed: [
+          EmbedService.TYPES.PLAYER.USER_IDS
+          EmbedService.TYPES.PLAYER.CHEST_CYCLE
+        ]
+        gameId: GAME_ID
+      }
+      PlayersDaily.getByPlayerIdAndGameId playerId, GAME_ID
+    ]
+    .then ([player, playerDaily]) ->
+      if player
+        countUntil = player.data.chestCycle?.countUntil
+        nextGoodChest = _.minBy _.keys(countUntil), (key) ->
+          countUntil[key]
+        countUntilNextGoodChest = countUntil[nextGoodChest]
+
+        if playerDaily
+          splits = playerDaily.data.splits
+          stats = _.reduce splits, (aggregate, split, gameType) ->
+            aggregate.wins += split.wins
+            aggregate.losses += split.losses
+            aggregate
+          , {wins: 0, losses: 0}
+          PlayersDaily.deleteByPlayerIdAndGameId(
+            playerDaily.id
+            GAME_ID
+          )
+          text = "#{countUntilNextGoodChest} chests until a
+            #{_.startCase(nextGoodChest)}.
+            You had #{stats.wins} wins and
+            #{stats.losses} losses today."
+        else
+          text = "#{countUntilNextGoodChest} chests until a
+            #{_.startCase(nextGoodChest)}."
+
+        # TODO: figure out why some players without userIds are initially
+        # setup with an updateFrequency other than none
+        if _.isEmpty player.userIds
+          diff = _.defaults {updateFrequency: 'none'}, player
+          console.log 'no userIds, setting freq to none'
+          Player.updateByPlayerIdAndGameId player.id, GAME_ID, diff
+        else
+          Promise.map player.userIds, User.getById
+          .map (user) ->
+            PushNotificationService.send user, {
+              title: 'Daily recap'
+              type: PushNotificationService.TYPES.DAILY_RECAP
+              url: "https://#{config.SUPERNOVA_HOST}"
+              text: text
+              data: {path: '/'}
             }
-            PlayersDaily.getByPlayerIdAndGameId id, GAME_ID
-          ]
-          .then ([player, playerDaily]) ->
-            if player
-              countUntil = player.data.chestCycle?.countUntil
-              nextGoodChest = _.minBy _.keys(countUntil), (key) ->
-                countUntil[key]
-              countUntilNextGoodChest = countUntil[nextGoodChest]
-
-              if playerDaily
-                splits = playerDaily.data.splits
-                stats = _.reduce splits, (aggregate, split, gameType) ->
-                  aggregate.wins += split.wins
-                  aggregate.losses += split.losses
-                  aggregate
-                , {wins: 0, losses: 0}
-                PlayersDaily.deleteByPlayerIdAndGameId(
-                  playerDaily.id
-                  GAME_ID
-                )
-                text = "#{countUntilNextGoodChest} chests until a
-                  #{_.startCase(nextGoodChest)}.
-                  You had #{stats.wins} wins and
-                  #{stats.losses} losses today."
-              else
-                text = "#{countUntilNextGoodChest} chests until a
-                  #{_.startCase(nextGoodChest)}."
-
-              # TODO: figure out why some players without userIds are initially
-              # setup with an updateFrequency other than none
-              if _.isEmpty player.userIds
-                diff = _.defaults {updateFrequency: 'none'}, player
-                console.log 'no userIds, setting freq to none'
-                Player.updateByPlayerIdAndGameId player.id, GAME_ID, diff
-              else
-                Promise.map player.userIds, User.getById
-                .map (user) ->
-                  PushNotificationService.send user, {
-                    title: 'Daily recap'
-                    type: PushNotificationService.TYPES.DAILY_RECAP
-                    url: "https://#{config.SUPERNOVA_HOST}"
-                    text: text
-                    data: {path: '/'}
-                  }
-              null
-        , {expireSeconds: TWENTY_THREE_HOURS_S}
+        null
 
   getTopPlayers: ->
     request "#{config.CR_API_URL}/players/top", {json: true}

@@ -27,6 +27,7 @@ defaultGroup = (group) ->
     type: 'general' # public | general | clan | star
     gameIds: []
     clanIds: []
+    starId: null
   }
 
 class GroupModel
@@ -103,7 +104,7 @@ class GroupModel
     limit ?= 10
 
     r.table GROUPS_TABLE
-    .getAll r.args(ids)
+    .getAll r.args _.filter(ids)
     .limit limit
     .merge (group) ->
       userIds = r.table('group_users').getAll(group('id'), {index: 'groupId'})
@@ -172,11 +173,14 @@ class GroupModel
       'creatorId'
       'name'
       'description'
+      'clan'
       'badgeId'
       'background'
       'mode'
       'type'
       'userIds'
+      'starId'
+      'star'
       'conversations'
       'embedded'
     ]
@@ -188,11 +192,14 @@ class GroupModel
       'creatorId'
       'name'
       'description'
+      'clan'
       'badgeId'
       'background'
       'mode'
       'type'
       'userIds'
+      'starId'
+      'star'
       'password'
       'conversations'
       'embedded'

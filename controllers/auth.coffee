@@ -26,6 +26,7 @@ class AuthCtrl
       Auth.fromUserId user.id
 
   join: ({email, username, password}, {user}) ->
+    console.log 'join'
     insecurePassword = password
     username = username?.toLowerCase()
 
@@ -34,6 +35,8 @@ class AuthCtrl
       email: schemas.user.email
       username: schemas.user.username
     , {presence: 'required'}
+
+    console.log valid
 
     if valid.error
       router.throw {status: 400, info: valid.error.message, ignoreLog: true}

@@ -18,7 +18,7 @@ class CleanupService
     Promise.all [
       @cleanUserRecords()
       @cleanClashRoyaleMatches()
-      # TODO: clean user decks somehow?
+      @cleanUserDecks()
       @cleanKue()
     ]
     .then ->
@@ -30,15 +30,22 @@ class CleanupService
     }
 
   cleanClashRoyaleMatches: ->
+
     knex.table 'matches'
-    .where 'time', '>', moment().subtract(ONE_WEEK_MS - TWO_MIN_MS).toDate()
+    .where 'time', '>', moment().subtract(ONE_WEEK_MS + TWO_MIN_MS).toDate()
     .andWhere 'time', '<', moment().subtract(ONE_WEEK_MS).toDate()
     .delete()
 
   cleanUserRecords: ->
     knex.table 'user_records'
-    .where 'time', '>', moment().subtract(FOUR_WEEKS_MS - TWO_MIN_MS).toDate()
+    .where 'time', '>', moment().subtract(FOUR_WEEKS_MS + TWO_MIN_MS).toDate()
     .andWhere 'time', '<', moment().subtract(FOUR_WEEKS_MS).toDate()
+    .delete()
+
+  cleanUserDecks: ->
+    knex.table 'user_decks'
+    .where 'lastUpdateTime', '>', moment().subtract(FOUR_WEEKS_MS + TWO_MIN_MS).toDate()
+    .andWhere 'lastUpdateTime', '<', moment().subtract(FOUR_WEEKS_MS).toDate()
     .delete()
 
 module.exports = new CleanupService()

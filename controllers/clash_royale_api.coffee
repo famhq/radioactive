@@ -93,7 +93,6 @@ class ClashRoyaleAPICtrl
     .then ->
       ClashRoyaleAPIService.updateByClanId clanId
 
-  # should only be called once daily
   updatePlayerData: ({body, params, headers}) ->
     radioactiveHost = config.RADIOACTIVE_API_URL.replace /https?:\/\//i, ''
     isPrivate = headers.host is radioactiveHost
@@ -102,7 +101,7 @@ class ClashRoyaleAPICtrl
       unless tag
         return
       KueCreateService.createJob {
-        job: {id: tag, playerData, isDaily: true}
+        job: {id: tag, playerData}
         type: KueCreateService.JOB_TYPES.UPDATE_PLAYER_DATA
         ttlMs: PLAYER_DATA_TIMEOUT_MS
         priority: 'low'

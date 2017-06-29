@@ -98,6 +98,7 @@ class PushNotificationService
           message: text
           ledColor: [0, 255, 0, 0]
           image: if icon then icon else null
+          payload: data
           data: data
           priority: 1
           actions: _.filter [
@@ -186,6 +187,7 @@ class PushNotificationService
   send: (user, message) =>
     if config.ENV is config.ENVS.DEV and not message.forceDevSend
       console.log 'send notification', user.id, message
+      # return
 
     unless message and (message.title or message.text)
       return Promise.reject new Error 'missing message'

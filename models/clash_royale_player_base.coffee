@@ -7,7 +7,7 @@ CacheService = require '../services/cache'
 config = require '../config'
 
 # so far can handle 20k per minute (1.2m per hour)
-DEFAULT_PLAYER_MATCHES_STALE_LIMIT = 2000
+DEFAULT_PLAYER_MATCHES_STALE_LIMIT = 1
 # 1,000 players per minute = ~1.4m per day
 DEFAULT_PLAYER_DATA_STALE_LIMIT = 1000
 SIX_HOURS_S = 3600 * 6
@@ -131,6 +131,7 @@ class ClashRoyalePlayerBaseModel
       field = 'lastDataUpdateTime'
       limit ?= DEFAULT_PLAYER_DATA_STALE_LIMIT
 
+    console.log 'gt', new Date(Date.now() - staleTimeS * 1000)
     knex @TABLE_NAME
     .where {updateFrequency: 'default'}
     .andWhere field, '<', new Date(Date.now() - staleTimeS * 1000)
@@ -138,10 +139,12 @@ class ClashRoyalePlayerBaseModel
     .map defaultPlayer
 
   deleteById: (id) =>
-    knex @TABLE_NAME
-    .where {id}
-    .limit 1
-    .delete()
+    if id
+      knex @TABLE_NAME
+      .where {id}
+      .del()
+    else
+      Promise.resolve null
 
 
 module.exports = ClashRoyalePlayerBaseModel

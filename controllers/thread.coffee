@@ -29,6 +29,7 @@ deckEmbed = [
 ]
 
 MAX_LENGTH = 5000
+IMAGE_REGEX = /\!\[(.*?)\]\((.*?)\)/gi
 YOUTUBE_ID_REGEX = ///
   (?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)
   ([^"&?\/ ]{11})
@@ -85,6 +86,13 @@ class ThreadCtrl
     if not diff.body or not diff.title
       router.throw status: 400, info: 'can\'t be empty'
 
+    diff.category ?= 'general'
+
+    images = new RegExp('\\!\\[(.*?)\\]\\((.*?)\\)', 'gi').exec(diff.body)
+    firstImageSrc = images?[2]
+    # for header image
+    if _.isEmpty(diff.attachments) and firstImageSrc
+      diff.attachments = [{type: 'image', src: firstImageSrc}]
     diff.data ?= {}
     (if diff.deck
       @addDeck diff.deck
@@ -174,12 +182,12 @@ class ThreadCtrl
       ]
 
   getAll: ({category, language, sort, limit}, {user}) ->
-    if language is 'es'
-      category = ''
-    else
+    if language isnt 'es'
       category ?= 'news'
 
-    Thread.getAll {category, sort, limit}
+    category or= 'general'
+
+    Thread.getAll {category, sort, language, limit}
     .map EmbedService.embed {
       userId: user.id
       embed: if category is 'decks' \
@@ -202,5 +210,10 @@ class ThreadCtrl
       else
         thread
     .then Thread.sanitize null
+
+  deleteById: ({id}, {user}) ->
+    unless user.flags.isModerator
+      router.throw status: 400, info: 'no permission'
+    Thread.deleteById id
 
 module.exports = new ThreadCtrl()

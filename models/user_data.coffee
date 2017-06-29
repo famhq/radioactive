@@ -17,8 +17,6 @@ defaultUserData = (userData) ->
 
   _.defaults userData, {
     id: id
-    followingIds: []
-    followerIds: []
     blockedUserIds: []
     groupInvitedIds: []
     groupIds: []

@@ -41,7 +41,7 @@ class ClashRoyaleClan
       clanChestCrowns: player.clanChestCrowns
     }
 
-  updateClan: ({userId, clan, tag, isDaily}) =>
+  updateClan: ({userId, clan, tag}) =>
     unless tag and clan
       return Promise.resolve null
 

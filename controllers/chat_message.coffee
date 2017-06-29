@@ -148,9 +148,7 @@ class ChatMessageCtrl
             Promise.resolve null
           )
           .then (group) ->
-            console.log 'try'
-            unless group.type is 'public'
-              console.log 'send'
+            unless group?.type is 'public'
               PushNotificationService.sendToConversation(
                 conversation, {
                   skipMe: true
