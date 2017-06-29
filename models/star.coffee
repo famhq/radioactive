@@ -30,6 +30,12 @@ class StarModel
     }
   ]
 
+  getById: (id) ->
+    r.table STARS_TABLE
+    .get id
+    .run()
+    .then defaultStar
+
   getByUsername: (username) ->
     r.table STARS_TABLE
     .getAll username, {index: USERNAME_INDEX}
@@ -37,6 +43,19 @@ class StarModel
     .default null
     .run()
     .then defaultStar
+
+  getByGroupId: (groupId) ->
+    r.table STARS_TABLE
+    .getAll groupId, {index: GROUP_ID_INDEX}
+    .nth 0
+    .default null
+    .run()
+    .then defaultStar
+
+  getAll: ->
+    r.table STARS_TABLE
+    .run()
+    .map defaultStar
 
 
 module.exports = new StarModel()

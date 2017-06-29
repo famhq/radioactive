@@ -15,17 +15,22 @@ class HealthCtrl
   check: (req, res, next) ->
     Promise.all [
       r.dbList().run().timeout HEALTHCHECK_TIMEOUT
+
+      # Kue.getCount()
+
       ClashRoyaleAPIService.getPlayerDataByTag AUSTIN_TAG, {
         priority: 'high'
         skipCache: true
       }
       .timeout HEALTHCHECK_TIMEOUT
       .catch -> null
+
       ClashRoyaleAPIService.getPlayerMatchesByTag AUSTIN_TAG, {
         priority: 'high'
       }
       .timeout HEALTHCHECK_TIMEOUT
       .catch -> null
+
       Player.getByPlayerIdAndGameId AUSTIN_TAG, config.CLASH_ROYALE_ID
     ]
     .then ([rethinkdb, playerData, playerMatches, player]) ->

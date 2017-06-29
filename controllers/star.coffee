@@ -13,4 +13,8 @@ class StarCtrl
     Star.getByUsername username
     .then EmbedService.embed {embed: defaultEmbed}
 
+  getAll: ({}, {user}) ->
+    Star.getAll()
+    .map EmbedService.embed {embed: defaultEmbed}
+
 module.exports = new StarCtrl()

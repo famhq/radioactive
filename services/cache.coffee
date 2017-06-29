@@ -29,10 +29,11 @@ class CacheService
     BROADCAST: 'broadcast'
   LOCKS: {}
   PREFIXES:
-    CHAT_USER: 'chat:user1'
+    CHAT_USER: 'chat:user3'
     THREAD_USER: 'thread:user1'
     THREAD_DECK: 'thread:deck1'
     CONVERSATION_ID: 'conversation:id'
+    USER_FOLLOWER_COUNT: 'user:follower_count'
     USER_DATA: 'user_data:id'
     USER_DATA_CONVERSATION_USERS: 'user_data:conversation_users'
     USER_DATA_FOLLOWERS: 'user_data:followers'
@@ -55,7 +56,8 @@ class CacheService
     CLASH_ROYALE_USER_DECK_PLAYER_ID:
       'clash_royale_user_deck:player_id'
     CLASH_ROYALE_API_GET_PLAYER_ID: 'clash_royale_api:get_tag'
-    GROUP_ID: 'group:id'
+    GROUP_ID: 'group:id1'
+    GROUP_STAR: 'group:star'
     USERNAME_SEARCH: 'username:search1'
     RATE_LIMIT_CHAT_MESSAGES_TEXT: 'rate_limit:chat_messages:text'
     RATE_LIMIT_CHAT_MESSAGES_MEDIA: 'rate_limit:chat_messages:media'

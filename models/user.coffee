@@ -11,9 +11,8 @@ USERS_TABLE = 'users'
 USERNAME_INDEX = 'username'
 NUMERIC_ID_INDEX = 'numericId'
 FACEBOOK_ID_INDEX = 'facebookId'
-IS_MEMBER_INDEX = 'isMember'
 LAST_ACTIVE_TIME_INDEX = 'lastActiveTime'
-HAS_PUSH_TOKEN_INDEX = 'hasPushToken'
+PUSH_TOKEN_INDEX = 'pushToken'
 
 defaultUser = (user) ->
   unless user?
@@ -30,6 +29,8 @@ defaultUser = (user) ->
     hasPushToken: false
     lastActiveIp: null
     lastActiveTime: new Date()
+    country: 'us'
+    language: 'en'
     counters: {}
     flags: {}
     preferredCategories: []
@@ -41,11 +42,10 @@ class UserModel
       name: USERS_TABLE
       indexes: [
         {name: USERNAME_INDEX}
-        {name: NUMERIC_ID_INDEX}
         {name: FACEBOOK_ID_INDEX}
-        {name: IS_MEMBER_INDEX}
         {name: LAST_ACTIVE_TIME_INDEX}
-        {name: HAS_PUSH_TOKEN_INDEX}
+        {name: PUSH_TOKEN_INDEX, fn: (row) ->
+          [row('hasPushToken'), row('id')]}
       ]
     }
   ]
@@ -117,20 +117,6 @@ class UserModel
     .then ->
       user
 
-  convertToMember: (user) ->
-    r.table USERS_TABLE
-    .orderBy r.desc {index: NUMERIC_ID_INDEX}
-    .nth 0
-    .default null
-    .pluck ['numericId']
-    .do ({numericId}) ->
-      r.table USERS_TABLE
-      .get user.id
-      .update {numericId: r.add(numericId, 1)}
-    .run()
-    .then ->
-      user
-
   getUniqueUsername: (baseUsername, appendedNumber = 0) =>
     username = "#{baseUsername}".toLowerCase()
     username = if appendedNumber \
@@ -165,10 +151,11 @@ class UserModel
       'flags'
       'data'
       'gameData'
+      'followerCount'
       'embedded'
     ]
     sanitizedUser.flags = _.pick user.flags, [
-      'isModerator', 'isDev', 'isChatBanned', 'isFoundingMember'
+      'isModerator', 'isDev', 'isChatBanned', 'isFoundingMember', 'isStar'
     ]
     sanitizedUser.data = _.pick user.data, [
       'presetAvatarId'

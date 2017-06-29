@@ -3,7 +3,7 @@ router = require 'exoid-router'
 Joi = require 'joi'
 
 User = require '../models/user'
-UserData = require '../models/user_data'
+UserFollower = require '../models/user_follower'
 Player = require '../models/player'
 ClashRoyaleTopPlayer = require '../models/clash_royale_top_player'
 UserPlayer = require '../models/user_player'
@@ -140,9 +140,10 @@ class PlayerCtrl
     key = "#{CacheService.PREFIXES.USER_DATA_FOLLOWING_PLAYERS}:#{user.id}"
 
     CacheService.preferCache key, ->
-      UserData.getByUserId user.id
-      .then (userData) ->
-        followingIds = userData.followingIds
+      UserFollower.getAllByUserId user.id
+      .map (userFollower) ->
+        userFollower.followingId
+      .then (followingIds) ->
         Player.getAllByUserIdsAndGameId(
           followingIds, GAME_ID
         )
