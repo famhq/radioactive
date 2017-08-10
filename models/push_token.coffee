@@ -16,6 +16,7 @@ defaultToken = (token) ->
     sourceType: null
     token: null
     isActive: true
+    isFcm: false
     userId: null
     errorCount: 0
   }

@@ -20,12 +20,14 @@ class ClashRoyaleUserDeckCtrl
     .map ({deckId}) -> deckId
 
   getAllByUserId: ({userId, sort, filter}, {user}) ->
-    Player.getByUserIdAndGameId userId,  config.CLASH_ROYALE_ID
+    Player.getByUserIdAndGameId userId, config.CLASH_ROYALE_ID
     .then EmbedService.embed {
       embed: [EmbedService.TYPES.PLAYER.VERIFIED_USER]
       gameId: config.CLASH_ROYALE_ID
     }
     .then (player) ->
+      unless player
+        router.throw {status: 404, info: 'player not found'}
       if player.data.mode is 'private' and user.id isnt player.verifiedUser?.id
         router.throw {status: 403, info: 'profile is private'}
       ClashRoyaleUserDeck.getAllByUserId userId, {sort}

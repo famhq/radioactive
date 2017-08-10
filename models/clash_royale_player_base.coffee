@@ -140,9 +140,9 @@ class ClashRoyalePlayerBaseModel
 
   deleteById: (id) =>
     if id
-      knex @TABLE_NAME
-      .where {id}
-      .del()
+      @upsertById id, {data: {splits: {}}}
+      # not sure why delete doesn't work. TODO
+      # knex(@TABLE_NAME).where({id}).delete()
     else
       Promise.resolve null
 

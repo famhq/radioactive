@@ -13,6 +13,7 @@ ClashRoyaleCardCtrl = require './controllers/clash_royale_card'
 DynamicImageCtrl = require './controllers/dynamic_image'
 EventCtrl = require './controllers/event'
 ModCtrl = require './controllers/mod'
+NpsCtrl = require './controllers/nps'
 PaymentCtrl = require './controllers/payment'
 PushTokenCtrl = require './controllers/push_token'
 PlayerCtrl = require './controllers/player'
@@ -193,6 +194,8 @@ module.exports = router
 
 .on 'clashRoyaleMatches.getAllByUserId',
   authed ClashRoyaleMatchCtrl.getAllByUserId
+
+.on 'nps.create', authed NpsCtrl.create
 
 .on 'mods.getAllBanned', authed ModCtrl.getAllBanned
 .on 'mods.getAllReportedMessages', authed ModCtrl.getAllReportedMessages

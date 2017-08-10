@@ -9,6 +9,13 @@ PushNotificationService = require '../services/push_notification'
 config = require '../config'
 
 IS_TEST_RUN = true
+SEND_TO_TOPIC = false
+LANG = 'es'
+TOPIC = 'test1'
+
+###
+ideally we'd use fcm console, but it doesn't work with sending the path.
+###
 
 # REDIS_HOST=10.123.240.149  RETHINK_HOST=10.123.245.23
 # coffee ./bin/broadcast.coffee
@@ -20,28 +27,44 @@ TYPE = PushNotificationService.TYPES.NEWS
 # KILL mittens before running this
 lang =
   en:
-    title: 'The forum!'
-    text: 'Have you tried the new forum feature (Spanish only)!'
+    title: 'Feature survey'
+    text: 'Help us decide what to add to Starfire next!'
   es:
-    title: 'El Foro'
-    text: '¿Has probado la nueva función del foro?'
+    title: '¡Nuevos ajustes de equilibrio!'
+    text: 'Llegando mañana'
 IMAGE_URL = null
 # IMAGE_URL = 'https://cdn.wtf/d/images/games/kitten_cards/v2/' +
 #              'full_cards/19918_small.png'
-DATA = {path: '/social'} # TODO /forum
+DATA = {path: '/thread/b999a736-a575-4a15-9c11-d184b3ef55ef'}
 
+console.log lang[LANG]
 console.log if IS_TEST_RUN then 'TEST in 3' else 'PRODUCTION in 3'
-new Promise (resolve) ->
-  setTimeout ->
-    KueRunnerService.listen()
-    BroadcastService.broadcast {
-      type: TYPE
-      lang: lang
-      # only spanish users
-      # FIXME
-      filterLang: 'en'
-      data: DATA
-      initialDelay: 0
-      forceDevSend: true
-    }, {isTestRun: IS_TEST_RUN, uniqueId: UNIQUE_ID}
-  , 3000
+
+if SEND_TO_TOPIC
+  console.log 'topic'
+  new Promise (resolve) ->
+    setTimeout ->
+      PushNotificationService.sendFcm TOPIC, {
+        toType: 'topic'
+        type: TYPE
+        title: lang[LANG].title
+        text: lang[LANG].text
+        data: DATA
+      }
+    , 3000
+else
+  console.log 'single'
+  new Promise (resolve) ->
+    setTimeout ->
+      KueRunnerService.listen()
+      BroadcastService.broadcast {
+        type: TYPE
+        lang: lang
+        # only spanish users
+        # FIXME
+        filterLang: 'en'
+        data: DATA
+        initialDelay: 0
+        forceDevSend: true
+      }, {isTestRun: IS_TEST_RUN, uniqueId: UNIQUE_ID}
+    , 3000

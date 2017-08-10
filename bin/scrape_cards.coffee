@@ -37,41 +37,52 @@ getLevels = (href) ->
           obj
         , {}
 
+getCards = ->
+  new Promise (resolve) ->
+    console.log 'try'
+    url = 'http://clashroyale.wikia.com/wiki/Cards'
+    x(url, ['.sortable a@href']) (err, links) ->
+      x(url, ['.sortable a']) (err, names) ->
+        resolve _.zip links, names
 
 x = new xRay()
-request 'http://clashroyale.wikia.com/api/v1/Navigation/Data', {json: true}
-.then ({navigation}) ->
-  items = _.find navigation.wiki, {text: 'Cards'}
-  items = _.filter items.children, ({text}) -> text.indexOf('Cards') isnt -1
-  items = _.map items, ({children}) ->
-    _.map children, (rarity) ->
-      _.map rarity.children, ({href, text}) ->
-        href = "http://clashroyale.wikia.com#{href}"
-        console.log 'req', "http://clashroyale.wikia.com#{href}"
-        Promise.all [
-          getStats href
-          getLevels href
-        ]
-        .then ([stats, levels]) ->
-          console.log 'got', "http://clashroyale.wikia.com#{href}"
-          cardData = _.defaults stats, {levels}
+console.log 'try'
+# request 'http://clashroyale.wikia.com/api/v1/Navigation/Data', {json: true}
+# .then ({navigation}) ->
+#   console.log 'get', navigation.wiki
+#   items = _.find navigation.wiki, {text: 'Cards'}
+#   items = _.filter items.children, ({text}) ->
+#     console.log text
+#     text.indexOf('Cards') isnt -1
+getCards()
+.then (cards) ->
+  _.map cards, ([href, text]) ->
+    # href = "http://clashroyale.wikia.com#{href}"
+    console.log 'req', "http://clashroyale.wikia.com#{href}"
+    Promise.all [
+      getStats href
+      getLevels href
+    ]
+    .then ([stats, levels]) ->
+      console.log 'got', "http://clashroyale.wikia.com#{href}"
+      cardData = _.defaults stats, {levels}
 
-          cardKey = _.snakeCase text
-          cardKey = cardKey.replace 'p_e_k_k_a', 'pekka'
-          # console.log cardKey, cardData
+      cardKey = _.snakeCase text
+      cardKey = cardKey.replace 'p_e_k_k_a', 'pekka'
+      # console.log cardKey, cardData
 
-          Card.getByKey cardKey
-          .then (card) ->
-            if card
-              console.log 'update', cardKey
-              Card.updateByKey cardKey, {data: cardData}
-            else
-              console.log 'create', cardKey
-              Card.create {
-                key: cardKey
-                name: _.startCase cardKey
-                data: cardData
-              }
+      Card.getByKey cardKey
+      .then (card) ->
+        if card
+          console.log 'update', cardKey
+          Card.updateByKey cardKey, {data: cardData}
+        else
+          console.log 'create', cardKey
+          Card.create {
+            key: cardKey
+            name: _.startCase cardKey
+            data: cardData
+          }
 
 
 

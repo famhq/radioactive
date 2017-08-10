@@ -29,6 +29,7 @@ deckEmbed = [
 ]
 
 MAX_LENGTH = 5000
+ONE_MINUTE_SECONDS = 60
 IMAGE_REGEX = /\!\[(.*?)\]\((.*?)\)/gi
 YOUTUBE_ID_REGEX = ///
   (?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)
@@ -74,60 +75,69 @@ class ThreadCtrl
     ip = headers['x-forwarded-for'] or
           connection.remoteAddress
 
-    isProfane = ProfanityService.isProfane diff.title + diff.body
-    msPlayed = Date.now() - user.joinTime?.getTime()
+    @checkIfBanned ip, user.id, router
+    .then =>
 
-    if isProfane or user.flags.isChatBanned
-      router.throw status: 400, info: 'unable to post...'
+      isProfane = ProfanityService.isProfane diff.title + diff.body
+      msPlayed = Date.now() - user.joinTime?.getTime()
 
-    if diff.body?.length > MAX_LENGTH
-      router.throw status: 400, info: 'message is too long...'
+      if isProfane or user.flags.isChatBanned
+        router.throw status: 400, info: 'unable to post...'
 
-    if not diff.body or not diff.title
-      router.throw status: 400, info: 'can\'t be empty'
+      if diff.body?.length > MAX_LENGTH
+        router.throw status: 400, info: 'message is too long...'
 
-    diff.category ?= 'general'
+      if not diff.body or not diff.title
+        router.throw status: 400, info: 'can\'t be empty'
 
-    images = new RegExp('\\!\\[(.*?)\\]\\((.*?)\\)', 'gi').exec(diff.body)
-    firstImageSrc = images?[2]
-    # for header image
-    if _.isEmpty(diff.attachments) and firstImageSrc
-      diff.attachments = [{type: 'image', src: firstImageSrc}]
-    diff.data ?= {}
-    (if diff.deck
-      @addDeck diff.deck
-    else
-      Promise.resolve {}
-    )
-    .then (deckDiff) =>
-      diff = _.defaultsDeep deckDiff, diff
-      if diff.data.videoUrl
-        youtubeId = diff.data.videoUrl.match(YOUTUBE_ID_REGEX)?[1]
-        diff.data.videoUrl =
-          "https://www.youtube.com/embed/#{youtubeId}?autoplay=1"
+      diff.category ?= 'general'
 
-      @validateAndCheckPermissions diff, {user}
-      .then (diff) ->
-        if diff.id
-          Thread.updateById diff.id, diff
-          .then ->
-            key = CacheService.PREFIXES.THREAD_DECK + ':' + diff.id
-            CacheService.deleteByKey key
-            {id: diff.id}
-        else
-          Thread.create _.defaults diff, {
-            creatorId: user.id
-          }
-    .tap (thread) ->
-      if thread.data?.videoUrl
-        keyPrefix = "images/starfire/gv/#{thread.id}"
-        youtubeId = thread.data.videoUrl.match(YOUTUBE_ID_REGEX)?[1]
-        ImageService.getVideoPreview keyPrefix, youtubeId
-        .then (videoPreview) ->
-          if videoPreview
-            Thread.updateById thread.id, {
-              headerImage: videoPreview
+      images = new RegExp('\\!\\[(.*?)\\]\\((.*?)\\)', 'gi').exec(diff.body)
+      firstImageSrc = images?[2]
+      # for header image
+      if _.isEmpty(diff.attachments) and firstImageSrc
+        diff.attachments = [{type: 'image', src: firstImageSrc}]
+      diff.data ?= {}
+      (if diff.deck
+        @addDeck diff.deck
+      else
+        Promise.resolve {}
+      )
+      .then (deckDiff) =>
+        diff = _.defaultsDeep deckDiff, diff
+        youtubeId = diff.body?.match(YOUTUBE_ID_REGEX)?[1] or
+          diff.data?.videoUrl?.match(YOUTUBE_ID_REGEX)?[1]
+        if youtubeId
+          diff.data.videoUrl =
+            "https://www.youtube.com/embed/#{youtubeId}?autoplay=1"
+
+        @validateAndCheckPermissions diff, {user}
+        .then (diff) ->
+          if diff.id
+            Thread.updateById diff.id, diff
+            .then ->
+              key = CacheService.PREFIXES.THREAD_DECK + ':' + diff.id
+              CacheService.deleteByKey key
+              {id: diff.id}
+          else
+            Thread.create _.defaults diff, {
+              creatorId: user.id
             }
+      .tap (thread) ->
+        if thread.data?.videoUrl
+          keyPrefix = "images/starfire/gv/#{thread.id}"
+          youtubeId = thread.data.videoUrl.match(YOUTUBE_ID_REGEX)?[1]
+          ImageService.getVideoPreview keyPrefix, youtubeId
+          .then (videoPreview) ->
+            if videoPreview
+              Thread.updateById thread.id, {
+                headerImage: videoPreview
+                attachments: (thread.attachments or []).concat [
+                  {type: 'image', src: videoPreview.originalUrl}
+                ]
+              }
+      .tap ->
+        CacheService.deleteByCategory CacheService.PREFIXES.THREADS
 
   validateAndCheckPermissions: (diff, {user}) ->
     diff = _.pick diff, _.keys schemas.thread
@@ -185,21 +195,31 @@ class ThreadCtrl
     if language isnt 'es'
       category ?= 'news'
 
+    # default to this so clan recruiting isn't shown
     category or= 'general'
 
-    Thread.getAll {category, sort, language, limit}
-    .map EmbedService.embed {
-      userId: user.id
-      embed: if category is 'decks' \
-             then defaultEmbed.concat deckEmbed
-             else defaultEmbed
+    key = CacheService.PREFIXES.THREADS + ':' + [
+      category, language, sort
+    ].join(':')
+
+    CacheService.preferCache key, ->
+      Thread.getAll {category, sort, language, limit}
+      .map EmbedService.embed {
+        userId: user.id
+        embed: if category is 'decks' \
+               then defaultEmbed.concat deckEmbed
+               else defaultEmbed
+      }
+      .map (thread) ->
+        if thread?.translations[language]
+          _.defaults thread?.translations[language], thread
+        else
+          thread
+      .map Thread.sanitize null
+    , {
+      expireSeconds: ONE_MINUTE_SECONDS
+      category: CacheService.PREFIXES.THREADS
     }
-    .map (thread) ->
-      if thread?.translations[language]
-        _.defaults thread?.translations[language], thread
-      else
-        thread
-    .map Thread.sanitize null
 
   getById: ({id, language}, {user}) ->
     Thread.getById id
@@ -215,5 +235,7 @@ class ThreadCtrl
     unless user.flags.isModerator
       router.throw status: 400, info: 'no permission'
     Thread.deleteById id
+    .tap ->
+      CacheService.deleteByCategory CacheService.PREFIXES.THREADS
 
 module.exports = new ThreadCtrl()

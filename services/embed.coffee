@@ -340,17 +340,23 @@ embedFn = _.curry ({embed, user, clanId, groupId, gameId, userId}, object) ->
           ChatMessage.getLastByConversationId embedded.id
 
       when TYPES.THREAD.COMMENTS
-        embedded.comments = ThreadComment.getAllByParentIdAndParentType(
-          embedded.id, 'thread'
-        ).map embedFn {embed: [TYPES.THREAD_COMMENT.USER]}
+        key = CacheService.PREFIXES.THREAD_COMMENTS + ':' + embedded.id
+        embedded.comments = CacheService.preferCache key, ->
+          ThreadComment.getAllByParentIdAndParentType(
+            embedded.id, 'thread'
+          ).map embedFn {embed: [TYPES.THREAD_COMMENT.USER]}
+        , {expireSeconds: FIVE_MINUTES_SECONDS}
 
       when TYPES.THREAD.COMMENT_COUNT
         if embedded.comments
-          comments = embedded.comments
+          comments = Promise.resolve embedded.comments
         else
-          comments = ThreadComment.getAllByParentIdAndParentType(
-            embedded.id, 'thread'
-          )
+          key = CacheService.PREFIXES.THREAD_COMMENTS + ':' + embedded.id
+          comments = CacheService.preferCache key, ->
+            ThreadComment.getAllByParentIdAndParentType(
+              embedded.id, 'thread'
+            )
+          , {expireSeconds: FIVE_MINUTES_SECONDS}
         embedded.commentCount = comments.then (comments) ->
           comments?.length
 

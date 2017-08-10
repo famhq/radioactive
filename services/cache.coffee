@@ -1,5 +1,7 @@
-RedisService = require './redis'
 Redlock = require 'redlock'
+Promise = require 'bluebird'
+
+RedisService = require './redis'
 config = require '../config'
 
 DEFAULT_CACHE_EXPIRE_SECONDS = 3600 * 24 * 30 # 30 days
@@ -67,6 +69,8 @@ class CacheService
     PLAYER_USER_IDS: 'player:user_ids2'
     PLAYER_CLASH_ROYALE_ID: 'player:clash_royale_id'
     PLAYER_MIGRATE: 'player:migrate07'
+    THREAD_COMMENTS: 'thread:comments2'
+    THREADS: 'threads'
     USER_RECORDS_MIGRATE: 'user_records:migrate9'
     USER_PLAYER_USER_ID_GAME_ID: 'user_player:user_id_game_id5'
     GROUP_CLAN_CLAN_ID_GAME_ID: 'group_clan:clan_id_game_id8'
@@ -84,7 +88,7 @@ class CacheService
 
   arrayAppend: (key, value) ->
     key = config.REDIS.PREFIX + ':' + key
-    RedisService.rpush key, JSON.stringify value
+    RedisService.rpush key, value #JSON.stringify value
 
   arrayGet: (key, value) ->
     key = config.REDIS.PREFIX + ':' + key
@@ -132,9 +136,17 @@ class CacheService
       # console.log 'redlock err', err
       null
 
-  preferCache: (key, fn, {expireSeconds, ignoreNull} = {}) ->
+  preferCache: (key, fn, {expireSeconds, ignoreNull, category} = {}) =>
+    rawKey = key
     key = config.REDIS.PREFIX + ':' + key
     expireSeconds ?= DEFAULT_CACHE_EXPIRE_SECONDS
+
+    if category
+      categoryKey = 'category:' + category
+      @arrayGet categoryKey
+      .then (categoryKeys) =>
+        if categoryKeys.indexOf(key) is -1
+          @arrayAppend categoryKey, rawKey
 
     RedisService.get key
     .then (value) ->
@@ -152,6 +164,14 @@ class CacheService
             RedisService.expire key, expireSeconds
 
         return value
+
+  deleteByCategory: (category) =>
+    categoryKey = 'category:' + category
+    @arrayGet categoryKey
+    .then (categoryKeys) =>
+      Promise.map categoryKeys, @deleteByKey
+    .then =>
+      @deleteByKey categoryKey
 
   deleteByKey: (key) ->
     key = config.REDIS.PREFIX + ':' + key
