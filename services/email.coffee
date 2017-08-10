@@ -32,10 +32,15 @@ class EmailService
       log.info "[STAGING] Sending email to #{to} ops: ", subject, text
       return Promise.resolve(null)
 
-    Promise.promisify(server.send, server)
-      text: text
-      from: 'Starfire <noreply@starfi.re>'
-      to: to
-      subject: subject
+    new Promise (resolve, reject) ->
+      server.send {
+        text: text
+        from: 'Starfire <noreply@starfi.re>'
+        to: to
+        subject: subject
+      }, (err, message) ->
+        if err
+          reject err
+        resolve message
 
 module.exports = new EmailService()

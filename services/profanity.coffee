@@ -68,7 +68,9 @@ BLACKLIST = [
   'twat.*',
   '.vagina',
   'wank',
-  'whore.*'
+  'whore.*',
+  'regalo cuenta'
+  'cambio cuenta'
 ]
 
 LETTER_MAP =

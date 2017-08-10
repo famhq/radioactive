@@ -4,6 +4,7 @@ gcm = require 'node-gcm'
 Promise = require 'bluebird'
 uuid = require 'node-uuid'
 webpush = require 'web-push'
+request = require 'request-promise'
 
 config = require '../config'
 EmbedService = require './embed'
@@ -12,6 +13,7 @@ Notification = require '../models/notification'
 PushToken = require '../models/push_token'
 Event = require '../models/event'
 Group = require '../models/group'
+GroupUser = require '../models/group_user'
 StatsService = require './stats'
 
 ONE_DAY_SECONDS = 3600 * 24
@@ -52,7 +54,7 @@ class PushNotificationService
     @apnConnection.on 'disconnect', =>
       @isApnConnected = false
 
-    @gcmConnection = new gcm.Sender(config.GOOGLE_API_KEY)
+    @gcmConn = new gcm.Sender(config.GOOGLE_API_KEY)
 
     webpush.setVapidDetails(
       config.VAPID_SUBJECT,
@@ -71,26 +73,49 @@ class PushNotificationService
   sendWeb: (token, message) ->
     webpush.sendNotification JSON.parse(token), JSON.stringify message
 
-  sendIos: (token, {title, text, type, data}) =>
-    data ?= {}
+  # sendIos: (token, {title, text, type, data}) =>
+  #   data ?= {}
+  #
+  #   notification = new apn.Notification {
+  #     expiry: Math.floor(Date.now() / 1000) + ONE_DAY_SECONDS
+  #     badge: 1
+  #     sound: 'ping.aiff'
+  #     alert: "#{title}: #{text}"
+  #     topic: config.IOS_BUNDLE_ID
+  #     category: type
+  #     mutableContent: type is 'privateMessage'
+  #     payload: {data, type, title, message: text}
+  #     contentAvailable: 1
+  #   }
+  #   @apnConnection.send notification, token
+  #   .then (response) ->
+  #     if _.isEmpty response?.sent
+  #       throw new Error 'message not sent'
 
-    notification = new apn.Notification {
-      expiry: Math.floor(Date.now() / 1000) + ONE_DAY_SECONDS
-      badge: 1
-      sound: 'ping.aiff'
-      alert: "#{title}: #{text}"
-      topic: config.IOS_BUNDLE_ID
-      category: type
-      mutableContent: type is 'privateMessage'
-      payload: {data, type, title, message: text}
-      contentAvailable: 1
+  sendIos: (token, {title, text, type, data, icon}) ->
+    request 'https://iid.googleapis.com/iid/v1:batchImport', {
+      json: true
+      method: 'POST'
+      headers:
+        'Authorization': "key=#{config.GOOGLE_API_KEY}"
+      body:
+        apns_tokens: [token]
+        sandbox: false
+        application: 'com.clay.redtritium'
     }
-    @apnConnection.send notification, token
     .then (response) ->
-      if _.isEmpty response?.sent
-        throw new Error 'message not sent'
+      newToken = response?.results?[0]?.registration_token
+      if newToken
+        PushToken.updateByToken token, {
+          sourceType: 'ios-fcm'
+          apnsToken: token
+          token: newToken
+        }
+    .then =>
+      @sendFcm token, {title, text, type, data, icon}
 
-  sendAndroid: (token, {title, text, type, data, icon}) =>
+  sendFcm: (to, {title, text, type, data, icon, toType}) =>
+    toType ?= 'token'
     new Promise (resolve, reject) =>
       notification = new gcm.Message {
         data:
@@ -119,7 +144,15 @@ class PushNotificationService
           notId: uuid.v4()
       }
 
-      @gcmConnection.send notification, [token], RETRY_COUNT, (err, result) ->
+      if toType is 'token'
+        toObj = {registrationTokens: [to]}
+      else if toType is 'topic' and to
+        toObj = {condition: "'#{to}' in topics || '#{to}2' in topics"}
+
+      console.log toObj, notification
+
+      @gcmConn.send notification, toObj, RETRY_COUNT, (err, result) ->
+        console.log result
         successes = result?.success
         if err or not successes
           reject err
@@ -130,7 +163,13 @@ class PushNotificationService
     (if conversation.groupId
       Group.getById conversation.groupId
       .then (group) ->
-        {group, userIds: group.userIds}
+        if group.type is 'public'
+          {group, userIds: []}
+        else
+          GroupUser.getAllByGroupId conversation.groupId
+          .map (groupUser) -> groupUser.userId
+          .then (userIds) ->
+            {group, userIds}
     else if conversation.eventId
       Event.getById conversation.eventId
       .then (event) ->
@@ -218,8 +257,8 @@ class PushNotificationService
     .map ({id, sourceType, token, errorCount}) =>
       fn = if sourceType is 'web' \
            then @sendWeb
-           else if sourceType is 'android'
-           then @sendAndroid
+           else if sourceType is 'android' or sourceType is 'ios-fcm'
+           then @sendFcm
            else @sendIos
 
       fn token, message

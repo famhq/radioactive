@@ -83,10 +83,14 @@ class ThreadModel
     }
     .run()
     .then (threads) =>
+      console.log 'updating threads', threads?.length
       Promise.map threads, (thread) =>
         # https://medium.com/hacking-and-gonzo/how-reddit-ranking-algorithms-work-ef111e33d0d9
         # ^ simplification in comments
         rawScore = thread.upvotes - thread.downvotes
+        if thread.category is 'news'
+          rawScore = Math.max(10, rawScore)
+          rawScore *= 5
         order = Math.log10(Math.max(Math.abs(rawScore), 1))
         sign = if rawScore > 0 then 1 else if rawScore < 0 then -1 else 0
         postAgeHours = (Date.now() - thread.addTime.getTime()) / (3600 * 1000)
@@ -144,7 +148,7 @@ class ThreadModel
 
   hasPermissionByIdAndUser: (id, user, {level} = {}) =>
     unless user
-      return false
+      return Promise.resolve false
 
     @getById id
     .then (thread) =>
@@ -154,13 +158,7 @@ class ThreadModel
     unless thread and user
       return false
 
-    level ?= 'member'
-
-    return switch level
-      when 'admin'
-      then thread.creatorId is user.id
-      # member
-      else thread.userIds?.indexOf(user.id) isnt -1
+    return thread.creatorId is user.id
 
   sanitize: _.curry (requesterId, thread) ->
     _.pick thread, [

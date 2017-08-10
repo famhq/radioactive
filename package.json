@@ -45,7 +45,7 @@
     "cors": "^2.7.1",
     "cron": "^1.2.1",
     "cuint": "^0.2.2",
-    "emailjs": "^1.0.8",
+    "emailjs": "^1.0.11",
     "exoid-router": "git://github.com/claydotio/exoid-router.git",
     "express": "^4.13.3",
     "fb": "^1.1.1",

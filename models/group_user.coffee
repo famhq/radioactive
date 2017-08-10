@@ -58,6 +58,7 @@ class GroupUserModel
       groupUser
 
   getAllByGroupId: (groupId) ->
+    console.log GROUP_USERS_TABLE, groupId, GROUP_ID_INDEX
     r.table GROUP_USERS_TABLE
     .getAll groupId, {index: GROUP_ID_INDEX}
     .run()

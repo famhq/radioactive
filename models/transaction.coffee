@@ -15,7 +15,7 @@ defaultTransaction = (transaction) ->
     userId: null
     time: new Date()
     amount: 0.00
-    productId: null
+    # productId: null
     isCompleted: false
     isFromPending: false
   }

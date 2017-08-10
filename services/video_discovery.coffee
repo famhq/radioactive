@@ -60,6 +60,8 @@ channelWeights =
   'UCKGZr9bU_zuVJPbYdWvIW7g': 1.5 # spencer23
   'UCLAOdac7WmMXQKhOP-8lmrQ': 0.5 # Eclihpse
 
+WITH_ZACK_CHANNEL_ID = 'UCjmGtPZMS9kSLheN4MYO2XQ'
+
 
 log10 = (num) ->
   num = parseInt num
@@ -68,6 +70,18 @@ log10 = (num) ->
   else 0
 
 class VideoDisoveryService
+  getStarVideos: ->
+    Promise.promisify(youtube.search.list) {
+      part: 'snippet'
+      channelId: WITH_ZACK_CHANNEL_ID
+      maxResults: 50
+      type: 'video'
+      order: 'date'
+      videoEmbeddable: true
+    }
+    .then (videos) ->
+      console.log 'star', videos
+
   getYoutubeVideos: (pageToken, pageInt = 1) =>
     pages = Math.ceil(YOUTUBE_VIDEO_COUNT / 50)
     Promise.promisify(youtube.search.list) {
@@ -178,4 +192,5 @@ class VideoDisoveryService
 
 module.exports = new VideoDisoveryService()
 
-# module.exports.discover()
+# FIXME FIXME
+# module.exports.getStarVideos()

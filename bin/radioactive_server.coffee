@@ -22,6 +22,7 @@ if config.ENV is config.ENVS.PROD
     server.listen config.PORT, ->
       log.info 'Worker %d, listening on port %d', cluster.worker.id, config.PORT
 else
+  console.log 'Setting up (make sure connected to vpn for postgres)'
   setup().then ->
     server.listen config.PORT, ->
       log.info 'Server listening on port %d', config.PORT
