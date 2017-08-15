@@ -317,6 +317,7 @@ embedFn = _.curry ({embed, user, clanId, groupId, gameId, userId}, object) ->
 
       when TYPES.EVENT.CREATOR
         embedded.creator = User.getById embedded.creatorId
+        .then User.sanitizePublic null
 
       when TYPES.GROUP.STAR
         if embedded.starId
@@ -348,17 +349,12 @@ embedFn = _.curry ({embed, user, clanId, groupId, gameId, userId}, object) ->
         , {expireSeconds: FIVE_MINUTES_SECONDS}
 
       when TYPES.THREAD.COMMENT_COUNT
-        if embedded.comments
-          comments = Promise.resolve embedded.comments
-        else
-          key = CacheService.PREFIXES.THREAD_COMMENTS + ':' + embedded.id
-          comments = CacheService.preferCache key, ->
-            ThreadComment.getAllByParentIdAndParentType(
-              embedded.id, 'thread'
-            )
-          , {expireSeconds: FIVE_MINUTES_SECONDS}
-        embedded.commentCount = comments.then (comments) ->
-          comments?.length
+        key = CacheService.PREFIXES.THREAD_COMMENT_COUNT + ':' + embedded.id
+        embedded.commentCount = CacheService.preferCache key, ->
+          ThreadComment.getCountByParentIdAndParentType(
+            embedded.id, 'thread'
+          )
+        , {expireSeconds: FIVE_MINUTES_SECONDS}
 
       when TYPES.THREAD.MY_VOTE
         if userId

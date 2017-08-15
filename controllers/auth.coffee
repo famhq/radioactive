@@ -26,28 +26,49 @@ class AuthCtrl
       Auth.fromUserId user.id
 
   join: ({email, username, password}, {user}) ->
-    console.log 'join'
     insecurePassword = password
     username = username?.toLowerCase()
 
-    valid = Joi.validate {insecurePassword, email, username},
-      insecurePassword: Joi.string().min(6).max(1000)
+    valid = Joi.validate {password, email, username},
+      password: Joi.string().min(6).max(1000)
       email: schemas.user.email
       username: schemas.user.username
     , {presence: 'required'}
 
-    console.log valid
-
     if valid.error
-      router.throw {status: 400, info: valid.error.message, ignoreLog: true}
+      errorField = valid.error.details[0].path
+      info = switch errorField
+        when 'username' then 'error.invalidUsername'
+        when 'password' then 'error.invalidPassword'
+        when 'email' then 'error.invalidEmail'
+        else 'error.invalid'
+      router.throw {
+        status: 400
+        info:
+          langKey: info
+          field: errorField
+        ignoreLog: true
+      }
 
     if user and user.password
-      router.throw {status: 401, info: 'Password already set', ignoreLog: true}
+      router.throw {
+        status: 401
+        info:
+          langKey: 'error.passwordSet'
+          field: 'password'
+        ignoreLog: true
+      }
     else if user
       User.getByUsername username
       .then (existingUser) ->
         if existingUser
-          router.throw {status: 401, info: 'Username is taken', ignoreLog: true}
+          router.throw {
+            status: 401
+            info:
+              langKey: 'error.usernameTaken'
+              field: 'username'
+            ignoreLog: true
+          }
 
         Promise.promisify(bcrypt.hash)(insecurePassword, BCRYPT_ROUNDS)
         .then (password) ->
@@ -59,13 +80,24 @@ class AuthCtrl
     insecurePassword = password
     username = username?.toLowerCase()
 
-    valid = Joi.validate {insecurePassword, username},
-      insecurePassword: Joi.string().min(6).max(1000)
+    valid = Joi.validate {password, username},
+      password: Joi.string().min(6).max(1000)
       username: schemas.user.username
     , {presence: 'required'}
 
     if valid.error
-      router.throw {status: 400, info: valid.error.message, ignoreLog: true}
+      errorField = valid.error.details[0].path
+      langKey = switch errorField
+        when 'username' then 'error.invalidUsername'
+        when 'password' then 'error.invalidPassword'
+        else 'invalid'
+      router.throw {
+        status: 400
+        info:
+          langKey: langKey
+          field: errorField
+        ignoreLog: true
+      }
 
     User.getByUsername username
     .then (user) ->
@@ -77,15 +109,30 @@ class AuthCtrl
         .then (success) ->
           if success
             return user
-          router.throw {status: 401, info: 'Incorrect password'}
+          router.throw {
+            status: 401
+            info:
+              langKey: 'error.incorrectPassword'
+              field: 'password'
+          }
 
       # Invalid auth mechanism used
       else if user
-        router.throw {status: 401, info: 'Incorrect password'}
+        router.throw {
+          status: 401
+          info:
+            langKey: 'error.incorrectPassword'
+            field: 'password'
+        }
 
       # don't create user for just username login
       else
-        router.throw {status: 401, info: 'Username not found'}
+        router.throw {
+          status: 401
+          info:
+            langKey: 'error.usernameNotFound'
+            field: 'username'
+        }
 
     .then (user) ->
       Auth.fromUserId user.id

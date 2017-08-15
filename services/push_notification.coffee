@@ -149,10 +149,7 @@ class PushNotificationService
       else if toType is 'topic' and to
         toObj = {condition: "'#{to}' in topics || '#{to}2' in topics"}
 
-      console.log toObj, notification
-
       @gcmConn.send notification, toObj, RETRY_COUNT, (err, result) ->
-        console.log result
         successes = result?.success
         if err or not successes
           reject err

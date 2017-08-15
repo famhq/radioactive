@@ -517,6 +517,7 @@ class ClashRoyalePlayer
       arena: playerData.arena
       league: playerData.league
       chestCycle: playerData.chestCycle
+      shopOffers: playerData.shopOffers
       stats: _.merge playerData.stats, {
         games: playerData.games
         tournamentGames: playerData.tournamentGames

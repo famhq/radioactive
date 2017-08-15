@@ -11,7 +11,7 @@ config = require '../config'
 IS_TEST_RUN = true
 SEND_TO_TOPIC = false
 LANG = 'es'
-TOPIC = 'test1'
+TOPIC = 'es'
 
 ###
 ideally we'd use fcm console, but it doesn't work with sending the path.

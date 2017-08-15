@@ -13,8 +13,8 @@ CATEGORY_ADD_TIME_INDEX = 'categoryAddTime'
 ADD_TIME_INDEX = 'addTime'
 LAST_UPDATE_TIME_INDEX = 'lastUpdateTime'
 
-# update the scores for posts up until they're a week old
-SCORE_UPDATE_TIME_RANGE_S = 3600 * 24 * 7
+# update the scores for posts up until they're 10 days old
+SCORE_UPDATE_TIME_RANGE_S = 3600 * 24 * 10
 
 defaultThread = (thread) ->
   unless thread?
@@ -87,6 +87,8 @@ class ThreadModel
       Promise.map threads, (thread) =>
         # https://medium.com/hacking-and-gonzo/how-reddit-ranking-algorithms-work-ef111e33d0d9
         # ^ simplification in comments
+
+        # people heavily downvote, so offset it a bit...
         rawScore = thread.upvotes - thread.downvotes
         if thread.category is 'news'
           rawScore = Math.max(10, rawScore)
