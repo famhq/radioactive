@@ -1611,6 +1611,48 @@
       "from": "google-p12-pem@>=0.1.0 <0.2.0",
       "resolved": "https://registry.npmjs.org/google-p12-pem/-/google-p12-pem-0.1.0.tgz"
     },
+    "google-translate": {
+      "version": "2.0.5",
+      "from": "google-translate@latest",
+      "resolved": "https://registry.npmjs.org/google-translate/-/google-translate-2.0.5.tgz",
+      "dependencies": {
+        "async": {
+          "version": "2.4.1",
+          "from": "async@2.4.1",
+          "resolved": "https://registry.npmjs.org/async/-/async-2.4.1.tgz"
+        },
+        "caseless": {
+          "version": "0.12.0",
+          "from": "caseless@>=0.12.0 <0.13.0",
+          "resolved": "https://registry.npmjs.org/caseless/-/caseless-0.12.0.tgz"
+        },
+        "har-validator": {
+          "version": "4.2.1",
+          "from": "har-validator@>=4.2.1 <4.3.0",
+          "resolved": "https://registry.npmjs.org/har-validator/-/har-validator-4.2.1.tgz"
+        },
+        "qs": {
+          "version": "6.4.0",
+          "from": "qs@>=6.4.0 <6.5.0",
+          "resolved": "https://registry.npmjs.org/qs/-/qs-6.4.0.tgz"
+        },
+        "request": {
+          "version": "2.81.0",
+          "from": "request@2.81.0",
+          "resolved": "https://registry.npmjs.org/request/-/request-2.81.0.tgz"
+        },
+        "tunnel-agent": {
+          "version": "0.6.0",
+          "from": "tunnel-agent@>=0.6.0 <0.7.0",
+          "resolved": "https://registry.npmjs.org/tunnel-agent/-/tunnel-agent-0.6.0.tgz"
+        },
+        "uuid": {
+          "version": "3.1.0",
+          "from": "uuid@>=3.0.0 <4.0.0",
+          "resolved": "https://registry.npmjs.org/uuid/-/uuid-3.1.0.tgz"
+        }
+      }
+    },
     "googleapis": {
       "version": "15.0.0",
       "from": "googleapis@15.0.0",
@@ -1733,6 +1775,11 @@
           "resolved": "https://registry.npmjs.org/hoek/-/hoek-2.16.3.tgz"
         }
       }
+    },
+    "he": {
+      "version": "1.1.1",
+      "from": "he@1.1.1",
+      "resolved": "https://registry.npmjs.org/he/-/he-1.1.1.tgz"
     },
     "homedir-polyfill": {
       "version": "1.0.1",

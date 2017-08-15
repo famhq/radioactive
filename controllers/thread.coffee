@@ -90,7 +90,8 @@ class ThreadCtrl
       if not diff.body or not diff.title
         router.throw status: 400, info: 'can\'t be empty'
 
-      diff.category ?= 'general'
+      unless diff.id
+        diff.category ?= 'general'
 
       images = new RegExp('\\!\\[(.*?)\\]\\((.*?)\\)', 'gi').exec(diff.body)
       firstImageSrc = images?[2]

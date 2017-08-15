@@ -39,8 +39,6 @@ class UserCtrl
         }
       null # don't block
     .then User.sanitize null
-    .tap ->
-      console.log 'getMe', Date.now() - start
 
 
   getById: ({id}) ->

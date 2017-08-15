@@ -76,6 +76,16 @@ class ThreadCommentModel
     .run()
     .map defaultThreadComment
 
+  getCountByParentIdAndParentType: (parentId, parentType) ->
+    r.table THREAD_COMMENTS_TABLE
+    .between(
+      [parentId, parentType]
+      [parentId + 'Z', parentType + 'Z']
+      {index: PARENT_ID_PARENT_TYPE_TIME_INDEX}
+    )
+    .count()
+    .run()
+
   getFirstByThreadId: (threadId) ->
     r.table THREAD_COMMENTS_TABLE
     .getAll threadId, {index: THREAD_ID_INDEX}

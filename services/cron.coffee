@@ -17,7 +17,7 @@ r = require './rethinkdb'
 config = require '../config'
 
 THIRTY_SECONDS = 30
-Thread.updateScores()
+
 class CronService
   constructor: ->
     @crons = []
