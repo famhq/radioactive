@@ -43,7 +43,11 @@ getCards = ->
     url = 'http://clashroyale.wikia.com/wiki/Cards'
     x(url, ['.sortable a@href']) (err, links) ->
       x(url, ['.sortable a']) (err, names) ->
-        resolve _.zip links, names
+        cards = _.zip links, names
+        cards = cards.concat [
+          ['http://clashroyale.wikia.com/wiki/Mega_Knight', 'Mega Knight']
+        ]
+        resolve cards
 
 x = new xRay()
 console.log 'try'

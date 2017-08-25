@@ -11,9 +11,28 @@ http = require 'http'
 socketIO = require 'socket.io'
 socketIORedis = require 'socket.io-redis'
 Redis = require 'ioredis'
-# http://socket.io/docs/using-multiple-nodes/#using-node.js-cluster
-# IMO sticky-cluster is better, but it doesn't support x-forwarded-for
-sticky = require 'socketio-sticky-session'
+memwatch = require 'memwatch-next'
+
+hd = undefined
+snapshotTaken = false
+memwatch.on 'stats', (stats) ->
+  # console.log 'stats:', stats
+  if snapshotTaken is false
+    hd = new (memwatch.HeapDiff)
+    snapshotTaken = true
+  else
+    # diff = hd.end()
+    snapshotTaken = false
+    # console.log(JSON.stringify(diff, null, '\t'))
+  return
+memwatch.on 'leak', (info) ->
+  console.log 'leak:', info
+  diff = hd.end()
+  hd = new (memwatch.HeapDiff)
+  snapshotTaken = false
+  console.log(JSON.stringify(diff, null, '\t'))
+  return
+
 
 Joi = require 'joi'
 
@@ -215,16 +234,16 @@ app.get '/di/crForumSig/:userId.png', (req, res) ->
 
   res.setHeader 'Content-Type', 'image/png'
   $page.render()
-  .then (stream) ->
-    stream.pipe(res)
+  .then (buffer) ->
+    res.status(200).send buffer
 
 app.get '/di/crChestCycle/:userId.png', (req, res) ->
   $page = new ChestCyclePage {req, res}
 
   res.setHeader 'Content-Type', 'image/png'
   $page.render()
-  .then (stream) ->
-    stream.pipe(res)
+  .then (buffer) ->
+    res.status(200).send buffer
 
 # for now, this is unnecessary. lightning-rod is clientip,
 # and stickCluster handles the cpus

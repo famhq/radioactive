@@ -7,7 +7,7 @@ s = require '../s'
 module.exports = class ForumSig extends Component
   getHeight: -> 100
 
-  render: ({player} = {}) ->
+  render: ({player, images} = {}) ->
     playerName = player?.data?.name?.toUpperCase()
                 .replace(/&/g, '&amp;')
                 .replace(/</g, '&lt;')
@@ -23,26 +23,26 @@ module.exports = class ForumSig extends Component
         fill: '#000'
         rx: '10'
       }
-      s 'rect', {
-        width: '496'
-        height: '94'
-        x: '2'
-        y: '2'
+      s 'image', {
+        width: '500'
+        height: '100'
+        # x: '0'
+        # y: '2'
         # fill: '#FA464E'
-        fill: 'url(#backgroundImage)'
+        'xlink:href': "data:image/png;base64,#{images.background}"
         rx: '8'
       }
-      s 'rect', {
+      s 'image', {
         width: '66'
         height: '56'
         transform: 'translate(12, 20)'
-        fill: 'url(#clanBadgeImage)'
+        'xlink:href': "data:image/png;base64,#{images.clanBadge}"
       }
-      s 'rect', {
+      s 'image', {
         width: '66'
         height: '88'
         transform: 'translate(425, 4)'
-        fill: 'url(#favoriteCardImage)'
+        'xlink:href': "data:image/png;base64,#{images.card}"
       }
       s 'text', {
         fill: '#000'

@@ -8,8 +8,8 @@ KueRunnerService = require '../services/kue_runner'
 PushNotificationService = require '../services/push_notification'
 config = require '../config'
 
-IS_TEST_RUN = true
-SEND_TO_TOPIC = false
+IS_TEST_RUN = false
+SEND_TO_TOPIC = true
 LANG = 'es'
 TOPIC = 'es'
 
@@ -24,18 +24,17 @@ ideally we'd use fcm console, but it doesn't work with sending the path.
 UNIQUE_ID = Date.now()
 TYPE = PushNotificationService.TYPES.NEWS
 # TYPE = PushNotificationService.TYPES.NEWS
-# KILL mittens before running this
 lang =
   en:
-    title: 'Feature survey'
-    text: 'Help us decide what to add to Starfire next!'
+    title: 'See upcoming shop offers'
+    text: 'in the new "More tools" section'
   es:
-    title: '¡Nuevos ajustes de equilibrio!'
-    text: 'Llegando mañana'
+    title: 'Próximas ofertas de tienda'
+    text: 'Toque "shop offers" en "Más herramientas"'
 IMAGE_URL = null
 # IMAGE_URL = 'https://cdn.wtf/d/images/games/kitten_cards/v2/' +
 #              'full_cards/19918_small.png'
-DATA = {path: '/thread/b999a736-a575-4a15-9c11-d184b3ef55ef'}
+DATA = {path: '/addons'}
 
 console.log lang[LANG]
 console.log if IS_TEST_RUN then 'TEST in 3' else 'PRODUCTION in 3'

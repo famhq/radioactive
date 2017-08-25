@@ -150,7 +150,7 @@ class PushNotificationService
         toObj = {condition: "'#{to}' in topics || '#{to}2' in topics"}
 
       @gcmConn.send notification, toObj, RETRY_COUNT, (err, result) ->
-        successes = result?.success
+        successes = result?.success or result?.message_id
         if err or not successes
           reject err
         else

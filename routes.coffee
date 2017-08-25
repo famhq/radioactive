@@ -191,6 +191,7 @@ module.exports = router
 .on 'clashRoyaleCards.getAll', authed ClashRoyaleCardCtrl.getAll
 .on 'clashRoyaleCards.getById', authed ClashRoyaleCardCtrl.getById
 .on 'clashRoyaleCards.getByKey', authed ClashRoyaleCardCtrl.getByKey
+.on 'clashRoyaleCards.getChestCards', authed ClashRoyaleCardCtrl.getChestCards
 
 .on 'clashRoyaleMatches.getAllByUserId',
   authed ClashRoyaleMatchCtrl.getAllByUserId

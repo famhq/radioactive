@@ -459,7 +459,11 @@ embedFn = _.curry ({embed, user, clanId, groupId, gameId, userId}, object) ->
         embedded.cards = Promise.map embedded.cardIds, (cardId) ->
           key = CacheService.PREFIXES.CLASH_ROYALE_CARD + ':' + cardId
           CacheService.preferCache key, ->
-            ClashRoyaleCard.getById cardId
+            (if cardId
+              ClashRoyaleCard.getById cardId
+            else
+              console.log 'missing cardId', embedded
+              Promise.resolve {})
             .then ClashRoyaleCard.sanitize(null)
           , {expireSeconds: FIVE_MINUTES_SECONDS}
         embedded.averageElixirCost = embedded.cards.then (cards) ->

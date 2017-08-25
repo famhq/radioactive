@@ -10,6 +10,7 @@ CLASH_ROYALE_CARD_TABLE = 'clash_royale_cards'
 KEY_INDEX = 'key'
 POPULARITY_INDEX = 'thisWeekPopularity'
 ONE_WEEK_S = 3600 * 24 * 7
+ONE_HOUR_S = 3600
 
 defaultClashRoyaleCard = (clashRoyaleCard) ->
   unless clashRoyaleCard?
@@ -72,16 +73,26 @@ class ClashRoyaleCardModel
     else
       get()
 
-  getAll: ({sort} = {}) ->
-    sortQ = if sort is 'popular' \
-            then {index: r.desc(POPULARITY_INDEX)}
-            else 'name'
+  getAll: ({sort, preferCache} = {}) ->
+    get = ->
+      sortQ = if sort is 'popular' \
+              then {index: r.desc(POPULARITY_INDEX)}
+              else 'name'
 
-    r.table CLASH_ROYALE_CARD_TABLE
-    .orderBy sortQ
-    .filter r.row('key').ne('blank')
-    .run()
-    .map defaultClashRoyaleCard
+      r.table CLASH_ROYALE_CARD_TABLE
+      .orderBy sortQ
+      .filter r.row('key').ne('blank')
+      .run()
+      .map defaultClashRoyaleCard
+
+    if preferCache
+      prefix = CacheService.PREFIXES.CLASH_ROYALE_CARD_ALL
+      cacheKey = "#{prefix}:#{sort}"
+      CacheService.preferCache cacheKey, get, {expireSeconds: ONE_HOUR_S}
+    else
+      get()
+
+
 
   updateById: (id, diff) ->
     r.table CLASH_ROYALE_CARD_TABLE
