@@ -1,4 +1,3 @@
-Canvas = require 'canvas'
 _ = require 'lodash'
 fs = require 'fs'
 Promise = require 'bluebird'
@@ -19,8 +18,6 @@ module.exports = class ChestCyclePage extends Page
   constructor: ({req, res} = {}) ->
     @query = req.query
     @userId = req.params.userId
-
-    @$$canvas ?= new Canvas 360, 447
 
     @$component = new ChestCycle()
 
@@ -57,4 +54,4 @@ module.exports = class ChestCyclePage extends Page
         }
 
 
-        {player, @query, images}
+        {player, @query, images, width: 360, height: 447}

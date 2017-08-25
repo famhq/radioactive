@@ -22,33 +22,43 @@ module.exports = class ForumSigPage extends Page
 
   renderHead: ({player, images}) ->
     s 'defs',
-      s 'pattern', {
-        id: 'clanBadgeImage'
-        width: 66
-        height: 56
-      },
-        s 'image',
-          width: 66
-          height: 56
-          'xlink:href': "data:image/png;base64,#{images.clanBadge}"
-      s 'pattern', {
-        id: 'favoriteCardImage'
-        width: 66
-        height: 88
-      },
-        s 'image',
-          width: 66
-          height: 88
-          'xlink:href': "data:image/png;base64,#{images.card}"
-      s 'pattern', {
-        id: 'backgroundImage'
-        width: 500
-        height: 100
-      },
-        s 'image',
-          width: 500
-          height: 100
-          'xlink:href': "data:image/png;base64,#{images.background}"
+      # FIXME
+      # s 'style', {
+      #   type: 'text/css'
+      # }, '''
+      #     @font-face {
+      #       font-family: 'Rubik'
+      #       src: url(../../fonts/Rubik-Regular.ttf)
+      #     }
+      #   '''
+
+      # s 'pattern', {
+      #   id: 'backgroundImage'
+      #   width: 500
+      #   height: 100
+      # },
+      #   s 'image',
+      #     width: 500
+      #     height: 100
+      #     'xlink:href': "data:image/png;base64,#{images.background}"
+      # s 'pattern', {
+      #   id: 'clanBadgeImage'
+      #   width: 66
+      #   height: 56
+      # },
+      #   s 'image',
+      #     width: 66
+      #     height: 56
+      #     'xlink:href': "data:image/png;base64,#{images.clanBadge}"
+      # s 'pattern', {
+      #   id: 'favoriteCardImage'
+      #   width: 66
+      #   height: 88
+      # },
+      #   s 'image',
+      #     width: 66
+      #     height: 88
+      #     'xlink:href': "data:image/png;base64,#{images.card}"
 
   setup: =>
     Promise.all [

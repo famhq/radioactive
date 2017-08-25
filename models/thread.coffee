@@ -89,7 +89,7 @@ class ThreadModel
         # ^ simplification in comments
 
         # people heavily downvote, so offset it a bit...
-        rawScore = thread.upvotes - thread.downvotes
+        rawScore = Math.abs(thread.upvotes - thread.downvotes)
         if thread.category is 'news'
           rawScore = Math.max(10, rawScore)
           rawScore *= 5
@@ -121,9 +121,12 @@ class ThreadModel
       else
         q = q.orderBy {index: r.desc(SCORE_INDEX)}
 
-    q.limit limit
-    .filter r.row('upvotes').sub(r.row('downvotes')).gt -2
-    .run()
+    q = q.limit limit
+
+    if sort is 'new'
+      q = q.filter r.row('upvotes').sub(r.row('downvotes')).gt -2
+
+    q.run()
     .map defaultThread
 
   getAllByAttachmentIds: (ids, {limit} = {}) ->

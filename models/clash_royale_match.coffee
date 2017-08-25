@@ -90,6 +90,18 @@ class ClashRoyaleMatchModel
       console.log clashRoyaleMatch
       console.log 'postgres err', err
 
+  getAllByUserId: ({limit, userId} = {}) ->
+    limit ?= 10
+
+    q = knex POSTGRES_MATCH_TABLE
+    .select '*'
+    if userId
+      q.where {userId}
+
+    q.orderBy 'time', 'desc'
+    .limit limit
+    .map defaultClashRoyaleMatch
+
   getById: (id, {preferCache} = {}) ->
     get = ->
       knex.table POSTGRES_MATCH_TABLE
