@@ -39,36 +39,36 @@ class ClashRoyaleUserDeckCtrl
     .then EmbedService.embed {embed: defaultEmbed}
     .then ClashRoyaleUserDeck.sanitize null
 
-  favorite: ({deckId}, {user}) ->
-    ClashRoyaleUserDeck.upsertByDeckIdAndUserId deckId, user.id, {
-      isFavorited: true
-    }
-    .tap ->
-      ClashRoyaleUserDeck.processUpdate user.id
-
-  unfavorite: ({deckId}, {user}) ->
-    console.log 'abc', user.id
-    ClashRoyaleUserDeck.upsertByDeckIdAndUserId deckId, user.id, {
-      isFavorited: false
-    }
-    .tap ->
-      ClashRoyaleUserDeck.processUpdate user.id
-
-  create: ({cardIds, name, cardKeys}, {user}) ->
-    ClashRoyaleDeck.getByCardKeys cardKeys
-    .then (deck) ->
-      if deck
-        deck
-      else
-        ClashRoyaleDeck.create {
-          cardIds, name, cardKeys, creatorId: user.id
-        }
-    .then (deck) ->
-      ClashRoyaleUserDeck.upsertByDeckIdAndUserId deck.id, user.id, {
-        name
-        isFavorited: true
-      }
-      .tap ->
-        ClashRoyaleUserDeck.processUpdate user.id
+  # favorite: ({deckId}, {user}) ->
+  #   ClashRoyaleUserDeck.upsertByDeckIdAndUserId deckId, user.id, {
+  #     isFavorited: true
+  #   }
+  #   .tap ->
+  #     ClashRoyaleUserDeck.processUpdate user.id
+  #
+  # unfavorite: ({deckId}, {user}) ->
+  #   console.log 'abc', user.id
+  #   ClashRoyaleUserDeck.upsertByDeckIdAndUserId deckId, user.id, {
+  #     isFavorited: false
+  #   }
+  #   .tap ->
+  #     ClashRoyaleUserDeck.processUpdate user.id
+  #
+  # create: ({cardIds, name, cardKeys}, {user}) ->
+  #   ClashRoyaleDeck.getByCardKeys cardKeys
+  #   .then (deck) ->
+  #     if deck
+  #       deck
+  #     else
+  #       ClashRoyaleDeck.create {
+  #         cardIds, name, cardKeys, creatorId: user.id
+  #       }
+  #   .then (deck) ->
+  #     ClashRoyaleUserDeck.upsertByDeckIdAndUserId deck.id, user.id, {
+  #       name
+  #       isFavorited: true
+  #     }
+  #     .tap ->
+  #       ClashRoyaleUserDeck.processUpdate user.id
 
 module.exports = new ClashRoyaleUserDeckCtrl()

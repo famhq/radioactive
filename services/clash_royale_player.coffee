@@ -43,11 +43,12 @@ DATA_BATCH_REQUEST_SIZE = 10
 GAME_ID = config.CLASH_ROYALE_ID
 
 ALLOWED_GAME_TYPES = [
-  'ladder', 'classicChallenge', 'grandChallenge', 'tournament'
-  'friendlyBattle'
+  'PvP', 'tournament',
+  'classicChallenge', 'grandChallenge'
+  'friendly', 'clanMate'
 ]
 DECK_TRACKED_GAME_TYPES = [
-  'ladder', 'classicChallenge', 'grandChallenge'
+  'PvP', 'classicChallenge', 'grandChallenge', 'tournament'
 ]
 
 DEBUG = true
@@ -55,64 +56,52 @@ IS_TEST_RUN = false
 
 class ClashRoyalePlayer
   getMatchPlayerData: ({player, deckId}) ->
-    {
-      deckId: deckId
-      crowns: player.crowns
-      playerName: player.playerName
-      playerTag: player.playerTag
-      clanName: player.clanName
-      clanTag: player.clanTag
-      trophies: player.trophies
-      chest: player.chest
-    }
+    _.defaults {deckId}, player
 
   createNewUserDecks: (matches, playerDiffs) ->
-    userDecks = _.flatten _.map matches, ({player1, player2}) ->
-      player1Tag = player1.playerTag
-      player2Tag = player2.playerTag
-      player1Player = playerDiffs.getCachedById player1Tag
-      player2Player = playerDiffs.getCachedById player2Tag
-      _.filter [
-        if player1Player
-          {
-            playerId: player1Tag
-            userIds: player1Player.userIds
-            deckId: ClashRoyaleDeck.getDeckId player1.cardKeys
-          }
-        if player2Player
-          {
-            playerId: player2Tag
-            userIds: player2Player.userIds
-            deckId: ClashRoyaleDeck.getDeckId player2.cardKeys
-          }
-      ]
+    userDecks = _.filter _.flatten _.map matches, (match) ->
+      {battleType, team, opponent} = match
+      _.map team.concat(opponent), (player) ->
+        playerDiff = playerDiffs.getCachedById player.tag
+        unless playerDiff
+          return
+
+        cardKeys = _.map player.cards, ({name}) -> _.snakeCase(name)
+        {
+          playerId: player.tag.replace '#', ''
+          userIds: playerDiff.userIds
+          deckId: ClashRoyaleDeck.getDeckId cardKeys
+          type: battleType
+        }
     userDecks = _.uniqBy userDecks, (obj) -> JSON.stringify obj
     # unique user deck per userId (not per playerId). create one for playerId
     # if no users exist yet (so it can be duplicated over to new account)
 
     deckIdPlayerIds = _.map userDecks, (userDeck) ->
-      _.pick userDeck, ['deckId', 'playerId']
+      _.pick userDeck, ['deckId', 'playerId', 'type']
 
     ClashRoyaleUserDeck.getAllByDeckIdPlayerIds deckIdPlayerIds
     .then (existingUserDecks) ->
       batchUserDecks = _.filter _.flatten _.map userDecks, (userDeck) ->
-        {playerId, deckId, userIds} = userDeck
+        {playerId, deckId, type, userIds} = userDeck
 
         hasUserIds = not _.isEmpty(userIds)
         if ENABLE_ANON_USER_DECKS and not hasUserIds and
-            not _.find existingUserDecks, {deckId, playerId}
+            not _.find existingUserDecks, {deckId, playerId, type}
           return {
             deckId
             playerId
+            type
             isFavorited: true
           }
         else if hasUserIds
           _.map userIds, (userId) ->
-            unless _.find existingUserDecks, {deckId, playerId, userId}
+            unless _.find existingUserDecks, {deckId, playerId, userId, type}
               return {
                 deckId
                 playerId
                 userId
+                type
                 isFavorited: true
               }
         else
@@ -126,11 +115,10 @@ class ClashRoyalePlayer
           console.log 'caught dupe'
 
   createNewDecks: (matches, cards) ->
-    deckKeys = _.uniq _.flatten _.map matches, ({player1, player2}) ->
-      [
-        ClashRoyaleDeck.getDeckId player1.cardKeys
-        ClashRoyaleDeck.getDeckId player2.cardKeys
-      ]
+    deckKeys = _.uniq _.flatten _.map matches, ({team, opponent}) ->
+      _.map team.concat(opponent), (player) ->
+        cardKeys = _.map player.cards, ({name}) -> _.snakeCase(name)
+        ClashRoyaleDeck.getDeckId cardKeys
     ClashRoyaleDeck.getByIds deckKeys
     .then (existingDecks) ->
       newDecks = _.filter deckKeys, (key) ->
@@ -149,11 +137,13 @@ class ClashRoyalePlayer
 
   incrementUserDecks: (batchUserDecks) ->
     Promise.all _.flatten _.map batchUserDecks, (userDecks, playerId) ->
-      _.map userDecks, (changes, deckId) ->
-        ClashRoyaleUserDeck.incrementAllByDeckIdAndPlayerId(
-          deckId, playerId, changes
-        )
+      _.map userDecks, (userDecksType, type) ->
+        _.map userDecksType, (changes, deckId) ->
+          ClashRoyaleUserDeck.incrementAllByDeckIdAndPlayerIdAndType(
+            deckId, playerId, type, changes
+          )
 
+  # TODO: track by type. Need to alter id to allow type
   incrementDecks: (batchDecks) ->
     Promise.all _.map batchDecks, (changes, deckId) ->
       ClashRoyaleDeck.incrementAllById(
@@ -165,23 +155,25 @@ class ClashRoyalePlayer
     matches = _.filter matches, (match) ->
       unless match
         return false
-      {time, type} = match
+      {battleTime, type} = match
 
       if player.data?.lastMatchTime
         lastMatchTime = new Date player.data.lastMatchTime
       else
         lastMatchTime = 0
       # the server time isn't 100% accurate, so +- 15 seconds
-      type in ALLOWED_GAME_TYPES and
-        new Date(time).getTime() > (new Date(lastMatchTime).getTime() + 15)
+      (type in ALLOWED_GAME_TYPES) and
+        (moment(battleTime).toDate().getTime() >
+          (new Date(lastMatchTime).getTime() + 15))
 
+    matches
   # we should always block this for db writes/reads so the queue
   # properly throttles db access
   processMatches: ({matches, reqPlayers}) ->
     start = Date.now()
     matches = _.uniqBy matches, 'id'
     matches = _.orderBy matches, ['time'], ['asc']
-    reqPlayerIds = _.map reqPlayers, 'id'
+    reqPlayerIds = _.map reqPlayers, ({id}) -> "##{id}"
 
     Promise.map matches, (match) ->
       matchId = match.id
@@ -201,7 +193,8 @@ class ClashRoyalePlayer
       # store diffs in here so we can update once after all the matches are
       # processed, instead of once per match
       playerIds = _.uniq _.flatten _.map matches, (match) ->
-        [match.player1.playerTag, match.player2.playerTag]
+        _.map match.team.concat(match.opponent), (player) ->
+          player.tag
 
       playerDiffs = new PlayerSplitsDiffs()
       # batch
@@ -228,258 +221,218 @@ class ClashRoyalePlayer
           .catch (err) ->
             console.log 'decks create postgres err', err
         ]
-        .then =>
+        .then ->
           # needs to be each for streak to work
-          Promise.each matches, (match, i) =>
+          Promise.each matches, (match, i) ->
             matchId = match.id
 
-            player1Tag = match.player1.playerTag
-            player2Tag = match.player2.playerTag
+            team = match.team
+            teamPlayers = _.filter _.map team, (player) ->
+              playerDiffs.getCachedById player.tag
+            teamDeckIds = _.map team, (player) ->
+              cardKeys = _.map player.cards, ({name}) -> _.snakeCase name
+              ClashRoyaleDeck.getDeckId cardKeys
+            teamCardIds = _.map team, (player) ->
+              _.map player.cards, ({name}) ->
+                key = _.snakeCase name
+                _.find(cards, {key})?.id
+            teamUserIds = _.flatten _.map teamPlayers, (player) ->
+              player.userIds
 
-            # prefer from cached diff obj
-            # (that has been modified for stats, winStreak, etc...)
-            player1Player = playerDiffs.getCachedById player1Tag
-            player2Player = playerDiffs.getCachedById player2Tag
+            opponent = match.opponent
+            opponentPlayers = _.filter _.map opponent, (player) ->
+              playerDiffs.getCachedById player.tag
+            opponentDeckIds = _.map opponent, (player) ->
+              cardKeys = _.map player.cards, ({name}) -> _.snakeCase name
+              ClashRoyaleDeck.getDeckId cardKeys
+            opponentCardIds = _.map opponent, (player) ->
+              _.map player.cards, ({name}) ->
+                key = _.snakeCase name
+                _.find(cards, {key})?.id
+            opponentUserIds = _.flatten _.map opponentPlayers, (player) ->
+              player.userIds
 
-            deck1Id = ClashRoyaleDeck.getDeckId match.player1.cardKeys
-            deck2Id = ClashRoyaleDeck.getDeckId match.player2.cardKeys
-
-            deck1CardIds = _.map match.player1.cardKeys, (key) ->
-              _.find(cards, {key})?.id
-            deck2CardIds = _.map match.player2.cardKeys, (key) ->
-              _.find(cards, {key})?.id
-
-            type = match.type
-
-            player1UserIds = player1Player?.userIds
-            player2UserIds = player2Player?.userIds
+            type = match.battleType
 
             stepStart = Date.now()
-            player1Won = match.player1.crowns > match.player2.crowns
-            player2Won = match.player2.crowns > match.player1.crowns
+            teamWon = match.team[0].crowns > match.opponent[0].crowns
+            opponentWon = match.opponent[0].crowns > match.team[0].crowns
 
-            player1Diff = {
-              lastMatchesUpdateTime: new Date()
-              data:
-                lastMatchTime: new Date(match.time)
-            }
-            if match.type is 'ladder'
-              player1Diff.data.trophies = match.player1.trophies
-            playerDiffs.setDiffById player1Tag, player1Diff
-
-            player2Diff = {
-              lastMatchesUpdateTime: new Date()
-              data:
-                lastMatchTime: new Date(match.time)
-            }
-            if match.type is 'ladder'
-              player2Diff.data.trophies = match.player2.trophies
-            playerDiffs.setDiffById player2Tag, player2Diff
-
-            playerDiffs.incById {
-              id: player1Tag
-              field: 'crownsEarned'
-              amount: match.player1.crowns
-              type: type
-            }
-            playerDiffs.incById {
-              id: player1Tag
-              field: 'crownsLost'
-              amount: match.player2.crowns
-              type: type
-            }
-
-            playerDiffs.incById {
-              id: player2Tag
-              field: 'crownsEarned'
-              amount: match.player2.crowns
-              type: type
-            }
-            playerDiffs.incById {
-              id: player2Tag
-              field: 'crownsLost'
-              amount: match.player1.crowns
-              type: type
-            }
-
-            if player1Won
-              winningDeckId = deck1Id
-              losingDeckId = deck2Id
-              winningDeckCardIds = deck1CardIds
-              losingDeckCardIds = deck2CardIds
-              deck1State = 'wins'
-              deck2State = 'losses'
-
-              playerDiffs.incById {id: player1Tag, field: 'wins', type: type}
-              playerDiffs.incById {
-                id: player1Tag, field: 'currentWinStreak', type: type
+            _.map team.concat(opponent), (player) ->
+              diff = {
+                lastMatchesUpdateTime: new Date()
+                data:
+                  lastMatchTime: moment(match.battleTime).toDate()
               }
-              playerDiffs.setSplitStatById {
-                id: player1Tag, field: 'currentLossStreak'
-                value: 0, type: type
-              }
+              if type is 'PvP'
+                diff.data.trophies = player.trophies
+              playerDiffs.setDiffById player.tag, diff
 
               playerDiffs.incById {
-                id: player2Tag, field: 'losses', type: type
+                id: player.tag
+                field: 'crownsEarned'
+                amount: player.crowns
+                type: type
               }
               playerDiffs.incById {
-                id: player2Tag, field: 'currentLossStreak', type: type
-              }
-              playerDiffs.setSplitStatById {
-                id: player2Tag, field: 'currentWinStreak'
-                value: 0, type: type
-              }
-            else if player2Won
-              winningDeckId = deck2Id
-              losingDeckId = deck1Id
-              winningDeckCardIds = deck2CardIds
-              losingDeckCardIds = deck1CardIds
-              deck1State = 'losses'
-              deck2State = 'wins'
-
-              playerDiffs.incById {id: player2Tag, field: 'wins', type: type}
-              playerDiffs.incById {
-                id: player2Tag, field: 'currentWinStreak', type: type
-              }
-              playerDiffs.setSplitStatById {
-                id: player2Tag, field: 'currentLossStreak'
-                value: 0, type: type
+                id: player.tag
+                field: 'crownsLost'
+                amount: player.crowns
+                type: type
               }
 
-              playerDiffs.incById {
-                id: player1Tag, field: 'losses', type: type
-              }
-              playerDiffs.incById {
-                id: player1Tag, field: 'currentLossStreak', type: type
-              }
-              playerDiffs.setSplitStatById {
-                id: player1Tag, field: 'currentWinStreak'
-                value: 0, type: type
-              }
+            if teamWon
+              winningDeckIds = teamDeckIds
+              losingDeckIds = opponentDeckIds
+              winningDeckCardIds = teamCardIds
+              losingDeckCardIds = opponentCardIds
+              teamDecksState = 'wins'
+              opponentDecksState = 'losses'
+              winners = team
+              losers = opponent
+              draws = null
+            else if opponentWon
+              winningDeckIds = opponentDeckIds
+              losingDeckIds = teamDeckIds
+              winningDeckCardIds = opponentCardIds
+              losingDeckCardIds = teamCardIds
+              teamDecksState = 'losses'
+              opponentDecksState = 'wins'
+              winners = opponent
+              losers = opponent
+              draws = null
             else
-              winningDeckId = null
-              losingDeckId = null
-              deck1State = 'draws'
-              deck2State = 'draws'
+              winningDeckIds = null
+              losingDeckIds = null
+              winningDeckCardIds = null
+              losingDeckCardIds = null
+              teamDecksState = 'draws'
+              opponentDecksState = 'draws'
+              winners = null
+              losers = null
+              draws = team.concat opponent
 
-              playerDiffs.incById {id: player1Tag, field: 'draws', type: type}
-              playerDiffs.setSplitStatById {
-                id: player1Tag, field: 'currentWinStreak'
-                value: 0, type: type
+            _.map winners, (player) ->
+              playerDiffs.incById {id: player.tag, field: 'wins', type: type}
+              playerDiffs.incById {
+                id: player.tag, field: 'currentWinStreak', type: type
               }
               playerDiffs.setSplitStatById {
-                id: player1Tag, field: 'currentLossStreak'
-                value: 0, type: type
-              }
-
-              playerDiffs.incById {id: player2Tag, field: 'draws', type: type}
-              playerDiffs.setSplitStatById {
-                id: player2Tag, field: 'currentWinStreak'
-                value: 0, type: type
-              }
-              playerDiffs.setSplitStatById {
-                id: player2Tag, field: 'currentLossStreak'
+                id: player.tag, field: 'currentLossStreak'
                 value: 0, type: type
               }
 
-            # player 1
-            playerDiffs.setStreak {
-              id: player1Tag, maxField: 'maxWinStreak'
-              currentField: 'currentWinStreak', type: type
-            }
-            playerDiffs.setStreak {
-              id: player1Tag, maxField: 'maxLossStreak'
-              currentField: 'currentLossStreak', type: type
-            }
+            _.map losers, (player) ->
+              playerDiffs.incById {
+                id: opponent.tag, field: 'losses', type: type
+              }
+              playerDiffs.incById {
+                id: opponent.tag, field: 'currentLossStreak', type: type
+              }
+              playerDiffs.setSplitStatById {
+                id: opponent.tag, field: 'currentWinStreak'
+                value: 0, type: type
+              }
 
-            # player 2
-            playerDiffs.setStreak {
-              id: player2Tag, maxField: 'maxWinStreak'
-              currentField: 'currentWinStreak', type: type
-            }
-            playerDiffs.setStreak {
-              id: player2Tag, maxField: 'maxLossStreak'
-              currentField: 'currentLossStreak', type: type
-            }
+            _.map draws, (player) ->
+              playerDiffs.incById {id: player.tag, field: 'draws', type: type}
+              playerDiffs.setSplitStatById {
+                id: player.tag, field: 'currentWinStreak'
+                value: 0, type: type
+              }
+              playerDiffs.setSplitStatById {
+                id: player.tag, field: 'currentLossStreak'
+                value: 0, type: type
+              }
+
+            _.map team.concat(opponent), (player) ->
+              playerDiffs.setStreak {
+                id: player.tag, maxField: 'maxWinStreak'
+                currentField: 'currentWinStreak', type: type
+              }
+              playerDiffs.setStreak {
+                id: player.tag, maxField: 'maxLossStreak'
+                currentField: 'currentLossStreak', type: type
+              }
 
             # for records (graph)
             scaledTime = UserRecord.getScaledTimeByTimeScale(
-              'minute', moment(match.time)
+              'minute', moment(match.battleTime)
             )
 
             prefix = CacheService.PREFIXES.CLASH_ROYALE_MATCHES_ID
             key = "#{prefix}:#{matchId}"
+
             matchObj = {
               id: matchId
-              arena: match.arena
-              league: match.league
-              type: match.type
-              player1Id: match.player1.playerTag
-              player2Id: match.player2.playerTag
+              data: match
+              arena: match.arena?.globalId
+              type: type
+              teamPlayerIds: _.map team, ({tag}) -> tag.replace '#', ''
+              opponentPlayerIds: _.map team, ({tag}) -> tag.replace '#', ''
               # player1UserIds: player1UserIds
               # player2UserIds: player2UserIds
-              winningDeckId: winningDeckId
-              losingDeckId: losingDeckId
+              winningDeckIds: winningDeckIds
+              losingDeckIds: losingDeckIds
               winningCardIds: winningDeckCardIds
               losingCardIds: losingDeckCardIds
-              player1Data: @getMatchPlayerData {
-                player: match.player1, deck: deck1Id
-              }
-              player2Data: @getMatchPlayerData {
-                player: match.player2, deck: deck2Id
-              }
-              time: new Date(match.time)
+              time: moment(match.battleTime).toDate()
             }
             batchMatches.push matchObj
 
-            if type is 'ladder'
-              # graphs p1
-              _.map player1UserIds, (userId) ->
-                batchUserRecords.push {
-                  userId: userId
-                  playerId: player1Tag
-                  gameRecordTypeId: config.CLASH_ROYALE_TROPHIES_RECORD_ID
-                  scaledTime
-                  value: match.player1.trophies
-                }
-              # graphs p2
-              _.map player2UserIds, (userId) ->
-                batchUserRecords.push {
-                  userId: userId
-                  playerId: player2Tag
-                  gameRecordTypeId: config.CLASH_ROYALE_TROPHIES_RECORD_ID
-                  scaledTime
-                  value: match.player2.trophies
-                }
+            if type is 'PvP'
+              _.map teamPlayers, ({userIds}, i) ->
+                _.map userIds, (userId) ->
+                  player = team[i]
+                  batchUserRecords.push {
+                    userId: userId
+                    playerId: player.tag.replace '#', ''
+                    gameRecordTypeId: config.CLASH_ROYALE_TROPHIES_RECORD_ID
+                    scaledTime
+                    value: player.startingTrophies + player.trophyChange
+                  }
+              _.map opponentPlayers, ({userIds}, i) ->
+                _.map userIds, (userId) ->
+                  player = opponent[i]
+                  batchUserRecords.push {
+                    userId: userId
+                    playerId: player.tag.replace '#', ''
+                    gameRecordTypeId: config.CLASH_ROYALE_TROPHIES_RECORD_ID
+                    scaledTime
+                    value: player.startingTrophies + player.trophyChange
+                  }
 
-            player1IsRequesting = reqPlayerIds.indexOf(player1Tag) isnt -1
-            player2IsRequesting = reqPlayerIds.indexOf(player2Tag) isnt -1
-            player1HasUserIds = not _.isEmpty player1Player?.userIds
-            player2HasUserIds = not _.isEmpty player2Player?.userIds
+            teamHasUserIds = not _.isEmpty teamPlayers?.userIds
+            opponentHasUserIds = not _.isEmpty opponentPlayers?.userIds
 
             # don't need to block for any of these
             CacheService.set key, matchObj, {expireSeconds: SIX_HOURS_S}
 
             if DECK_TRACKED_GAME_TYPES.indexOf(type) isnt -1
-              if player1HasUserIds or ENABLE_ANON_USER_DECKS
-                batchUserDecks[player1Tag] ?= {}
-                batchUserDecks[player1Tag][deck1Id] ?= {
-                  wins: 0, losses: 0, draws: 0
+              group = [
+                {
+                  players: team, playerObjs: teamPlayers, state: teamDecksState
                 }
-                batchUserDecks[player1Tag][deck1Id][deck1State] += 1
-
-                batchDecks[deck1Id] ?= {wins: 0, losses: 0, draws: 0}
-                batchDecks[deck1Id][deck1State] += 1
-
-              if player2HasUserIds or ENABLE_ANON_USER_DECKS
-                batchUserDecks[player2Tag] ?= {}
-                batchUserDecks[player2Tag][deck2Id] ?= {
-                  wins: 0, losses: 0, draws: 0
+                {
+                  players: opponent, playerObjs: opponentPlayers,
+                  state: opponentDecksState
                 }
-                batchUserDecks[player2Tag][deck2Id][deck2State] += 1
+              ]
+              _.map group, ({players, playerObjs, state}) ->
+                _.map players, (player, i) ->
+                  hasUserIds = not _.isEmpty playerObjs[i]?.userIds
+                  if hasUserIds or ENABLE_ANON_USER_DECKS
+                    tag = player.tag.replace '#', ''
+                    deckId = teamDeckIds[i]
+                    batchUserDecks[tag] ?= {}
+                    batchUserDecks[tag][type] ?= {}
+                    batchUserDecks[tag][type][deckId] ?= {
+                      wins: 0, losses: 0, draws: 0
+                    }
+                    batchUserDecks[tag][type][deckId][state] += 1
 
-                batchDecks[deck1Id] ?= {wins: 0, losses: 0, draws: 0}
-                batchDecks[deck1Id][deck1State] += 1
+                    batchDecks[deckId] ?= {wins: 0, losses: 0, draws: 0}
+                    batchDecks[deckId][state] += 1
 
         .then =>
           Promise.all [
@@ -501,31 +454,32 @@ class ClashRoyalePlayer
           {playerDiffs: playerDiffs.getAll()}
 
   # morph api format to our format
-  getPlayerFromPlayerData: ({playerData}) ->
-    {
-      currentDeck: playerData.currentDeck
-      trophies: playerData.trophies
-      name: playerData.name
-      clan: if playerData.clan
-      then { \
-        tag: playerData.clan.tag, \
-        name: playerData.clan.name, \
-        badge: playerData.clan.badge
-      }
-      else null
-      level: playerData.level
-      arena: playerData.arena
-      league: playerData.league
-      chestCycle: playerData.chestCycle
-      shopOffers: playerData.shopOffers
-      stats: _.merge playerData.stats, {
-        games: playerData.games
-        tournamentGames: playerData.tournamentGames
-        wins: playerData.wins
-        losses: playerData.losses
-        currentStreak: playerData.currentStreak
-      }
-    }
+  # getPlayerFromPlayerData: ({playerData}) ->
+  #   {
+  #     currentDeck: playerData.currentDeck
+  #     trophies: playerData.trophies
+  #     upcomingChests: playerData.upcomingChests
+  #     name: playerData.name
+  #     clan: if playerData.clan
+  #     then { \
+  #       tag: playerData.clan.tag, \
+  #       name: playerData.clan.name, \
+  #       badge: playerData.clan.badge
+  #     }
+  #     else null
+  #     level: playerData.level
+  #     arena: playerData.arena
+  #     league: playerData.league
+  #     chestCycle: playerData.chestCycle
+  #     shopOffers: playerData.shopOffers
+  #     stats: _.merge playerData.stats, {
+  #       games: playerData.games
+  #       tournamentGames: playerData.tournamentGames
+  #       wins: playerData.wins
+  #       losses: playerData.losses
+  #       currentStreak: playerData.currentStreak
+  #     }
+  #   }
 
   processUpdatePlayerMatches: ({matches, isBatched, tag}) =>
     if _.isEmpty matches
@@ -556,15 +510,16 @@ class ClashRoyalePlayer
     .then ({playerDiffs}) ->
       # no matches processed means no player diffs
       _.map tags, (tag) ->
-        playerDiffs.all[tag] = _.defaults {
+        playerDiffs.all["##{tag}"] = _.defaults {
           lastMatchesUpdateTime: new Date()
-        }, playerDiffs.all[tag]
-        playerDiffs.day[tag] = _.defaults {
+        }, playerDiffs.all["##{tag}"]
+        playerDiffs.day["##{tag}"] = _.defaults {
           lastMatchesUpdateTime: new Date()
-        }, playerDiffs.day[tag]
+        }, playerDiffs.day["##{tag}"]
 
       # combine into 1 query for inserts instead of update to 25
       {inserts, updates} = _.reduce playerDiffs.all, (obj, diff, playerId) ->
+        playerId = playerId.replace '#', ''
         if diff.preExisting
           delete diff.preExisting
           delete diff.id
@@ -579,6 +534,7 @@ class ClashRoyalePlayer
       playerUpdates = updates
 
       {inserts, updates} = _.reduce playerDiffs.day, (obj, diff, playerId) ->
+        playerId = playerId.replace '#', ''
         if diff.preExisting
           delete diff.preExisting
           delete diff.id
@@ -614,13 +570,14 @@ class ClashRoyalePlayer
     unless id and playerData
       return Promise.resolve null
 
-    clanId = playerData?.clan?.tag
+    clanId = playerData?.clan?.tag?.replace '#', ''
 
     Player.getByPlayerIdAndGameId id, GAME_ID
     .then (existingPlayer) =>
       diff = {
         data: _.defaultsDeep(
-          @getPlayerFromPlayerData({playerData})
+          playerData
+          # @getPlayerFromPlayerData({playerData})
           existingPlayer?.data or {}
         )
         lastDataUpdateTime: new Date()
@@ -828,7 +785,8 @@ class PlayerSplitsDiffs
     @playerDiffs = {all: {}, day: {}}
 
   setInitialDiffs: (playerIds, reqPlayerIds) =>
-    playerIds = _.uniq playerIds.concat reqPlayerIds
+    playerIds = _.map _.uniq(playerIds.concat reqPlayerIds), (id) ->
+      id.replace '#', ''
     Promise.all [
       Player.getAllByPlayerIdsAndGameId playerIds, GAME_ID
       .map EmbedService.embed {
@@ -845,12 +803,12 @@ class PlayerSplitsDiffs
         if (player and player?.updateFrequency isnt 'none') or
             reqPlayerIds.indexOf(playerId) isnt -1
 
-          @playerDiffs['all'][playerId] = _.defaultsDeep player, {
+          @playerDiffs['all']["##{playerId}"] = _.defaultsDeep player, {
             data: {splits: {}}, preExisting: true
           }
 
           playerDaily = _.find playersDaily, {id: playerId}
-          @playerDiffs['day'][playerId] = _.defaultsDeep playerDaily, {
+          @playerDiffs['day']["##{playerId}"] = _.defaultsDeep playerDaily, {
             data: {splits: {}}, preExisting: Boolean playerDaily
           }
 
@@ -864,6 +822,11 @@ class PlayerSplitsDiffs
     unless @playerDiffs[set][id]
       return
     splits = @playerDiffs[set][id].data.splits[type]
+    # legacy
+    if not @playerDiffs[set][id].data.splits[type] and type is 'PvP'
+      @playerDiffs[set][id].data.splits[type] =
+        @playerDiffs[set][id].data.splits['ladder']
+    # end legacy
     @playerDiffs[set][id].data.splits[type] = _.defaults splits, {
       currentWinStreak: 0
       currentLossStreak: 0

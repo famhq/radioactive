@@ -70,6 +70,7 @@
     "node-uuid": "^1.4.7",
     "pcg-random": "^1.0.0",
     "pg": "^6.1.5",
+    "project-honeypot": "0.0.0",
     "qs": "^6.3.0",
     "redis": "^2.6.2",
     "redlock": "^2.0.0",

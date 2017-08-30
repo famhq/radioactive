@@ -31,4 +31,4 @@ class TagConverterService
 
     {hi, lo}
 
-  module.exports = new TagConverterService()
+module.exports = new TagConverterService()

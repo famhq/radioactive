@@ -3230,6 +3230,11 @@
       "from": "process-nextick-args@>=1.0.6 <1.1.0",
       "resolved": "https://registry.npmjs.org/process-nextick-args/-/process-nextick-args-1.0.7.tgz"
     },
+    "project-honeypot": {
+      "version": "0.0.0",
+      "from": "project-honeypot@latest",
+      "resolved": "https://registry.npmjs.org/project-honeypot/-/project-honeypot-0.0.0.tgz"
+    },
     "promise": {
       "version": "7.1.1",
       "from": "promise@>=7.0.1 <8.0.0",

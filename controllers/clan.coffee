@@ -35,16 +35,6 @@ class ClanCtrl
     Clan.getByClanIdAndGameId id, GAME_ID
     .then EmbedService.embed {embed: defaultEmbed}
     .then (clan) ->
-      # FIXME FIXME: rm after ~june 2017?
-      isInGroup = clan.group?.userIds
-      if clan.group and clan.group.mode is 'open' and isInGroup
-        Group.addUser clan.groupId, user.id
-      else if not clan.group
-        Clan.createGroup {
-          userId: user.id, name: clan.data.name, clanId: id
-        }
-      # end
-
       if clan?.creatorId is user.id
         Clan.sanitize null, clan
       else if clan

@@ -55,6 +55,7 @@ TYPES =
     USER: 'star:user'
     GROUP: 'star:group'
   GROUP:
+    USER_IDS: 'group:user_ids'
     USERS: 'group:users'
     CONVERSATIONS: 'group:conversations'
     STAR: 'group:star'
@@ -266,9 +267,10 @@ embedFn = _.curry ({embed, user, clanId, groupId, gameId, userId}, object) ->
         }
 
       when TYPES.CLAN.PLAYERS
-        if embedded.players
-          embedded.players = Promise.map embedded.players, (player) ->
-            Player.getByPlayerIdAndGameId player.playerId, embedded.gameId
+        if embedded.data.memberList
+          embedded.players = Promise.map embedded.data.memberList, (player) ->
+            playerId = player.tag.replace('#', '')
+            Player.getByPlayerIdAndGameId playerId, embedded.gameId
             .then embedFn {
               embed: [TYPES.PLAYER.VERIFIED_USER], gameId: embedded.gameId
             }
@@ -326,6 +328,12 @@ embedFn = _.curry ({embed, user, clanId, groupId, gameId, userId}, object) ->
             Star.getById embedded.starId
             .then embedFn {embed: [TYPES.STAR.USER]}
           , {expireSeconds: ONE_HOUR_SECONDS}
+
+      when TYPES.GROUP.USER_IDS
+        # TODO: cache
+        embedded.userIds =
+          GroupUser.getAllByGroupId embedded.id
+          .map ({userId}) -> userId
 
       when TYPES.GROUP.USERS
         embedded.users = Promise.map embedded.userIds, (userId) ->

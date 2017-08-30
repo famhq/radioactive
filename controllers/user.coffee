@@ -32,11 +32,14 @@ class UserCtrl
         user.lastActiveTime.getTime() < Date.now() - LAST_ACTIVE_UPDATE_FREQ_MS
       # rendered via starfire server (wrong ip)
       isServerSide = ip?.indexOf('::ffff:10.') isnt -1
-      if isRecent and not isServerSide
-        User.updateById user.id, {
+      if (isRecent or not user.ip) and not isServerSide
+        diff = {
           lastActiveIp: ip
           lastActiveTime: new Date()
         }
+        unless user.ip
+          diff.ip = ip
+        User.updateById user.id, diff
       null # don't block
     .then User.sanitize null
 

@@ -34,21 +34,20 @@ defaultPlayer =
   trophies: null
 
 fields = [
-  {name: 'id', type: 'biginteger', index: 'primary'}
+  {name: 'id', type: 'string', length: 100, index: 'primary'}
   {name: 'arena', type: 'integer', index: 'default'}
   {name: 'league', type: 'integer'}
-  {name: 'player1Id', type: 'string', length: 20, index: 'default'}
-  {name: 'player2Id', type: 'string', length: 20, index: 'default'}
-  {name: 'winningDeckId', type: 'string', length: 150, index: 'default'}
-  {name: 'losingDeckId', type: 'string', length: 150, index: 'default'}
+  {name: 'teamPlayerIds', type: 'array', arrayType: 'text', index: 'gin'}
+  {name: 'opponentPlayerIds', type: 'array', arrayType: 'text', index: 'gin'}
+  {name: 'winningDeckIds', type: 'array', arrayType: 'text', index: 'gin'}
+  {name: 'losingDeckIds', type: 'array', arrayType: 'text', index: 'gin'}
   {
     name: 'type', type: 'string', length: 50, index: 'default'
-    defaultValue: 'ladder'
+    defaultValue: 'PvP'
   }
   {name: 'winningCardIds', type: 'array', arrayType: 'text', index: 'gin'}
   {name: 'losingCardIds', type: 'array', arrayType: 'text', index: 'gin'}
-  {name: 'player1Data', type: 'json', defaultValue: defaultPlayer}
-  {name: 'player2Data', type: 'json', defaultValue: defaultPlayer}
+  {name: 'data', type: 'json', defaultValue: defaultPlayer}
   {name: 'time', type: 'dateTime', index: 'default', defaultValue: new Date()}
 ]
 
@@ -79,15 +78,6 @@ class ClashRoyaleMatchModel
 
     knex.insert(clashRoyaleMatches).into(POSTGRES_MATCH_TABLE)
     .catch (err) ->
-      console.log 'postgres err', err
-
-
-  create: (clashRoyaleMatch) ->
-    clashRoyaleMatch = defaultClashRoyaleMatch clashRoyaleMatch
-
-    knex.insert(clashRoyaleMatch).into(POSTGRES_MATCH_TABLE)
-    .catch (err) ->
-      console.log clashRoyaleMatch
       console.log 'postgres err', err
 
   getAllByUserId: ({limit, userId} = {}) ->

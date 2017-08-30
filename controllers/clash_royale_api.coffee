@@ -33,7 +33,14 @@ class ClashRoyaleAPICtrl
     (if isUpdate
       Player.removeUserId user.id, config.CLASH_ROYALE_ID
     else
-      Promise.resolve null
+      Promise.all [
+        ClashRoyaleUserDeck.duplicateByPlayerId playerId, user.id
+        .catch (err) ->
+          console.log 'duplicate userdeck err', playerId, user.id, err
+        UserRecord.duplicateByPlayerId playerId, user.id
+        .catch (err) ->
+          console.log 'duplicate userrecord err', playerId, user.id, err
+      ]
     )
     .then ->
       Player.getByUserIdAndGameId user.id, config.CLASH_ROYALE_ID
@@ -49,15 +56,6 @@ class ClashRoyaleAPICtrl
                              then 'default'
                              else existingPlayer.updateFrequency
           }
-        else
-          Promise.all [
-            ClashRoyaleUserDeck.duplicateByPlayerId playerId, user.id
-            .catch (err) ->
-              console.log 'duplicate userdeck err', playerId, user.id, err
-            UserRecord.duplicateByPlayerId playerId, user.id
-            .catch (err) ->
-              console.log 'duplicate userrecord err', playerId, user.id, err
-          ]
 
   refreshByPlayerId: ({playerId, userId, priority}, {user}) ->
     playerId = playerId.trim().toUpperCase()

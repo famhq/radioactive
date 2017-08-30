@@ -23,6 +23,7 @@ ONE_HOUR_SECONDS = 3600
 fields = [
   {name: 'id', type: 'uuid', index: 'primary', defaultValue: -> uuid.v4()}
   {name: 'name', type: 'string'}
+  {name: 'type', type: 'string', length: 100, defaultValue: 'all'}
   {name: 'deckId', type: 'string', length: 150}
   {name: 'wins', type: 'integer', defaultValue: 0}
   {name: 'losses', type: 'integer', defaultValue: 0}
@@ -73,6 +74,7 @@ class ClashRoyaleUserDeckModel
       fields: fields
       indexes: [
         {columns: ['userId', 'isFavorited']}
+        {columns: ['userId', 'type']}
         {columns: ['deckId', 'userId'], type: 'unique'}
       ]
     }
@@ -85,6 +87,7 @@ class ClashRoyaleUserDeckModel
     knex(POSTGRES_USER_DECKS_TABLE).insert(userDecks)
 
   create: (clashRoyaleUserDeck) ->
+    console.log 'create', clashRoyaleUserDeck
     clashRoyaleUserDeck = defaultClashRoyaleUserDeck clashRoyaleUserDeck
     knex.insert(clashRoyaleUserDeck).into(POSTGRES_USER_DECKS_TABLE)
     .catch (err) ->
@@ -212,11 +215,11 @@ class ClashRoyaleUserDeckModel
   #     .update diff, {durability: 'soft'}
   #     .run()
 
-  incrementAllByDeckIdAndPlayerId: (deckId, playerId, changes) ->
+  incrementAllByDeckIdAndPlayerIdAndType: (deckId, playerId, type, changes) ->
     changes = _.mapValues changes, (increment, key) ->
       knex.raw "\"#{key}\" + #{increment}"
     knex POSTGRES_USER_DECKS_TABLE
-    .where {deckIdPlayerId: "#{deckId}:#{playerId}"}
+    .where {deckIdPlayerId: "#{deckId}:#{playerId}", type}
     .update _.defaults({lastUpdateTime: new Date()}, changes)
     .catch (err) ->
       console.log 'postgres err', err

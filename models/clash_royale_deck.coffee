@@ -51,6 +51,7 @@ MAX_RANDOM_NAME_ATTEMPTS = 30
 fields = [
   {name: 'id', type: 'string', length: 150, index: 'primary'}
   {name: 'name', type: 'string', index: 'default'}
+  # {name: 'type', type: 'string'}
   {name: 'cardIds', type: 'array', arrayType: 'varchar', index: 'gin'}
   {name: 'wins', type: 'integer', defaultValue: 0}
   {name: 'losses', type: 'integer', defaultValue: 0}
@@ -86,18 +87,8 @@ class ClashRoyaleDeckModel
     {
       tableName: POSTGRES_DECKS_TABLE
       fields: fields
-      indexes: []
-    }
-  ]
-  RETHINK_TABLES: [
-    {
-      name: CLASH_ROYALE_DECK_TABLE
-      options: {}
       indexes: [
-        {name: ADD_TIME_INDEX}
-        {name: NAME_INDEX}
-        {name: CARD_IDS_INDEX, options: {multi: true}}
-        {name: POPULARITY_INDEX}
+        # {columns: ['popularity', 'type']}
       ]
     }
   ]
@@ -125,11 +116,6 @@ class ClashRoyaleDeckModel
     .then ->
       clashRoyaleDeck
 
-    # r.table CLASH_ROYALE_DECK_TABLE
-    # .insert clashRoyaleDeck, {durability}
-    # .run()
-    # .then ->
-    #   clashRoyaleDeck
 
   # getRank: ({thisWeekPopularity, lastWeekPopularity}) =>
   #   r.table @RETHINK_TABLES[0].name
@@ -209,8 +195,8 @@ class ClashRoyaleDeckModel
       .run()
       .map defaultClashRoyaleDeck
 
-  getDeckId: (cards) ->
-    cardKeys = _.sortBy(cards).join '|'
+  getDeckId: (cardKeys) ->
+    cardKeys = _.sortBy(cardKeys).join '|'
 
   getByCardKeys: (cardKeys, {preferCache, cards} = {}) =>
     cardKeysStr = @getDeckId cardKeys
@@ -410,77 +396,16 @@ class ClashRoyaleDeckModel
     .update _.mapValues changes, (increment, key) ->
       knex.raw "\"#{key}\" + #{increment}"
 
-    # diff = {
-    #   wins: r.row('wins').add(changes.wins or 0)
-    #   losses: r.row('losses').add(changes.losses or 0)
-    #   draws: r.row('draws').add(changes.draws or 0)
-    # }
-    # r.table CLASH_ROYALE_DECK_TABLE
-    # .get id
-    # .update diff, {durability: 'soft'}
-    # .run()
-
-  # incrementById: (id, state, {batch, amount} = {}) =>
-  #   unless id
-  #     console.log 'no id'
-  #     return
-  #   if batch and not config.IS_POSTGRES
-  #     subKey = "CLASH_ROYALE_DECK_QUEUED_INCREMENTS_#{state.toUpperCase()}"
-  #     key = CacheService.KEYS[subKey]
-  #     CacheService.arrayAppend key, id
-  #     Promise.resolve null # don't wait
-  #   else if config.IS_POSTGRES
-  #     column = if state is 'win' \
-  #              then 'wins'
-  #              else if state is 'loss'
-  #              then 'losses'
-  #              else 'draws'
-  #     knex POSTGRES_DECKS_TABLE
-  #     .where {id}
-  #     .update {
-  #       "#{column}": knex.raw "#{column} + 1"
-  #     }
-  #   else
-  #     if state is 'win'
-  #       diff = {
-  #         wins: r.row('wins').add(1)
-  #       }
-  #     else if state is 'loss'
-  #       diff = {
-  #         losses: r.row('losses').add(1)
-  #       }
-  #     else if state is 'draw'
-  #       diff = {
-  #         draws: r.row('draws').add(1)
-  #       }
-  #     else
-  #       diff = {}
-  #
-  #     r.table @RETHINK_TABLES[0].name
-  #     .get id
-  #     .update _.defaults diff, {lastUpdateTime: new Date()}
-  #     .run()
-
   updateById: (id, diff) ->
     knex POSTGRES_DECKS_TABLE
     .where {id}
     .update diff
-
-    # r.table CLASH_ROYALE_DECK_TABLE
-    # .get id
-    # .update diff
-    # .run()
 
   deleteById: (id) ->
     knex POSTGRES_DECKS_TABLE
     .where {id}
     .limit 1
     .del()
-
-    # r.table CLASH_ROYALE_DECK_TABLE
-    # .get id
-    # .delete()
-    # .run()
 
   sanitize: _.curry (requesterId, clashRoyaleDeck) ->
     _.pick clashRoyaleDeck, [
