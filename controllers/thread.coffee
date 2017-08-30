@@ -193,7 +193,7 @@ class ThreadCtrl
       ]
 
   getAll: ({category, language, sort, limit}, {user}) ->
-    if language isnt 'es'
+    if language isnt 'es' and user.username isnt 'austin'
       category ?= 'news'
 
     # default to this so clan recruiting isn't shown

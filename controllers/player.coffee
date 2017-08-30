@@ -35,9 +35,17 @@ class PlayerCtrl
 
     gameId or= GAME_ID
 
-    start = Date.now()
     # TODO: cache, but need to clear the cache whenever player is updated...
     Player.getByUserIdAndGameId userId, gameId #, {preferCache: true}
+    .then EmbedService.embed {embed: defaultEmbed}
+
+  getByPlayerIdAndGameId: ({playerId, gameId}, {user}) ->
+    unless playerId
+      return
+
+    console.log 'get', playerId, gameId
+    # TODO: cache, but need to clear the cache whenever player is updated...
+    Player.getByPlayerIdAndGameId playerId, gameId #, {preferCache: true}
     .then EmbedService.embed {embed: defaultEmbed}
 
   verifyMe: ({gold, lo}, {user}) ->
@@ -48,7 +56,7 @@ class PlayerCtrl
         router.throw {status: 400, info: 'invalid player id', ignoreLog: true}
 
       ClashRoyaleAPIService.getPlayerDataByTag player.id, {
-        priority: 'high', skipCache: true
+        priority: 'high', skipCache: true, isLegacy: true
       }
       .then (playerData) ->
         unless "#{gold}" is "#{playerData?.gold}"

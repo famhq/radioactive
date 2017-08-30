@@ -24,34 +24,16 @@ BATCH_REQUEST_SIZE = 50
 GAME_ID = config.CLASH_ROYALE_ID
 
 class ClashRoyaleClan
-  formatClan: (clan) ->
-    _.pick clan, ['name', 'badge', 'type', 'description', 'trophies',
-      'minTrophies', 'donations', 'region']
 
-  formatClanPlayer: (player) ->
-    {
-      playerId: player.tag
-      name: player.name
-      trophies: player.trophies
-      level: player.level
-      arena: player.arena
-      league: player.league
-      role: player.role
-      donations: player.donations
-      clanChestCrowns: player.clanChestCrowns
-    }
-
-  updateClan: ({userId, clan, tag}) =>
+  updateClan: ({userId, clan, tag}) ->
     unless tag and clan
       return Promise.resolve null
-
-    players = _.map clan.members, @formatClanPlayer
 
     diff = {
       lastUpdateTime: new Date()
       clanId: tag
-      data: @formatClan clan
-      players: players
+      data: clan
+      # players: players
     }
 
     Clan.getByClanIdAndGameId tag, GAME_ID
@@ -70,14 +52,16 @@ class ClashRoyaleClan
         diff: {value: clan.trophies}
       }
 
-      playerIds = _.map players, 'playerId'
+      playerIds = _.map clan.memberList, ({tag}) -> tag.replace '#', ''
       Promise.all [
         UserPlayer.getAllByPlayerIdsAndGameId playerIds, GAME_ID
         Player.getAllByPlayerIdsAndGameId playerIds, GAME_ID
       ]
       .then ([existingUserPlayers, existingPlayers]) ->
         _.map existingUserPlayers, (existingUserPlayer) ->
-          player = _.find players, {playerId: existingUserPlayer.playerId}
+          player = _.find clan.memberList, {
+            tag: "##{existingUserPlayer.playerId}"
+          }
           donations = player.donations
           clanChestCrowns = player.clanChestCrowns
           UserRecord.upsert {
@@ -95,8 +79,8 @@ class ClashRoyaleClan
             }
           }
 
-        newPlayers = _.filter _.map players, (player) ->
-          unless _.find existingPlayers, {id: player.playerId}
+        newPlayers = _.filter _.map clan.memberList, (player) ->
+          unless _.find existingPlayers, {id: player.tag.replace('#', '')}
             # ClashRoyaleAPIService.updatePlayerById playerId, {
             #   priority: 'normal'
             # }
@@ -104,24 +88,22 @@ class ClashRoyaleClan
             {
               # only set to true when clan is claimed
               # hasUserId: true
-              id: player.playerId
+              id: player.tag.replace '#', ''
               updateFrequency: 'none'
               data:
                 name: player.name
                 trophies: player.trophies
-                level: player.level
+                expLevel: player.expLevel
                 arena: player.arena
-                league: player.league
-                stats: {}
-                splits: {}
                 clan:
-                  badge: clan.badge
+                  badgeId: clan.badgeId
                   name: clan.name
-                  tag: tag
+                  tag: clan.tag
             }
         Player.batchCreateByGameId GAME_ID, newPlayers
 
 
+      console.log 'ex', existingClan, tag, diff
       (if existingClan
         Clan.updateByClanIdAndGameId tag, GAME_ID, diff
       else

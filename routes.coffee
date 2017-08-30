@@ -138,6 +138,8 @@ module.exports = router
 
 .on 'players.getByUserIdAndGameId',
   authed PlayerCtrl.getByUserIdAndGameId
+.on 'players.getByPlayerIdAndGameId',
+  authed PlayerCtrl.getByPlayerIdAndGameId
 .on 'players.getTop', authed PlayerCtrl.getTop
 .on 'players.search', authed PlayerCtrl.search
 .on 'players.getMeFollowing', authed PlayerCtrl.getMeFollowing

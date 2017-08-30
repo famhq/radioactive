@@ -76,11 +76,14 @@ class GroupModel
 
     level ?= 'member'
 
-    return switch level
-      when 'admin'
-      then group.creatorId is user.id
-      # member
-      else group.type is 'public' or group.userIds?.indexOf(user.id) isnt -1
+    GroupUser.getAllByGroupId group.id
+    .map ({userId}) -> userId
+    .then (userIds) ->
+      return switch level
+        when 'admin'
+        then group.creatorId is user.id
+        # member
+        else group.type is 'public' or userIds?.indexOf(user.id) isnt -1
 
   getById: (id, {preferCache} = {}) ->
     get = ->

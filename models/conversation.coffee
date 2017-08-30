@@ -121,11 +121,7 @@ class ConversationModel
 
   hasPermission: (conversation, userId) ->
     if conversation.groupId
-      Group.getById conversation.groupId, {preferCache: true}
-      .then (group) ->
-        group and (
-          group.type is 'public' or group.userIds.indexOf(userId) isnt -1
-        )
+      Group.hasPermissionByIdAndUserId conversation.groupId, userId
     else if conversation.eventId
       Event.getById conversation.eventId
       .then (event) ->

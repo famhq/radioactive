@@ -1,0 +1,56 @@
+[
+  {
+    "globalId": "54000012",
+    "name": "Challenger I",
+    "number": 12,
+    "minTrophies": 4000
+  },
+  {
+    "globalId": "54000013",
+    "name": "Challenger II",
+    "number": 13,
+    "minTrophies": 4300
+  },
+  {
+    "globalId": "54000014",
+    "name": "Challenger III",
+    "number": 14,
+    "minTrophies": 4600
+  },
+  {
+    "globalId": "54000015",
+    "name": "Master I",
+    "number": 15,
+    "minTrophies": 4900
+  },
+  {
+    "globalId": "54000016",
+    "name": "Master II",
+    "number": 16,
+    "minTrophies": 5200
+  },
+  {
+    "globalId": "54000017",
+    "name": "Master III",
+    "number": 17,
+    "minTrophies": 5500
+  },
+  {
+    "globalId": "54000018",
+    "name": "Champion",
+    "number": 18,
+    "minTrophies": 5800
+  },
+  {
+    "globalId": "54000019",
+    "name": "Grand Champion",
+    "number": 19,
+    "minTrophies": 6100
+  },
+  {
+    "globalId": "54000020",
+    "name": "Ultimate Champion",
+    "number": 20,
+    "minTrophies": 6400
+  }
+]

@@ -67,9 +67,10 @@ class ChatMessageCtrl
     Promise.all [
       Ban.getByIp ipAddr, {preferCache: true}
       Ban.getByUserId userId, {preferCache: true}
+      Ban.isHoneypotBanned ipAddr, {preferCache: true}
     ]
-    .then ([bannedIp, bannedUserId]) ->
-      if bannedIp?.ip or bannedUserId?.userId
+    .then ([bannedIp, bannedUserId, isHoneypotBanned]) ->
+      if bannedIp?.ip or bannedUserId?.userId or isHoneypotBanned
         router.throw status: 403, 'unable to post'
 
   create: ({body, conversationId, clientId}, {user, headers, connection}) =>

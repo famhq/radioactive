@@ -6,10 +6,11 @@ knex = require '../services/knex'
 CacheService = require '../services/cache'
 config = require '../config'
 
+# FIXME: FIXME: make sure these work with new API before turning back on
 # so far can handle 20k per minute (1.2m per hour)
-DEFAULT_PLAYER_MATCHES_STALE_LIMIT = 1
+DEFAULT_PLAYER_MATCHES_STALE_LIMIT = 0
 # 1,000 players per minute = ~1.4m per day
-DEFAULT_PLAYER_DATA_STALE_LIMIT = 1000
+DEFAULT_PLAYER_DATA_STALE_LIMIT = 0
 SIX_HOURS_S = 3600 * 6
 
 fields = [
@@ -86,8 +87,8 @@ class ClashRoyalePlayerBaseModel
     .map defaultPlayer
 
   updateAllByIds: (ids, diff) =>
-    if @TABLE_NAME is 'players' and diff.data and not diff.data.stats
-      throw new Error 'player updateall missing stats'
+    if @TABLE_NAME is 'players' and diff.data and not diff.data.trophies
+      throw new Error 'player updateall missing trophies'
 
     knex @TABLE_NAME
     .whereIn 'id', ids
@@ -96,8 +97,8 @@ class ClashRoyalePlayerBaseModel
   updateById: (id, diff) =>
     diff = _.pick diff, _.map(fields, 'name')
 
-    if @TABLE_NAME is 'players' and diff.data and not diff.data.stats
-      throw new Error 'player update missing stats'
+    if @TABLE_NAME is 'players' and diff.data and not diff.data.trophies
+      throw new Error 'player update missing trophies'
 
     if diff.data
       # json has weird bugs if not stringified
@@ -109,8 +110,8 @@ class ClashRoyalePlayerBaseModel
     .then defaultPlayer
 
   upsertById: (id, diff) =>
-    if @TABLE_NAME is 'players' and diff.data and not diff.data.stats
-      throw new Error 'player upsert missing stats'
+    if @TABLE_NAME is 'players' and diff.data and not diff.data.trophies
+      throw new Error 'player upsert missing trophies'
 
     if diff.data
       # json has weird bugs if not stringified

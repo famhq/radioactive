@@ -1,0 +1,74 @@
+[
+  {
+    "globalId": "54000000",
+    "name": "Training Camp",
+    "number": 0,
+    "minTrophies": 0
+  },
+  {
+    "globalId": "54000001",
+    "name": "Goblin Stadium",
+    "number": 1,
+    "minTrophies": 0
+  },
+  {
+    "globalId": "54000002",
+    "name": "Bone Pit",
+    "number": 2,
+    "minTrophies": 400
+  },
+  {
+    "globalId": "54000003",
+    "name": "Barbarian Bowl",
+    "number": 3,
+    "minTrophies": 800
+  },
+  {
+    "globalId": "54000004",
+    "name": "P.E.K.K.A's Playhouse",
+    "number": 4,
+    "minTrophies": 1100
+  },
+  {
+    "globalId": "54000005",
+    "name": "Spell Valley",
+    "number": 5,
+    "minTrophies": 1400
+  },
+  {
+    "globalId": "54000006",
+    "name": "Builder's Workshop",
+    "number": 6,
+    "minTrophies": 1700
+  },
+  {
+    "globalId": "54000007",
+    "name": "Royal Arena",
+    "number": 7,
+    "minTrophies": 2000
+  },
+  {
+    "globalId": "54000008",
+    "name": "Frozen Peak",
+    "number": 8,
+    "minTrophies": 2300
+  },
+  {
+    "globalId": "54000009",
+    "name": "Jungle Arena",
+    "number": 9,
+    "minTrophies": 2600
+  },
+  {
+    "globalId": "54000010",
+    "name": "Hog Mountain",
+    "number": 10,
+    "minTrophies": 3000
+  },
+  {
+    "globalId": "54000011",
+    "name": "Legendary Arena",
+    "number": 11,
+    "minTrophies": 3800
+  }
+]

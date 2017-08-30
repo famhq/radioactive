@@ -44,7 +44,7 @@ class CacheService
     USER_DATA_BLOCKED_USERS: 'user_data:blocked_users'
     USER_DATA_CLASH_ROYALE_DECK_IDS: 'user_data:clash_royale_deck_ids6'
     USER_DAILY_DATA_PUSH: 'user_daily_data:push5'
-    CLASH_ROYALE_MATCHES_ID: 'clash_royale_matches:id84'
+    CLASH_ROYALE_MATCHES_ID: 'clash_royale_matches:id27'
     CLASH_ROYALE_CARD: 'clash_royale_card'
     CLASH_ROYALE_CARD_ALL: 'clash_royale_card:all'
     CLASH_ROYALE_CARD_KEY: 'clash_royale_card_key1'
@@ -79,7 +79,8 @@ class CacheService
     CLAN_CLAN_ID_GAME_ID: 'clan:clan_id_game_id8'
     CLAN_MIGRATE: 'clan:migrate9'
     BAN_IP: 'ban:ip'
-    BAN_USER_ID: 'ban:userId1'
+    BAN_USER_ID: 'ban:user_id1'
+    HONEY_POT_BAN_IP: 'honey_pot:ban_ip5'
 
   constructor: ->
     @redlock = new Redlock [RedisService], {
