@@ -7,7 +7,7 @@ config = require '../config'
 
 fields = [
   {name: 'id', type: 'bigIncrements', index: 'primary'}
-  {name: 'playerId', type: 'string', length: 20, index: 'default'}
+  {name: 'playerId', type: 'string', length: 20}
   {name: 'gameRecordTypeId', type: 'uuid'}
   {name: 'value', type: 'integer'}
   {name: 'scaledTime', type: 'string', length: 50, index: 'default'}
