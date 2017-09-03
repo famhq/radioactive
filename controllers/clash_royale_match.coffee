@@ -16,4 +16,9 @@ class ClashRoyaleMatchCtrl
     .map EmbedService.embed {embed: defaultEmbed}
     .map ClashRoyaleMatch.sanitize null
 
+  getAllByPlayerId: ({playerId, sort, limit, filter}, {user}) ->
+    ClashRoyaleMatch.getAllByPlayerId playerId, {sort, limit}
+    .map EmbedService.embed {embed: defaultEmbed}
+    .map ClashRoyaleMatch.sanitize null
+
 module.exports = new ClashRoyaleMatchCtrl()

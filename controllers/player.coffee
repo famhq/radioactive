@@ -43,9 +43,19 @@ class PlayerCtrl
     unless playerId
       return
 
-    console.log 'get', playerId, gameId
+    playerId = ClashRoyaleAPIService.formatHashtag playerId
+
     # TODO: cache, but need to clear the cache whenever player is updated...
     Player.getByPlayerIdAndGameId playerId, gameId #, {preferCache: true}
+    .then (player) ->
+      if player
+        return player
+      else
+        ClashRoyaleAPIService.updatePlayerById playerId, {
+          priority: 'normal'
+        }
+        .then ->
+          Player.getByPlayerIdAndGameId playerId, gameId
     .then EmbedService.embed {embed: defaultEmbed}
 
   verifyMe: ({gold, lo}, {user}) ->

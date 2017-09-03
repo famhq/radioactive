@@ -7,7 +7,6 @@ config = require '../config'
 
 fields = [
   {name: 'id', type: 'bigIncrements', index: 'primary'}
-  {name: 'userId', type: 'uuid'}
   {name: 'playerId', type: 'string', length: 20, index: 'default'}
   {name: 'gameRecordTypeId', type: 'uuid'}
   {name: 'value', type: 'integer'}
@@ -15,11 +14,11 @@ fields = [
   {name: 'time', type: 'dateTime', defaultValue: new Date(), index: 'default'}
 ]
 
-defaultUserRecord = (userRecord) ->
-  unless userRecord?
+defaultPlayerRecord = (playerRecord) ->
+  unless playerRecord?
     return null
 
-  _.defaults userRecord, _.reduce(fields, (obj, field) ->
+  _.defaults playerRecord, _.reduce(fields, (obj, field) ->
     {name, defaultValue} = field
     if defaultValue?
       obj[name] = defaultValue
@@ -33,37 +32,37 @@ upsert = ({table, diff, constraint}) ->
   knex.raw "? ON CONFLICT #{constraint} DO ? returning *", [insert, update]
   .then (result) -> result.rows[0]
 
-USER_RECORDS_TABLE = 'user_records'
+PLAYER_RECORDS_TABLE = 'player_records'
 
-class UserRecordModel
+class PlayerRecordModel
   POSTGRES_TABLES: [
     {
-      tableName: USER_RECORDS_TABLE
+      tableName: PLAYER_RECORDS_TABLE
       fields: fields
       indexes: [
         {
-          columns: ['userId', 'gameRecordTypeId', 'scaledTime']
+          columns: ['playerId', 'gameRecordTypeId', 'scaledTime']
           type: 'unique'
         }
       ]
     }
   ]
 
-  batchCreate: (userRecords) ->
-    userRecords = _.map userRecords, defaultUserRecord
+  batchCreate: (playerRecords) ->
+    playerRecords = _.map playerRecords, defaultPlayerRecord
 
-    knex.insert(userRecords).into(USER_RECORDS_TABLE)
+    knex.insert(playerRecords).into(PLAYER_RECORDS_TABLE)
     .catch (err) ->
       console.log 'postgres err', err
 
-  create: (userRecord) ->
-    userRecord = defaultUserRecord userRecord
+  create: (playerRecord) ->
+    playerRecord = defaultPlayerRecord playerRecord
 
-    knex.insert(userRecord).into(USER_RECORDS_TABLE)
+    knex.insert(playerRecord).into(PLAYER_RECORDS_TABLE)
 
-  getAllByUserIdAndGameId: ({userId, gameId}) ->
-    knex.select().table USER_RECORDS_TABLE
-    .where {userId}
+  getAllByPlayerIdAndGameId: ({playerId, gameId}) ->
+    knex.select().table PLAYER_RECORDS_TABLE
+    .where {playerId}
 
   getScaledTimeByTimeScale: (timeScale, time) ->
     time ?= moment()
@@ -76,42 +75,44 @@ class UserRecordModel
     else
       time.format time.format 'YYYY-MM-DD HH:mm'
 
-  getRecord: ({gameRecordTypeId, userId, scaledTime}) ->
-    knex.table USER_RECORDS_TABLE
+  getRecord: ({gameRecordTypeId, playerId, scaledTime}) ->
+    knex.table PLAYER_RECORDS_TABLE
     .first '*'
-    .where {userId, gameRecordTypeId, scaledTime}
+    .where {playerId, gameRecordTypeId, scaledTime}
 
   getRecords: (options) ->
-    {gameRecordTypeId, userId, minScaledTime, maxScaledTime, limit} = options
+    {gameRecordTypeId, playerId, minScaledTime, maxScaledTime, limit} = options
     limit ?= 30
 
-    knex.select().table USER_RECORDS_TABLE
-    .where {userId, gameRecordTypeId}
+    knex.select().table PLAYER_RECORDS_TABLE
+    .where {playerId, gameRecordTypeId}
     .andWhere 'scaledTime', '>=', minScaledTime
     .andWhere 'scaledTime', '<=', maxScaledTime
     .orderBy 'scaledTime', 'desc'
     .limit limit
 
-  upsert: ({userId, gameRecordTypeId, scaledTime, diff}) ->
+  upsert: ({playerId, gameRecordTypeId, scaledTime, diff}) ->
     upsert {
-      table: USER_RECORDS_TABLE
-      diff: defaultUserRecord _.defaults {
-        userId, gameRecordTypeId, scaledTime
+      table: PLAYER_RECORDS_TABLE
+      diff: defaultPlayerRecord _.defaults {
+        playerId, gameRecordTypeId, scaledTime
       }, diff
-      constraint: '("userId", "gameRecordTypeId", "scaledTime")'
+      constraint: '("playerId", "gameRecordTypeId", "scaledTime")'
     }
 
-  duplicateByPlayerId: (playerId, userId) ->
-    # TODO: check perf of this
-    knex.select().table USER_RECORDS_TABLE
+  migrateUserRecords: (playerId) ->
+    knex.select().table 'user_records'
     .where {playerId}
     .distinct(knex.raw('ON ("scaledTime") *'))
-    .map (record) =>
+    .map (record) ->
       delete record.id
-      @create _.defaults {
-        userId: userId
+      delete record.userId
+      _.defaults {
+        playerId: playerId
       }, record
+    .then (records) =>
+      @batchCreate records
       .catch (err) ->
         console.log err
 
-module.exports = new UserRecordModel()
+module.exports = new PlayerRecordModel()

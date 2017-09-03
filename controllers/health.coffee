@@ -36,7 +36,7 @@ class HealthCtrl
     .then ([rethinkdb, playerData, playerMatches, player]) ->
       result =
         rethinkdb: Boolean rethinkdb
-        playerData: playerData?.tag is AUSTIN_TAG
+        playerData: playerData?.tag is "##{AUSTIN_TAG}"
         playerMatches: Boolean playerMatches
         postgresPlayer: player?.id is AUSTIN_TAG
 

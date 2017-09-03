@@ -8,7 +8,7 @@ ClanRecordTypeCtrl = require './controllers/clan_record_type'
 ClashRoyaleAPICtrl = require './controllers/clash_royale_api'
 ClashRoyaleMatchCtrl = require './controllers/clash_royale_match'
 ClashRoyaleDeckCtrl = require './controllers/clash_royale_deck'
-ClashRoyaleUserDeckCtrl = require './controllers/clash_royale_user_deck'
+ClashRoyalePlayerDeckCtrl = require './controllers/clash_royale_player_deck'
 ClashRoyaleCardCtrl = require './controllers/clash_royale_card'
 DynamicImageCtrl = require './controllers/dynamic_image'
 EventCtrl = require './controllers/event'
@@ -130,8 +130,8 @@ module.exports = router
 .on 'groupRecordTypes.create', authed GroupRecordTypeCtrl.create
 .on 'groupRecordTypes.deleteById', authed GroupRecordTypeCtrl.deleteById
 
-.on 'gameRecordTypes.getAllByUserIdAndGameId',
-  authed GameRecordTypeCtrl.getAllByUserIdAndGameId
+.on 'gameRecordTypes.getAllByPlayerIdAndGameId',
+  authed GameRecordTypeCtrl.getAllByPlayerIdAndGameId
 
 .on 'userGroupData.updateMeByGroupId', authed UserGroupData.updateMeByGroupId
 .on 'userGroupData.getMeByGroupId', authed UserGroupData.getMeByGroupId
@@ -181,14 +181,10 @@ module.exports = router
 .on 'clashRoyaleDecks.getAll', authed ClashRoyaleDeckCtrl.getAll
 .on 'clashRoyaleDecks.getById', authed ClashRoyaleDeckCtrl.getById
 
-.on 'clashRoyaleUserDecks.getFavoritedDeckIds',
-  authed ClashRoyaleUserDeckCtrl.getFavoritedDeckIds
-.on 'clashRoyaleUserDecks.getAllByUserId',
-  authed ClashRoyaleUserDeckCtrl.getAllByUserId
-.on 'clashRoyaleUserDecks.getByDeckId',
-  authed ClashRoyaleUserDeckCtrl.getByDeckId
-.on 'clashRoyaleUserDecks.favorite', authed ClashRoyaleUserDeckCtrl.favorite
-.on 'clashRoyaleUserDecks.unfavorite', authed ClashRoyaleUserDeckCtrl.unfavorite
+.on 'clashRoyalePlayerDecks.getAllByPlayerId',
+  authed ClashRoyalePlayerDeckCtrl.getAllByPlayerId
+.on 'clashRoyalePlayerDecks.getByDeckId',
+  authed ClashRoyalePlayerDeckCtrl.getByDeckId
 
 .on 'clashRoyaleCards.getAll', authed ClashRoyaleCardCtrl.getAll
 .on 'clashRoyaleCards.getById', authed ClashRoyaleCardCtrl.getById
@@ -197,6 +193,8 @@ module.exports = router
 
 .on 'clashRoyaleMatches.getAllByUserId',
   authed ClashRoyaleMatchCtrl.getAllByUserId
+.on 'clashRoyaleMatches.getAllByPlayerId',
+  authed ClashRoyaleMatchCtrl.getAllByPlayerId
 
 .on 'nps.create', authed NpsCtrl.create
 

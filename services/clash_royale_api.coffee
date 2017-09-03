@@ -13,7 +13,7 @@ config = require '../config'
 PLAYER_DATA_TIMEOUT_MS = 10000
 PLAYER_MATCHES_TIMEOUT_MS = 10000
 
-USE_NEW = true
+USE_NEW = false
 
 class ClashRoyaleAPIService
   formatHashtag: (hashtag) ->
@@ -22,6 +22,7 @@ class ClashRoyaleAPIService
             .replace /O/g, '0' # replace capital O with zero
 
   request: (path, {method, body, qs} = {}) ->
+    console.log 'clash api req'
     method ?= 'GET'
     request "#{config.CLASH_ROYALE_API_URL}#{path}", {
       json: true
@@ -44,7 +45,8 @@ class ClashRoyaleAPIService
         player
       .catch (err) ->
         console.log 'err playerDataByTag', err
-    else if isLegacy # verifying with gold
+    else # verifying with gold
+      console.log "#{config.CR_API_URL}/players/#{tag}"
       request "#{config.CR_API_URL}/players/#{tag}", {
         json: true
         qs:
@@ -78,7 +80,15 @@ class ClashRoyaleAPIService
           priority: priority
       }
       .then (responses) ->
-        responses?[0]
+        _.map responses?[0], (match) ->
+          match.id = "#{match.battleTime}:" +
+                      "#{match.team[0].tag}:#{match.opponent[0].tag}"
+          match.battleType = if match.challengeTitle is 'Grand Challenge' \
+                       then 'grandChallenge'
+                       else if match.type is 'challenge'
+                       then 'classicChallenge'
+                       else match.type
+          match
       .catch (err) ->
         console.log 'err playerMatchesByTag', err
 
