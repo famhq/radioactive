@@ -7,8 +7,7 @@ knex = require '../services/knex'
 CacheService = require '../services/cache'
 config = require '../config'
 
-POSTGRES_MATCH_TABLE = 'matches'
-CLASH_ROYALE_MATCH_TABLE = 'clash_royale_matches'
+POSTGRES_MATCH_TABLE = 'matches_new'
 
 ARENA_INDEX = 'arena'
 TYPE_INDEX = 'type'
@@ -80,13 +79,27 @@ class ClashRoyaleMatchModel
     .catch (err) ->
       console.log 'postgres err', err
 
-  getAllByUserId: ({limit, userId} = {}) ->
+  getAllByUserId: (userId, {limit} = {}) ->
     limit ?= 10
 
     q = knex POSTGRES_MATCH_TABLE
     .select '*'
     if userId
       q.where {userId}
+
+    q.orderBy 'time', 'desc'
+    .limit limit
+    .map defaultClashRoyaleMatch
+
+  getAllByPlayerId: (playerId, {limit} = {}) ->
+    limit ?= 10
+
+    console.log 'p', playerId
+
+    q = knex POSTGRES_MATCH_TABLE
+    .select '*'
+    q.whereRaw '"teamPlayerIds" @> ' +
+                "ARRAY['#{playerId}']"
 
     q.orderBy 'time', 'desc'
     .limit limit
@@ -110,10 +123,7 @@ class ClashRoyaleMatchModel
     _.pick clashRoyaleMatch, [
       'id'
       'arena'
-      'deck1Id'
-      'deck2Id'
-      'deck1Score'
-      'deck2Score'
+      'data'
       'time'
     ]
 

@@ -11,15 +11,14 @@ ChatMessage = require '../models/chat_message'
 ThreadComment = require '../models/thread_comment'
 ThreadVote = require '../models/thread_vote'
 ClashRoyaleCard = require '../models/clash_royale_card'
-ClashRoyaleUserDeck = require '../models/clash_royale_user_deck'
 ClashRoyaleDeck = require '../models/clash_royale_deck'
 ClashRoyaleMatch = require '../models/clash_royale_match'
 Deck = require '../models/clash_royale_deck'
 Group = require '../models/group'
 Star = require '../models/star'
-ClanRecord = require '../models/clan_record'
+ClashRoyaleClanRecord = require '../models/clash_royale_clan_record'
 GroupRecord = require '../models/group_record'
-UserRecord = require '../models/user_record'
+ClashRoyalePlayerRecord = require '../models/clash_royale_player_record'
 UserGroupData = require '../models/user_group_data'
 Player = require '../models/player'
 UserPlayer = require '../models/user_player'
@@ -42,8 +41,8 @@ TYPES =
     PLAYERS: 'clan:players'
     IS_UPDATABLE: 'clan:isUpdatable'
     GROUP: 'clan:group'
-  CLASH_ROYALE_USER_DECK:
-    DECK: 'clashRoyaleUserDeck:deck1'
+  CLASH_ROYALE_PLAYER_DECK:
+    DECK: 'clashRoyalePlayerDeck:deck1'
   CLASH_ROYALE_MATCH:
     DECK: 'clashRoyaleMatch:deck1'
   CLASH_ROYALE_DECK:
@@ -64,7 +63,7 @@ TYPES =
   GROUP_RECORD_TYPE:
     USER_VALUES: 'groupRecordType:userValues'
   GAME_RECORD_TYPE:
-    ME_VALUES: 'gameRecordType:userValues'
+    ME_VALUES: 'gameRecordType:playerValues'
   PLAYER:
     CHEST_CYCLE: 'player:chestCycle'
     IS_UPDATABLE: 'player:isUpdatable'
@@ -120,7 +119,8 @@ getUserDataItems = (userData) ->
       .filter ({item}) -> Boolean item
   , {expireSeconds: ONE_HOUR_SECONDS}
 
-embedFn = _.curry ({embed, user, clanId, groupId, gameId, userId}, object) ->
+embedFn = _.curry (props, object) ->
+  {embed, user, clanId, groupId, gameId, userId, playerId} = props
   embedded = _.cloneDeep object
   unless embedded
     return Promise.resolve null
@@ -218,22 +218,26 @@ embedFn = _.curry ({embed, user, clanId, groupId, gameId, userId}, object) ->
       # TODO: can probably consolidate a lot of clan/userRecords stuff
       when TYPES.CLAN_RECORD_TYPE.CLAN_VALUES
         if embedded.timeScale is 'days'
-          minScaledTime = UserRecord.getScaledTimeByTimeScale(
+          minScaledTime = ClashRoyalePlayerRecord.getScaledTimeByTimeScale(
             'day', moment().subtract(30, 'day')
           )
-          maxScaledTime = UserRecord.getScaledTimeByTimeScale 'day'
+          maxScaledTime = ClashRoyalePlayerRecord.getScaledTimeByTimeScale 'day'
         else if embedded.timeScale is 'weeks'
-          minScaledTime = UserRecord.getScaledTimeByTimeScale(
+          minScaledTime = ClashRoyalePlayerRecord.getScaledTimeByTimeScale(
             'week', moment().subtract(30, 'week')
           )
-          maxScaledTime = UserRecord.getScaledTimeByTimeScale 'week'
+          maxScaledTime = ClashRoyalePlayerRecord.getScaledTimeByTimeScale(
+            'week'
+          )
         else
-          minScaledTime = UserRecord.getScaledTimeByTimeScale(
+          minScaledTime = ClashRoyalePlayerRecord.getScaledTimeByTimeScale(
             'minute', moment().subtract(30, 'day')
           )
-          maxScaledTime = UserRecord.getScaledTimeByTimeScale 'minute'
+          maxScaledTime = ClashRoyalePlayerRecord.getScaledTimeByTimeScale(
+            'minute'
+          )
 
-        embedded.clanValues = ClanRecord.getRecords {
+        embedded.clanValues = ClashRoyaleClanRecord.getRecords {
           clanRecordTypeId: embedded.id
           clanId: clanId
           minScaledTime: minScaledTime
@@ -243,24 +247,30 @@ embedFn = _.curry ({embed, user, clanId, groupId, gameId, userId}, object) ->
 
       when TYPES.GAME_RECORD_TYPE.ME_VALUES
         if embedded.timeScale is 'days'
-          minScaledTime = UserRecord.getScaledTimeByTimeScale(
+          minScaledTime = ClashRoyalePlayerRecord.getScaledTimeByTimeScale(
             'day', moment().subtract(30, 'day')
           )
-          maxScaledTime = UserRecord.getScaledTimeByTimeScale 'day'
+          maxScaledTime = ClashRoyalePlayerRecord.getScaledTimeByTimeScale(
+            'day'
+          )
         else if embedded.timeScale is 'weeks'
-          minScaledTime = UserRecord.getScaledTimeByTimeScale(
+          minScaledTime = ClashRoyalePlayerRecord.getScaledTimeByTimeScale(
             'week', moment().subtract(30, 'week')
           )
-          maxScaledTime = UserRecord.getScaledTimeByTimeScale 'week'
+          maxScaledTime = ClashRoyalePlayerRecord.getScaledTimeByTimeScale(
+            'week'
+          )
         else
-          minScaledTime = UserRecord.getScaledTimeByTimeScale(
+          minScaledTime = ClashRoyalePlayerRecord.getScaledTimeByTimeScale(
             'minute', moment().subtract(30, 'day')
           )
-          maxScaledTime = UserRecord.getScaledTimeByTimeScale 'minute'
+          maxScaledTime = ClashRoyalePlayerRecord.getScaledTimeByTimeScale(
+            'minute'
+          )
 
-        embedded.userValues = UserRecord.getRecords {
+        embedded.playerValues = ClashRoyalePlayerRecord.getRecords {
           gameRecordTypeId: embedded.id
-          userId: userId
+          playerId: playerId
           minScaledTime: minScaledTime
           maxScaledTime: maxScaledTime
           limit: 50
@@ -486,8 +496,8 @@ embedFn = _.curry ({embed, user, clanId, groupId, gameId, userId}, object) ->
           mean = sum / count
           Math.round(mean * 10) / 10
 
-      when TYPES.CLASH_ROYALE_USER_DECK.DECK
-        prefix = CacheService.PREFIXES.CLASH_ROYALE_USER_DECK_DECK
+      when TYPES.CLASH_ROYALE_PLAYER_DECK.DECK
+        prefix = CacheService.PREFIXES.CLASH_ROYALE_PLAYER_DECK_DECK
         key = "#{prefix}:#{embedded.id}"
         embedded.deck = CacheService.preferCache key, ->
           ClashRoyaleDeck.getById embedded.deckId

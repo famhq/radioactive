@@ -7,13 +7,13 @@ Player = require '../models/player'
 PlayersDaily = require '../models/player_daily'
 Clan = require '../models/clan'
 Group = require '../models/group'
-ClashRoyaleUserDeck = require '../models/clash_royale_user_deck'
+ClashRoyalePlayerDeck = require '../models/clash_royale_player_deck'
 ClashRoyaleDeck = require '../models/clash_royale_deck'
 ClashRoyaleCard = require '../models/clash_royale_card'
 ClashRoyaleTopPlayer = require '../models/clash_royale_top_player'
 EmailService = require './email'
 CacheService = require './cache'
-UserRecord = require '../models/user_record'
+ClashRoyalePlayerRecord = require '../models/clash_royale_player_record'
 PushNotificationService = require './push_notification'
 ClashRoyaleAPIService = require './clash_royale_api'
 EmbedService = require './embed'
@@ -24,7 +24,7 @@ config = require '../config'
 
 # for now we're not storing user deck info of players that aren't on starfire.
 # should re-enable if we can handle the added load from it
-ENABLE_ANON_USER_DECKS = false
+ENABLE_ANON_PLAYER_DECKS = false
 
 MAX_TIME_TO_COMPLETE_MS = 60 * 30 * 1000 # 30min
 PLAYER_DATA_STALE_TIME_S = 3600 * 24 # 24hr
@@ -58,59 +58,48 @@ class ClashRoyalePlayer
   getMatchPlayerData: ({player, deckId}) ->
     _.defaults {deckId}, player
 
-  createNewUserDecks: (matches, playerDiffs) ->
-    userDecks = _.filter _.flatten _.map matches, (match) ->
+  createNewPlayerDecks: (matches, playerDiffs) ->
+    playerDecks = _.filter _.flatten _.map matches, (match) ->
       {battleType, team, opponent} = match
-      _.map team.concat(opponent), (player) ->
-        playerDiff = playerDiffs.getCachedById player.tag
-        unless playerDiff
-          return
-
+      _.flatten _.map team.concat(opponent), (player) ->
         cardKeys = _.map player.cards, ({name}) -> _.snakeCase(name)
-        {
-          playerId: player.tag.replace '#', ''
-          userIds: playerDiff.userIds
-          deckId: ClashRoyaleDeck.getDeckId cardKeys
-          type: battleType
-        }
-    userDecks = _.uniqBy userDecks, (obj) -> JSON.stringify obj
+        [
+          {
+            playerId: player.tag.replace '#', ''
+            deckId: ClashRoyaleDeck.getDeckId cardKeys
+            type: battleType
+          }
+          {
+            playerId: player.tag.replace '#', ''
+            deckId: ClashRoyaleDeck.getDeckId cardKeys
+            type: 'all'
+          }
+        ]
+    playerDecks = _.uniqBy playerDecks, (obj) -> JSON.stringify obj
     # unique user deck per userId (not per playerId). create one for playerId
     # if no users exist yet (so it can be duplicated over to new account)
 
-    deckIdPlayerIds = _.map userDecks, (userDeck) ->
-      _.pick userDeck, ['deckId', 'playerId', 'type']
+    deckIdPlayerIdTypes = _.map playerDecks, (playerDeck) ->
+      _.pick playerDeck, ['deckId', 'playerId', 'type']
 
-    ClashRoyaleUserDeck.getAllByDeckIdPlayerIds deckIdPlayerIds
-    .then (existingUserDecks) ->
-      batchUserDecks = _.filter _.flatten _.map userDecks, (userDeck) ->
-        {playerId, deckId, type, userIds} = userDeck
+    ClashRoyalePlayerDeck.getAllByDeckIdAndPlayerIdAndTypes deckIdPlayerIdTypes
+    .then (existingPlayerDecks) ->
+      batchPlayerDecks = _.filter _.flatten _.map playerDecks, (playerDeck) ->
+        {playerId, deckId, type} = playerDeck
 
-        hasUserIds = not _.isEmpty(userIds)
-        if ENABLE_ANON_USER_DECKS and not hasUserIds and
-            not _.find existingUserDecks, {deckId, playerId, type}
+        if not _.find existingPlayerDecks, {deckId, playerId, type}
           return {
             deckId
             playerId
             type
-            isFavorited: true
           }
-        else if hasUserIds
-          _.map userIds, (userId) ->
-            unless _.find existingUserDecks, {deckId, playerId, userId, type}
-              return {
-                deckId
-                playerId
-                userId
-                type
-                isFavorited: true
-              }
         else
           null
-      ClashRoyaleUserDeck.batchCreate batchUserDecks
+      ClashRoyalePlayerDeck.batchCreate batchPlayerDecks
       .catch ->
         # if a user changes their player id, their old decks
         # are still tied to old playerId so they aren't pulled
-        # into existingUserDecks and it tries to insert again...
+        # into existingPlayerDecks and it tries to insert again...
         if DEBUG
           console.log 'caught dupe'
 
@@ -135,11 +124,11 @@ class ClashRoyalePlayer
         }
       ClashRoyaleDeck.batchCreate batchDecks
 
-  incrementUserDecks: (batchUserDecks) ->
-    Promise.all _.flatten _.map batchUserDecks, (userDecks, playerId) ->
-      _.map userDecks, (userDecksType, type) ->
-        _.map userDecksType, (changes, deckId) ->
-          ClashRoyaleUserDeck.incrementAllByDeckIdAndPlayerIdAndType(
+  incrementPlayerDecks: (batchPlayerDecks) ->
+    Promise.all _.flatten _.map batchPlayerDecks, (playerDecks, playerId) ->
+      _.map playerDecks, (playerDecksType, type) ->
+        _.map playerDecksType, (changes, deckId) ->
+          ClashRoyalePlayerDeck.incrementAllByDeckIdAndPlayerIdAndType(
             deckId, playerId, type, changes
           )
 
@@ -155,14 +144,14 @@ class ClashRoyalePlayer
     matches = _.filter matches, (match) ->
       unless match
         return false
-      {battleTime, type} = match
+      {battleTime, battleType} = match
 
       if player.data?.lastMatchTime
         lastMatchTime = new Date player.data.lastMatchTime
       else
         lastMatchTime = 0
       # the server time isn't 100% accurate, so +- 15 seconds
-      (type in ALLOWED_GAME_TYPES) and
+      (battleType in ALLOWED_GAME_TYPES) and
         (moment(battleTime).toDate().getTime() >
           (new Date(lastMatchTime).getTime() + 15))
 
@@ -172,7 +161,7 @@ class ClashRoyalePlayer
   processMatches: ({matches, reqPlayers}) ->
     start = Date.now()
     matches = _.uniqBy matches, 'id'
-    matches = _.orderBy matches, ['time'], ['asc']
+    matches = _.orderBy matches, ['battleTime'], ['asc']
     reqPlayerIds = _.map reqPlayers, ({id}) -> "##{id}"
 
     Promise.map matches, (match) ->
@@ -198,15 +187,15 @@ class ClashRoyalePlayer
 
       playerDiffs = new PlayerSplitsDiffs()
       # batch
-      batchUserRecords = []
+      batchClashRoyalePlayerRecords = []
       batchMatches = []
-      batchUserDecks = {}
+      batchPlayerDecks = {}
       batchDecks = {}
 
       start = Date.now()
 
       # FIXME FIXME: updated playerDiff userId before passing to
-      # createNewUserDecks, so it checks for that existing deck
+      # createNewPlayerDecks, so it checks for that existing deck
       Promise.all [
         cards
         playerDiffs.setInitialDiffs playerIds, reqPlayerIds
@@ -214,7 +203,7 @@ class ClashRoyalePlayer
       .then ([cards, initialDiffs]) =>
         stepStart = Date.now()
         Promise.all [
-          @createNewUserDecks matches, playerDiffs
+          @createNewPlayerDecks matches, playerDiffs
           .catch (err) ->
             console.log 'user decks create postgres err', err
           @createNewDecks matches, cards
@@ -324,13 +313,13 @@ class ClashRoyalePlayer
 
             _.map losers, (player) ->
               playerDiffs.incById {
-                id: opponent.tag, field: 'losses', type: type
+                id: player.tag, field: 'losses', type: type
               }
               playerDiffs.incById {
-                id: opponent.tag, field: 'currentLossStreak', type: type
+                id: player.tag, field: 'currentLossStreak', type: type
               }
               playerDiffs.setSplitStatById {
-                id: opponent.tag, field: 'currentWinStreak'
+                id: player.tag, field: 'currentWinStreak'
                 value: 0, type: type
               }
 
@@ -356,7 +345,7 @@ class ClashRoyalePlayer
               }
 
             # for records (graph)
-            scaledTime = UserRecord.getScaledTimeByTimeScale(
+            scaledTime = ClashRoyalePlayerRecord.getScaledTimeByTimeScale(
               'minute', moment(match.battleTime)
             )
 
@@ -381,29 +370,13 @@ class ClashRoyalePlayer
             batchMatches.push matchObj
 
             if type is 'PvP'
-              _.map teamPlayers, ({userIds}, i) ->
-                _.map userIds, (userId) ->
-                  player = team[i]
-                  batchUserRecords.push {
-                    userId: userId
-                    playerId: player.tag.replace '#', ''
-                    gameRecordTypeId: config.CLASH_ROYALE_TROPHIES_RECORD_ID
-                    scaledTime
-                    value: player.startingTrophies + player.trophyChange
-                  }
-              _.map opponentPlayers, ({userIds}, i) ->
-                _.map userIds, (userId) ->
-                  player = opponent[i]
-                  batchUserRecords.push {
-                    userId: userId
-                    playerId: player.tag.replace '#', ''
-                    gameRecordTypeId: config.CLASH_ROYALE_TROPHIES_RECORD_ID
-                    scaledTime
-                    value: player.startingTrophies + player.trophyChange
-                  }
-
-            teamHasUserIds = not _.isEmpty teamPlayers?.userIds
-            opponentHasUserIds = not _.isEmpty opponentPlayers?.userIds
+              _.map team.concat(opponent), (player, i) ->
+                batchClashRoyalePlayerRecords.push {
+                  playerId: player.tag.replace '#', ''
+                  gameRecordTypeId: config.CLASH_ROYALE_TROPHIES_RECORD_ID
+                  scaledTime
+                  value: player.startingTrophies + player.trophyChange
+                }
 
             # don't need to block for any of these
             CacheService.set key, matchObj, {expireSeconds: SIX_HOURS_S}
@@ -411,38 +384,44 @@ class ClashRoyalePlayer
             if DECK_TRACKED_GAME_TYPES.indexOf(type) isnt -1
               group = [
                 {
-                  players: team, playerObjs: teamPlayers, state: teamDecksState
+                  players: team, playerObjs: teamPlayers,
+                  deckIds: teamDeckIds, state: teamDecksState
                 }
                 {
                   players: opponent, playerObjs: opponentPlayers,
-                  state: opponentDecksState
+                  deckIds: opponentDeckIds, state: opponentDecksState
                 }
               ]
-              _.map group, ({players, playerObjs, state}) ->
+              _.map group, ({players, playerObjs, deckIds, state}) ->
                 _.map players, (player, i) ->
-                  hasUserIds = not _.isEmpty playerObjs[i]?.userIds
-                  if hasUserIds or ENABLE_ANON_USER_DECKS
-                    tag = player.tag.replace '#', ''
-                    deckId = teamDeckIds[i]
-                    batchUserDecks[tag] ?= {}
-                    batchUserDecks[tag][type] ?= {}
-                    batchUserDecks[tag][type][deckId] ?= {
-                      wins: 0, losses: 0, draws: 0
-                    }
-                    batchUserDecks[tag][type][deckId][state] += 1
+                  tag = player.tag.replace '#', ''
+                  deckId = deckIds[i]
+                  batchPlayerDecks[tag] ?= {}
 
-                    batchDecks[deckId] ?= {wins: 0, losses: 0, draws: 0}
-                    batchDecks[deckId][state] += 1
+                  batchPlayerDecks[tag]['all'] ?= {}
+                  batchPlayerDecks[tag]['all'][deckId] ?= {
+                    wins: 0, losses: 0, draws: 0
+                  }
+                  batchPlayerDecks[tag]['all'][deckId][state] += 1
+
+                  batchPlayerDecks[tag][type] ?= {}
+                  batchPlayerDecks[tag][type][deckId] ?= {
+                    wins: 0, losses: 0, draws: 0
+                  }
+                  batchPlayerDecks[tag][type][deckId][state] += 1
+
+                  batchDecks[deckId] ?= {wins: 0, losses: 0, draws: 0}
+                  batchDecks[deckId][state] += 1
 
         .then =>
           Promise.all [
             Match.batchCreate batchMatches
             .catch (err) ->
               console.log 'match create postgres err', err
-            UserRecord.batchCreate batchUserRecords
+            ClashRoyalePlayerRecord.batchCreate batchClashRoyalePlayerRecords
             .catch (err) ->
               console.log 'gamerecord create postgres err', err
-            @incrementUserDecks batchUserDecks
+            @incrementPlayerDecks batchPlayerDecks
             .catch (err) ->
               console.log 'inc user decks postgres err', err
             @incrementDecks batchDecks
@@ -762,17 +741,9 @@ class ClashRoyalePlayer
             # entire fields (data), so need to merge with old data manually
             Player.upsertByPlayerIdAndGameId playerId, GAME_ID, newPlayer
           else
-            User.create {}
-            .then ({id}) ->
-              userId = id
-              Promise.all [
-                ClashRoyaleUserDeck.duplicateByPlayerId playerId, userId
-                UserRecord.duplicateByPlayerId playerId, userId
-              ]
-              .then ->
-                ClashRoyaleAPIService.updatePlayerById playerId, {
-                  userId: userId, priority: 'normal'
-                }
+            ClashRoyaleAPIService.updatePlayerById playerId, {
+              priority: 'normal'
+            }
 
         .then ->
           ClashRoyaleTopPlayer.upsertByRank rank, {

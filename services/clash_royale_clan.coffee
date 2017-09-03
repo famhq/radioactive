@@ -7,8 +7,8 @@ GroupClan = require '../models/group_clan'
 Clan = require '../models/clan'
 Player = require '../models/player'
 User = require '../models/user'
-ClanRecord = require '../models/clan_record'
-UserRecord = require '../models/user_record'
+ClashRoyaleClanRecord = require '../models/clash_royale_clan_record'
+ClashRoyalePlayerRecord = require '../models/clash_royale_player_record'
 UserPlayer = require '../models/user_player'
 # ClashRoyaleTopClan = require '../models/clash_royale_top_clan'
 CacheService = require './cache'
@@ -38,17 +38,17 @@ class ClashRoyaleClan
 
     Clan.getByClanIdAndGameId tag, GAME_ID
     .then (existingClan) ->
-      ClanRecord.upsert {
+      ClashRoyaleClanRecord.upsert {
         clanId: tag
         clanRecordTypeId: config.CLASH_ROYALE_CLAN_DONATIONS_RECORD_ID
-        scaledTime: ClanRecord.getScaledTimeByTimeScale 'week'
+        scaledTime: ClashRoyaleClanRecord.getScaledTimeByTimeScale 'week'
         diff: {value: clan.donations}
       }
 
-      ClanRecord.upsert {
+      ClashRoyaleClanRecord.upsert {
         clanId: tag
         clanRecordTypeId: config.CLASH_ROYALE_CLAN_TROPHIES_RECORD_ID
-        scaledTime: ClanRecord.getScaledTimeByTimeScale 'week'
+        scaledTime: ClashRoyaleClanRecord.getScaledTimeByTimeScale 'week'
         diff: {value: clan.trophies}
       }
 
@@ -64,16 +64,16 @@ class ClashRoyaleClan
           }
           donations = player.donations
           clanChestCrowns = player.clanChestCrowns
-          UserRecord.upsert {
-            userId: existingUserPlayer.userId
+          ClashRoyalePlayerRecord.upsert {
+            playerId: existingUserPlayer.playerId
             gameRecordTypeId: config.CLASH_ROYALE_DONATIONS_RECORD_ID
-            scaledTime: UserRecord.getScaledTimeByTimeScale 'week'
+            scaledTime: ClashRoyalePlayerRecord.getScaledTimeByTimeScale 'week'
             diff: {value: donations, playerId: existingUserPlayer.playerId}
           }
-          UserRecord.upsert {
-            userId: existingUserPlayer.userId
+          ClashRoyalePlayerRecord.upsert {
+            playerId: existingUserPlayer.playerId
             gameRecordTypeId: config.CLASH_ROYALE_CLAN_CROWNS_RECORD_ID
-            scaledTime: UserRecord.getScaledTimeByTimeScale 'week'
+            scaledTime: ClashRoyalePlayerRecord.getScaledTimeByTimeScale 'week'
             diff: {
               value: clanChestCrowns, playerId: existingUserPlayer.playerId
             }
@@ -102,8 +102,6 @@ class ClashRoyaleClan
             }
         Player.batchCreateByGameId GAME_ID, newPlayers
 
-
-      console.log 'ex', existingClan, tag, diff
       (if existingClan
         Clan.updateByClanIdAndGameId tag, GAME_ID, diff
       else

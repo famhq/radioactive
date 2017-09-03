@@ -11,7 +11,7 @@ ClashRoyaleClanService = require './clash_royale_clan'
 Thread = require '../models/thread'
 ClashRoyaleDeck = require '../models/clash_royale_deck'
 ClashRoyaleCard = require '../models/clash_royale_card'
-ClashRoyaleUserDeck = require '../models/clash_royale_user_deck'
+ClashRoyalePlayerDeck = require '../models/clash_royale_player_deck'
 Ban = require '../models/ban'
 r = require './rethinkdb'
 config = require '../config'
@@ -36,7 +36,7 @@ class CronService
 
     # minute on half minute
     # @addCron 'halfMinute', '30 * * * * *', ->
-      # ClashRoyaleUserDeck.processIncrementByDeckIdAndPlayerId()
+      # ClashRoyalePlayerDeck.processIncrementByDeckIdAndPlayerId()
       # ClashRoyaleDeck.processIncrementById()
 
     # minute on 3/4 minute

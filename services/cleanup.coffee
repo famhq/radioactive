@@ -16,9 +16,9 @@ class CleanupService
     console.log 'cleaning...'
     start = Date.now()
     Promise.all [
-      @cleanUserRecords()
+      @cleanPlayerRecords()
       @cleanClashRoyaleMatches()
-      @cleanUserDecks()
+      @cleanPlayerDecks()
       @cleanKue()
     ]
     .then ->
@@ -30,20 +30,19 @@ class CleanupService
     }
 
   cleanClashRoyaleMatches: ->
-
-    knex.table 'matches'
+    knex.table 'matches_new'
     .where 'time', '>', moment().subtract(ONE_WEEK_MS + TWO_MIN_MS).toDate()
     .andWhere 'time', '<', moment().subtract(ONE_WEEK_MS).toDate()
     .delete()
 
-  cleanUserRecords: ->
-    knex.table 'user_records'
+  cleanPlayerRecords: ->
+    knex.table 'player_records'
     .where 'time', '>', moment().subtract(FOUR_WEEKS_MS + TWO_MIN_MS).toDate()
     .andWhere 'time', '<', moment().subtract(FOUR_WEEKS_MS).toDate()
     .delete()
 
-  cleanUserDecks: ->
-    knex.table 'user_decks'
+  cleanPlayerDecks: ->
+    knex.table 'player_decks'
     .where 'lastUpdateTime', '>', moment().subtract(FOUR_WEEKS_MS + TWO_MIN_MS).toDate()
     .andWhere 'lastUpdateTime', '<', moment().subtract(FOUR_WEEKS_MS).toDate()
     .delete()

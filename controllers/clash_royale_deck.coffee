@@ -3,7 +3,7 @@ router = require 'exoid-router'
 
 User = require '../models/user'
 ClashRoyaleDeck = require '../models/clash_royale_deck'
-ClashRoyaleUserDeck = require '../models/clash_royale_user_deck'
+ClashRoyalePlayerDeck = require '../models/clash_royale_player_deck'
 EmbedService = require '../services/embed'
 schemas = require '../schemas'
 
@@ -15,13 +15,16 @@ defaultEmbed = [
 class ClashRoyaleDeckCtrl
   getAll: ({sort, filter}, {user}) ->
     if filter is 'mine'
-      decks = ClashRoyaleUserDeck.getAllFavoritedByUserId user.id
-      .map EmbedService.embed {
-        embed: [EmbedService.TYPES.CLASH_ROYALE_USER_DECK.DECK]
-      }
-      .map ({deck}) -> deck
-      .then (decks) ->
-        _.uniqBy _.filter(decks), 'id'
+      decks =
+        Player.getByUserIdAndGameId user.id, config.CLASH_ROYALE_ID
+        .then (player) ->
+          ClashRoyalePlayerDeck.getAllByPlayerId player.id
+          .map EmbedService.embed {
+            embed: [EmbedService.TYPES.CLASH_ROYALE_PLAYER_DECK.DECK]
+          }
+          .map ({deck}) -> deck
+          .then (decks) ->
+            _.uniqBy _.filter(decks), 'id'
     else
       decks = ClashRoyaleDeck.getAll({sort})
 

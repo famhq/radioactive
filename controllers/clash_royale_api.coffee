@@ -14,8 +14,7 @@ User = require '../models/user'
 ClashRoyaleDeck = require '../models/clash_royale_deck'
 Player = require '../models/player'
 PlayersDaily = require '../models/player_daily'
-ClashRoyaleUserDeck = require '../models/clash_royale_user_deck'
-UserRecord = require '../models/user_record'
+ClashRoyalePlayerDeck = require '../models/clash_royale_player_deck'
 Clan = require '../models/clan'
 ClashRoyaleTopPlayer = require '../models/clash_royale_top_player'
 config = require '../config'
@@ -33,14 +32,7 @@ class ClashRoyaleAPICtrl
     (if isUpdate
       Player.removeUserId user.id, config.CLASH_ROYALE_ID
     else
-      Promise.all [
-        ClashRoyaleUserDeck.duplicateByPlayerId playerId, user.id
-        .catch (err) ->
-          console.log 'duplicate userdeck err', playerId, user.id, err
-        UserRecord.duplicateByPlayerId playerId, user.id
-        .catch (err) ->
-          console.log 'duplicate userrecord err', playerId, user.id, err
-      ]
+      Promise.resolve null
     )
     .then ->
       Player.getByUserIdAndGameId user.id, config.CLASH_ROYALE_ID
@@ -197,21 +189,18 @@ class ClashRoyaleAPICtrl
     .map ({playerId}) ->
       Promise.all [
         if useRecent
-          UserPlayer.getByPlayerIdAndGameId playerId, config.CLASH_ROYALE_ID
-          .then (userPlayer) ->
-            if userPlayer?.userId
-              ClashRoyaleUserDeck.getAllByUserId userPlayer?.userId, {
-                limit: 1, sort: 'recent'
-              }
+          ClashRoyalePlayerDeck.getAllByPlayerId playerId, {
+            limit: 1, sort: 'recent'
+          }
         else
           Promise.resolve null
         Player.getByPlayerIdAndGameId playerId, config.CLASH_ROYALE_ID
       ]
     .then (players) ->
-      decks = _.map players, ([userDecks, player]) ->
-        deckId = userDecks?[0]?.deckId
+      decks = _.map players, ([playerDecks, player]) ->
+        deckId = playerDecks?[0]?.deckId
         if deckId and deckId.indexOf('|') isnt -1
-          userDecks?[0]?.deckId?.split('|').map (key) -> {key}
+          playerDecks?[0]?.deckId?.split('|').map (key) -> {key}
         else
           player?.data.currentDeck
 
