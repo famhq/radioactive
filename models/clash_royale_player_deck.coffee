@@ -13,7 +13,7 @@ ONE_HOUR_SECONDS = 3600
 fields = [
   {name: 'id', type: 'uuid', index: 'primary', defaultValue: -> uuid.v4()}
   {name: 'deckId', type: 'string', length: 150}
-  {name: 'playerId', type: 'string', length: 20, index: 'default'}
+  {name: 'playerId', type: 'string', length: 20}
   {name: 'deckIdPlayerIdType', type: 'string', length: 250, index: 'default'}
   {name: 'name', type: 'string'}
   {name: 'type', type: 'string', length: 100, defaultValue: 'all'}
@@ -62,6 +62,7 @@ class ClashRoyalePlayerDeckModel
       fields: fields
       indexes: [
         {columns: ['playerId', 'type', 'deckId'], type: 'unique'}
+        {columns: ['playerId', 'lastUpdateTime']}
       ]
     }
   ]
@@ -246,7 +247,7 @@ class ClashRoyalePlayerDeckModel
     .map (userDeck) ->
       delete userDeck.id
       delete userDeck.isFavorited
-      delete deckIdPlayerId
+      delete userDeck.deckIdPlayerId
       _.defaults {
         type: 'all'
       }, userDeck

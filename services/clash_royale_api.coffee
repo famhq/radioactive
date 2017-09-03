@@ -6,8 +6,6 @@ moment = require 'moment'
 KueCreateService = require './kue_create'
 TagConverterService = require './tag_converter'
 Clan = require '../models/clan'
-arenas = require '../resources/data/arenas.json'
-leagues = require '../resources/data/leagues.json'
 config = require '../config'
 
 PLAYER_DATA_TIMEOUT_MS = 10000
@@ -81,6 +79,7 @@ class ClashRoyaleAPIService
       }
       .then (responses) ->
         _.map responses?[0], (match) ->
+          # match = _.cloneDeep match
           match.id = "#{match.battleTime}:" +
                       "#{match.team[0].tag}:#{match.opponent[0].tag}"
           match.battleType = if match.challengeTitle is 'Grand Challenge' \
