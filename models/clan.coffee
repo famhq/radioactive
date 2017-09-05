@@ -144,7 +144,6 @@ class ClanModel
       'data'
       'players'
       'group'
-      'isUpdatable'
       'lastUpdateTime'
       'embedded'
     ]
@@ -162,7 +161,6 @@ class ClanModel
       'password'
       'players'
       'group'
-      'isUpdatable'
       'lastUpdateTime'
       'embedded'
     ]

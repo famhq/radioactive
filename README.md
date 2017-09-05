@@ -1,4 +1,4 @@
-API Seed
+Radioactive (Starfire backend)
 ========
 
 ### Getting Started
@@ -10,3 +10,5 @@ API Seed
 ##### `npm run dev` - Starts the server, watching files
 ##### `npm test` - Run the test suite
 ##### `npm run watch` - Watch for changes and run tests
+
+More to come soonish

@@ -94,16 +94,18 @@ class ClashRoyaleMatchModel
   getAllByPlayerId: (playerId, {limit} = {}) ->
     limit ?= 10
 
-    console.log 'p', playerId
-
     q = knex POSTGRES_MATCH_TABLE
     .select '*'
-    q.whereRaw '"teamPlayerIds" @> ' +
-                "ARRAY['#{playerId}']"
-
+    q.whereRaw '"teamPlayerIds" @> ARRAY[?]', [playerId]
+    # without this redundant orderby, postgres doesn't use the index
+    # https://stackoverflow.com/a/21386282
+    q.orderBy 'teamPlayerIds', 'desc'
     q.orderBy 'time', 'desc'
     .limit limit
-    .map defaultClashRoyaleMatch
+
+    console.log q.toSQL()
+
+    q.map defaultClashRoyaleMatch
 
   getById: (id, {preferCache} = {}) ->
     get = ->

@@ -123,8 +123,8 @@ class ThreadModel
 
     q = q.limit limit
 
-    if sort is 'new'
-      q = q.filter r.row('upvotes').sub(r.row('downvotes')).gt -2
+    # if sort is 'new'
+    #   q = q.filter r.row('upvotes').sub(r.row('downvotes')).gt -2
 
     q.run()
     .map defaultThread

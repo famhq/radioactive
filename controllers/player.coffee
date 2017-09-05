@@ -17,7 +17,6 @@ config = require '../config'
 defaultEmbed = [
   EmbedService.TYPES.PLAYER.CHEST_CYCLE
   EmbedService.TYPES.PLAYER.HI
-  EmbedService.TYPES.PLAYER.IS_UPDATABLE
 ]
 userIdsEmbed = [
   EmbedService.TYPES.PLAYER.USER_IDS
@@ -93,7 +92,7 @@ class PlayerCtrl
                 .replace '#', ''
                 .replace /O/g, '0' # replace capital O with zero
 
-    isValidTag = playerId.match /^[0289PYLQGRJCUV]+$/
+    isValidTag = ClashRoyaleAPIService.isValidTag playerId
     console.log 'search', playerId, ip
     unless isValidTag
       router.throw {status: 400, info: 'invalid tag', ignoreLog: true}

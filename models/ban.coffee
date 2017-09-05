@@ -7,7 +7,6 @@ CacheService = require '../services/cache'
 config = require '../config'
 
 honeypot = require('project-honeypot')(config.HONEYPOT_ACCESS_KEY)
-# torIps = (require '../resources/data/tor_ips').split('\n')
 
 defaultBan = (ban) ->
   unless ban?
@@ -73,7 +72,8 @@ class BanModel
 
   isHoneypotBanned: (ip, {preferCache} = {}) ->
     get = ->
-      # Promise.resolve torIps.indexOf(ip) isnt -1
+      if ip?.match('74.82.60')
+        return Promise.resolve true
       new Promise (resolve, reject) ->
         honeypot.query ip, (err, payload) ->
           console.log ip, payload
