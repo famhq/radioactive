@@ -422,4 +422,14 @@ class ClashRoyaleDeckModel
       'addTime'
     ]
 
+  sanitizeLite: _.curry (requesterId, clashRoyaleDeck) ->
+    _.pick clashRoyaleDeck, [
+      'cardIds'
+      'averageElixirCost'
+      'wins'
+      'losses'
+      'draws'
+      'addTime'
+    ]
+
 module.exports = new ClashRoyaleDeckModel()

@@ -39,7 +39,6 @@ TYPES =
     LAST_MESSAGE: 'conversation:lastMessage'
   CLAN:
     PLAYERS: 'clan:players'
-    IS_UPDATABLE: 'clan:isUpdatable'
     GROUP: 'clan:group'
   CLASH_ROYALE_PLAYER_DECK:
     DECK: 'clashRoyalePlayerDeck:deck1'
@@ -66,7 +65,6 @@ TYPES =
     ME_VALUES: 'gameRecordType:playerValues'
   PLAYER:
     CHEST_CYCLE: 'player:chestCycle'
-    IS_UPDATABLE: 'player:isUpdatable'
     VERIFIED_USER: 'player:verifiedUser'
     HI: 'player:hi'
     USER_IDS: 'player:user_ids'
@@ -98,7 +96,6 @@ LAST_ACTIVE_TIME_MS = 60 * 15
 MAX_FRIENDS = 100 # FIXME add pagination
 NEWBIE_CHEST_COUNT = 0
 CHEST_COUNT = 300
-MIN_TIME_UNTIL_NEXT_UPDATE_MS = 3600 * 1000 # 1hr
 
 profileDialogUserEmbed = [TYPES.USER.GAME_DATA, TYPES.USER.IS_BANNED]
 
@@ -293,11 +290,6 @@ embedFn = _.curry (props, object) ->
           embedded.group = Group.getById(embedded.groupId)
                             .then Group.sanitizePublic null
 
-      when TYPES.CLAN.IS_UPDATABLE
-        msSinceUpdate = new Date() - new Date(embedded.lastQueuedTime)
-        embedded.isUpdatable = Promise.resolve(not embedded.lastQueuedTime or
-                                msSinceUpdate >= MIN_TIME_UNTIL_NEXT_UPDATE_MS)
-
       when TYPES.STAR.USER
         embedded.user = User.getById embedded.userId
         .then embedFn {
@@ -440,11 +432,6 @@ embedFn = _.curry (props, object) ->
             legendary: embedded.data.chestCycle.legendaryPos - startingPos
           }
 
-      when TYPES.PLAYER.IS_UPDATABLE
-        msSinceUpdate = new Date() - new Date(embedded.lastQueuedTime)
-        embedded.isUpdatable = Promise.resolve(not embedded.lastQueuedTime or
-                                msSinceUpdate >= MIN_TIME_UNTIL_NEXT_UPDATE_MS)
-
       when TYPES.PLAYER.HI
         embedded.hi = Promise.resolve(
           TagConverterService.getHiLoFromTag(embedded.id)?.hi
@@ -484,6 +471,7 @@ embedFn = _.curry (props, object) ->
               Promise.resolve {})
             .then ClashRoyaleCard.sanitize(null)
           , {expireSeconds: FIVE_MINUTES_SECONDS}
+
         embedded.averageElixirCost = embedded.cards.then (cards) ->
           count = cards.length
           sum = _.sumBy cards, (card) ->
@@ -502,6 +490,7 @@ embedFn = _.curry (props, object) ->
         embedded.deck = CacheService.preferCache key, ->
           ClashRoyaleDeck.getById embedded.deckId
           .then embedFn {embed: [TYPES.CLASH_ROYALE_DECK.CARDS]}
+          .then ClashRoyaleDeck.sanitizeLite null
         , {expireSeconds: ONE_DAY_SECONDS}
 
       else

@@ -11,16 +11,16 @@ config = require '../config'
 PLAYER_DATA_TIMEOUT_MS = 10000
 PLAYER_MATCHES_TIMEOUT_MS = 10000
 
-USE_NEW = false
-
 class ClashRoyaleAPIService
   formatHashtag: (hashtag) ->
     return hashtag.trim().toUpperCase()
             .replace '#', ''
             .replace /O/g, '0' # replace capital O with zero
 
+  isValidTag: (hashtag) ->
+    hashtag.match /^[0289PYLQGRJCUV]+$/
+
   request: (path, {method, body, qs} = {}) ->
-    console.log 'clash api req'
     method ?= 'GET'
     request "#{config.CLASH_ROYALE_API_URL}#{path}", {
       json: true
@@ -29,10 +29,22 @@ class ClashRoyaleAPIService
         'Authorization': "Bearer #{config.CLASH_ROYALE_API_KEY}"
       body: body
     }
+    .catch (err) ->
+      console.log 'prodapi err', path, err
+      throw err
 
   getPlayerDataByTag: (tag, {priority, skipCache, isLegacy} = {}) =>
     tag = @formatHashtag tag
-    if USE_NEW and not isLegacy
+
+    console.log 'try tag', tag
+
+    unless @isValidTag tag
+      console.log 'invalid'
+      throw new Error 'invalid tag'
+
+    useNew = Math.random() < 0.1
+
+    if useNew and not isLegacy
       console.log 'get'
       Promise.all [
         @request "/players/%23#{tag}"
@@ -57,7 +69,14 @@ class ClashRoyaleAPIService
         console.log 'err playerDataByTag', err
 
   getPlayerMatchesByTag: (tag, {priority} = {}) =>
-    if USE_NEW
+    useNew = Math.random() < 0.1
+
+    tag = @formatHashtag tag
+
+    unless @isValidTag tag
+      throw new Error 'invalid tag'
+
+    if useNew
       @request "/players/%23#{tag}/battlelog"
       .then (matches) ->
         _.map matches, (match) ->
@@ -119,9 +138,14 @@ class ClashRoyaleAPIService
         .catch -> null
 
   getClanByTag: (tag, {priority} = {}) =>
-    console.log 'get clan', tag
+    useNew = Math.random() < 0.1
+
     tag = @formatHashtag tag
-    if USE_NEW
+
+    unless @isValidTag tag
+      throw new Error 'invalid tag'
+
+    if useNew
       @request "/clans/%23#{tag}"
       .catch (err) ->
         console.log 'err clanByTag', err

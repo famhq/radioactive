@@ -19,7 +19,6 @@ config = require '../config'
 
 defaultEmbed = [
   EmbedService.TYPES.CLAN.PLAYERS
-  EmbedService.TYPES.CLAN.IS_UPDATABLE
   EmbedService.TYPES.CLAN.GROUP
 ]
 groupEmbed = [
@@ -119,8 +118,7 @@ class ClanCtrl
                 .replace '#', ''
                 .replace /O/g, '0' # replace capital O with zero
 
-    isValidTag = clanId.match /^[0289PYLQGRJCUV]+$/
-    console.log 'search', clanId
+    isValidTag = ClashRoyaleAPIService.isValidTag clanId
     unless isValidTag
       router.throw {status: 400, info: 'invalid tag', ignoreLog: true}
 
