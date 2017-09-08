@@ -41,6 +41,8 @@ class Notification
   create: (notification) ->
     notification = defaultNotification notification
 
+    Promise.resolve null # FIXME: re-enable at some point
+
     r.table NOTIFICATIONS_TABLE
     .insert notification
     .run()

@@ -20,9 +20,9 @@ TYPES =
   "#{KueCreateService.JOB_TYPES.UPDATE_PLAYER_MATCHES}":
     {fn: ClashRoyalePlayerService.processUpdatePlayerMatches, concurrencyPerCpu: 8}
   "#{KueCreateService.JOB_TYPES.UPDATE_PLAYER_DATA}":
-    {fn: ClashRoyalePlayerService.processUpdatePlayerData, concurrencyPerCpu: 1}
+    {fn: ClashRoyalePlayerService.processUpdatePlayerData, concurrencyPerCpu: 4}
   "#{KueCreateService.JOB_TYPES.UPDATE_CLAN_DATA}":
-    {fn: ClashRoyaleClanService.processUpdateClan, concurrencyPerCpu: 1}
+    {fn: ClashRoyaleClanService.processUpdateClan, concurrencyPerCpu: 4}
 
 class KueRunnerService
   listen: ->

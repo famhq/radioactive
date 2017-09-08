@@ -12,6 +12,16 @@ module.exports = class ChestCycle extends Component
                 .replace(/&/g, '&amp;')
                 .replace(/</g, '&lt;')
                 .replace(/>/g, '&gt;')
+
+    chests = player?.data?.upcomingChests?.items
+    countUntil =
+      superMagical: _.find(
+        chests, {name: 'Super Magical Chest'}
+      )?.index
+      legendary: _.find(chests, {name: 'Legendary Chest'})?.index
+      epic: _.find(chests, {name: 'Epic Chest'})?.index
+
+    console.log countUntil
     # coffeelint: disable=max_line_length,cyclomatic_complexity
     s 'g', {
       fill: 'none'
@@ -76,7 +86,7 @@ module.exports = class ChestCycle extends Component
           s 'tspan', {
             x: '33.266'
             y: '138'
-          }, " +#{player.data.chestCycle.countUntil.superMagical + 1}"
+          }, " +#{countUntil.superMagical + 1}"
 
         s 'text', {
           fill: '#FFF'
@@ -87,7 +97,7 @@ module.exports = class ChestCycle extends Component
           s 'tspan', {
             x: '148.407'
             y: '138'
-          }, " +#{player.data.chestCycle.countUntil.legendary + 1}"
+          }, " +#{countUntil.legendary + 1}"
 
         s 'text', {
           fill: '#FFF'
@@ -98,23 +108,23 @@ module.exports = class ChestCycle extends Component
           s 'tspan', {
             x: '260.609'
             y: '138'
-          }, " +#{player.data.chestCycle.countUntil.epic + 1}"
+          }, " +#{countUntil.epic + 1}"
 
         s 'image', {
           width: '101'
           height: '101'
-          'xlink:href': "data:image/png;base64,#{images.superMagicalChest}"
+          'xlink:href': "data:image/png;base64,#{images?.superMagicalChest}"
         }
         s 'image', {
           width: '101'
           height: '101'
-          'xlink:href': "data:image/png;base64,#{images.legendaryChest}"
+          'xlink:href': "data:image/png;base64,#{images?.legendaryChest}"
           x: '114'
         }
         s 'image', {
           width: '101'
           height: '101'
-          'xlink:href': "data:image/png;base64,#{images.epicChest}"
+          'xlink:href': "data:image/png;base64,#{images?.epicChest}"
           x: '227'
         }
 
@@ -129,7 +139,7 @@ module.exports = class ChestCycle extends Component
           s 'tspan', {
             x: '29.874'
             y: '116'
-          }, _.startCase player.data.chestCycle.chests[0]
+          }, player?.data.upcomingChests?.items[0]?.name
 
         s 'text', {
           fill: '#FFF'
@@ -145,7 +155,7 @@ module.exports = class ChestCycle extends Component
         s 'image', {
           width: '101'
           height: '101'
-          'xlink:href': "data:image/png;base64,#{images.nextChest}"
+          'xlink:href': "data:image/png;base64,#{images?.nextChest}"
         }
 
       s 'path', {
@@ -158,7 +168,7 @@ module.exports = class ChestCycle extends Component
         height: '32'
         x: '116'
         y: '399'
-        'xlink:href': "data:image/png;base64,#{images.poweredBy}"
+        'xlink:href': "data:image/png;base64,#{images?.poweredBy}"
       }
 
     # coffeelint: enable=max_line_length,cyclomatic_complexity

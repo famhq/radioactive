@@ -29,9 +29,11 @@ class ClashRoyalePlayerDeckCtrl
           playerId is player.id
         router.throw {status: 403, info: 'profile is private'}
 
+      # TODO: rm ~mid sept
       key = "#{CacheService.PREFIXES.USER_DECKS_MIGRATE}:#{player.id}"
       CacheService.runOnce key, ->
-        ClashRoyalePlayerDeck.migrateUserDecks player.id
+        if user.joinTime?.getTime() < 1504620997117 # sept 5
+          ClashRoyalePlayerDeck.migrateUserDecks player.id
       .then ->
         ClashRoyalePlayerDeck.getAllByPlayerId playerId, {sort, type}
         .map EmbedService.embed {embed: defaultEmbed}

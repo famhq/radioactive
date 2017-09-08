@@ -149,7 +149,6 @@ class GroupModel
       null
 
   addUser: (groupId, userId) ->
-    console.log 'add user', groupId, userId
     GroupUser.create {groupId, userId}
     .tap ->
       key = "#{CacheService.PREFIXES.GROUP_ID}:#{groupId}"

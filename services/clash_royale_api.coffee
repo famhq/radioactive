@@ -13,6 +13,8 @@ PLAYER_MATCHES_TIMEOUT_MS = 10000
 
 class ClashRoyaleAPIService
   formatHashtag: (hashtag) ->
+    unless hashtag
+      return null
     return hashtag.trim().toUpperCase()
             .replace '#', ''
             .replace /O/g, '0' # replace capital O with zero
@@ -30,22 +32,19 @@ class ClashRoyaleAPIService
       body: body
     }
     .catch (err) ->
-      console.log 'prodapi err', path, err
+      console.log 'prodapi err', path
       throw err
 
   getPlayerDataByTag: (tag, {priority, skipCache, isLegacy} = {}) =>
     tag = @formatHashtag tag
 
-    console.log 'try tag', tag
-
     unless @isValidTag tag
       console.log 'invalid'
       throw new Error 'invalid tag'
 
-    useNew = Math.random() < 0.1
+    useNew = Math.random() < 1.1
 
     if useNew and not isLegacy
-      console.log 'get'
       Promise.all [
         @request "/players/%23#{tag}"
         @request "/players/%23#{tag}/upcomingchests"
@@ -53,8 +52,6 @@ class ClashRoyaleAPIService
       .then ([player, upcomingChests]) ->
         player.upcomingChests = upcomingChests
         player
-      .catch (err) ->
-        console.log 'err playerDataByTag', err
     else # verifying with gold
       console.log "#{config.CR_API_URL}/players/#{tag}"
       request "#{config.CR_API_URL}/players/#{tag}", {
@@ -65,11 +62,9 @@ class ClashRoyaleAPIService
       }
       .then (responses) ->
         responses?[0]
-      .catch (err) ->
-        console.log 'err playerDataByTag', err
 
   getPlayerMatchesByTag: (tag, {priority} = {}) =>
-    useNew = Math.random() < 0.1
+    useNew = Math.random() < 1.1
 
     tag = @formatHashtag tag
 
@@ -88,8 +83,6 @@ class ClashRoyaleAPIService
                        then 'classicChallenge'
                        else match.type
           match
-      .catch (err) ->
-        console.log 'err playerMatchesByTag', err
     else
       request "#{config.CR_API_URL}/players/#{tag}/games", {
         json: true
@@ -114,11 +107,14 @@ class ClashRoyaleAPIService
     Promise.all [
       @getPlayerDataByTag playerId, {priority}
       @getPlayerMatchesByTag playerId, {priority}
+      .catch -> null
     ]
     .then ([playerData, matches]) ->
       unless playerId and playerData
         console.log 'update missing tag or data', playerId, playerData
         throw new Error 'unable to find that tag'
+      unless matches
+        console.log 'matches error', playerId
       KueCreateService.createJob {
         job: {userId: userId, id: playerId, playerData}
         type: KueCreateService.JOB_TYPES.UPDATE_PLAYER_DATA
@@ -138,7 +134,7 @@ class ClashRoyaleAPIService
         .catch -> null
 
   getClanByTag: (tag, {priority} = {}) =>
-    useNew = Math.random() < 0.1
+    useNew = Math.random() < 1.1
 
     tag = @formatHashtag tag
 

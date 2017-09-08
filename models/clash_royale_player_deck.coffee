@@ -76,8 +76,8 @@ class ClashRoyalePlayerDeckModel
   create: (clashRoyalePlayerDeck) ->
     clashRoyalePlayerDeck = defaultClashRoyalePlayerDeck clashRoyalePlayerDeck
     knex.insert(clashRoyalePlayerDeck).into(PLAYER_DECKS_TABLE)
-    .catch (err) ->
-      console.log 'postgres', err
+    # .catch (err) ->
+    #   console.log 'postgres', err
     .then ->
       clashRoyalePlayerDeck
 
@@ -192,16 +192,24 @@ class ClashRoyalePlayerDeckModel
 
 
   getAllByDeckIdAndPlayerIdAndTypes: (deckIdPlayerIdTypes) ->
-    knex PLAYER_DECKS_TABLE
-    .select '*'
-    .whereIn 'deckIdPlayerIdType', _.map deckIdPlayerIdTypes, (dpt) ->
+    deckIdPlayerIdTypesStr = _.map deckIdPlayerIdTypes, (dpt) ->
       {deckId, playerId, type} = dpt
       "#{deckId}:#{playerId}:#{type}"
+
+    # deckIdPlayerIdTypes = _.chunk deckIdPlayerIdTypes, 30
+
+    knex PLAYER_DECKS_TABLE
+    .select '*'
+    .whereIn 'deckIdPlayerIdType', deckIdPlayerIdTypesStr
     .map defaultClashRoyalePlayerDeck
 
 
   incrementAllByDeckIdAndPlayerIdAndType: (deckId, playerId, type, changes) ->
     changes = _.mapValues changes, (increment, key) ->
+      unless key in ['wins', 'losses', 'draws']
+        throw new Error 'invalid key'
+      if isNaN increment
+        throw new Error 'invalid increment'
       knex.raw "\"#{key}\" + #{increment}"
     knex PLAYER_DECKS_TABLE
     .where {playerId, type, deckId}
@@ -253,8 +261,9 @@ class ClashRoyalePlayerDeckModel
       }, userDeck
     .then (playerDecks) =>
       @batchCreate playerDecks
-      .catch (err) ->
-        console.log err
+      # .catch (err) ->
+      #   console.log 'migrate deck err', err
+    .catch -> null
 
   deleteById: (id) ->
     knex PLAYER_DECKS_TABLE

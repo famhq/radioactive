@@ -23,7 +23,8 @@ UserPlayer = require '../models/user_player'
 config = require '../config'
 
 # for now we're not storing user deck info of players that aren't on starfire.
-# should re-enable if we can handle the added load from it
+# should re-enable if we can handle the added load from it.
+# big issue is 2v2
 ENABLE_ANON_PLAYER_DECKS = false
 
 MAX_TIME_TO_COMPLETE_MS = 60 * 30 * 1000 # 30min
@@ -45,13 +46,13 @@ GAME_ID = config.CLASH_ROYALE_ID
 ALLOWED_GAME_TYPES = [
   'PvP', 'tournament',
   'classicChallenge', 'grandChallenge'
-  'friendly', 'clanMate'
+  'friendly', 'clanMate', '2v2',
 ]
 DECK_TRACKED_GAME_TYPES = [
-  'PvP', 'classicChallenge', 'grandChallenge', 'tournament'
+  'PvP', 'classicChallenge', 'grandChallenge', 'tournament', '2v2'
 ]
 
-DEBUG = true
+DEBUG = false
 IS_TEST_RUN = false
 
 class ClashRoyalePlayer
@@ -61,26 +62,28 @@ class ClashRoyalePlayer
   createNewPlayerDecks: (matches, playerDiffs) ->
     playerDecks = _.filter _.flatten _.map matches, (match) ->
       {battleType, team, opponent} = match
-      _.flatten _.map team.concat(opponent), (player) ->
-        cardKeys = _.map player.cards, ({name}) -> _.snakeCase(name)
-        [
-          {
-            playerId: player.tag.replace '#', ''
-            deckId: ClashRoyaleDeck.getDeckId cardKeys
-            type: battleType
-          }
-          {
-            playerId: player.tag.replace '#', ''
-            deckId: ClashRoyaleDeck.getDeckId cardKeys
-            type: 'all'
-          }
-        ]
+      _.filter _.flatten _.map team.concat(opponent), (player) ->
+        if ENABLE_ANON_PLAYER_DECKS or playerDiffs.getAll().all[player.tag]
+          cardKeys = _.map player.cards, ({name}) -> _.snakeCase(name)
+          [
+            {
+              playerId: player.tag.replace '#', ''
+              deckId: ClashRoyaleDeck.getDeckId cardKeys
+              type: battleType
+            }
+            {
+              playerId: player.tag.replace '#', ''
+              deckId: ClashRoyaleDeck.getDeckId cardKeys
+              type: 'all'
+            }
+          ]
     playerDecks = _.uniqBy playerDecks, (obj) -> JSON.stringify obj
     # unique user deck per userId (not per playerId). create one for playerId
     # if no users exist yet (so it can be duplicated over to new account)
 
     deckIdPlayerIdTypes = _.map playerDecks, (playerDeck) ->
       _.pick playerDeck, ['deckId', 'playerId', 'type']
+
 
     ClashRoyalePlayerDeck.getAllByDeckIdAndPlayerIdAndTypes deckIdPlayerIdTypes
     .then (existingPlayerDecks) ->
@@ -108,7 +111,7 @@ class ClashRoyalePlayer
       _.map team.concat(opponent), (player) ->
         cardKeys = _.map player.cards, ({name}) -> _.snakeCase(name)
         ClashRoyaleDeck.getDeckId cardKeys
-    ClashRoyaleDeck.getByIds deckKeys
+    ClashRoyaleDeck.getAllByIds deckKeys
     .then (existingDecks) ->
       newDecks = _.filter deckKeys, (key) ->
         not _.find existingDecks, {id: key}
@@ -124,19 +127,25 @@ class ClashRoyalePlayer
         }
       ClashRoyaleDeck.batchCreate batchDecks
 
-  incrementPlayerDecks: (batchPlayerDecks) ->
-    Promise.all _.flatten _.map batchPlayerDecks, (playerDecks, playerId) ->
-      _.map playerDecks, (playerDecksType, type) ->
-        _.map playerDecksType, (changes, deckId) ->
-          ClashRoyalePlayerDeck.incrementAllByDeckIdAndPlayerIdAndType(
-            deckId, playerId, type, changes
-          )
+  incrementPlayerDecks: (batchPlayerDecks, playerDiffs) ->
+    Promise.all _.filter(
+      _.flattenDeep _.map batchPlayerDecks, (playerDecks, playerId) ->
+        if ENABLE_ANON_PLAYER_DECKS or playerDiffs.getAll().all["##{playerId}"]
+          _.map playerDecks, (playerDecksType, type) ->
+            _.map playerDecksType, (changes, deckId) ->
+              ClashRoyalePlayerDeck.incrementAllByDeckIdAndPlayerIdAndType(
+                deckId, playerId, type, changes
+              )
+    )
 
   # TODO: track by type. Need to alter id to allow type
   incrementDecks: (batchDecks) ->
-    Promise.all _.map batchDecks, (changes, deckId) ->
-      ClashRoyaleDeck.incrementAllById(
-        deckId, changes
+    batchDecks = _.map batchDecks, (changes, deckId) -> {changes, deckId}
+    groupedDecks = _.groupBy batchDecks, ({changes}) -> JSON.stringify changes
+    Promise.all _.map groupedDecks, (group, key) ->
+      deckIds = _.map group, 'deckId'
+      ClashRoyaleDeck.incrementAllByIds(
+        deckIds, group[0].changes
       )
 
   filterMatches: ({matches, player}) ->
@@ -152,14 +161,16 @@ class ClashRoyalePlayer
         lastMatchTime = 0
       # the server time isn't 100% accurate, so +- 15 seconds
       (battleType in ALLOWED_GAME_TYPES) and
-        (moment(battleTime).toDate().getTime() >
-          (new Date(lastMatchTime).getTime() + 15))
+        (
+          IS_TEST_RUN or
+          moment(battleTime).toDate().getTime() >
+            (new Date(lastMatchTime).getTime() + 15)
+        )
 
     matches
   # we should always block this for db writes/reads so the queue
   # properly throttles db access
   processMatches: ({matches, reqPlayers}) ->
-    start = Date.now()
     matches = _.uniqBy matches, 'id'
     matches = _.orderBy matches, ['battleTime'], ['asc']
     reqPlayerIds = _.map reqPlayers, ({id}) -> "##{id}"
@@ -201,7 +212,6 @@ class ClashRoyalePlayer
         playerDiffs.setInitialDiffs playerIds, reqPlayerIds
       ]
       .then ([cards, initialDiffs]) =>
-        stepStart = Date.now()
         Promise.all [
           @createNewPlayerDecks matches, playerDiffs
           .catch (err) ->
@@ -243,7 +253,6 @@ class ClashRoyalePlayer
 
             type = match.battleType
 
-            stepStart = Date.now()
             teamWon = match.team[0].crowns > match.opponent[0].crowns
             opponentWon = match.opponent[0].crowns > match.team[0].crowns
 
@@ -414,20 +423,31 @@ class ClashRoyalePlayer
                   batchDecks[deckId][state] += 1
 
         .then =>
+          start = Date.now()
           Promise.all [
             Match.batchCreate batchMatches
             .catch (err) ->
               console.log 'match create postgres err', err
+            .then ->
+              console.log 'match', Date.now() - start
             ClashRoyalePlayerRecord.batchCreate batchClashRoyalePlayerRecords
             .catch (err) ->
               console.log 'gamerecord create postgres err', err
-            @incrementPlayerDecks batchPlayerDecks
+            .then ->
+              console.log 'gr', Date.now() - start
+            @incrementPlayerDecks batchPlayerDecks, playerDiffs
             .catch (err) ->
               console.log 'inc user decks postgres err', err
+            .then ->
+              console.log 'pdeck', Date.now() - start
             @incrementDecks batchDecks
             .catch (err) ->
               console.log 'inc decks postgres err', err
+            .then ->
+              console.log 'deck', Date.now() - start
           ]
+          .then ->
+            console.log ''
 
         .then ->
           {playerDiffs: playerDiffs.getAll()}
@@ -653,13 +673,16 @@ class ClashRoyalePlayer
       else
         Promise.resolve null
     ]
-    .then ([player, user]) =>
+    .tap ([player, user]) =>
       key = CacheService.PREFIXES.USER_DAILY_DATA_PUSH + ':' + id
       CacheService.runOnce key, =>
         msSinceJoin = Date.now() - user?.joinTime?.getTime()
         if user and msSinceJoin >= ONE_DAY_MS
           @sendDailyPush {playerId: id}
+          .catch (err) ->
+            console.log 'push err', err
       , {expireSeconds: ONE_DAY_S}
+      null # don't block
 
   sendDailyPush: ({playerId}) ->
     Promise.all [
@@ -675,10 +698,12 @@ class ClashRoyalePlayer
     ]
     .then ([player, playerDaily]) ->
       if player
-        countUntil = player.data.chestCycle?.countUntil
-        nextGoodChest = _.minBy _.keys(countUntil), (key) ->
-          countUntil[key]
-        countUntilNextGoodChest = countUntil[nextGoodChest]
+        goodChests = ['giantChest', 'epicChest', 'legendaryChest',
+                      'superMagicalChest', 'magicalChest']
+        goodChests = _.map goodChests, (chest) ->
+          _.find player.data.upcomingChests?.items, {name: _.startCase(chest)}
+        nextGoodChest = _.minBy goodChests, 'index'
+        countUntilNextGoodChest = nextGoodChest.index + 1
 
         if playerDaily
           splits = playerDaily.data.splits
@@ -794,8 +819,8 @@ class PlayerSplitsDiffs
       return
     splits = @playerDiffs[set][id].data.splits[type]
     # legacy
-    if not @playerDiffs[set][id].data.splits[type] and type is 'PvP'
-      @playerDiffs[set][id].data.splits[type] =
+    if not splits and type is 'PvP'
+      splits =
         @playerDiffs[set][id].data.splits['ladder']
     # end legacy
     @playerDiffs[set][id].data.splits[type] = _.defaults splits, {

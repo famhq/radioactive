@@ -15,7 +15,6 @@ EmbedService = require '../services/embed'
 config = require '../config'
 
 defaultEmbed = [
-  EmbedService.TYPES.PLAYER.CHEST_CYCLE
   EmbedService.TYPES.PLAYER.HI
 ]
 userIdsEmbed = [

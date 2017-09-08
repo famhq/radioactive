@@ -52,8 +52,6 @@ class PlayerRecordModel
     playerRecords = _.map playerRecords, defaultPlayerRecord
 
     knex.insert(playerRecords).into(PLAYER_RECORDS_TABLE)
-    .catch (err) ->
-      console.log 'postgres err', err
 
   create: (playerRecord) ->
     playerRecord = defaultPlayerRecord playerRecord
@@ -113,6 +111,7 @@ class PlayerRecordModel
     .then (records) =>
       @batchCreate records
       .catch (err) ->
-        console.log err
+        null
+        # console.log 'migrate records err', playerId
 
 module.exports = new PlayerRecordModel()

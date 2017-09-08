@@ -64,7 +64,6 @@ TYPES =
   GAME_RECORD_TYPE:
     ME_VALUES: 'gameRecordType:playerValues'
   PLAYER:
-    CHEST_CYCLE: 'player:chestCycle'
     VERIFIED_USER: 'player:verifiedUser'
     HI: 'player:hi'
     USER_IDS: 'player:user_ids'
@@ -417,20 +416,6 @@ embedFn = _.curry (props, object) ->
             , {expireSeconds: FIVE_MINUTES_SECONDS}
         else
           embedded.user = null
-
-      when TYPES.PLAYER.CHEST_CYCLE
-        if embedded.data?.chestCycle
-          startingPos = embedded.data.chestCycle.pos
-          pos = (startingPos - NEWBIE_CHEST_COUNT) % chestCycle.length
-          chests = doubleCycle.slice pos, pos + CHEST_COUNT
-          embedded.data.chestCycle?.chests = chests
-          embedded.data.chestCycle?.countUntil = {
-            giant: if (i = chests.indexOf('giant')) isnt -1 then i + 1 else null
-            magical: if (i = chests.indexOf('magic')) isnt -1 then i + 1 else null
-            superMagical: embedded.data.chestCycle.superMagicalPos - startingPos
-            epic: embedded.data.chestCycle.epicPos - startingPos
-            legendary: embedded.data.chestCycle.legendaryPos - startingPos
-          }
 
       when TYPES.PLAYER.HI
         embedded.hi = Promise.resolve(

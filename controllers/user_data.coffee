@@ -46,11 +46,15 @@ class UserDataCtrl
     if valid.error
       router.throw status: 400, info: valid.error.message
 
-    UserData.getByUserId user.id
-    .then (userData) ->
-      UserData.upsertByUserId user.id, {
-        blockedUserIds: _.uniq userData.blockedUserIds.concat([otherUserId])
-      }
+    User.getById userId
+    .then (user) ->
+      if user.flags.isModerator
+        return
+      UserData.getByUserId user.id
+      .then (userData) ->
+        UserData.upsertByUserId user.id, {
+          blockedUserIds: _.uniq userData.blockedUserIds.concat([otherUserId])
+        }
     .then ->
       key = CacheService.PREFIXES.USER_DATA_BLOCKED_USERS + ':' + user.id
       CacheService.deleteByKey key

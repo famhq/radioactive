@@ -7,7 +7,6 @@ Player = require '../../../models/player'
 DynamicImage = require '../../../models/dynamic_image'
 ChestCycle = require '../../components/chest_cycle'
 s = require '../../components/s'
-EmbedService = require '../../../services/embed'
 config = require '../../../config'
 
 PATH = './dynamic_images/images'
@@ -24,22 +23,26 @@ module.exports = class ChestCyclePage extends Page
   renderHead: -> ''
 
   setup: =>
-    embed = [EmbedService.TYPES.PLAYER.CHEST_CYCLE]
     Player.getByUserIdAndGameId @userId, config.CLASH_ROYALE_ID
-    .then EmbedService.embed {embed}
     .then (player) =>
-      nextChest = player.data.chestCycle.chests[0]
+      unless player
+        return {}
+      nextChest = _.snakeCase(player.data.upcomingChests?.items[0]?.name)
       superMagicalChestPath = PATH + '/chests/super_magical_chest.png'
       epicChestPath = PATH + '/chests/epic_chest.png'
       legendaryChestPath = PATH + '/chests/legendary_chest.png'
-      nextChestPath = PATH + "/chests/#{nextChest}_chest.png"
+      nextChestPath = PATH + "/chests/#{nextChest}.png"
       poweredByPath = PATH + '/chests/powered_by.png'
 
       Promise.all [
         Promise.promisify(fs.readFile) superMagicalChestPath
         Promise.promisify(fs.readFile) epicChestPath
         Promise.promisify(fs.readFile) legendaryChestPath
-        Promise.promisify(fs.readFile) nextChestPath
+
+        if nextChest
+        then Promise.promisify(fs.readFile) nextChestPath
+        else null
+
         Promise.promisify(fs.readFile) poweredByPath
       ]
       .then (buffers) =>

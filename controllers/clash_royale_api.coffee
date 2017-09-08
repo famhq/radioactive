@@ -50,11 +50,9 @@ class ClashRoyaleAPICtrl
           }
 
   refreshByPlayerId: ({playerId, userId, priority}, {user}) ->
-    playerId = playerId.trim().toUpperCase()
-                .replace '#', ''
-                .replace /O/g, '0' # replace capital O with zero
+    playerId = ClashRoyaleAPIService.formatHashtag playerId
 
-    isValidId = playerId.match /^[0289PYLQGRJCUV]+$/
+    isValidId = playerId and playerId.match /^[0289PYLQGRJCUV]+$/
     unless isValidId
       router.throw {status: 400, info: 'invalid tag', ignoreLog: true}
 

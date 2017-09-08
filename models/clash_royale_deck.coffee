@@ -96,15 +96,9 @@ class ClashRoyaleDeckModel
   batchCreate: (clashRoyaleDecks) ->
     clashRoyaleDecks = _.map clashRoyaleDecks, defaultClashRoyaleDeck
 
-    Promise.all [
-      knex.insert(clashRoyaleDecks).into(POSTGRES_DECKS_TABLE)
-      .catch (err) ->
-        console.log 'postgres err', err
-
-      # r.table CLASH_ROYALE_DECK_TABLE
-      # .insert clashRoyaleDecks, {durability: 'soft'}
-      # .run()
-    ]
+    knex.insert(clashRoyaleDecks).into(POSTGRES_DECKS_TABLE)
+    .catch (err) ->
+      console.log 'postgres err', err
 
   create: (clashRoyaleDeck, {durability} = {}) ->
     clashRoyaleDeck = defaultClashRoyaleDeck clashRoyaleDeck
@@ -158,42 +152,22 @@ class ClashRoyaleDeckModel
         name
 
   getByName: (name) ->
-    if config.IS_POSTGRES or true
-      knex POSTGRES_DECKS_TABLE
-      .first '*'
-      .where {name}
-      .then defaultClashRoyaleDeck
-    else
-      r.table CLASH_ROYALE_DECK_TABLE
-      .getAll name, {index: 'name'}
-      .nth 0
-      .default null
-      .run()
-      .then defaultClashRoyaleDeck
+    knex POSTGRES_DECKS_TABLE
+    .first '*'
+    .where {name}
+    .then defaultClashRoyaleDeck
 
   getById: (id) ->
-    if config.IS_POSTGRES or true
-      knex.table POSTGRES_DECKS_TABLE
-      .first '*'
-      .where {id}
-      .then defaultClashRoyaleDeck
-    else
-      r.table CLASH_ROYALE_DECK_TABLE
-      .get id
-      .run()
-      .then defaultClashRoyaleDeck
+    knex.table POSTGRES_DECKS_TABLE
+    .first '*'
+    .where {id}
+    .then defaultClashRoyaleDeck
 
-  getByIds: (ids) ->
-    if config.IS_POSTGRES or true
-      knex POSTGRES_DECKS_TABLE
-      .select '*'
-      .whereIn 'id', ids
-      .map defaultClashRoyaleDeck
-    else
-      r.table CLASH_ROYALE_DECK_TABLE
-      .getAll ids...
-      .run()
-      .map defaultClashRoyaleDeck
+  getAllByIds: (ids) ->
+    knex POSTGRES_DECKS_TABLE
+    .select '*'
+    .whereIn 'id', ids
+    .map defaultClashRoyaleDeck
 
   getDeckId: (cardKeys) ->
     cardKeys = _.sortBy(cardKeys).join '|'
@@ -231,32 +205,14 @@ class ClashRoyaleDeckModel
   getAll: ({limit, sort, timeFrame} = {}) ->
     limit ?= 10
 
-    if config.IS_POSTGRES
-      sortColumn = if sort is 'recent' then ADD_TIME_INDEX else POPULARITY_INDEX
-      q = knex POSTGRES_DECKS_TABLE
-      .select '*'
-      if timeFrame
-        q = q.where 'lastUpdateTime', '>', timeFrame
-      q.orderBy sortColumn, 'desc'
-      .limit limit
-      .map defaultClashRoyaleDeck
-
-    else
-      sortQ = if sort is 'recent' \
-              then {index: r.desc(ADD_TIME_INDEX)}
-              else if sort is 'popular'
-              then {index: r.desc(POPULARITY_INDEX)}
-              else POPULARITY_INDEX
-
-      q = r.table CLASH_ROYALE_DECK_TABLE
-      if timeFrame
-        q = q.filter r.row('lastUpdateTime').gt(timeFrame)
-
-      q = q.orderBy sortQ
-      if limit
-        q = q.limit limit
-      q.run()
-      .map defaultClashRoyaleDeck
+    sortColumn = if sort is 'recent' then ADD_TIME_INDEX else POPULARITY_INDEX
+    q = knex POSTGRES_DECKS_TABLE
+    .select '*'
+    if timeFrame
+      q = q.where 'lastUpdateTime', '>', timeFrame
+    q.orderBy sortColumn, 'desc'
+    .limit limit
+    .map defaultClashRoyaleDeck
 
   updateWinsAndLosses: =>
     Promise.all [
@@ -316,27 +272,13 @@ class ClashRoyaleDeckModel
         {id, wins: count, losses: _.find(losses, {id})?.count}
 
   getWins: ({timeOffset}) ->
-    # FIXME FIXME
-    if config.IS_POSTGRES
-      knex 'clash_royale_matches'
-      .select '*'
-      .where 'time', '>', Date.now().sub ((timeOffset + TWO_WEEKS_S) * 1000)
-      .andWhere 'time', '<', Date.now().sub ((timeOffset) * 1000)
-      .limit MAX_ROWS_FOR_GROUP # otherwise group is super slow?
-      .groupBy('winningDeckId')
-      .map defaultClashRoyaleDeck
-    else
-      r.db('radioactive').table('clash_royale_matches')
-      .between(
-        r.now().sub(timeOffset + TWO_WEEKS_S)
-        r.now().sub(timeOffset)
-        {index: 'time'}
-      )
-      .limit MAX_ROWS_FOR_GROUP # otherwise group is super slow
-      .group('winningDeckId')
-      .count()
-      .run()
-      .map ({group, reduction}) -> {id: group, count: reduction}
+    knex 'clash_royale_matches'
+    .select '*'
+    .where 'time', '>', Date.now().sub ((timeOffset + TWO_WEEKS_S) * 1000)
+    .andWhere 'time', '<', Date.now().sub ((timeOffset) * 1000)
+    .limit MAX_ROWS_FOR_GROUP # otherwise group is super slow?
+    .groupBy('winningDeckId')
+    .map defaultClashRoyaleDeck
 
   getLosses: ({timeOffset}) ->
     r.db('radioactive').table('clash_royale_matches')
@@ -390,10 +332,14 @@ class ClashRoyaleDeckModel
   #       .update diff
   #       .run()
   #
-  incrementAllById: (id, changes) ->
+  incrementAllByIds: (ids, changes) ->
     knex POSTGRES_DECKS_TABLE
-    .where {id}
+    .whereIn 'id', ids
     .update _.mapValues changes, (increment, key) ->
+      unless key in ['wins', 'losses', 'draws']
+        throw new Error 'invalid key'
+      if isNaN increment
+        throw new Error 'invalid increment'
       knex.raw "\"#{key}\" + #{increment}"
 
   updateById: (id, diff) ->
@@ -422,9 +368,11 @@ class ClashRoyaleDeckModel
       'addTime'
     ]
 
+  # TODO: different sanitization for API
   sanitizeLite: _.curry (requesterId, clashRoyaleDeck) ->
     _.pick clashRoyaleDeck, [
       'cardIds'
+      'cards' # req for decks tab on profile
       'averageElixirCost'
       'wins'
       'losses'
