@@ -1,8 +1,4 @@
 node_modules
 npm-debug.log
 /coverage
-/resources/clashtv_done
-/resources/generated_codes
-/resources/generated_backs
-/resources/barcodes
-/resources/grive
+/misc_scripts

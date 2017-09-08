@@ -23,11 +23,8 @@ UserGroupData = require '../models/user_group_data'
 Player = require '../models/player'
 UserPlayer = require '../models/user_player'
 UserFollower = require '../models/user_follower'
-chestCycle = require '../resources/data/chest_cycle'
 CacheService = require './cache'
 TagConverterService = require './tag_converter'
-
-doubleCycle = chestCycle.concat chestCycle
 
 TYPES =
   BAN:
