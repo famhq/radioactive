@@ -271,15 +271,18 @@ embedFn = _.curry (props, object) ->
 
       when TYPES.CLAN.PLAYERS
         if embedded.data.memberList
-          embedded.players = Promise.map embedded.data.memberList, (player) ->
-            playerId = player.tag.replace('#', '')
-            Player.getByPlayerIdAndGameId playerId, embedded.gameId
-            .then embedFn {
-              embed: [TYPES.PLAYER.VERIFIED_USER], gameId: embedded.gameId
-            }
-            .then (playerObj) ->
-              _.defaults {player: playerObj}, player
-
+          key = CacheService.PREFIXES.CLAN_PLAYERS + ':' + embedded.id
+          embedded.players = CacheService.preferCache key, ->
+            Promise.map embedded.data.memberList, (player) ->
+              playerId = player.tag.replace('#', '')
+              Player.getByPlayerIdAndGameId playerId, embedded.gameId
+              .then embedFn {
+                embed: [TYPES.PLAYER.VERIFIED_USER], gameId: embedded.gameId
+              }
+              .then (playerObj) ->
+                playerObj = _.omit playerObj, ['data']
+                _.defaults {player: playerObj}, player
+          , {expireSeconds: ONE_DAY_SECONDS}
 
       when TYPES.CLAN.GROUP
         if embedded.groupId
@@ -361,14 +364,6 @@ embedFn = _.curry (props, object) ->
             embedded.id, 'thread'
           )
         , {expireSeconds: FIVE_MINUTES_SECONDS}
-
-      when TYPES.THREAD.MY_VOTE
-        if userId
-          embedded.myVote = ThreadVote.getByCreatorIdAndParent(
-            userId
-            embedded.id
-            'thread'
-          )
 
       when TYPES.THREAD.DECK
         key = CacheService.PREFIXES.THREAD_DECK + ':' + embedded.id

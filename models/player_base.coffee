@@ -17,35 +17,6 @@ class PlayerModel
   batchCreateByGameId: (gameId, players) =>
     @GamePlayers[gameId].batchCreate players
 
-  # TODO: remove after ~June 2017?
-  # migrate: ({userId, gameId, userPlayerExists}) =>
-  #   User.getById userId
-  #   .then (user) =>
-  #     if (new Date(user?.joinTime).getTime()) < 1494354950636
-  #       r.db('radioactive').table('players')
-  #       .getAll [userId, gameId], {index: 'userIdGameId'}
-  #       .nth 0
-  #       .default null
-  #       .run()
-  #       .then (oldPlayer) =>
-  #         if oldPlayer?.playerId
-  #           oldPlayerId = oldPlayer.playerId
-  #           prefix = CacheService.PREFIXES.PLAYER_MIGRATE
-  #           key = "#{prefix}:#{oldPlayerId}"
-  #           CacheService.runOnce key, =>
-  #             oldPlayer.id = oldPlayerId
-  #             userPlayer = {userId, gameId, playerId: oldPlayerId}
-  #             if oldPlayer.verifiedUserId is userId
-  #               userPlayer.isVerified = true
-  #
-  #             Promise.all [
-  #               unless userPlayerExists
-  #                 UserPlayer.create userPlayer
-  #               @GamePlayers[gameId].create oldPlayer
-  #             ]
-  #     else
-  #       Promise.resolve null
-
   getByUserIdAndGameId: (userId, gameId, {preferCache, retry} = {}) =>
     get = =>
       prefix = CacheService.PREFIXES.USER_PLAYER_USER_ID_GAME_ID
@@ -124,6 +95,5 @@ class PlayerModel
 
   deleteByPlayerIdAndGameId: (playerId, gameId) =>
     @GamePlayers[gameId].deleteById playerId
-
 
 module.exports = PlayerModel

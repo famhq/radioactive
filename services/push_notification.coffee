@@ -232,14 +232,14 @@ class PushNotificationService
 
     message.data ?= {}
 
-    if [@TYPES.NEWS, @TYPES.NEW_PROMOTION].indexOf(message.type) is -1
-      Notification.create {
-        title: message.title
-        text: message.text
-        data: message.data
-        type: message.type
-        userId: user.id
-      }
+    # if [@TYPES.NEWS, @TYPES.NEW_PROMOTION].indexOf(message.type) is -1
+    #   Notification.create {
+    #     title: message.title
+    #     text: message.text
+    #     data: message.data
+    #     type: message.type
+    #     userId: user.id
+    #   }
 
     if user.flags.blockedNotifications?[message.type] is true
       return Promise.resolve null

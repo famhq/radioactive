@@ -22,7 +22,6 @@ defaultEmbed = [
   EmbedService.TYPES.THREAD.CREATOR
   EmbedService.TYPES.THREAD.COMMENT_COUNT
   EmbedService.TYPES.THREAD.SCORE
-  EmbedService.TYPES.THREAD.MY_VOTE
 ]
 deckEmbed = [
   EmbedService.TYPES.THREAD.DECK
@@ -223,14 +222,27 @@ class ThreadCtrl
     }
 
   getById: ({id, language}, {user}) ->
-    Thread.getById id
-    .then EmbedService.embed {embed: defaultEmbed, userId: user.id}
+    key = CacheService.PREFIXES.THREAD + ':' + id + ':' + language
+
+    CacheService.preferCache key, ->
+      Thread.getById id
+      .then EmbedService.embed {embed: defaultEmbed, userId: user.id}
+      .then (thread) ->
+        if thread?.translations[language]
+          _.defaults thread?.translations[language], thread
+        else
+          thread
+      .then Thread.sanitize null
+    , {expireSeconds: ONE_MINUTE_SECONDS}
     .then (thread) ->
-      if thread?.translations[language]
-        _.defaults thread?.translations[language], thread
-      else
+      ThreadVote.getByCreatorIdAndParent(
+        user.id
+        id
+        'thread'
+      )
+      .then (myVote) ->
+        thread.myVote = myVote
         thread
-    .then Thread.sanitize null
 
   deleteById: ({id}, {user}) ->
     unless user.flags.isModerator

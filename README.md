@@ -24,6 +24,7 @@ There is a [developer platform](https://starfi.re/addons) where you can build yo
 
 As of September 2017, there are 4 apps on the platform - 3 built by me, and one by [Dabolus](https://github.com/Dabolus). Each gets about 50,000 users per day.
 
+---
 
 ### Getting Started
 `npm install`

@@ -116,15 +116,13 @@ class GroupModel
       {userIds}
     .run()
 
-  getAll: ({filter, language, limit, user} = {}) ->
+  getAll: ({filter, language, limit} = {}) ->
     limit ?= 10
 
     q = r.table GROUPS_TABLE
 
     if filter is 'public' and language
       q = q.getAll ['public', language], {index: TYPE_LANGUAGE_INDEX}
-    # else if filter is 'invited'
-    #   q = q.getAll r.args (user.data.groupInvitedIds or [])
     else if filter is 'public'
       q = q.getAll ['public'], {index: TYPE_LANGUAGE_INDEX}
 
@@ -153,12 +151,16 @@ class GroupModel
     .tap ->
       key = "#{CacheService.PREFIXES.GROUP_ID}:#{groupId}"
       CacheService.deleteByKey key
+      category = "#{CacheService.PREFIXES.GROUP_GET_ALL_CATEGORY}:#{userId}"
+      CacheService.deleteByCategory category
 
   removeUser: (groupId, userId) ->
     GroupUser.deleteByGroupIdAndUserId groupId, userId
     .tap ->
       key = "#{CacheService.PREFIXES.GROUP_ID}:#{groupId}"
       CacheService.deleteByKey key
+      category = "#{CacheService.PREFIXES.GROUP_GET_ALL_CATEGORY}:#{userId}"
+      CacheService.deleteByCategory category
 
   deleteById: (id) ->
     r.table GROUPS_TABLE

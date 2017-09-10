@@ -11,6 +11,7 @@ Game = require '../models/game'
 Conversation = require '../models/conversation'
 GroupRecordType = require '../models/group_record_type'
 EmbedService = require '../services/embed'
+CacheService = require '../services/cache'
 PushNotificationService = require '../services/push_notification'
 config = require '../config'
 
@@ -26,6 +27,8 @@ defaultGroupRecordTypes = [
   {name: 'Donations', timeScale: 'week'}
   {name: 'Crowns', timeScale: 'week'}
 ]
+
+FIVE_MINUTES_SECONDS = 60 * 5
 
 class GroupCtrl
   create: ({name, description, badgeId, background, mode, clanId}, {user}) ->
@@ -172,32 +175,39 @@ class GroupCtrl
       ]
 
   getAll: ({filter, language}, {user}) ->
-    # TODO: cache!
-    EmbedService.embed {embed: userDataEmbed}, user
-    .then (user) ->
+    key = CacheService.PREFIXES.GROUP_GET_ALL + ':' + [
+      user.id, filter, language
+    ].join(':')
+    category = CacheService.PREFIXES.GROUP_GET_ALL_CATEGORY + ':' + user.id
+
+    CacheService.preferCache key, ->
       (if filter is 'mine'
         GroupUser.getAllByUserId user.id
         .map ({groupId}) -> groupId
         .then (groupIds) ->
           Group.getAllByIds groupIds
       else
-        Group.getAll {filter, user, language}
+        Group.getAll {filter, language}
       )
       .then (groups) ->
         if filter is 'public' and _.isEmpty groups
-          Group.getAll {filter, user}
+          Group.getAll {filter}
         else
           groups
-    .map EmbedService.embed {embed: defaultEmbed}
-    .map (group) ->
-      if not _.isEmpty group.clanIds
-        group.clan = Clan.getByClanIdAndGameId(
-          group.clanIds[0], config.CLASH_ROYALE_ID
-        )
+      .map EmbedService.embed {embed: defaultEmbed}
+      .map (group) ->
+        if not _.isEmpty group.clanIds
+          group.clan = Clan.getByClanIdAndGameId(
+            group.clanIds[0], config.CLASH_ROYALE_ID
+          )
 
-      Promise.props group
+        Promise.props group
 
-    .map Group.sanitize null
+      .map Group.sanitize null
+    , {
+      expireSeconds: FIVE_MINUTES_SECONDS
+      category: category
+    }
 
   getById: ({id}, {user}) ->
     Group.getById id

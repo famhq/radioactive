@@ -102,8 +102,13 @@ class ClanModel
     .then =>
       @GameClans[gameId].upsertById clanId, diff
 
+    .tap ->
+      CacheService.PREFIXES.CLAN_PLAYERS + ':' + clanId
+
   updateByClanIdAndGameId: (clanId, gameId, diff) =>
     @GameClans[gameId].updateById clanId, diff
+    .tap ->
+      CacheService.PREFIXES.CLAN_PLAYERS + ':' + clanId
 
   updateByClanIdsAndGameId: (clanIds, gameId, diff) =>
     @GameClans[gameId].updateAllByIds clanIds, diff
