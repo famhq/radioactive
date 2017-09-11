@@ -5,11 +5,13 @@ moment = require 'moment'
 
 KueCreateService = require './kue_create'
 TagConverterService = require './tag_converter'
+CacheService = require './cache'
 Clan = require '../models/clan'
 config = require '../config'
 
 PLAYER_DATA_TIMEOUT_MS = 10000
 PLAYER_MATCHES_TIMEOUT_MS = 10000
+ONE_DAY_SECONDS = 3600 * 24
 
 class ClashRoyaleAPIService
   formatHashtag: (hashtag) ->
@@ -22,18 +24,40 @@ class ClashRoyaleAPIService
   isValidTag: (hashtag) ->
     hashtag.match /^[0289PYLQGRJCUV]+$/
 
-  request: (path, {method, body, qs} = {}) ->
+  isInvalidTagInCache: (type, tag) ->
+    unless type or tag
+      return false
+    key = "#{CacheService.PREFIXES.CLASH_ROYALE_INVALID_TAG}:#{type}:#{tag}"
+    CacheService.get key
+
+  setInvalidTag: (type, tag) ->
+    unless type or tag
+      return
+    key = "#{CacheService.PREFIXES.CLASH_ROYALE_INVALID_TAG}:#{type}:#{tag}"
+    CacheService.set key, true, {expireSeconds: ONE_DAY_SECONDS}
+
+  request: (path, {tag, type, method, body, qs} = {}) =>
     method ?= 'GET'
-    request "#{config.CLASH_ROYALE_API_URL}#{path}", {
-      json: true
-      method: method
-      headers:
-        'Authorization': "Bearer #{config.CLASH_ROYALE_API_KEY}"
-      body: body
-    }
-    .catch (err) ->
-      console.log 'prodapi err', path
-      throw err
+
+    @isInvalidTagInCache type, tag
+    .then (isInvalid) =>
+      if isInvalid
+        throw new Error 'invalid tag'
+
+      request "#{config.CLASH_ROYALE_API_URL}#{path}", {
+        json: true
+        method: method
+        headers:
+          'Authorization': "Bearer #{config.CLASH_ROYALE_API_KEY}"
+        body: body
+      }
+      .catch (err) =>
+        if err.statusCode is 404
+          @setInvalidTag type, tag
+          .then ->
+            throw err
+        else
+          throw err
 
   getPlayerDataByTag: (tag, {priority, skipCache, isLegacy} = {}) =>
     tag = @formatHashtag tag
@@ -45,13 +69,12 @@ class ClashRoyaleAPIService
     useNew = Math.random() < 1.1
 
     if useNew and not isLegacy
-      Promise.all [
-        @request "/players/%23#{tag}"
-        @request "/players/%23#{tag}/upcomingchests"
-      ]
-      .then ([player, upcomingChests]) ->
-        player.upcomingChests = upcomingChests
-        player
+      @request "/players/%23#{tag}", {type: 'player', tag}
+      .then (player) =>
+        @request "/players/%23#{tag}/upcomingchests", {type: 'player', tag}
+        .then (upcomingChests) ->
+          player.upcomingChests = upcomingChests
+          player
     else # verifying with gold
       console.log "#{config.CR_API_URL}/players/#{tag}"
       request "#{config.CR_API_URL}/players/#{tag}", {
@@ -72,7 +95,7 @@ class ClashRoyaleAPIService
       throw new Error 'invalid tag'
 
     if useNew
-      @request "/players/%23#{tag}/battlelog"
+      @request "/players/%23#{tag}/battlelog", {type: 'player', tag}
       .then (matches) ->
         _.map matches, (match) ->
           match.id = "#{match.battleTime}:" +
@@ -142,7 +165,7 @@ class ClashRoyaleAPIService
       throw new Error 'invalid tag'
 
     if useNew
-      @request "/clans/%23#{tag}"
+      @request "/clans/%23#{tag}", {type: 'clan', tag}
       .catch (err) ->
         console.log 'err clanByTag', err
     else

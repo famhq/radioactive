@@ -452,34 +452,6 @@ class ClashRoyalePlayer
         .then ->
           {playerDiffs: playerDiffs.getAll()}
 
-  # morph api format to our format
-  # getPlayerFromPlayerData: ({playerData}) ->
-  #   {
-  #     currentDeck: playerData.currentDeck
-  #     trophies: playerData.trophies
-  #     upcomingChests: playerData.upcomingChests
-  #     name: playerData.name
-  #     clan: if playerData.clan
-  #     then { \
-  #       tag: playerData.clan.tag, \
-  #       name: playerData.clan.name, \
-  #       badge: playerData.clan.badge
-  #     }
-  #     else null
-  #     level: playerData.level
-  #     arena: playerData.arena
-  #     league: playerData.league
-  #     chestCycle: playerData.chestCycle
-  #     shopOffers: playerData.shopOffers
-  #     stats: _.merge playerData.stats, {
-  #       games: playerData.games
-  #       tournamentGames: playerData.tournamentGames
-  #       wins: playerData.wins
-  #       losses: playerData.losses
-  #       currentStreak: playerData.currentStreak
-  #     }
-  #   }
-
   processUpdatePlayerMatches: ({matches, isBatched, tag}) =>
     if _.isEmpty matches
       return Promise.resolve null
@@ -717,12 +689,12 @@ class ClashRoyalePlayer
             GAME_ID
           )
           text = "#{countUntilNextGoodChest} chests until a
-            #{_.startCase(nextGoodChest)}.
+            #{_.startCase(nextGoodChest?.name)}.
             You had #{stats.wins} wins and
             #{stats.losses} losses today."
         else
           text = "#{countUntilNextGoodChest} chests until a
-            #{_.startCase(nextGoodChest)}."
+            #{_.startCase(nextGoodChest?.name)}."
 
         # TODO: figure out why some players without userIds are initially
         # setup with an updateFrequency other than none

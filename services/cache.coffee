@@ -46,6 +46,7 @@ class CacheService
     USER_DATA_CLASH_ROYALE_DECK_IDS: 'user_data:clash_royale_deck_ids6'
     USER_DAILY_DATA_PUSH: 'user_daily_data:push5'
     CLASH_ROYALE_MATCHES_ID: 'clash_royale_matches:id52'
+    CLASH_ROYALE_INVALID_TAG: 'clash_royale:invalid_tag'
     CLASH_ROYALE_CARD: 'clash_royale_card'
     CLASH_ROYALE_CARD_ALL: 'clash_royale_card:all'
     CLASH_ROYALE_CARD_KEY: 'clash_royale_card_key1'
