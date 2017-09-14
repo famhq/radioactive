@@ -3548,9 +3548,9 @@
       "resolved": "https://registry.npmjs.org/resolve-from/-/resolve-from-1.0.1.tgz"
     },
     "rethinkdbdash": {
-      "version": "2.3.27",
-      "from": "rethinkdbdash@>=2.2.1 <3.0.0",
-      "resolved": "https://registry.npmjs.org/rethinkdbdash/-/rethinkdbdash-2.3.27.tgz"
+      "version": "2.3.31",
+      "from": "rethinkdbdash@>=2.3.31 <3.0.0",
+      "resolved": "https://registry.npmjs.org/rethinkdbdash/-/rethinkdbdash-2.3.31.tgz"
     },
     "right-align": {
       "version": "0.1.3",

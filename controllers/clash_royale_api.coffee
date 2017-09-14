@@ -9,7 +9,6 @@ ClashRoyalePlayerService = require '../services/clash_royale_player'
 ClashRoyaleAPIService = require '../services/clash_royale_api'
 KueCreateService = require '../services/kue_create'
 CacheService = require '../services/cache'
-UserPlayer = require '../models/user_player'
 User = require '../models/user'
 ClashRoyaleDeck = require '../models/clash_royale_deck'
 Player = require '../models/player'
@@ -49,7 +48,7 @@ class ClashRoyaleAPICtrl
                              else existingPlayer.updateFrequency
           }
 
-  refreshByPlayerId: ({playerId, userId, priority}, {user}) ->
+  refreshByPlayerId: ({playerId, userId, isLegacy, priority}, {user}) ->
     playerId = ClashRoyaleAPIService.formatHashtag playerId
 
     isValidId = playerId and playerId.match /^[0289PYLQGRJCUV]+$/
@@ -63,7 +62,9 @@ class ClashRoyaleAPICtrl
       Player.updateByPlayerIdAndGameId playerId, config.CLASH_ROYALE_ID, {
         lastQueuedTime: new Date()
       }
-      ClashRoyaleAPIService.updatePlayerById playerId, {userId, priority}
+      ClashRoyaleAPIService.updatePlayerById playerId, {
+        userId, isLegacy, priority
+      }
       .catch ->
         router.throw {
           status: 400, info: 'unable to find that tag (typo?)'

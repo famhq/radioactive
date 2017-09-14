@@ -34,6 +34,8 @@ YOUTUBE_ID_REGEX = ///
   (?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)
   ([^"&?\/ ]{11})
 ///i
+IMGUR_ID_REGEX = /https?:\/\/(?:i\.)?imgur\.com(?:\/a)?\/(.*?)(?:[\.#\/].*|$)/i
+
 
 class ThreadCtrl
   checkIfBanned: (ipAddr, userId, router) ->
@@ -68,6 +70,27 @@ class ThreadCtrl
       else
         {}
 
+  getAttachment: (body) ->
+    if youtubeId = body?.match(YOUTUBE_ID_REGEX)?[1]
+      return {
+        type: 'video'
+        src: "https://www.youtube.com/embed/#{youtubeId}?autoplay=1"
+        previewSrc: "https://img.youtube.com/vi/#{youtubeId}/maxresdefault.jpg"
+      }
+    else if imgurId = body?.match(IMGUR_ID_REGEX)?[1]
+      if body?.match /\.(gif|mp4|webm)/i
+        return {
+          type: 'video'
+          src: "https://i.imgur.com/#{imgurId}.mp4"
+          previewSrc: "https://i.imgur.com/#{imgurId}h.jpg"
+          mp4Src: "https://i.imgur.com/#{imgurId}.mp4"
+          webmSrc: "https://i.imgur.com/#{imgurId}.webm"
+        }
+      else
+        return {
+          type: 'image'
+          src: "https://i.imgur.com/#{imgurId}.jpg"
+        }
 
   createOrUpdateById: (diff, {user, headers, connection}) =>
     userAgent = headers['user-agent']
@@ -95,8 +118,14 @@ class ThreadCtrl
       images = new RegExp('\\!\\[(.*?)\\]\\((.*?)\\)', 'gi').exec(diff.body)
       firstImageSrc = images?[2]
       # for header image
+      diff.attachments ?= []
       if _.isEmpty(diff.attachments) and firstImageSrc
-        diff.attachments = [{type: 'image', src: firstImageSrc}]
+        diff.attachments.push [{type: 'image', src: firstImageSrc}]
+
+      attachment = @getAttachment diff.body
+      if attachment
+        diff.attachments.push attachment
+
       diff.data ?= {}
       (if diff.deck
         @addDeck diff.deck
@@ -105,11 +134,6 @@ class ThreadCtrl
       )
       .then (deckDiff) =>
         diff = _.defaultsDeep deckDiff, diff
-        youtubeId = diff.body?.match(YOUTUBE_ID_REGEX)?[1] or
-          diff.data?.videoUrl?.match(YOUTUBE_ID_REGEX)?[1]
-        if youtubeId
-          diff.data.videoUrl =
-            "https://www.youtube.com/embed/#{youtubeId}?autoplay=1"
 
         @validateAndCheckPermissions diff, {user}
         .then (diff) ->
@@ -123,19 +147,6 @@ class ThreadCtrl
             Thread.create _.defaults diff, {
               creatorId: user.id
             }
-      .tap (thread) ->
-        if thread.data?.videoUrl
-          keyPrefix = "images/starfire/gv/#{thread.id}"
-          youtubeId = thread.data.videoUrl.match(YOUTUBE_ID_REGEX)?[1]
-          ImageService.getVideoPreview keyPrefix, youtubeId
-          .then (videoPreview) ->
-            if videoPreview
-              Thread.updateById thread.id, {
-                headerImage: videoPreview
-                attachments: (thread.attachments or []).concat [
-                  {type: 'image', src: videoPreview.originalUrl}
-                ]
-              }
       .tap ->
         CacheService.deleteByCategory CacheService.PREFIXES.THREADS
 

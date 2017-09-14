@@ -76,7 +76,7 @@
     "redlock": "^2.0.0",
     "remove": "^0.1.5",
     "request-promise": "^4.1.1",
-    "rethinkdbdash": "^2.2.1",
+    "rethinkdbdash": "^2.3.31",
     "rx-lite": "^4.0.8",
     "socket.io": "^1.7.3",
     "socket.io-redis": "^4.0.0",

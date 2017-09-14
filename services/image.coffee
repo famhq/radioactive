@@ -66,54 +66,5 @@ class ImageService
         else
           resolve key
 
-  getVideoPreview: (keyPrefix, youtubeId) =>
-    unless youtubeId
-      return Promise.resolve null
-    previewUrl = "https://img.youtube.com/vi/#{youtubeId}/maxresdefault.jpg"
-    request previewUrl, {encoding: null}
-    .catch (err) ->
-      console.log 'preview fetch fail', previewUrl
-      smallerPreviewUrl = "https://img.youtube.com/vi/#{youtubeId}/0.jpg"
-      request smallerPreviewUrl, {encoding: null}
-    .then (buffer) =>
-      @getSizeByBuffer (buffer)
-      .then (size) =>
-        Promise.all [
-          @uploadImage
-            key: "#{keyPrefix}.small.png"
-            stream: @toStream
-              buffer: buffer
-              width: SMALL_VIDEO_PREVIEW_WIDTH
-              height: SMALL_VIDEO_PREVIEW_HEIGHT
-
-          @uploadImage
-            key: "#{keyPrefix}.large.png"
-            stream: @toStream
-              buffer: buffer
-              width: LARGE_VIDEO_PREVIEW_WIDTH
-              height: LARGE_VIDEO_PREVIEW_HEIGHT
-        ]
-      .then (imageKeys) ->
-        _.map imageKeys, (imageKey) ->
-          "https://#{config.CDN_HOST}/#{imageKey}"
-      .then ([smallUrl, largeUrl]) ->
-        {
-          originalUrl: largeUrl
-          versions: [
-            {
-              width: SMALL_VIDEO_PREVIEW_WIDTH
-              height: SMALL_VIDEO_PREVIEW_HEIGHT
-              url: smallUrl
-            }
-            {
-              width: LARGE_VIDEO_PREVIEW_WIDTH
-              height: LARGE_VIDEO_PREVIEW_HEIGHT
-              url: largeUrl
-            }
-          ]
-        }
-    .catch ->
-      console.log 'failed to upload'
-      null
 
 module.exports = new ImageService()

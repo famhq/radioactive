@@ -19,7 +19,6 @@ ClashRoyaleAPIService = require './clash_royale_api'
 EmbedService = require './embed'
 Match = require '../models/clash_royale_match'
 User = require '../models/user'
-UserPlayer = require '../models/user_player'
 config = require '../config'
 
 # for now we're not storing user deck info of players that aren't on starfire.

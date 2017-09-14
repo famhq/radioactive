@@ -1,4 +1,5 @@
 _ = require 'lodash'
+Promise = require 'bluebird'
 
 r = require '../services/rethinkdb'
 CacheService = require '../services/cache'
@@ -89,6 +90,10 @@ class PlayerModel
       console.log 'rm userId missing', userId
       return Promise.resolve null
     UserPlayer.deleteByUserIdAndGameId userId, gameId
+    .tap ->
+      prefix = CacheService.PREFIXES.USER_PLAYER_USER_ID_GAME_ID
+      cacheKey = "#{prefix}:#{userId}:#{gameId}"
+      CacheService.deleteByKey cacheKey
 
   updateByPlayerIdsAndGameId: (playerIds, gameId, diff) =>
     @GamePlayers[gameId].updateAllByIds playerIds, diff

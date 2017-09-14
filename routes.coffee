@@ -165,18 +165,12 @@ module.exports = router
 .on 'conversations.getAll', authed ConversationCtrl.getAll
 .on 'conversations.getById', authed ConversationCtrl.getById
 
-.on 'clashRoyaleAPI.setByPlayerTag',
+.on 'clashRoyaleAPI.setByPlayerId',
   authed ClashRoyaleAPICtrl.setByPlayerId
-.on 'clashRoyaleAPI.setByPlayerId', # TODO: rm (legacy) june 2018
-  authed ClashRoyaleAPICtrl.setByPlayerId
-.on 'clashRoyaleAPI.refreshByPlayerTag', # TODO: rm (legacy) june 2018
-  authed ClashRoyaleAPICtrl.refreshByPlayerId
 .on 'clashRoyaleAPI.refreshByPlayerId',
   authed ClashRoyaleAPICtrl.refreshByPlayerId
-.on 'clashRoyaleAPI.refreshByClanId', # TODO: rm (legacy) june 2018
-  authed ClashRoyaleAPICtrl.updateByClanId
-.on 'clashRoyaleAPI.updateByClanId',
-  authed ClashRoyaleAPICtrl.updateByClanId
+.on 'clashRoyaleAPI.refreshByClanId',
+  authed ClashRoyaleAPICtrl.refreshByClanId
 
 .on 'clashRoyaleDecks.getAll', authed ClashRoyaleDeckCtrl.getAll
 .on 'clashRoyaleDecks.getById', authed ClashRoyaleDeckCtrl.getById
