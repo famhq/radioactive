@@ -1,6 +1,7 @@
 _ = require 'lodash'
 router = require 'exoid-router'
 Promise = require 'bluebird'
+request = require 'request-promise'
 uuid = require 'uuid'
 
 User = require '../models/user'
@@ -35,6 +36,7 @@ YOUTUBE_ID_REGEX = ///
   ([^"&?\/ ]{11})
 ///i
 IMGUR_ID_REGEX = /https?:\/\/(?:i\.)?imgur\.com(?:\/a)?\/(.*?)(?:[\.#\/].*|$)/i
+STREAMABLE_ID_REGEX = /https?:\/\/streamable\.com\/([a-zA-Z0-9]+)/i
 
 
 class ThreadCtrl
@@ -72,14 +74,14 @@ class ThreadCtrl
 
   getAttachment: (body) ->
     if youtubeId = body?.match(YOUTUBE_ID_REGEX)?[1]
-      return {
+      return Promise.resolve {
         type: 'video'
         src: "https://www.youtube.com/embed/#{youtubeId}?autoplay=1"
         previewSrc: "https://img.youtube.com/vi/#{youtubeId}/maxresdefault.jpg"
       }
     else if imgurId = body?.match(IMGUR_ID_REGEX)?[1]
       if body?.match /\.(gif|mp4|webm)/i
-        return {
+        return Promise.resolve {
           type: 'video'
           src: "https://i.imgur.com/#{imgurId}.mp4"
           previewSrc: "https://i.imgur.com/#{imgurId}h.jpg"
@@ -87,9 +89,26 @@ class ThreadCtrl
           webmSrc: "https://i.imgur.com/#{imgurId}.webm"
         }
       else
-        return {
+        return Promise.resolve {
           type: 'image'
           src: "https://i.imgur.com/#{imgurId}.jpg"
+        }
+    else if streamableId = body?.match(STREAMABLE_ID_REGEX)?[1]
+      return request "https://api.streamable.com/videos/#{streamableId}", {
+        json: true
+      }
+      .then (data) ->
+        paddingBottom = data.embed_code?.match(
+          /padding-bottom: ([0-9]+\.?[0-9]*%)/i
+        )?[1]
+        aspectRatio = 100 / parseInt(paddingBottom)
+        if isNaN aspectRatio
+          aspectRatio = 1.777 # 16:9
+        {
+          type: 'video'
+          src: "https://streamable.com/o/#{streamableId}"
+          previewSrc: data.thumbnail_url
+          aspectRatio: aspectRatio
         }
 
   createOrUpdateById: (diff, {user, headers, connection}) =>
@@ -122,17 +141,18 @@ class ThreadCtrl
       if _.isEmpty(diff.attachments) and firstImageSrc
         diff.attachments.push [{type: 'image', src: firstImageSrc}]
 
-      attachment = @getAttachment diff.body
-      if attachment
-        diff.attachments.push attachment
-
       diff.data ?= {}
-      (if diff.deck
-        @addDeck diff.deck
-      else
-        Promise.resolve {}
-      )
-      .then (deckDiff) =>
+      Promise.all [
+        @getAttachment diff.body
+        if diff.deck
+          @addDeck diff.deck
+        else
+          Promise.resolve {}
+      ]
+      .then ([attachment, deckDiff]) =>
+        if attachment
+          diff.attachments.push attachment
+
         diff = _.defaultsDeep deckDiff, diff
 
         @validateAndCheckPermissions diff, {user}
