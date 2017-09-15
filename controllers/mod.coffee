@@ -47,7 +47,8 @@ class ModCtrl
 
       Ban.create ban
     .then ->
-      ChatMessage.deleteAllByUserIdAndGroupId userId, groupId
+      if groupId
+        ChatMessage.deleteAllByUserIdAndGroupId userId, groupId
 
   unbanByUserId: ({userId, groupId}, {user}) ->
     unless user.flags.isModerator

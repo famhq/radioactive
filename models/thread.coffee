@@ -12,6 +12,7 @@ CATEGORY_SCORE_INDEX = 'categoryScore'
 CATEGORY_ADD_TIME_INDEX = 'categoryAddTime'
 ADD_TIME_INDEX = 'addTime'
 LAST_UPDATE_TIME_INDEX = 'lastUpdateTime'
+IS_SCORE_STALE_INDEX = 'isScoreStale'
 
 # update the scores for posts up until they're 10 days old
 SCORE_UPDATE_TIME_RANGE_S = 3600 * 24 * 10
@@ -34,6 +35,7 @@ defaultThread = (thread) ->
     upvotes: 0
     downvotes: 0
     score: 0
+    isScoreStale: false
     data: {}
     attachmentIds: []
     attachments: []
@@ -54,6 +56,7 @@ class ThreadModel
         {name: CATEGORY_ADD_TIME_INDEX, fn: (row) ->
           [row('category'), row('addTime')]}
         {name: ATTACHMENT_IDS_INDEX}
+        {name: IS_SCORE_STALE_INDEX}
         {name: ADD_TIME_INDEX}
         {name: LAST_UPDATE_TIME_INDEX}
       ]
@@ -78,9 +81,7 @@ class ThreadModel
   updateScores: =>
     r.table THREADS_TABLE
     # .between ['general'], ['generalZ'], {index: 'categoryScore'}
-    .between r.now().sub(90), r.now(), {
-      index: LAST_UPDATE_TIME_INDEX
-    }
+    .getAll true, {index: IS_SCORE_STALE_INDEX}
     .run()
     .then (threads) =>
       console.log 'updating threads', threads?.length
@@ -89,7 +90,7 @@ class ThreadModel
         # ^ simplification in comments
 
         # people heavily downvote, so offset it a bit...
-        rawScore = Math.abs(thread.upvotes - thread.downvotes)
+        rawScore = Math.abs(thread.upvotes * 1.5 - thread.downvotes)
         if thread.category is 'news'
           rawScore = Math.max(10, rawScore)
           rawScore *= 5
@@ -98,12 +99,13 @@ class ThreadModel
         postAgeHours = (Date.now() - thread.addTime.getTime()) / (3600 * 1000)
         score = sign * order / Math.pow(2, postAgeHours / 3.76)
         score = Math.round(score * 1000000)
-        @updateById thread.id, {score}
+        @updateById thread.id, {score, isScoreStale: false}
       , {concurrency: 50}
 
 
-  getAll: ({category, limit, language, sort} = {}) ->
+  getAll: ({category, language, sort, skip, limit} = {}) ->
     limit ?= 20
+    skip ?= 0
 
     if category
       index = if sort is 'new' \
@@ -121,7 +123,8 @@ class ThreadModel
       else
         q = q.orderBy {index: r.desc(SCORE_INDEX)}
 
-    q = q.limit limit
+    q = q.skip skip
+    .limit limit
 
     # if sort is 'new'
     #   q = q.filter r.row('upvotes').sub(r.row('downvotes')).gt -2
@@ -139,7 +142,8 @@ class ThreadModel
     .map defaultThread
 
   updateById: (id, diff) ->
-    diff = _.defaults {lastUpdateTime: new Date()}, diff
+    diff = _.defaults diff, {lastUpdateTime: new Date(), isScoreStale: true}
+
     r.table THREADS_TABLE
     .get id
     .update diff

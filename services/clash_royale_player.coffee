@@ -176,7 +176,7 @@ class ClashRoyalePlayer
 
     Promise.map matches, (match) ->
       matchId = match.id
-      Match.getById matchId, {preferCache: true}
+      Match.existsById matchId, {preferCache: true}
       .then (existingMatch) ->
         if existingMatch and not IS_TEST_RUN then null else match
     .then _.filter
@@ -357,7 +357,7 @@ class ClashRoyalePlayer
               'minute', moment(match.battleTime)
             )
 
-            prefix = CacheService.PREFIXES.CLASH_ROYALE_MATCHES_ID
+            prefix = CacheService.PREFIXES.CLASH_ROYALE_MATCHES_ID_EXISTS
             key = "#{prefix}:#{matchId}"
 
             matchObj = {
@@ -387,7 +387,7 @@ class ClashRoyalePlayer
                 }
 
             # don't need to block for any of these
-            CacheService.set key, matchObj, {expireSeconds: SIX_HOURS_S}
+            CacheService.set key, true, {expireSeconds: SIX_HOURS_S}
 
             if DECK_TRACKED_GAME_TYPES.indexOf(type) isnt -1
               group = [
@@ -572,7 +572,7 @@ class ClashRoyalePlayer
         Group.addUser clan.groupId, userId
         return clan
       else if not clan and clanId
-        ClashRoyaleAPIService.updateByClanId clanId, {userId}
+        ClashRoyaleAPIService.refreshByClanId clanId, {userId}
         .timeout CLAN_TIMEOUT_MS
         .catch (err) ->
           console.log 'clan refresh err', err

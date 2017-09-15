@@ -93,7 +93,7 @@ class ClashRoyaleAPIService
       _.map matches, (match) ->
         match.id = "#{match.battleTime}:" +
                     "#{match.team[0].tag}:#{match.opponent[0].tag}"
-        match.battleType = if match.challengeTitle is 'Grand Challenge' \
+        match.battleType = if match.challengeId is 65000000 \
                      then 'grandChallenge'
                      else if match.type is 'challenge'
                      then 'classicChallenge'

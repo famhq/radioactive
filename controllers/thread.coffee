@@ -202,7 +202,7 @@ class ThreadCtrl
         Thread.updateById id, diff
       ]
 
-  getAll: ({category, language, sort, limit}, {user}) ->
+  getAll: ({category, language, sort, skip, limit}, {user}) ->
     if language isnt 'es' and user.username isnt 'austin'
       category ?= 'news'
 
@@ -210,11 +210,23 @@ class ThreadCtrl
     category or= 'general'
 
     key = CacheService.PREFIXES.THREADS + ':' + [
-      category, language, sort
+      category, language, sort, skip, limit
     ].join(':')
 
     CacheService.preferCache key, ->
-      Thread.getAll {category, sort, language, limit}
+      Promise.all [
+        Thread.getAll {category, sort, language, skip, limit}
+        # mix in some new posts
+        if sort is 'top' and not skip
+          Thread.getAll {category, sort: 'new', language, limit: 3}
+        else
+          Promise.resolve null
+      ]
+      .then ([allThreads, newThreads]) ->
+        _.map newThreads, (thread, i) ->
+          unless _.find allThreads, {id: thread.id}
+            allThreads.splice (i + 1) * 2, 0, thread
+        allThreads
       .map EmbedService.embed {
         userId: user.id
         embed: if category is 'decks' \

@@ -80,7 +80,7 @@ class ClashRoyaleAPICtrl
         lastQueuedTime: new Date()
       }
     .then ->
-      ClashRoyaleAPIService.updateByClanId clanId
+      ClashRoyaleAPIService.refreshByClanId clanId
 
   updatePlayerData: ({body, params, headers}) ->
     radioactiveHost = config.RADIOACTIVE_API_URL.replace /https?:\/\//i, ''

@@ -121,6 +121,21 @@ class ClashRoyaleMatchModel
     else
       get()
 
+  existsById: (id, {preferCache} = {}) ->
+    get = ->
+      knex.table POSTGRES_MATCH_TABLE
+      .first 'id'
+      .where {id}
+      .then (match) ->
+        Boolean match
+
+    if preferCache
+      prefix = CacheService.PREFIXES.CLASH_ROYALE_MATCHES_ID_EXISTS
+      key = "#{prefix}:#{id}"
+      CacheService.preferCache key, get, {expireSeconds: SIX_HOURS_S}
+    else
+      get()
+
   sanitize: _.curry (requesterId, clashRoyaleMatch) ->
     _.pick clashRoyaleMatch, [
       'id'
