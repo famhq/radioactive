@@ -92,8 +92,6 @@ class ClashRoyaleCardModel
     else
       get()
 
-
-
   updateById: (id, diff) ->
     r.table CLASH_ROYALE_CARD_TABLE
     .get id
@@ -113,6 +111,9 @@ class ClashRoyaleCardModel
     .get id
     .delete()
     .run()
+
+  getKeyByName: (name) ->
+    _.snakeCase name.replace '.', ''
 
   sanitize: _.curry (requesterId, clashRoyaleCard) ->
     _.pick clashRoyaleCard, [

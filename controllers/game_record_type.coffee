@@ -24,32 +24,32 @@ class GameRecordTypeCtrl
       EmbedService.TYPES.GAME_RECORD_TYPE[_.snakeCase(item).toUpperCase()]
 
     # TODO: rm ~mid sept
-    key = "#{CacheService.PREFIXES.USER_RECORDS_MIGRATE}:#{playerId}"
-    CacheService.runOnce key, ->
-      if user.joinTime?.getTime() < 1504620997117 # sept 5
-        ClashRoyalePlayerRecord.migrateUserRecords playerId
-    .then ->
-      GameRecordType.getAllByGameId gameId
-      Promise.resolve([
-        {
-          id: config.CLASH_ROYALE_TROPHIES_RECORD_ID
-          name: 'Trophies'
-          timeScale: 'minutes'
-          gameId: config.CLASH_ROYALE_ID
-        }
-        {
-          id: config.CLASH_ROYALE_DONATIONS_RECORD_ID
-          name: 'Donations'
-          timeScale: 'weeks'
-          gameId: config.CLASH_ROYALE_ID
-        }
-        {
-          id: config.CLASH_ROYALE_CLAN_CROWNS_RECORD_ID
-          name: 'Clan chest crowns'
-          timeScale: 'weeks'
-          gameId: config.CLASH_ROYALE_ID
-        }
-      ])
-      .map EmbedService.embed {embed, playerId}
+    # key = "#{CacheService.PREFIXES.USER_RECORDS_MIGRATE}:#{playerId}"
+    # CacheService.runOnce key, ->
+    #   if user.joinTime?.getTime() < 1504620997117 # sept 5
+    #     ClashRoyalePlayerRecord.migrateUserRecords playerId
+    # .then ->
+    GameRecordType.getAllByGameId gameId
+    Promise.resolve([
+      {
+        id: config.CLASH_ROYALE_TROPHIES_RECORD_ID
+        name: 'Trophies'
+        timeScale: 'minutes'
+        gameId: config.CLASH_ROYALE_ID
+      }
+      {
+        id: config.CLASH_ROYALE_DONATIONS_RECORD_ID
+        name: 'Donations'
+        timeScale: 'weeks'
+        gameId: config.CLASH_ROYALE_ID
+      }
+      {
+        id: config.CLASH_ROYALE_CLAN_CROWNS_RECORD_ID
+        name: 'Clan chest crowns'
+        timeScale: 'weeks'
+        gameId: config.CLASH_ROYALE_ID
+      }
+    ])
+    .map EmbedService.embed {embed, playerId}
 
 module.exports = new GameRecordTypeCtrl()

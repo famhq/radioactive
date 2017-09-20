@@ -13,3 +13,6 @@ sql-1:
     matches
     player_records
     clan_records
+
+Probably should use Redshift or BigQuery for match/deck/etc... data. Though that
+likely means dropping knex

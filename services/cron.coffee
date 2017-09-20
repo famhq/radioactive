@@ -32,7 +32,7 @@ class CronService
 
     @addCron 'quarterMinute', '15 * * * * *', ->
       CleanupService.clean()
-      Thread.updateScores()
+      Thread.updateScores 'stale'
 
     # minute on half minute
     # @addCron 'halfMinute', '30 * * * * *', ->
@@ -45,8 +45,11 @@ class CronService
       if config.ENV is config.ENVS.PROD
         ClashRoyalePlayerService.updateTopPlayers()
 
+    @addCron 'ten min', '0 */10 * * * *', ->
+      Thread.updateScores 'time'
+
     @addCron 'hourly', '0 0 * * * *', ->
-      VideoDiscoveryService.discover()
+      # VideoDiscoveryService.discover()
       Ban.unbanTemp()
 
     # @addCron 'halfHourly', ' 0 0,30 * * * *', ->

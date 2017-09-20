@@ -5,6 +5,8 @@ _ = require 'lodash'
 knex = require './knex'
 config = require '../config'
 
+SETUP_TIMEOUT_MS = 10000
+
 class PostgresSetupService
   # Setup rethinkdb
   setup: (tables) ->
@@ -51,7 +53,7 @@ class PostgresSetupService
         # pgadmin
         # just login with radioactive user in pgadmin...
         # GRANT ALL PRIVILEGES ON kinds TO postgres;
-
+    .timeout SETUP_TIMEOUT_MS
 
 
 module.exports = new PostgresSetupService()

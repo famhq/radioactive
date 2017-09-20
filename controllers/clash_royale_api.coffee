@@ -73,7 +73,7 @@ class ClashRoyaleAPICtrl
     .then ->
       return null
 
-  updateByClanId: ({clanId}, {user}) ->
+  refreshByClanId: ({clanId}, {user}) ->
     Clan.getByClanIdAndGameId clanId, config.CLASH_ROYALE_ID
     .then (clan) ->
       Clan.updateByClanIdAndGameId clanId, config.CLASH_ROYALE_ID, {

@@ -30,14 +30,14 @@ class ClashRoyalePlayerDeckCtrl
         router.throw {status: 403, info: 'profile is private'}
 
       # TODO: rm ~mid sept
-      key = "#{CacheService.PREFIXES.USER_DECKS_MIGRATE}:#{player.id}"
-      CacheService.runOnce key, ->
-        if user.joinTime?.getTime() < 1504620997117 # sept 5
-          ClashRoyalePlayerDeck.migrateUserDecks player.id
-      .then ->
-        ClashRoyalePlayerDeck.getAllByPlayerId playerId, {sort, type}
-        .map EmbedService.embed {embed: defaultEmbed}
-        .map ClashRoyalePlayerDeck.sanitize null
+      # key = "#{CacheService.PREFIXES.USER_DECKS_MIGRATE}:#{player.id}"
+      # CacheService.runOnce key, ->
+      #   if user.joinTime?.getTime() < 1504620997117 # sept 5
+      #     ClashRoyalePlayerDeck.migrateUserDecks player.id
+      # .then ->
+      ClashRoyalePlayerDeck.getAllByPlayerId playerId, {sort, type}
+      .map EmbedService.embed {embed: defaultEmbed}
+      .map ClashRoyalePlayerDeck.sanitize null
 
   getByDeckId: ({deckId}, {user}) ->
     Player.getByUserIdAndGameId userId, config.CLASH_ROYALE_ID
@@ -45,6 +45,11 @@ class ClashRoyalePlayerDeckCtrl
       unless player
         router.throw {status: 404, info: 'player not found'}
       ClashRoyalePlayerDeck.getByDeckIdAndPlayerId deckId, player.id
+    .then EmbedService.embed {embed: defaultEmbed}
+    .then ClashRoyalePlayerDeck.sanitize null
+
+  getById: ({id}, {user}) ->
+    ClashRoyalePlayerDeck.getById id
     .then EmbedService.embed {embed: defaultEmbed}
     .then ClashRoyalePlayerDeck.sanitize null
 

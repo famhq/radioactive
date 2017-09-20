@@ -61,7 +61,8 @@ class ClashRoyalePlayerDeckModel
       tableName: PLAYER_DECKS_TABLE
       fields: fields
       indexes: [
-        {columns: ['playerId', 'type', 'deckId'], type: 'unique'}
+        # for some reason postgres/knex tries adding this again on restart
+        # {columns: ['playerId', 'type', 'deckId'], type: 'unique'}
         {columns: ['playerId', 'lastUpdateTime']}
       ]
     }
@@ -82,6 +83,8 @@ class ClashRoyalePlayerDeckModel
       clashRoyalePlayerDeck
 
   getById: (id) ->
+    unless id
+      return Promise.resolve null
     knex PLAYER_DECKS_TABLE
     .first '*'
     .where {id}

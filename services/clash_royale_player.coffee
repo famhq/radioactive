@@ -63,7 +63,8 @@ class ClashRoyalePlayer
       {battleType, team, opponent} = match
       _.filter _.flatten _.map team.concat(opponent), (player) ->
         if ENABLE_ANON_PLAYER_DECKS or playerDiffs.getAll().all[player.tag]
-          cardKeys = _.map player.cards, ({name}) -> _.snakeCase(name)
+          cardKeys = _.map player.cards, ({name}) ->
+            ClashRoyaleCard.getKeyByName name
           [
             {
               playerId: player.tag.replace '#', ''
@@ -108,7 +109,8 @@ class ClashRoyalePlayer
   createNewDecks: (matches, cards) ->
     deckKeys = _.uniq _.flatten _.map matches, ({team, opponent}) ->
       _.map team.concat(opponent), (player) ->
-        cardKeys = _.map player.cards, ({name}) -> _.snakeCase(name)
+        cardKeys = _.map player.cards, ({name}) ->
+          ClashRoyaleCard.getKeyByName name
         ClashRoyaleDeck.getDeckId cardKeys
     ClashRoyaleDeck.getAllByIds deckKeys
     .then (existingDecks) ->
@@ -228,11 +230,12 @@ class ClashRoyalePlayer
             teamPlayers = _.filter _.map team, (player) ->
               playerDiffs.getCachedById player.tag
             teamDeckIds = _.map team, (player) ->
-              cardKeys = _.map player.cards, ({name}) -> _.snakeCase name
+              cardKeys = _.map player.cards, ({name}) ->
+                ClashRoyaleCard.getKeyByName name
               ClashRoyaleDeck.getDeckId cardKeys
             teamCardIds = _.map team, (player) ->
               _.map player.cards, ({name}) ->
-                key = _.snakeCase name
+                key = ClashRoyaleCard.getKeyByName name
                 _.find(cards, {key})?.id
             teamUserIds = _.flatten _.map teamPlayers, (player) ->
               player.userIds
@@ -241,11 +244,12 @@ class ClashRoyalePlayer
             opponentPlayers = _.filter _.map opponent, (player) ->
               playerDiffs.getCachedById player.tag
             opponentDeckIds = _.map opponent, (player) ->
-              cardKeys = _.map player.cards, ({name}) -> _.snakeCase name
+              cardKeys = _.map player.cards, ({name}) ->
+                ClashRoyaleCard.getKeyByName name
               ClashRoyaleDeck.getDeckId cardKeys
             opponentCardIds = _.map opponent, (player) ->
               _.map player.cards, ({name}) ->
-                key = _.snakeCase name
+                key = ClashRoyaleCard.getKeyByName name
                 _.find(cards, {key})?.id
             opponentUserIds = _.flatten _.map opponentPlayers, (player) ->
               player.userIds

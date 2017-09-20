@@ -22,10 +22,9 @@ config = require '../config'
 defaultEmbed = [
   EmbedService.TYPES.THREAD.CREATOR
   EmbedService.TYPES.THREAD.COMMENT_COUNT
-  EmbedService.TYPES.THREAD.SCORE
 ]
-deckEmbed = [
-  EmbedService.TYPES.THREAD.DECK
+playerDeckEmbed = [
+  EmbedService.TYPES.THREAD.PLAYER_DECK
 ]
 
 MAX_LENGTH = 5000
@@ -222,23 +221,24 @@ class ThreadCtrl
         Thread.updateById id, diff
       ]
 
-  getAll: ({category, language, sort, skip, limit}, {user}) ->
+  getAll: ({categories, language, sort, skip, limit}, {user}) ->
     if language isnt 'es' and user.username isnt 'austin'
-      category ?= 'news'
+      categories ?= ['news']
 
     # default to this so clan recruiting isn't shown
-    category or= 'general'
+    if not categories or categories[0] is 'all'
+      categories = ['general', 'deckGuide']
 
     key = CacheService.PREFIXES.THREADS + ':' + [
-      category, language, sort, skip, limit
+      categories.join(','), language, sort, skip, limit
     ].join(':')
 
     CacheService.preferCache key, ->
       Promise.all [
-        Thread.getAll {category, sort, language, skip, limit}
+        Thread.getAll {categories, sort, language, skip, limit}
         # mix in some new posts
         if sort is 'top' and not skip
-          Thread.getAll {category, sort: 'new', language, limit: 3}
+          Thread.getAll {categories, sort: 'new', language, limit: 3}
         else
           Promise.resolve null
       ]
@@ -247,12 +247,13 @@ class ThreadCtrl
           unless _.find allThreads, {id: thread.id}
             allThreads.splice (i + 1) * 2, 0, thread
         allThreads
-      .map EmbedService.embed {
-        userId: user.id
-        embed: if category is 'decks' \
-               then defaultEmbed.concat deckEmbed
-               else defaultEmbed
-      }
+      .map (thread) ->
+        EmbedService.embed {
+          userId: user.id
+          embed: if thread.category is 'deckGuide' \
+                 then defaultEmbed.concat playerDeckEmbed
+                 else defaultEmbed
+        }, thread
       .map (thread) ->
         if thread?.translations[language]
           _.defaults thread?.translations[language], thread

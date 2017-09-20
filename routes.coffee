@@ -1,5 +1,6 @@
 router = require 'exoid-router'
 
+AddonCtrl = require './controllers/addon'
 AuthCtrl = require './controllers/auth'
 ChatMessageCtrl = require './controllers/chat_message'
 ClanCtrl = require './controllers/clan'
@@ -79,6 +80,8 @@ module.exports = router
   authed UserFollowerCtrl.followByUserId
 .on 'userFollowers.unfollowByUserId',
   authed UserFollowerCtrl.unfollowByUserId
+
+.on 'addons.voteById', authed AddonCtrl.voteById
 
 .on 'clanRecordTypes.getAllByClanIdAndGameId',
   authed ClanRecordTypeCtrl.getAllByClanIdAndGameId
@@ -179,6 +182,8 @@ module.exports = router
   authed ClashRoyalePlayerDeckCtrl.getAllByPlayerId
 .on 'clashRoyalePlayerDecks.getByDeckId',
   authed ClashRoyalePlayerDeckCtrl.getByDeckId
+.on 'clashRoyalePlayerDecks.getById',
+  authed ClashRoyalePlayerDeckCtrl.getById
 
 .on 'clashRoyaleCards.getAll', authed ClashRoyaleCardCtrl.getAll
 .on 'clashRoyaleCards.getById', authed ClashRoyaleCardCtrl.getById

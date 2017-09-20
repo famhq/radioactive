@@ -19,6 +19,7 @@ Star = require '../models/star'
 ClashRoyaleClanRecord = require '../models/clash_royale_clan_record'
 GroupRecord = require '../models/group_record'
 ClashRoyalePlayerRecord = require '../models/clash_royale_player_record'
+ClashRoyalePlayerDeck = require '../models/clash_royale_player_deck'
 UserGroupData = require '../models/user_group_data'
 Player = require '../models/player'
 UserPlayer = require '../models/user_player'
@@ -50,7 +51,7 @@ TYPES =
     USER: 'star:user'
     GROUP: 'star:group'
   GROUP:
-    USER_IDS: 'group:user_ids'
+    USER_IDS: 'group:userIds'
     USERS: 'group:users'
     CONVERSATIONS: 'group:conversations'
     STAR: 'group:star'
@@ -70,7 +71,7 @@ TYPES =
     CREATOR: 'thread:creator'
     COMMENT_COUNT: 'thread:commentCount'
     MY_VOTE: 'thread:myVote'
-    DECK: 'thread:deck'
+    PLAYER_DECK: 'thread:playerDeck'
   USER:
     DATA: 'user:data'
     IS_ONLINE: 'user:isOnline'
@@ -365,11 +366,21 @@ embedFn = _.curry (props, object) ->
           )
         , {expireSeconds: FIVE_MINUTES_SECONDS}
 
-      when TYPES.THREAD.DECK
+      when TYPES.THREAD.PLAYER_DECK
         key = CacheService.PREFIXES.THREAD_DECK + ':' + embedded.id
-        embedded.deck = CacheService.preferCache key, ->
-          Deck.getById embedded.data.deckId
-          .then embedFn {embed: [TYPES.CLASH_ROYALE_DECK.CARDS]}
+        embedded.playerDeck = CacheService.preferCache key, ->
+          ClashRoyalePlayerDeck.getById embedded.data.playerDeckId
+          .then embedFn {embed: [TYPES.CLASH_ROYALE_PLAYER_DECK.DECK]}
+          .then (playerDeck) ->
+            playerDeck = _.pick playerDeck, [
+              'deck', 'wins', 'losses', 'draws', 'type', 'playerId', 'deck'
+            ]
+            playerDeck.deck = _.pick playerDeck.deck, [
+              'wins', 'losses', 'draws', 'cards'
+            ]
+            playerDeck.deck.cards = _.map playerDeck.deck.cards, (card) ->
+              _.pick card, ['name', 'key']
+            playerDeck
         , {expireSeconds: ONE_DAY_SECONDS}
 
       when TYPES.THREAD.CREATOR
@@ -467,7 +478,7 @@ embedFn = _.curry (props, object) ->
         embedded.deck = CacheService.preferCache key, ->
           ClashRoyaleDeck.getById embedded.deckId
           .then embedFn {embed: [TYPES.CLASH_ROYALE_DECK.CARDS]}
-          .then ClashRoyaleDeck.sanitizeLite null
+          .then ClashRoyaleDeck.sanitize null
         , {expireSeconds: ONE_DAY_SECONDS}
 
       else

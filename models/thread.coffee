@@ -78,13 +78,23 @@ class ThreadModel
     .run()
     .then defaultThread
 
-  updateScores: =>
-    r.table THREADS_TABLE
-    # .between ['general'], ['generalZ'], {index: 'categoryScore'}
-    .getAll true, {index: IS_SCORE_STALE_INDEX}
-    .run()
+  updateScores: (type = 'stale') =>
+    # FIXME: also need to factor in time when grabbing threads. Even without
+    # an upvote, threads need to eventually be updated for time increasing.
+    # maybe do it by addTime up until 3 days, and run not as freq?
+
+    (if type is 'stale'
+      r.table THREADS_TABLE
+      # .between ['general'], ['generalZ'], {index: 'categoryScore'}
+      .getAll true, {index: IS_SCORE_STALE_INDEX}
+      .run()
+    else
+      r.table THREADS_TABLE
+      .between r.now().sub(3600 * 24 * 3), r.now(), {index: ADD_TIME_INDEX}
+      .run()
+    )
     .then (threads) =>
-      console.log 'updating threads', threads?.length
+      console.log 'updating threads', type, threads?.length
       Promise.map threads, (thread) =>
         # https://medium.com/hacking-and-gonzo/how-reddit-ranking-algorithms-work-ef111e33d0d9
         # ^ simplification in comments
@@ -103,19 +113,32 @@ class ThreadModel
       , {concurrency: 50}
 
 
-  getAll: ({category, language, sort, skip, limit} = {}) ->
+  getAll: ({categories, language, sort, skip, limit} = {}) ->
     limit ?= 20
     skip ?= 0
 
-    if category
+    if skip + limit > 20000 # would be slow in rethink. 1000 pages is plenty
+      throw new Error 'no results found'
+
+    # https://github.com/rethinkdb/rethinkdb/issues/4325
+    if not _.isEmpty categories
       index = if sort is 'new' \
               then CATEGORY_ADD_TIME_INDEX
               else CATEGORY_SCORE_INDEX
-      q = r.table THREADS_TABLE
-      .between [category], [category + 'Z'], {
-        index: index
-      }
-      .orderBy {index: r.desc(index)}
+
+      q = r.expr []
+      _.map categories, (category) ->
+        q = q.union(
+          r.table THREADS_TABLE
+          .between [category], [category + 'Z'], {
+            index: index
+          }
+          .orderBy({index: r.desc(index)})
+          .limit skip + limit
+          # , {interleave: 'time'} # this crashes rethinkdb...
+        )
+        # re-sort after union
+        q = q.orderBy r.desc if sort is 'new' then 'time' else 'score'
     else
       q = r.table THREADS_TABLE
       if sort is 'new'
@@ -125,11 +148,7 @@ class ThreadModel
 
     q = q.skip skip
     .limit limit
-
-    # if sort is 'new'
-    #   q = q.filter r.row('upvotes').sub(r.row('downvotes')).gt -2
-
-    q.run()
+    .run()
     .map defaultThread
 
   getAllByAttachmentIds: (ids, {limit} = {}) ->
@@ -180,7 +199,7 @@ class ThreadModel
       'headerImage'
       'body'
       'data'
-      'deck'
+      'playerDeck'
       'category'
       'comments'
       'commentCount'

@@ -370,7 +370,8 @@ class ClashRoyaleDeckModel
 
   # TODO: different sanitization for API
   sanitizeLite: _.curry (requesterId, clashRoyaleDeck) ->
-    _.pick clashRoyaleDeck, [
+    console.log 'sanitize'
+    clashRoyaleDeck = _.pick clashRoyaleDeck, [
       'cardIds'
       'cards' # req for decks tab on profile
       'averageElixirCost'
@@ -379,5 +380,7 @@ class ClashRoyaleDeckModel
       'draws'
       'addTime'
     ]
+    clashRoyaleDeck.cards = _.omit clashRoyaleDeck, ['data']
+    clashRoyaleDeck
 
 module.exports = new ClashRoyaleDeckModel()
