@@ -57,6 +57,7 @@ module.exports = router
 .on 'users.getById', authed UserCtrl.getById
 .on 'users.getByUsername', authed UserCtrl.getByUsername
 .on 'users.updateById', authed UserCtrl.updateById
+.on 'users.getAllByPlayerIdAndGameId', authed UserCtrl.getAllByPlayerIdAndGameId
 .on 'users.searchByUsername', authed UserCtrl.searchByUsername
 .on 'users.setUsername', authed UserCtrl.setUsername
 .on 'users.setAvatarImage', authed UserCtrl.setAvatarImage

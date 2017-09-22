@@ -56,6 +56,16 @@ class UserModel
     .run()
     .then defaultUser
 
+  getLastActiveByIds: (ids) ->
+    r.table USERS_TABLE
+    .getAll r.args(ids)
+    .filter r.row('username').ne null
+    .orderBy r.desc 'lastActiveTime'
+    .nth 0
+    .default null
+    .run()
+    .then defaultUser
+
   getByFacebookId: (facebookId) ->
     r.table USERS_TABLE
     .getAll facebookId, {index: FACEBOOK_ID_INDEX}

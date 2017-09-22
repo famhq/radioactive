@@ -264,6 +264,17 @@ class ThreadCtrl
       expireSeconds: ONE_MINUTE_SECONDS
       category: CacheService.PREFIXES.THREADS
     }
+    .then (threads) ->
+      ThreadVote.getAllByCreatorIdAndParents(
+        _.map threads, ({id}) ->
+          [user.id, id, 'thread']
+      )
+      .then (threadVotes) ->
+        threads = _.map threads, (thread) ->
+          if myVote = _.find threadVotes, {parentId: thread.id}
+            thread.myVote = myVote
+          thread
+        threads
 
   getById: ({id, language}, {user}) ->
     key = CacheService.PREFIXES.THREAD + ':' + id + ':' + language

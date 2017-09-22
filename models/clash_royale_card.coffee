@@ -113,7 +113,7 @@ class ClashRoyaleCardModel
     .run()
 
   getKeyByName: (name) ->
-    _.snakeCase name.replace '.', ''
+    _.snakeCase name.replace /\./g, ''
 
   sanitize: _.curry (requesterId, clashRoyaleCard) ->
     _.pick clashRoyaleCard, [

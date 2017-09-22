@@ -428,6 +428,9 @@ class ClashRoyalePlayer
         .then =>
           start = Date.now()
           Promise.all [
+            # TODO: this is slowest by far. ~500-1000ms....
+            # and others seem to wait for it to complete
+            # (postgres pool too small?)
             Match.batchCreate batchMatches
             .catch (err) ->
               console.log 'match create postgres err', err

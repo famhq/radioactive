@@ -8,7 +8,7 @@ Player = require '../models/player'
 User = require '../models/user'
 config = require '../config'
 
-HEALTHCHECK_TIMEOUT = 60000
+HEALTHCHECK_TIMEOUT = 10000
 AUSTIN_TAG = '22CJ9CQC0'
 AUSTIN_USERNAME = 'austin'
 

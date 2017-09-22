@@ -36,11 +36,6 @@ class PlayerModel
         .then (player) ->
           if player
             _.defaults {isVerified: userPlayer.isVerified}, player
-          # else
-          #   @migrate {userId, gameId, userPlayerExists}
-          #   .then =>
-          #     unless retry
-          #       @getByUserIdAndGameId userId, gameId, {retry: true}
 
     if preferCache
       prefix = CacheService.PREFIXES.PLAYER_USER_ID_GAME_ID

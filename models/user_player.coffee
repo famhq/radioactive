@@ -110,7 +110,6 @@ class UserPlayer
     .map defaultUserPlayer
 
   getAllByUserIdsAndGameId: (userIds, gameId) ->
-    console.log userIds
     userIdsGameIds = _.map userIds, (userId) -> [userId, gameId]
     r.table USER_PLAYERS_TABLE
     .getAll r.args(userIdsGameIds), {index: USER_ID_GAME_ID_INDEX}

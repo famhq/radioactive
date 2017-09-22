@@ -9,18 +9,6 @@ config = require '../config'
 
 POSTGRES_MATCH_TABLE = 'matches_new'
 
-ARENA_INDEX = 'arena'
-TYPE_INDEX = 'type'
-# TODO: migrate to PLAYER_IDS index
-PLAYER_1_ID_INDEX = 'player1Id'
-PLAYER_2_ID_INDEX = 'player2Id'
-# PLAYER_1_USER_IDS_INDEX = 'player1UserIds'
-# PLAYER_2_USER_IDS_INDEX = 'player2UserIds'
-WINNING_DECK_ID_INDEX = 'winningDeckId'
-LOSING_DECK_ID_INDEX = 'losingDeckId'
-WINNING_CARD_IDS_INDEX = 'winningCardIds'
-LOSING_CARD_IDS_INDEX = 'losingCardIds'
-TIME_INDEX = 'time'
 SIX_HOURS_S = 3600 * 6
 
 defaultPlayer =

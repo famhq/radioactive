@@ -26,8 +26,8 @@ knexInstance = knex {
     # 2 for cron jobs stale data. otherwise get
     # https://github.com/tgriesser/knex/issues/1381
     # not sure if fixes / why fixes. or if it makes it better at all?
-    max: if cluster.isMaster then 2 else 1
-          # 1 * 6 * 12 cpu replicas is 72 connections. can have up to 100
+    max: 2 # if cluster.isMaster then 2 else 1
+          # 3 * 6 * 4 cpu replicas is 72 connections. can have up to 100
            # TODO bump up when 100 connection limit is increased
            # https://issuetracker.google.com/issues/37271935
 }

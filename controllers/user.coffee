@@ -5,6 +5,7 @@ geoip = require 'geoip-lite'
 
 User = require '../models/user'
 UserData = require '../models/user_data'
+UserPlayer = require '../models/user_player'
 EmbedService = require '../services/embed'
 ImageService = require '../services/image'
 CacheService = require '../services/cache'
@@ -108,6 +109,28 @@ class UserCtrl
           CacheService.deleteByKey key
       .then ->
         null
+
+  getAllByPlayerIdAndGameId: ({playerId, gameId}) ->
+    UserPlayer.getAllByPlayerIdAndGameId playerId, gameId
+    .then (userPlayers) ->
+      userIds = _.map userPlayers, 'userId'
+      validatedUserPlayer = _.find userPlayers, {isValidated: true}
+      validatedUser = if validatedUserPlayer \
+                      then User.getById validatedUserPlayer.userId
+                      else Promise.resolve null
+
+      Promise.all [
+        validatedUser
+        .then User.sanitizePublic null
+
+        User.getLastActiveByIds userIds
+        .then User.sanitizePublic null
+      ]
+      .then ([validatedUser, lastActiveUser]) ->
+        {
+          validatedUser
+          lastActiveUser
+        }
 
   searchByUsername: ({username}) ->
     unless username

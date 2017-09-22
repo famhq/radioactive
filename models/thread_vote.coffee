@@ -61,6 +61,14 @@ class ThreadVoteModel
     .run()
     .then defaultThreadVote
 
+  getAllByCreatorIdAndParents: (creatorIdAndParents) ->
+    r.table THREAD_VOTES_TABLE
+    .getAll r.args(creatorIdAndParents), {
+      index: CREATOR_ID_PARENT_ID_PARENT_TYPE_INDEX
+    }
+    .run()
+    .map defaultThreadVote
+
   getById: (id) ->
     r.table THREAD_VOTES_TABLE
     .get id

@@ -16,3 +16,18 @@ sql-1:
 
 Probably should use Redshift or BigQuery for match/deck/etc... data. Though that
 likely means dropping knex
+
+Need to:
+- get all matches for a user
+- get analysis for all matches by that user
+  - win rate vs certain cards
+  - win rate with deck vs certain cards
+- get analysis for matches with a card
+  - win rate with deck vs cards / decks
+
+match_data table for json: id(matchId), matchData
+match_players: id, playerId, matchId, type, arena, isWinner, score, otherScore
+match_decks: id, deckId, matchId, type, arena, isWinner, score, otherScore
+
+- there would be a ton of these. up to 32 * match
+match_cards: id, cardId, matchId, type, arena, isWinner, score, otherScore
