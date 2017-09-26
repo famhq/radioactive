@@ -11,13 +11,28 @@ r = require '../services/rethinkdb'
 schemas = require '../schemas'
 config = require '../config'
 
+defaultEmbed = [
+  EmbedService.TYPES.ADDON.MY_VOTE
+]
+
 class AddonCtrl
+  getAll: ->
+    Addon.getAll()
+    .map Addon.sanitize null
+
+  getById: ({id}, {user}) ->
+    Addon.getById id
+    .then EmbedService.embed {embed: defaultEmbed, user}
+    .then Addon.sanitize null
+
+  getByKey: ({key}, {user}) ->
+    Addon.getByKey key
+    .then EmbedService.embed {embed: defaultEmbed, user}
+    .then Addon.sanitize null
+
   voteById: ({id, vote}, {user}) ->
-    Promise.all [
-      Addon.getById id
-      AddonVote.getByCreatorIdAndParent user.id, id, 'thread'
-    ]
-    .then ([thread, existingVote]) ->
+    AddonVote.getByCreatorIdAndAddonId user.id, id
+    .then (existingVote) ->
       voteNumber = if vote is 'up' then 1 else -1
 
       hasVotedUp = existingVote?.vote is 1
@@ -29,10 +44,16 @@ class AddonCtrl
         diff = {upvotes: r.row('upvotes').add(1)}
         if hasVotedDown
           diff.downvotes = r.row('downvotes').sub(1)
+          diff.score = r.row('score').add(2)
+        else
+          diff.score = r.row('score').add(1)
       else if vote is 'down'
         diff = {downvotes: r.row('downvotes').add(1)}
         if hasVotedUp
           diff.upvotes = r.row('upvotes').sub(1)
+          diff.score = r.row('score').sub(2)
+        else
+          diff.score = r.row('score').sub(1)
 
       Promise.all [
         if existingVote

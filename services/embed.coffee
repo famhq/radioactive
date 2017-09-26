@@ -5,6 +5,7 @@ moment = require 'moment'
 config = require '../config'
 User = require '../models/user'
 UserData = require '../models/user_data'
+AddonVote = require '../models/addon_vote'
 Ban = require '../models/ban'
 Conversation = require '../models/conversation'
 ChatMessage = require '../models/chat_message'
@@ -28,6 +29,8 @@ CacheService = require './cache'
 TagConverterService = require './tag_converter'
 
 TYPES =
+  ADDON:
+    MY_VOTE: 'addon:myVote'
   BAN:
     USER: 'ban:user'
   CHAT_MESSAGE:
@@ -70,7 +73,6 @@ TYPES =
   THREAD:
     CREATOR: 'thread:creator'
     COMMENT_COUNT: 'thread:commentCount'
-    MY_VOTE: 'thread:myVote'
     PLAYER_DECK: 'thread:playerDeck'
   USER:
     DATA: 'user:data'
@@ -122,6 +124,10 @@ embedFn = _.curry (props, object) ->
   embedded.embedded = embed
   _.forEach embed, (key) ->
     switch key
+      when TYPES.ADDON.MY_VOTE
+        embedded.myVote = AddonVote.getByCreatorIdAndAddonId(
+          user.id, embedded.id
+        )
       when TYPES.USER.DATA
         embedded.data = UserData.getByUserId(embedded.id, {preferCache: true})
         .then (userData) ->

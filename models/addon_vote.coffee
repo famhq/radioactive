@@ -6,44 +6,43 @@ r = require '../services/rethinkdb'
 User = require './user'
 CacheService = require '../services/cache'
 
-defaultThreadVote = (threadVote) ->
-  unless threadVote?
+defaultAddonVote = (addonVote) ->
+  unless addonVote?
     return null
 
-  id = "#{threadVote.parentId}:#{threadVote.creatorId}"
+  id = "#{addonVote.addonId}:#{addonVote.creatorId}"
 
-  _.defaults threadVote, {
+  _.defaults addonVote, {
     id: id
     creatorId: null
-    parentId: null
-    parentType: 'thread'
+    addonId: null
     vote: 0 # -1 or 1
     time: new Date()
   }
 
-THREAD_VOTES_TABLE = 'thread_votes'
-CREATOR_ID_PARENT_ID_PARENT_TYPE_INDEX = 'creatorIdParentIdParentType'
+THREAD_VOTES_TABLE = 'addon_votes'
+CREATOR_ID_ADDON_ID_INDEX = 'creatorIdAddonId'
 MAX_MESSAGES = 30
 
-class ThreadVoteModel
+class AddonVoteModel
   RETHINK_TABLES: [
     {
       name: THREAD_VOTES_TABLE
       indexes: [
-        {name: CREATOR_ID_PARENT_ID_PARENT_TYPE_INDEX, fn: (row) ->
-          [row('creatorId'), row('parentId'), row('parentType')]}
+        {name: CREATOR_ID_ADDON_ID_INDEX, fn: (row) ->
+          [row('creatorId'), row('addonId')]}
       ]
     }
   ]
 
-  create: (threadVote) ->
-    threadVote = defaultThreadVote threadVote
+  create: (addonVote) ->
+    addonVote = defaultAddonVote addonVote
 
     r.table THREAD_VOTES_TABLE
-    .insert threadVote
+    .insert addonVote
     .run()
     .then ->
-      threadVote
+      addonVote
 
   updateById: (id, diff) ->
     r.table THREAD_VOTES_TABLE
@@ -51,20 +50,20 @@ class ThreadVoteModel
     .update diff
     .run()
 
-  getByCreatorIdAndParent: (creatorId, parentId, parentType) ->
+  getByCreatorIdAndAddonId: (creatorId, addonId) ->
     r.table THREAD_VOTES_TABLE
-    .getAll [creatorId, parentId, parentType], {
-      index: CREATOR_ID_PARENT_ID_PARENT_TYPE_INDEX
+    .getAll [creatorId, addonId], {
+      index: CREATOR_ID_ADDON_ID_INDEX
     }
     .nth 0
     .default null
     .run()
-    .then defaultThreadVote
+    .then defaultAddonVote
 
   getById: (id) ->
     r.table THREAD_VOTES_TABLE
     .get id
     .run()
-    .then defaultThreadVote
+    .then defaultAddonVote
 
-module.exports = new ThreadVoteModel()
+module.exports = new AddonVoteModel()
