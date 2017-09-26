@@ -11,27 +11,27 @@ http = require 'http'
 socketIO = require 'socket.io'
 socketIORedis = require 'socket.io-redis'
 Redis = require 'ioredis'
-memwatch = require 'memwatch-next'
-
-hd = undefined
-snapshotTaken = false
-memwatch.on 'stats', (stats) ->
-  # console.log 'stats:', stats
-  if snapshotTaken is false
-    hd = new (memwatch.HeapDiff)
-    snapshotTaken = true
-  else
-    # diff = hd.end()
-    snapshotTaken = false
-    # console.log(JSON.stringify(diff, null, '\t'))
-  return
-memwatch.on 'leak', (info) ->
-  console.log 'leak:', info
-  diff = hd.end()
-  hd = new (memwatch.HeapDiff)
-  snapshotTaken = false
-  console.log(JSON.stringify(diff, null, '\t'))
-  return
+# memwatch = require 'memwatch-next'
+#
+# hd = undefined
+# snapshotTaken = false
+# memwatch.on 'stats', (stats) ->
+#   # console.log 'stats:', stats
+#   if snapshotTaken is false
+#     hd = new (memwatch.HeapDiff)
+#     snapshotTaken = true
+#   else
+#     # diff = hd.end()
+#     snapshotTaken = false
+#     # console.log(JSON.stringify(diff, null, '\t'))
+#   return
+# memwatch.on 'leak', (info) ->
+#   console.log 'leak:', info
+#   diff = hd.end()
+#   hd = new (memwatch.HeapDiff)
+#   snapshotTaken = false
+#   console.log(JSON.stringify(diff, null, '\t'))
+#   return
 
 
 Joi = require 'joi'
@@ -40,6 +40,7 @@ config = require './config'
 routes = require './routes'
 r = require './services/rethinkdb'
 knex = require './services/knex'
+cknex = require './services/cknex'
 RethinkSetupService = require './services/rethink_setup'
 PostgresSetupService = require './services/postgres_setup'
 AuthService = require './services/auth'

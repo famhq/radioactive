@@ -2,8 +2,11 @@ _ = require 'lodash'
 Promise = require 'bluebird'
 uuid = require 'node-uuid'
 moment = require 'moment'
+Promise = require 'bluebird'
+shortid = require 'shortid'
 
 knex = require '../services/knex'
+cknex = require '../services/cknex'
 CacheService = require '../services/cache'
 config = require '../config'
 
@@ -19,6 +22,59 @@ defaultPlayer =
   clanName: null
   clanTag: null
   trophies: null
+
+###
+CREATE KEYSPACE clash_royale WITH replication = {
+  'class': 'NetworkTopologyStrategy', 'datacenter1': '3'
+} AND durable_writes = true;
+
+CREATE TABLE clash_royale."matches_by_playerId" (
+  "playerId" text,
+  time timestamp,
+  arena int,
+  league int,
+  data text,
+  PRIMARY KEY ("playerId", time)
+) WITH CLUSTERING ORDER BY (time DESC)
+
+- may need to change pk to (playerId, bucket) where bucket is some amount
+ of time that keeps partition size to < 100mb.
+- 1 match = ~10kb. 10,000 matches = 100mb.
+- if we do that, we need to query with both the playerId AND bucket to just
+  get 1 partition's worth
+
+CREATE TABLE clash_royale."counter_by_deckId_opponentCardId" (
+  "deckId" text,
+  "opponentCardId" text,
+  "gameType" text,
+  arena int,
+  wins counter,
+  draws counter,
+  losses counter,
+  PRIMARY KEY ("deckId", "gameType", arena, "opponentCardId")
+)
+
+CREATE TABLE clash_royale."counter_by_cardId" (
+  "cardId" text,
+  "gameType" text,
+  arena int,
+  wins counter,
+  losses counter,
+  draws counter,
+  PRIMARY KEY ("cardId", "gameType", arena)
+)
+
+CREATE TABLE clash_royale."counter_by_deckId" (
+  "deckId" text,
+  "gameType" text,
+  arena int,
+  wins counter,
+  losses counter,
+  draws counter,
+  PRIMARY KEY ("deckId", "gameType", arena)
+)
+
+###
 
 fields = [
   {name: 'id', type: 'string', length: 100, index: 'primary'}
@@ -38,6 +94,16 @@ fields = [
   {name: 'time', type: 'dateTime', index: 'default', defaultValue: new Date()}
 ]
 
+defaultClashRoyaleMatchC = (clashRoyaleMatch) ->
+  unless clashRoyaleMatch?
+    return null
+
+  try
+    clashRoyaleMatch.data = JSON.parse JSON.parse clashRoyaleMatch.data
+  catch
+
+  clashRoyaleMatch
+
 defaultClashRoyaleMatch = (clashRoyaleMatch) ->
   unless clashRoyaleMatch?
     return null
@@ -51,6 +117,108 @@ defaultClashRoyaleMatch = (clashRoyaleMatch) ->
     obj
   , {})
 
+runMatchesByPlayerId = (matches) ->
+  _.flatten _.map matches, (match) ->
+    playerIds = match.teamPlayerIds.concat match.opponentPlayerIds
+    _.map playerIds, (playerId) ->
+      match = _.pickBy {
+        playerId: playerId
+        arena: match.arena
+        league: match.league
+        data: JSON.stringify match.data
+        time: cknex.getTime match.time
+      }, (val) -> val?
+
+      # batch isn't meant for performance, but we could groupBy playerId and
+      #  batchRun (it helps performance some if used correctly)
+      cknex().insert match
+      .usingTTL 3600 * 24 * 30 # 1m
+      .into 'matches_by_playerId'
+      .run()
+
+runMatchesCounter = (matches) ->
+  deckIdCnt = {}
+  cardIdCnt = {}
+  deckIdCardIdCnt = {}
+
+  _.forEach matches, (match) ->
+    gameType = match.type
+    arena = if gameType is 'PvP' then match.arena else 0
+
+    _.forEach match.winningCardIds, (cardId) ->
+      key = [cardId, gameType, arena].join(',')
+      cardIdCnt[key] ?= {wins: 0, losses: 0, draws: 0}
+      cardIdCnt[key].wins += 1
+    _.forEach match.losingCardIds, (cardId) ->
+      key = [cardId, gameType, arena].join(',')
+      cardIdCnt[key] ?= {wins: 0, losses: 0, draws: 0}
+      cardIdCnt[key].losses += 1
+    _.forEach match.drawCardIds, (cardId) ->
+      key = [cardId, gameType, arena].join(',')
+      cardIdCnt[key] ?= {wins: 0, losses: 0, draws: 0}
+      cardIdCnt[key].draws += 1
+
+    _.forEach match.winningDeckIds, (deckId) ->
+      deckKey = [deckId, gameType, arena].join(',')
+      deckIdCnt[deckKey] ?= {wins: 0, losses: 0, draws: 0}
+      deckIdCnt[deckKey].wins += 1
+      _.forEach match.losingCardIds, (cardId) ->
+        key = [deckId, gameType, arena, cardId].join(',')
+        deckIdCardIdCnt[key] ?= {wins: 0, losses: 0, draws: 0}
+        deckIdCardIdCnt[key].wins += 1
+
+    _.forEach match.losingDeckIds, (deckId) ->
+      deckKey = [deckId, gameType, arena].join(',')
+      deckIdCnt[deckKey] ?= {wins: 0, losses: 0, draws: 0}
+      deckIdCnt[deckKey].losses += 1
+      _.forEach match.winningCardIds, (cardId) ->
+        key = [deckId, gameType, arena, cardId].join(',')
+        deckIdCardIdCnt[key] ?= {wins: 0, losses: 0, draws: 0}
+        deckIdCardIdCnt[key].losses += 1
+
+    _.forEach match.drawDeckIds, (deckId) ->
+      deckKey = [deckId, gameType, arena].join(',')
+      deckIdCnt[deckKey] ?= {wins: 0, losses: 0, draws: 0}
+      deckIdCnt[deckKey].draws += 1
+      _.forEach match.drawCardIds, (cardId) ->
+        key = [deckId, gameType, arena, cardId].join(',')
+        deckIdCardIdCnt[key] ?= {wins: 0, losses: 0, draws: 0}
+        deckIdCardIdCnt[key].draws += 1
+
+  deckIdQueries = _.map deckIdCnt, (diff, key) ->
+    [deckId, gameType, arena] = key.split ','
+    q = cknex().update 'counter_by_deckId'
+    _.forEach diff, (amount, key) ->
+      q = q.increment key, amount
+    q.where 'deckId', '=', deckId
+    .andWhere 'gameType', '=', gameType
+    .andWhere 'arena', '=', arena
+    .run()
+
+  cardIdQueries = _.map cardIdCnt, (diff, key) ->
+    [cardId, gameType, arena] = key.split ','
+    q = cknex().update 'counter_by_cardId'
+    _.forEach diff, (amount, key) ->
+      q = q.increment key, amount
+    q.where 'cardId', '=', cardId
+    .andWhere 'gameType', '=', gameType
+    .andWhere 'arena', '=', arena
+    .run()
+
+  deckIdCardIdQueries = _.map deckIdCardIdCnt, (diff, key) ->
+    [deckId, gameType, arena, cardId] = key.split ','
+    diff = _.pickBy diff
+    q = cknex().update 'counter_by_deckId_opponentCardId'
+    _.forEach diff, (amount, key) ->
+      q = q.increment key, amount
+    q.where 'deckId', '=', deckId
+    .andWhere 'gameType', '=', gameType
+    .andWhere 'arena', '=', arena
+    .andWhere 'opponentCardId', '=', cardId
+    .run()
+
+  Promise.all deckIdQueries.concat cardIdQueries, deckIdCardIdQueries
+
 class ClashRoyaleMatchModel
   POSTGRES_TABLES: [
     {
@@ -61,8 +229,12 @@ class ClashRoyaleMatchModel
   ]
 
   batchCreate: (clashRoyaleMatches) ->
-    clashRoyaleMatches = _.map clashRoyaleMatches, defaultClashRoyaleMatch
+    Promise.all(
+      runMatchesByPlayerId clashRoyaleMatches
+      .concat runMatchesCounter clashRoyaleMatches
+    )
 
+    clashRoyaleMatches = _.map clashRoyaleMatches, defaultClashRoyaleMatch
     knex.insert(clashRoyaleMatches).into(POSTGRES_MATCH_TABLE)
     .catch (err) ->
       console.log 'postgres err', err
@@ -79,21 +251,42 @@ class ClashRoyaleMatchModel
     .limit limit
     .map defaultClashRoyaleMatch
 
-  getAllByPlayerId: (playerId, {limit} = {}) ->
+  getAllByPlayerId: (playerId, {limit, cursor} = {}) ->
     limit ?= 10
 
-    q = knex POSTGRES_MATCH_TABLE
-    .select '*'
-    q.whereRaw '"teamPlayerIds" @> ARRAY[?]', [playerId]
-    # without this redundant orderby, postgres doesn't use the index
-    # https://stackoverflow.com/a/21386282
-    q.orderBy 'teamPlayerIds', 'desc'
-    q.orderBy 'time', 'desc'
-    .limit limit
+    (if cursor
+      CacheService.getCursor cursor
+    else
+      Promise.resolve null)
+    .then (cursorValue) ->
+      cknex().select '*'
+      .where 'playerId', '=', playerId
+      # .limit limit
+      .from 'matches_by_playerId'
+      .run {fetchSize: limit, pageState: cursorValue}
+    .then ({rows, pageState}) ->
+      (if pageState
+        newCursor = shortid.generate()
+        CacheService.setCursor newCursor, pageState
+      else
+        newCursor = null
+        Promise.resolve null
+      )
+      .then ->
+        Promise.props {
+          rows: rows.map defaultClashRoyaleMatchC
+          cursor: newCursor
+        }
 
-    console.log q.toSQL()
-
-    q.map defaultClashRoyaleMatch
+    # q = knex POSTGRES_MATCH_TABLE
+    # .select '*'
+    # .whereRaw '"teamPlayerIds" @> ARRAY[?]', [playerId]
+    # # without this redundant orderby, postgres doesn't use the index
+    # # https://stackoverflow.com/a/21386282
+    # .orderBy 'teamPlayerIds', 'desc'
+    # .orderBy 'time', 'desc'
+    # .limit limit
+    # .map defaultClashRoyaleMatch
 
   getById: (id, {preferCache} = {}) ->
     get = ->
@@ -109,6 +302,18 @@ class ClashRoyaleMatchModel
     else
       get()
 
+
+  # existsByPlayerIdAndTime: (playerId, time, {preferCache} = {}) ->
+  #   console.log playerId, time
+  #   get = ->
+  #     cknex().where 'playerId', '=', playerId
+  #     .andWhere 'time', '=', time
+  #     .from 'matches_by_playerId'
+  #     .run()
+  #     .then (match) ->
+  #       console.log 'existing', match
+  #       Boolean match
+
   existsById: (id, {preferCache} = {}) ->
     get = ->
       knex.table POSTGRES_MATCH_TABLE
@@ -120,7 +325,10 @@ class ClashRoyaleMatchModel
     if preferCache
       prefix = CacheService.PREFIXES.CLASH_ROYALE_MATCHES_ID_EXISTS
       key = "#{prefix}:#{id}"
-      CacheService.preferCache key, get, {expireSeconds: SIX_HOURS_S}
+      CacheService.preferCache key, get, {
+        expireSeconds: SIX_HOURS_S
+        ignoreNull: true
+      }
     else
       get()
 

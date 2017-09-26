@@ -7,6 +7,67 @@ config = require '../config'
 DEFAULT_CACHE_EXPIRE_SECONDS = 3600 * 24 * 30 # 30 days
 DEFAULT_LOCK_EXPIRE_SECONDS = 3600 * 24 * 40000 # 100+ years
 DEFAULT_REDLOCK_EXPIRE_SECONDS = 30
+ONE_HOUR_SECONDS = 3600
+
+PREFIXES =
+  CHAT_USER: 'chat:user3'
+  THREAD_USER: 'thread:user1'
+  THREAD: 'thread:id'
+  THREAD_DECK: 'thread:deck8'
+  THREAD_COMMENTS: 'thread:comments2'
+  THREAD_COMMENT_COUNT: 'thread:comment_count'
+  THREADS: 'threads2'
+  CONVERSATION_ID: 'conversation:id'
+  USER_FOLLOWER_COUNT: 'user:follower_count'
+  USER_DATA: 'user_data:id'
+  USER_DATA_CONVERSATION_USERS: 'user_data:conversation_users'
+  USER_DATA_FOLLOWERS: 'user_data:followers'
+  USER_DATA_FOLLOWING: 'user_data:following'
+  USER_DATA_FOLLOWING_PLAYERS: 'user_data:following:players'
+  USER_DATA_BLOCKED_USERS: 'user_data:blocked_users'
+  USER_DATA_CLASH_ROYALE_DECK_IDS: 'user_data:clash_royale_deck_ids6'
+  USER_DAILY_DATA_PUSH: 'user_daily_data:push5'
+  CLASH_ROYALE_MATCHES_ID: 'clash_royale_matches:id52'
+  CLASH_ROYALE_MATCHES_ID_EXISTS: 'clash_royale_matches:id:exists1'
+  CLASH_ROYALE_INVALID_TAG: 'clash_royale:invalid_tag'
+  CLASH_ROYALE_CARD: 'clash_royale_card'
+  CLASH_ROYALE_CARD_ALL: 'clash_royale_card:all'
+  CLASH_ROYALE_CARD_KEY: 'clash_royale_card_key1'
+  CLASH_ROYALE_CARD_RANK: 'clash_royal_card:rank'
+  CLASH_ROYALE_DECK_RANK: 'clash_royal_deck:rank'
+  CLASH_ROYALE_DECK_CARD_KEYS: 'clash_royal_deck:card_keys11'
+  CLASH_ROYALE_PLAYER_DECK_DECK: 'clash_royale_player_deck:deck2'
+  CLASH_ROYALE_PLAYER_DECK_DECK_ID_USER_ID:
+    'clash_royale_player_deck:deck_id:user_id1'
+  CLASH_ROYALE_PLAYER_DECK_DECK_ID_PLAYER_ID:
+    'clash_royale_player_deck:deck_id:player_id1'
+  CLASH_ROYALE_PLAYER_DECK_PLAYER_ID:
+    'clash_royale_player_deck:player_id1'
+  CLASH_ROYALE_API_GET_PLAYER_ID: 'clash_royale_api:get_tag'
+  GROUP_ID: 'group:id1'
+  GROUP_GET_ALL: 'group:getAll'
+  GROUP_GET_ALL_CATEGORY: 'group:getAll:category'
+  GROUP_STAR: 'group:star'
+  USERNAME_SEARCH: 'username:search1'
+  RATE_LIMIT_CHAT_MESSAGES_TEXT: 'rate_limit:chat_messages:text'
+  RATE_LIMIT_CHAT_MESSAGES_MEDIA: 'rate_limit:chat_messages:media'
+  PLAYER_SEARCH: 'player:search8'
+  PLAYER_VERIFIED_USER: 'player:verified_user3'
+  PLAYER_USER_ID_GAME_ID: 'player:user_id_game_id1'
+  PLAYER_USER_IDS: 'player:user_ids2'
+  PLAYER_CLASH_ROYALE_ID: 'player:clash_royale_id'
+  PLAYER_MIGRATE: 'player:migrate07'
+  REFRESH_PLAYER_ID_LOCK: 'player:refresh_lock'
+  USER_DECKS_MIGRATE: 'user_decks:migrate16'
+  USER_RECORDS_MIGRATE: 'user_records:migrate11'
+  USER_PLAYER_USER_ID_GAME_ID: 'user_player:user_id_game_id5'
+  GROUP_CLAN_CLAN_ID_GAME_ID: 'group_clan:clan_id_game_id8'
+  CLAN_CLAN_ID_GAME_ID: 'clan:clan_id_game_id8'
+  CLAN_MIGRATE: 'clan:migrate9'
+  CLAN_PLAYERS: 'clan:players1'
+  BAN_IP: 'ban:ip'
+  BAN_USER_ID: 'ban:user_id1'
+  HONEY_POT_BAN_IP: 'honey_pot:ban_ip5'
 
 class CacheService
   KEYS:
@@ -30,64 +91,7 @@ class CacheService
     KUE_PROCESS: 'kue:process'
     BROADCAST: 'broadcast'
   LOCKS: {}
-  PREFIXES:
-    CHAT_USER: 'chat:user3'
-    THREAD_USER: 'thread:user1'
-    THREAD: 'thread:id'
-    THREAD_DECK: 'thread:deck8'
-    THREAD_COMMENTS: 'thread:comments2'
-    THREAD_COMMENT_COUNT: 'thread:comment_count'
-    THREADS: 'threads2'
-    CONVERSATION_ID: 'conversation:id'
-    USER_FOLLOWER_COUNT: 'user:follower_count'
-    USER_DATA: 'user_data:id'
-    USER_DATA_CONVERSATION_USERS: 'user_data:conversation_users'
-    USER_DATA_FOLLOWERS: 'user_data:followers'
-    USER_DATA_FOLLOWING: 'user_data:following'
-    USER_DATA_FOLLOWING_PLAYERS: 'user_data:following:players'
-    USER_DATA_BLOCKED_USERS: 'user_data:blocked_users'
-    USER_DATA_CLASH_ROYALE_DECK_IDS: 'user_data:clash_royale_deck_ids6'
-    USER_DAILY_DATA_PUSH: 'user_daily_data:push5'
-    CLASH_ROYALE_MATCHES_ID: 'clash_royale_matches:id52'
-    CLASH_ROYALE_MATCHES_ID_EXISTS: 'clash_royale_matches:id:exists'
-    CLASH_ROYALE_INVALID_TAG: 'clash_royale:invalid_tag'
-    CLASH_ROYALE_CARD: 'clash_royale_card'
-    CLASH_ROYALE_CARD_ALL: 'clash_royale_card:all'
-    CLASH_ROYALE_CARD_KEY: 'clash_royale_card_key1'
-    CLASH_ROYALE_CARD_RANK: 'clash_royal_card:rank'
-    CLASH_ROYALE_DECK_RANK: 'clash_royal_deck:rank'
-    CLASH_ROYALE_DECK_CARD_KEYS: 'clash_royal_deck:card_keys11'
-    CLASH_ROYALE_PLAYER_DECK_DECK: 'clash_royale_player_deck:deck2'
-    CLASH_ROYALE_PLAYER_DECK_DECK_ID_USER_ID:
-      'clash_royale_player_deck:deck_id:user_id1'
-    CLASH_ROYALE_PLAYER_DECK_DECK_ID_PLAYER_ID:
-      'clash_royale_player_deck:deck_id:player_id1'
-    CLASH_ROYALE_PLAYER_DECK_PLAYER_ID:
-      'clash_royale_player_deck:player_id1'
-    CLASH_ROYALE_API_GET_PLAYER_ID: 'clash_royale_api:get_tag'
-    GROUP_ID: 'group:id1'
-    GROUP_GET_ALL: 'group:getAll'
-    GROUP_GET_ALL_CATEGORY: 'group:getAll:category'
-    GROUP_STAR: 'group:star'
-    USERNAME_SEARCH: 'username:search1'
-    RATE_LIMIT_CHAT_MESSAGES_TEXT: 'rate_limit:chat_messages:text'
-    RATE_LIMIT_CHAT_MESSAGES_MEDIA: 'rate_limit:chat_messages:media'
-    PLAYER_SEARCH: 'player:search8'
-    PLAYER_VERIFIED_USER: 'player:verified_user3'
-    PLAYER_USER_ID_GAME_ID: 'player:user_id_game_id1'
-    PLAYER_USER_IDS: 'player:user_ids2'
-    PLAYER_CLASH_ROYALE_ID: 'player:clash_royale_id'
-    PLAYER_MIGRATE: 'player:migrate07'
-    USER_DECKS_MIGRATE: 'user_decks:migrate16'
-    USER_RECORDS_MIGRATE: 'user_records:migrate11'
-    USER_PLAYER_USER_ID_GAME_ID: 'user_player:user_id_game_id5'
-    GROUP_CLAN_CLAN_ID_GAME_ID: 'group_clan:clan_id_game_id8'
-    CLAN_CLAN_ID_GAME_ID: 'clan:clan_id_game_id8'
-    CLAN_MIGRATE: 'clan:migrate9'
-    CLAN_PLAYERS: 'clan:players1'
-    BAN_IP: 'ban:ip'
-    BAN_USER_ID: 'ban:user_id1'
-    HONEY_POT_BAN_IP: 'honey_pot:ban_ip5'
+  PREFIXES: PREFIXES
 
   constructor: ->
     @redlock = new Redlock [RedisService], {
@@ -119,6 +123,14 @@ class CacheService
         JSON.parse value
       catch err
         value
+
+  getCursor: (cursor) =>
+    key = "#{PREFIXES.CURSOR}:#{cursor}"
+    @get key
+
+  setCursor: (cursor, value) =>
+    key = "#{PREFIXES.CURSOR}:#{cursor}"
+    @set key, value, {expireSeconds: ONE_HOUR_SECONDS}
 
   # for locking
   runOnce: (key, fn, {expireSeconds, lockedFn} = {}) ->

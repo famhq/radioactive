@@ -1,4 +1,4 @@
-Should use Cassandra to scale up messages
+Should use scylla/cassandra to scale up messages
 https://blog.discordapp.com/how-discord-stores-billions-of-messages-7fa6ec7ee4c7
 Probably with Redis pub sub for streaming new messages
 
@@ -15,7 +15,7 @@ sql-1:
     clan_records
 
 Probably should use Redshift or BigQuery for match/deck/etc... data. Though that
-likely means dropping knex
+likely means dropping knex. **Nope: Too expensive for frequent reads**
 
 Need to:
 - get all matches for a user
@@ -25,9 +25,31 @@ Need to:
 - get analysis for matches with a card
   - win rate with deck vs cards / decks
 
-match_data table for json: id(matchId), matchData
-match_players: id, playerId, matchId, type, arena, isWinner, score, otherScore
+
+partition key (which node data is stored on)
+clustering column (sort order). new inserts with same partition key will add new column for clustering column w/ data
+
+Need to make sure data is spread out evenly been partition keys
+duplicating data is fine (and intended)
+
+
+dont have this table since getting all user matches would require a bunch of individual lookups
+only advantage would be far less data stored, but we can change later?
+# match_data table for json: id(matchId), matchData
+pk id
+cc none needed?
+
+matches_by_playerId: id, playerId, matchId, type, arena, matchData, isWinner, score, otherScore
+pk playerId # is this even enough? probably
+cc time
+- can get all matches for a user
+
 match_decks: id, deckId, matchId, type, arena, isWinner, score, otherScore
+- can get all matches for a deck
+
+decks with highest win rates. can i update with win rate?
 
 - there would be a ton of these. up to 32 * match
 match_cards: id, cardId, matchId, type, arena, isWinner, score, otherScore
+
+# FIXME FIXME: how to find deck win rate vs another deck?

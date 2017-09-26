@@ -476,6 +476,23 @@
       "from": "caseless@>=0.11.0 <0.12.0",
       "resolved": "https://registry.npmjs.org/caseless/-/caseless-0.11.0.tgz"
     },
+    "cassandra-driver": {
+      "version": "3.3.0",
+      "from": "cassandra-driver@>=3.2.2 <4.0.0",
+      "resolved": "https://registry.npmjs.org/cassandra-driver/-/cassandra-driver-3.3.0.tgz"
+    },
+    "cassanknex": {
+      "version": "1.16.0",
+      "from": "cassanknex@latest",
+      "resolved": "https://registry.npmjs.org/cassanknex/-/cassanknex-1.16.0.tgz",
+      "dependencies": {
+        "lodash": {
+          "version": "3.10.1",
+          "from": "lodash@>=3.10.1 <4.0.0",
+          "resolved": "https://registry.npmjs.org/lodash/-/lodash-3.10.1.tgz"
+        }
+      }
+    },
     "center-align": {
       "version": "0.1.3",
       "from": "center-align@>=0.1.1 <0.2.0",
@@ -2581,6 +2598,11 @@
       "from": "loga@>=0.1.3 <0.2.0",
       "resolved": "https://registry.npmjs.org/loga/-/loga-0.1.4.tgz"
     },
+    "long": {
+      "version": "2.4.0",
+      "from": "long@>=2.2.0 <3.0.0",
+      "resolved": "https://registry.npmjs.org/long/-/long-2.4.0.tgz"
+    },
     "longest": {
       "version": "1.0.1",
       "from": "longest@>=1.0.1 <2.0.0",
@@ -3643,6 +3665,11 @@
       "version": "1.0.2",
       "from": "setprototypeof@1.0.2",
       "resolved": "https://registry.npmjs.org/setprototypeof/-/setprototypeof-1.0.2.tgz"
+    },
+    "shortid": {
+      "version": "2.2.8",
+      "from": "shortid@latest",
+      "resolved": "https://registry.npmjs.org/shortid/-/shortid-2.2.8.tgz"
     },
     "sigmund": {
       "version": "1.0.1",

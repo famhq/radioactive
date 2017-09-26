@@ -177,6 +177,8 @@ class ClashRoyalePlayer
     reqPlayerIds = _.map reqPlayers, ({id}) -> "##{id}"
 
     Promise.map matches, (match) ->
+      # playerId = match.team[0].tag.replace '#', ''
+      # Match.existsByPlayerIdAndTime playerId, match.battleTime, {preferCache: true}
       matchId = match.id
       Match.existsById matchId, {preferCache: true}
       .then (existingMatch) ->
@@ -233,10 +235,9 @@ class ClashRoyalePlayer
               cardKeys = _.map player.cards, ({name}) ->
                 ClashRoyaleCard.getKeyByName name
               ClashRoyaleDeck.getDeckId cardKeys
-            teamCardIds = _.map team, (player) ->
+            teamCardIds = _.flatten _.map team, (player) ->
               _.map player.cards, ({name}) ->
-                key = ClashRoyaleCard.getKeyByName name
-                _.find(cards, {key})?.id
+                ClashRoyaleCard.getKeyByName name
             teamUserIds = _.flatten _.map teamPlayers, (player) ->
               player.userIds
 
@@ -247,10 +248,9 @@ class ClashRoyalePlayer
               cardKeys = _.map player.cards, ({name}) ->
                 ClashRoyaleCard.getKeyByName name
               ClashRoyaleDeck.getDeckId cardKeys
-            opponentCardIds = _.map opponent, (player) ->
+            opponentCardIds = _.flatten _.map opponent, (player) ->
               _.map player.cards, ({name}) ->
-                key = ClashRoyaleCard.getKeyByName name
-                _.find(cards, {key})?.id
+                ClashRoyaleCard.getKeyByName name
             opponentUserIds = _.flatten _.map opponentPlayers, (player) ->
               player.userIds
 
@@ -285,8 +285,10 @@ class ClashRoyalePlayer
             if teamWon
               winningDeckIds = teamDeckIds
               losingDeckIds = opponentDeckIds
+              drawDeckIds = null
               winningDeckCardIds = teamCardIds
               losingDeckCardIds = opponentCardIds
+              drawDeckCardIds = null
               teamDecksState = 'wins'
               opponentDecksState = 'losses'
               winners = team
@@ -295,8 +297,10 @@ class ClashRoyalePlayer
             else if opponentWon
               winningDeckIds = opponentDeckIds
               losingDeckIds = teamDeckIds
+              drawDeckIds = null
               winningDeckCardIds = opponentCardIds
               losingDeckCardIds = teamCardIds
+              drawDeckCardIds = null
               teamDecksState = 'losses'
               opponentDecksState = 'wins'
               winners = opponent
@@ -305,8 +309,10 @@ class ClashRoyalePlayer
             else
               winningDeckIds = null
               losingDeckIds = null
+              drawDeckIds = teamDeckIds.concat opponentDeckIds
               winningDeckCardIds = null
               losingDeckCardIds = null
+              drawDeckCardIds = teamCardIds.concat opponentCardIds
               teamDecksState = 'draws'
               opponentDecksState = 'draws'
               winners = null
@@ -364,10 +370,22 @@ class ClashRoyalePlayer
             prefix = CacheService.PREFIXES.CLASH_ROYALE_MATCHES_ID_EXISTS
             key = "#{prefix}:#{matchId}"
 
+            # get rid of iconUrls (wasted space)
+            match.team = _.map match.team, (player) ->
+              _.defaults {
+                cards: _.map player.cards, (card) ->
+                  _.omit card, ['iconUrls']
+              }, player
+            match.opponent = _.map match.opponent, (player) ->
+              _.defaults {
+                cards: _.map player.cards, (card) ->
+                  _.omit card, ['iconUrls']
+              }, player
+
             matchObj = {
               id: matchId
               data: match
-              arena: match.arena?.globalId
+              arena: match.arena?.id
               type: type
               teamPlayerIds: _.map team, ({tag}) -> tag.replace '#', ''
               opponentPlayerIds: _.map team, ({tag}) -> tag.replace '#', ''
@@ -375,8 +393,10 @@ class ClashRoyalePlayer
               # player2UserIds: player2UserIds
               winningDeckIds: winningDeckIds
               losingDeckIds: losingDeckIds
+              drawDeckIds: drawDeckIds
               winningCardIds: winningDeckCardIds
               losingCardIds: losingDeckCardIds
+              drawCardIds: drawDeckCardIds
               time: moment(match.battleTime).toDate()
             }
             batchMatches.push matchObj
@@ -551,6 +571,9 @@ class ClashRoyalePlayer
 
     Player.getByPlayerIdAndGameId id, GAME_ID
     .then (existingPlayer) =>
+      # bug fix for merging legacy api chest cycle and new API
+      if existingPlayer?.data?.upcomingChests and playerData?.upcomingChests
+        delete existingPlayer.data.upcomingChests
       diff = {
         data: _.defaultsDeep(
           playerData
@@ -793,7 +816,7 @@ class PlayerSplitsDiffs
     @playerDiffs['all'][playerId]
 
   getCachedSplits: ({id, type, set}) =>
-    unless @playerDiffs[set][id]
+    unless @playerDiffs[set][id]?.data?.splits
       return
     splits = @playerDiffs[set][id].data.splits[type]
     # legacy

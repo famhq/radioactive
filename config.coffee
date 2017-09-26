@@ -78,6 +78,9 @@ config =
     #          {host, port: REDIS_PORT}
     #        else [env.REDIS_HOST]
   CDN_HOST: env.CDN_HOST
+  SCYLLA:
+    port: 9042
+    CONTACT_POINTS: env.SCYLLA_CONTACT_POINTS.split(',')
   AWS:
     REGION: 'us-west-2'
     CDN_BUCKET: env.AWS_CDN_BUCKET

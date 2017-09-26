@@ -55,23 +55,30 @@ class ClashRoyaleAPICtrl
     unless isValidId
       router.throw {status: 400, info: 'invalid tag', ignoreLog: true}
 
-    Player.getByUserIdAndGameId user.id, config.CLASH_ROYALE_ID
-    .then (mePlayer) ->
-      if mePlayer?.id is playerId
-        userId = user.id
-      Player.updateByPlayerIdAndGameId playerId, config.CLASH_ROYALE_ID, {
-        lastQueuedTime: new Date()
-      }
-      ClashRoyaleAPIService.updatePlayerById playerId, {
-        userId, isLegacy, priority
-      }
-      .catch ->
-        router.throw {
-          status: 400, info: 'unable to find that tag (typo?)'
-          ignoreLog: true
+    key = "#{CacheService.PREFIXES.REFRESH_PLAYER_ID_LOCK}:#{playerId}"
+    # getting logs of multiple refreshes in same second - not sure why. this
+    # should "fix". multiple at same time causes actions on matches
+    # to be duplicated
+    CacheService.lock key, ->
+      console.log 'refesh', playerId
+      Player.getByUserIdAndGameId user.id, config.CLASH_ROYALE_ID
+      .then (mePlayer) ->
+        if mePlayer?.id is playerId
+          userId = user.id
+        Player.updateByPlayerIdAndGameId playerId, config.CLASH_ROYALE_ID, {
+          lastQueuedTime: new Date()
         }
-    .then ->
-      return null
+        ClashRoyaleAPIService.updatePlayerById playerId, {
+          userId, isLegacy, priority
+        }
+        .catch ->
+          router.throw {
+            status: 400, info: 'unable to find that tag (typo?)'
+            ignoreLog: true
+          }
+      .then ->
+        return null
+    , {expireSeconds: 5, unlockWhenCompleted: true}
 
   refreshByClanId: ({clanId}, {user}) ->
     Clan.getByClanIdAndGameId clanId, config.CLASH_ROYALE_ID
@@ -176,6 +183,7 @@ class ClashRoyaleAPICtrl
     {name, pass} = credentials or {}
     # insecure (pass is in here, but not a big deal for this)
     isAuthed = (name is 'sml' and pass is 'biob0t') or
+               (name is 'seangar' and pass is 'grrrsean') or
                (name is 'woody' and pass is 'buzz')
     unless isAuthed
       res.setHeader 'WWW-Authenticate', 'Basic realm="radioactive"'

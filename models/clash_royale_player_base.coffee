@@ -73,6 +73,12 @@ class ClashRoyalePlayerBaseModel
       .first '*'
       .where {id}
       .then defaultPlayer
+      .catch (err) ->
+        if err?.error?.indexOf('toast') isnt -1
+          # for some reason 8R29LRR0 is corrupt (top 200 player).
+          # can't delete row or select it
+          console.log 'pgerr', id
+        throw err
 
     if preferCache
       prefix = CacheService.PREFIXES.PLAYER_CLASH_ROYALE_ID

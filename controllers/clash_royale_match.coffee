@@ -1,5 +1,6 @@
 _ = require 'lodash'
 router = require 'exoid-router'
+Promise = require 'bluebird'
 
 User = require '../models/user'
 ClashRoyaleMatch = require '../models/clash_royale_match'
@@ -13,12 +14,15 @@ defaultEmbed = [
 class ClashRoyaleMatchCtrl
   getAllByUserId: ({userId, sort, filter}, {user}) ->
     ClashRoyaleMatch.getAllByUserId userId, {sort}
-    .map EmbedService.embed {embed: defaultEmbed}
+    # .map EmbedService.embed {embed: defaultEmbed}
     .map ClashRoyaleMatch.sanitize null
 
-  getAllByPlayerId: ({playerId, sort, limit, filter}, {user}) ->
-    ClashRoyaleMatch.getAllByPlayerId playerId, {sort, limit}
-    .map EmbedService.embed {embed: defaultEmbed}
-    .map ClashRoyaleMatch.sanitize null
+  getAllByPlayerId: ({playerId, sort, limit, filter, cursor}, {user}) ->
+    ClashRoyaleMatch.getAllByPlayerId playerId, {sort, limit, cursor}
+    .then ({rows, cursor}) ->
+      Promise.props {
+        results: rows.map ClashRoyaleMatch.sanitize null
+        cursor
+      }
 
 module.exports = new ClashRoyaleMatchCtrl()
