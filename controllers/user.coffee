@@ -114,21 +114,21 @@ class UserCtrl
     UserPlayer.getAllByPlayerIdAndGameId playerId, gameId
     .then (userPlayers) ->
       userIds = _.map userPlayers, 'userId'
-      validatedUserPlayer = _.find userPlayers, {isValidated: true}
-      validatedUser = if validatedUserPlayer \
-                      then User.getById validatedUserPlayer.userId
+      verifiedUserPlayer = _.find userPlayers, {isVerified: true}
+      verifiedUser = if verifiedUserPlayer \
+                      then User.getById verifiedUserPlayer.userId
                       else Promise.resolve null
 
       Promise.all [
-        validatedUser
+        verifiedUser
         .then User.sanitizePublic null
 
         User.getLastActiveByIds userIds
         .then User.sanitizePublic null
       ]
-      .then ([validatedUser, lastActiveUser]) ->
+      .then ([verifiedUser, lastActiveUser]) ->
         {
-          validatedUser
+          verifiedUser
           lastActiveUser
         }
 

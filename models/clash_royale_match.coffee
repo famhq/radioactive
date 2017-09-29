@@ -99,7 +99,7 @@ defaultClashRoyaleMatchC = (clashRoyaleMatch) ->
     return null
 
   try
-    clashRoyaleMatch.data = JSON.parse JSON.parse clashRoyaleMatch.data
+    clashRoyaleMatch.data = JSON.parse clashRoyaleMatch.data
   catch
 
   clashRoyaleMatch
@@ -121,18 +121,16 @@ runMatchesByPlayerId = (matches) ->
   _.flatten _.map matches, (match) ->
     playerIds = match.teamPlayerIds.concat match.opponentPlayerIds
     _.map playerIds, (playerId) ->
-      match = _.pickBy {
+      # batch isn't meant for performance, but we could groupBy playerId and
+      #  batchRun (it helps performance some if used correctly)
+      cknex().insert _.pickBy {
         playerId: playerId
         arena: match.arena
         league: match.league
         data: JSON.stringify match.data
         time: cknex.getTime match.time
       }, (val) -> val?
-
-      # batch isn't meant for performance, but we could groupBy playerId and
-      #  batchRun (it helps performance some if used correctly)
-      cknex().insert match
-      .usingTTL 3600 * 24 * 30 # 1m
+      .usingTTL 3600 * 24 * 30 # 1 month
       .into 'matches_by_playerId'
       .run()
 

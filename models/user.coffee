@@ -9,10 +9,12 @@ config = require '../config'
 
 USERS_TABLE = 'users'
 USERNAME_INDEX = 'username'
-NUMERIC_ID_INDEX = 'numericId'
-FACEBOOK_ID_INDEX = 'facebookId'
-LAST_ACTIVE_TIME_INDEX = 'lastActiveTime'
 PUSH_TOKEN_INDEX = 'pushToken'
+
+# TODO: migrate to scylla/cassandra
+# users_by_id
+# users_by_username
+# probably means dropping push_token index
 
 defaultUser = (user) ->
   unless user?
@@ -20,9 +22,7 @@ defaultUser = (user) ->
 
   _.defaults user, {
     id: uuid.v4()
-    numericId: null
     joinTime: new Date()
-    facebookId: null
     username: null
     name: null
     isMember: 0 # 1 if yes
@@ -33,7 +33,6 @@ defaultUser = (user) ->
     language: 'en'
     counters: {}
     flags: {}
-    preferredCategories: []
   }
 
 class UserModel
@@ -42,8 +41,6 @@ class UserModel
       name: USERS_TABLE
       indexes: [
         {name: USERNAME_INDEX}
-        {name: FACEBOOK_ID_INDEX}
-        {name: LAST_ACTIVE_TIME_INDEX}
         {name: PUSH_TOKEN_INDEX, fn: (row) ->
           [row('hasPushToken'), row('id')]}
       ]
@@ -63,14 +60,6 @@ class UserModel
     .orderBy r.desc 'lastActiveTime'
     .nth 0
     .default null
-    .run()
-    .then defaultUser
-
-  getByFacebookId: (facebookId) ->
-    r.table USERS_TABLE
-    .getAll facebookId, {index: FACEBOOK_ID_INDEX}
-    .nth(0)
-    .default(null)
     .run()
     .then defaultUser
 
@@ -95,14 +84,6 @@ class UserModel
   getOrCreateVerifiedByPlayerTag: (playerTag) ->
     null
     # TODO
-
-  getCardCode: (user) ->
-    random = new PcgRandom config.PCG_SEED
-    i = 1
-    while i < user.numericId
-      random.integer config.CARD_CODE_MAX_LENGTH
-      i += 1
-    random.integer config.CARD_CODE_MAX_LENGTH
 
   updateById: (id, diff) ->
     r.table USERS_TABLE

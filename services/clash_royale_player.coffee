@@ -52,7 +52,7 @@ DECK_TRACKED_GAME_TYPES = [
 ]
 
 DEBUG = false
-IS_TEST_RUN = false
+IS_TEST_RUN = false and config.ENV is config.ENVS.DEV
 
 class ClashRoyalePlayer
   getMatchPlayerData: ({player, deckId}) ->

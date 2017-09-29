@@ -1,3 +1,13 @@
+need to optimize rethink:
+- users
+- group_users
+- user_followers (spikes) 50k
+- mittens.user_item_ids (spikes) 100k
+- threads (spikes)
+- chat_messages (spikes)
+- mittens.trades (spikes) 10k
+- mittens.users (spikes) 23k (search?)
+
 Should use scylla/cassandra to scale up messages
 https://blog.discordapp.com/how-discord-stores-billions-of-messages-7fa6ec7ee4c7
 Probably with Redis pub sub for streaming new messages
@@ -13,9 +23,6 @@ sql-1:
     matches
     player_records
     clan_records
-
-Probably should use Redshift or BigQuery for match/deck/etc... data. Though that
-likely means dropping knex. **Nope: Too expensive for frequent reads**
 
 Need to:
 - get all matches for a user

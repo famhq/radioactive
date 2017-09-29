@@ -6,6 +6,7 @@ ClashRoyaleAPIService = require '../services/clash_royale_api'
 r = require '../services/rethinkdb'
 Player = require '../models/player'
 User = require '../models/user'
+ClashRoyaleMatch = require '../models/clash_royale_match'
 config = require '../config'
 
 HEALTHCHECK_TIMEOUT = 10000
@@ -33,16 +34,34 @@ class HealthCtrl
       .timeout HEALTHCHECK_TIMEOUT
       .catch -> null
 
+      ClashRoyaleAPIService.getPlayerDataByTag AUSTIN_TAG, {
+        priority: 'high'
+        skipCache: true
+        isLegacy: true
+      }
+      .timeout HEALTHCHECK_TIMEOUT
+      .catch -> null
+
       Player.getByPlayerIdAndGameId AUSTIN_TAG, config.CLASH_ROYALE_ID
+      .timeout HEALTHCHECK_TIMEOUT
+      .catch -> null
 
       User.getByUsername AUSTIN_USERNAME
+      .timeout HEALTHCHECK_TIMEOUT
+      .catch -> null
+
+      ClashRoyaleMatch.getAllByPlayerId "#{AUSTIN_TAG}"
+      .timeout HEALTHCHECK_TIMEOUT
+      .catch -> null
     ]
-    .then ([rethinkdb, playerData, playerMatches, player, user]) ->
+    .then ([rethink, apiData, apiMatches, legacyApi, player, user, matches]) ->
       result =
-        rethinkdb: Boolean rethinkdb
-        playerData: playerData?.tag is "##{AUSTIN_TAG}"
-        playerMatches: Boolean playerMatches
+        rethinkdb: Boolean rethink
+        apiData: apiData?.tag is "##{AUSTIN_TAG}"
+        apiMatches: Boolean apiMatches
+        legacyApi: apiData?.tag is "##{AUSTIN_TAG}"
         postgresPlayer: player?.id is AUSTIN_TAG
+        cassandraMatches: _.isArray matches?.rows
         rethinkUser: user?.username is AUSTIN_USERNAME
 
       result.healthy = _.every _.values result
