@@ -5,12 +5,12 @@ moment = require 'moment'
 
 KueCreateService = require './kue_create'
 TagConverterService = require './tag_converter'
+ClashRoyaleClanService = require './clash_royale_clan'
 CacheService = require './cache'
 Clan = require '../models/clan'
 config = require '../config'
 
-PLAYER_DATA_TIMEOUT_MS = 10000
-PLAYER_MATCHES_TIMEOUT_MS = 10000
+API_REQUEST_TIMEOUT_MS = 10000
 ONE_DAY_SECONDS = 3600 * 24
 
 class ClashRoyaleAPIService
@@ -36,9 +36,18 @@ class ClashRoyaleAPIService
     key = "#{CacheService.PREFIXES.CLASH_ROYALE_INVALID_TAG}:#{type}:#{tag}"
     CacheService.set key, true, {expireSeconds: ONE_DAY_SECONDS}
 
-  request: (path, {tag, type, method, body, qs} = {}) =>
+  request: (path, {tag, type, method, body, qs, priority} = {}) ->
     method ?= 'GET'
 
+    KueCreateService.createJob {
+      job: {path, tag, type, method, body, qs}
+      type: KueCreateService.JOB_TYPES.API_REQUEST
+      ttlMs: API_REQUEST_TIMEOUT_MS
+      priority: priority
+      waitForCompletion: true
+    }
+
+  processRequest: ({path, tag, type, method, body, qs}) =>
     @isInvalidTagInCache type, tag
     .then (isInvalid) =>
       if isInvalid
@@ -66,7 +75,7 @@ class ClashRoyaleAPIService
       throw new Error 'invalid tag'
 
     if not isLegacy
-      @request "/players/%23#{tag}", {type: 'player', tag}
+      @request "/players/%23#{tag}", {type: 'player', tag, priority}
       .then (player) =>
         @request "/players/%23#{tag}/upcomingchests", {type: 'player', tag}
         .then (upcomingChests) ->
@@ -88,7 +97,7 @@ class ClashRoyaleAPIService
     unless @isValidTag tag
       throw new Error 'invalid tag'
 
-    @request "/players/%23#{tag}/battlelog", {type: 'player', tag}
+    @request "/players/%23#{tag}/battlelog", {type: 'player', tag, priority}
     .then (matches) ->
       _.map matches, (match) ->
         match.id = "#{match.battleTime}:" +
@@ -99,36 +108,6 @@ class ClashRoyaleAPIService
                      then 'classicChallenge'
                      else match.type
         match
-
-  updatePlayerById: (playerId, {userId, isLegacy, priority} = {}) =>
-    Promise.all [
-      @getPlayerDataByTag playerId, {priority, isLegacy}
-      @getPlayerMatchesByTag playerId, {priority}
-      .catch -> null
-    ]
-    .then ([playerData, matches]) ->
-      unless playerId and playerData
-        console.log 'update missing tag or data', playerId, playerData
-        throw new Error 'unable to find that tag'
-      unless matches
-        console.log 'matches error', playerId
-      KueCreateService.createJob {
-        job: {userId: userId, id: playerId, playerData}
-        type: KueCreateService.JOB_TYPES.UPDATE_PLAYER_DATA
-        ttlMs: PLAYER_DATA_TIMEOUT_MS
-        priority: priority or 'high'
-        waitForCompletion: true
-      }
-      .then ->
-        KueCreateService.createJob {
-          job: {tag: playerId, matches}
-          type: KueCreateService.JOB_TYPES.UPDATE_PLAYER_MATCHES
-          ttlMs: PLAYER_MATCHES_TIMEOUT_MS
-          priority: priority or 'high'
-          waitForCompletion: true
-        }
-        .timeout PLAYER_MATCHES_TIMEOUT_MS
-        .catch -> null
 
   getClanByTag: (tag, {priority} = {}) =>
     tag = @formatHashtag tag
@@ -143,13 +122,9 @@ class ClashRoyaleAPIService
   refreshByClanId: (clanId, {userId, priority} = {}) =>
     @getClanByTag clanId, {priority}
     .then (clan) ->
-      KueCreateService.createJob {
-        job: {userId: userId, tag: clanId, clan}
-        type: KueCreateService.JOB_TYPES.UPDATE_CLAN_DATA
-        priority: priority or 'high'
-        waitForCompletion: true
-      }
+      ClashRoyaleClanService.updateClan {userId: userId, tag: clanId, clan}
     .then ->
+      console.log 'clan updated', clanId
       Clan.getByClanIdAndGameId clanId, config.CLASH_ROYALE_ID, {
         preferCache: true
       }

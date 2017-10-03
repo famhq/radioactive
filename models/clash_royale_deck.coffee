@@ -4,19 +4,8 @@ uuid = require 'node-uuid'
 
 Card = require './clash_royale_card'
 CacheService = require '../services/cache'
-r = require '../services/rethinkdb'
-knex = require '../services/knex'
+cknex = require '../services/cknex'
 config = require '../config'
-
-CLASH_ROYALE_DECK_TABLE = 'clash_royale_decks'
-POSTGRES_DECKS_TABLE = 'decks'
-ADD_TIME_INDEX = 'addTime'
-POPULARITY_INDEX = 'thisWeekPopularity'
-CARD_IDS_INDEX = 'cardIds'
-NAME_INDEX = 'name'
-SIX_HOURS_S = 3600 * 6
-TWO_WEEKS_S = 3600 * 24 * 14
-MAX_ROWS_FOR_GROUP = 20000
 
 # coffeelint: disable=max_line_length
 # for naming
@@ -48,337 +37,173 @@ ADJECTIVES = [
 MAX_RANDOM_NAME_ATTEMPTS = 30
 # coffeelint: enable=max_line_length
 
-fields = [
-  {name: 'id', type: 'string', length: 150, index: 'primary'}
-  {name: 'name', type: 'string', index: 'default'}
-  # {name: 'type', type: 'string'}
-  {name: 'cardIds', type: 'array', arrayType: 'varchar', index: 'gin'}
-  {name: 'wins', type: 'integer', defaultValue: 0}
-  {name: 'losses', type: 'integer', defaultValue: 0}
-  {name: 'draws', type: 'integer', defaultValue: 0}
-  {name: 'popularity', type: 'integer', defaultValue: 0, index: 'default'}
+tables = [
   {
-    name: 'thisWeekPopularity', type: 'integer'
-    defaultValue: 0, index: 'default'
+    name: 'counter_by_deckId'
+    fields:
+      deckId: 'text'
+      gameType: 'text'
+      arena: 'int'
+      wins: 'counter'
+      losses: 'counter'
+      draws: 'counter'
+    primaryKey:
+      partitionKey: ['deckId']
+      clusteringColumns: ['gameType', 'arena']
   }
-  {name: 'createdByUserId', type: 'uuid'}
   {
-    name: 'addTime', type: 'dateTime'
-    defaultValue: new Date(), index: 'default'
+    name: 'counter_by_deckId_opponentCardId'
+    fields:
+      deckId: 'text'
+      opponentCardId: 'text'
+      gameType: 'text'
+      arena: 'int'
+      wins: 'counter'
+      losses: 'counter'
+      draws: 'counter'
+    primaryKey:
+      partitionKey: ['deckId']
+      # might not need opponentCardId in here
+      clusteringColumns: ['gameType', 'arena', 'opponentCardId']
   }
-  {name: 'lastUpdateTime', type: 'dateTime', defaultValue: new Date()}
 ]
 
 defaultClashRoyaleDeck = (clashRoyaleDeck) ->
   unless clashRoyaleDeck?
     return null
 
-  clashRoyaleDeck?.id ?= clashRoyaleDeck?.cardKeys
-
-  _.defaults clashRoyaleDeck, _.reduce(fields, (obj, field) ->
-    {name, defaultValue} = field
-    if defaultValue?
-      obj[name] = defaultValue
-    obj
-  , {})
+  _.defaults {
+    arena: parseInt clashRoyaleDeck.arena
+    wins: parseInt clashRoyaleDeck.wins
+    losses: parseInt clashRoyaleDeck.losses
+    draws: parseInt clashRoyaleDeck.draws
+  }, clashRoyaleDeck
 
 class ClashRoyaleDeckModel
-  POSTGRES_TABLES: [
-    {
-      tableName: POSTGRES_DECKS_TABLE
-      fields: fields
-      indexes: [
-        # {columns: ['popularity', 'type']}
-      ]
-    }
-  ]
+  SCYLLA_TABLES: tables
 
-  batchCreate: (clashRoyaleDecks) ->
-    clashRoyaleDecks = _.map clashRoyaleDecks, defaultClashRoyaleDeck
+  batchUpsertByMatches: (matches) ->
+    deckIdCnt = {}
+    deckIdCardIdCnt = {}
 
-    knex.insert(clashRoyaleDecks).into(POSTGRES_DECKS_TABLE)
-    .catch (err) ->
-      console.log 'postgres err', err
+    mapDeckCondition = (condition, deckIds, opponentCardIds, gameType, arena) ->
+      _.forEach deckIds, (deckId) ->
+        deckKey = [deckId, gameType, arena].join(',')
+        allDeckKey = [deckId, 'all', 0].join(',')
+        deckIdCnt[deckKey] ?= {wins: 0, losses: 0, draws: 0}
+        deckIdCnt[deckKey][condition] += 1
+        deckIdCnt[allDeckKey] ?= {wins: 0, losses: 0, draws: 0}
+        deckIdCnt[allDeckKey][condition] += 1
+        _.forEach opponentCardIds, (cardId) ->
+          key = [deckId, gameType, arena, cardId].join(',')
+          allKey = [deckId, 'all', 0, cardId].join(',')
+          deckIdCardIdCnt[key] ?= {wins: 0, losses: 0, draws: 0}
+          deckIdCardIdCnt[key][condition] += 1
+          deckIdCardIdCnt[allKey] ?= {wins: 0, losses: 0, draws: 0}
+          deckIdCardIdCnt[allKey][condition] += 1
 
-  create: (clashRoyaleDeck, {durability} = {}) ->
-    clashRoyaleDeck = defaultClashRoyaleDeck clashRoyaleDeck
-    durability ?= 'hard'
+    _.forEach matches, (match) ->
+      gameType = match.type
+      arena = if gameType is 'PvP' then match.arena else 0
+      mapDeckCondition(
+        'wins', match.winningDeckIds, match.losingCardIds, gameType, arena
+      )
+      mapDeckCondition(
+        'losses', match.losingDeckIds, match.winningCardIds, gameType, arena
+      )
+      mapDeckCondition(
+        'draws', match.drawDeckIds, match.drawCardIds, gameType, arena
+      )
 
-    clashRoyaleDeck = _.pick clashRoyaleDeck, _.map(fields, 'name')
+    deckIdQueries = _.map deckIdCnt, (diff, key) ->
+      [deckId, gameType, arena] = key.split ','
+      q = cknex().update 'counter_by_deckId'
+      _.forEach diff, (amount, key) ->
+        q = q.increment key, amount
+      q.where 'deckId', '=', deckId
+      .andWhere 'gameType', '=', gameType
+      .andWhere 'arena', '=', arena
 
-    knex.insert(clashRoyaleDeck).into(POSTGRES_DECKS_TABLE)
-    .then ->
-      clashRoyaleDeck
+    deckIdCardIdQueries = _.map deckIdCardIdCnt, (diff, key) ->
+      [deckId, gameType, arena, cardId] = key.split ','
+      diff = _.pickBy diff
+      q = cknex().update 'counter_by_deckId_opponentCardId'
+      _.forEach diff, (amount, key) ->
+        q = q.increment key, amount
+      q.where 'deckId', '=', deckId
+      .andWhere 'gameType', '=', gameType
+      .andWhere 'arena', '=', arena
+      .andWhere 'opponentCardId', '=', cardId
 
+    # console.log 'queriesDeckId', deckIdQueries.length
+    # console.log 'queriesDeckIdCardId', deckIdCardIdQueries.length
 
-  # getRank: ({thisWeekPopularity, lastWeekPopularity}) =>
-  #   r.table @RETHINK_TABLES[0].name
-  #   .filter(
-  #     r.row(
-  #       if thisWeekPopularity? \
-  #       then 'thisWeekPopularity'
-  #       else 'lastWeekPopularity'
-  #     )
-  #     .gt(
-  #       if thisWeekPopularity? \
-  #       then thisWeekPopularity
-  #       else  lastWeekPopularity
-  #     )
-  #   )
-  #   .count()
-  #   .run()
-  #   .then (rank) -> rank + 1
+    Promise.all [
+      # batch is faster, but can't exceed 50kb
+      cknex.batchRun deckIdQueries
+      cknex.batchRun deckIdCardIdQueries
+    ]
 
-  getRandomName: (cards, attempts = 0) =>
-    cardKeys = _.map(cards, 'key')
-    tankKeys = _.map(TANK_CARD_KEYS, 'key')
-    spellKeys = _.map(SPELL_CARD_KEYS, 'key')
-    tankKey = _.sample _.intersection(cardKeys, tankKeys)
-    spellKey = _.sample _.intersection(cardKeys, spellKeys)
-    tankName = _.find(TANK_CARD_KEYS, {key: tankKey})?.name
-    spellName = _.find(SPELL_CARD_KEYS, {key: spellKey})?.name
-    name = "#{_.startCase _.sample ADJECTIVES}" +
-            (if tankName then " #{tankName}" else '') +
-            (if spellName then " #{spellName}" else '')
-
-    return @getByName name
-    .then (deck) =>
-      if deck and attempts < MAX_RANDOM_NAME_ATTEMPTS
-        # console.log 'dupe name', name, attempts
-        @getRandomName cards, attempts + 1
-      else if deck
-        'Nameless'
-      else
-        name
-
-  getByName: (name) ->
-    knex POSTGRES_DECKS_TABLE
-    .first '*'
-    .where {name}
-    .then defaultClashRoyaleDeck
+  # getRandomName: (cards, attempts = 0) =>
+  #   cardKeys = _.map(cards, 'key')
+  #   tankKeys = _.map(TANK_CARD_KEYS, 'key')
+  #   spellKeys = _.map(SPELL_CARD_KEYS, 'key')
+  #   tankKey = _.sample _.intersection(cardKeys, tankKeys)
+  #   spellKey = _.sample _.intersection(cardKeys, spellKeys)
+  #   tankName = _.find(TANK_CARD_KEYS, {key: tankKey})?.name
+  #   spellName = _.find(SPELL_CARD_KEYS, {key: spellKey})?.name
+  #   name = "#{_.startCase _.sample ADJECTIVES}" +
+  #           (if tankName then " #{tankName}" else '') +
+  #           (if spellName then " #{spellName}" else '')
+  #
+  #   return @getByName name
+  #   .then (deck) =>
+  #     if deck and attempts < MAX_RANDOM_NAME_ATTEMPTS
+  #       # console.log 'dupe name', name, attempts
+  #       @getRandomName cards, attempts + 1
+  #     else if deck
+  #       'Nameless'
+  #     else
+  #       name
 
   getById: (id) ->
-    knex.table POSTGRES_DECKS_TABLE
-    .first '*'
-    .where {id}
+    cknex().select '*'
+    .where 'deckId', '=', id
+    .andWhere 'gameType', '=', 'all'
+    .from 'counter_by_deckId'
+    .run {isSingle: true}
     .then defaultClashRoyaleDeck
 
   getAllByIds: (ids) ->
-    knex POSTGRES_DECKS_TABLE
-    .select '*'
-    .whereIn 'id', ids
+    cknex().select '*'
+    .where 'deckId', 'in', id
+    .andWhere 'gameType', '=', 'all'
+    .from 'counter_by_deckId'
+    .run()
     .map defaultClashRoyaleDeck
 
   getDeckId: (cardKeys) ->
     cardKeys = _.sortBy(cardKeys).join '|'
 
-  getByCardKeys: (cardKeys, {preferCache, cards} = {}) =>
-    cardKeysStr = @getDeckId cardKeys
-    get = =>
-      @getById cardKeys
-      .then (deck) =>
-        if deck
-          return deck
-        else
-          Promise.all [
-            # too slow...
-            # @getRandomName(_.map(cardKeys, (key) -> {key}))
-            Promise.resolve 'Nameless'
-            Promise.map cardKeys, (key) ->
-              _.find(cards, {key}) or  Card.getByKey(key, {preferCache})
-          ]
-          .then ([randomName, cards]) =>
-            @create {
-              id: cardKeysStr
-              name: randomName
-              cardIds: _.filter _.map(cards, 'id')
-            }
-      .then defaultClashRoyaleDeck
-    if preferCache
-      prefix = CacheService.PREFIXES.CLASH_ROYALE_DECK_CARD_KEYS
-      key = "#{prefix}:#{cardKeysStr}"
-      CacheService.preferCache key, get, {expireSeconds: SIX_HOURS_S}
-    else
-      get()
-
-  # TODO
-  getAll: ({limit, sort, timeFrame} = {}) ->
-    limit ?= 10
-
-    sortColumn = if sort is 'recent' then ADD_TIME_INDEX else POPULARITY_INDEX
-    q = knex POSTGRES_DECKS_TABLE
-    .select '*'
-    if timeFrame
-      q = q.where 'lastUpdateTime', '>', timeFrame
-    q.orderBy sortColumn, 'desc'
-    .limit limit
-    .map defaultClashRoyaleDeck
-
-  updateWinsAndLosses: =>
-    Promise.all [
-      @getAll {timeFrame: TWO_WEEKS_S + ONE_WEEK_S, limit: false}
-      @getWinsAndLosses()
-      @getWinsAndLosses({timeOffset: TWO_WEEKS_S})
-    ]
-    .then ([items, thisWeek, lastWeek]) =>
-      Promise.map items, (item) =>
-        thisWeekItem = _.find thisWeek, {id: item.id}
-        lastWeekItem = _.find lastWeek, {id: item.id}
-        thisWeekWins = thisWeekItem?.wins or 0
-        thisWeekLosses = thisWeekItem?.losses or 0
-        thisWeekPopularity = thisWeekWins + thisWeekLosses
-        lastWeekWins = lastWeekItem?.wins or 0
-        lastWeekLosses = lastWeekItem?.losses or 0
-        lastWeekPopularity = lastWeekWins + lastWeekLosses
-
-        @updateById item.id, {
-          thisWeekPopularity: thisWeekPopularity
-          lastWeekPopularity: lastWeekPopularity
-          timeRanges:
-            thisWeek:
-              thisWeekPopularity: thisWeekPopularity
-              verifiedWins: thisWeekWins
-              verifiedLosses: thisWeekLosses
-            lastWeek:
-              lastWeekPopularity: lastWeekPopularity
-              verifiedWins: lastWeekWins
-              verifiedLosses: lastWeekLosses
-        }
-        .then ->
-          {id: item.id, thisWeekPopularity, lastWeekPopularity}
-      , {concurrency: 10}
-      # FIXME: this is *insanely* slow for decks on prod
-      # .then (updates) =>
-      #   Promise.map items, ({id}) =>
-      #     {thisWeekPopularity, lastWeekPopularity} = _.find updates, {id}
-      #     Promise.all [
-      #       @getRank {thisWeekPopularity}
-      #       @getRank {lastWeekPopularity}
-      #     ]
-      #     .then ([thisWeekRank, lastWeekRank]) =>
-      #       @updateById id,
-      #         timeRanges:
-      #           thisWeek:
-      #             rank: thisWeekRank
-      #           lastWeek:
-      #             rank: lastWeekRank
-      #   , {concurrency: 10}
-
-  getWinsAndLosses: ({timeOffset} = {}) =>
-    timeOffset ?= 0
-    Promise.all [@getWins({timeOffset}), @getLosses({timeOffset})]
-    .then ([wins, losses]) ->
-      Promise.map wins, ({id, count}) ->
-        {id, wins: count, losses: _.find(losses, {id})?.count}
-
-  getWins: ({timeOffset}) ->
-    knex 'clash_royale_matches'
-    .select '*'
-    .where 'time', '>', Date.now().sub ((timeOffset + TWO_WEEKS_S) * 1000)
-    .andWhere 'time', '<', Date.now().sub ((timeOffset) * 1000)
-    .limit MAX_ROWS_FOR_GROUP # otherwise group is super slow?
-    .groupBy('winningDeckId')
-    .map defaultClashRoyaleDeck
-
-  getLosses: ({timeOffset}) ->
-    r.db('radioactive').table('clash_royale_matches')
-    .between(
-      r.now().sub(timeOffset + TWO_WEEKS_S)
-      r.now().sub(timeOffset)
-      {index: 'time'}
-    )
-    .limit MAX_ROWS_FOR_GROUP
-    .group('losingDeckId')
-    .count()
-    .run()
-    .map ({group, reduction}) -> {id: group, count: reduction}
-
-
-  # the fact that this actually works is a little peculiar. technically, it
-  # should only increment a batched deck by max of 1, but getAll
-  # for multiple of same id grabs the same id multiple times (and updates).
-  # TODO: group by count, separate query to .add(count)
-  # FIXME FIXME: rm, doesn't work with postgres
-  # processIncrementById: =>
-  #   states = ['win', 'loss', 'draw']
-  #   _.map states, (state) =>
-  #     subKey = "CLASH_ROYALE_DECK_QUEUED_INCREMENTS_#{state.toUpperCase()}"
-  #     key = CacheService.KEYS[subKey]
-  #     CacheService.arrayGet key
-  #     .then (queue) =>
-  #       CacheService.deleteByKey key
-  #       console.log 'batch deck', queue.length
-  #       if _.isEmpty queue
-  #         return
-  #
-  #       queue = _.map queue, JSON.parse
-  #       if state is 'win'
-  #         diff = {
-  #           wins: r.row('wins').add(1)
-  #         }
-  #       else if state is 'loss'
-  #         diff = {
-  #           losses: r.row('losses').add(1)
-  #         }
-  #       else if state is 'draw'
-  #         diff = {
-  #           draws: r.row('draws').add(1)
-  #         }
-  #       else
-  #         diff = {}
-  #
-  #       r.table @RETHINK_TABLES[0].name
-  #       .getAll r.args(queue)
-  #       .update diff
-  #       .run()
-  #
-  incrementAllByIds: (ids, changes) ->
-    knex POSTGRES_DECKS_TABLE
-    .whereIn 'id', ids
-    .update _.mapValues changes, (increment, key) ->
-      unless key in ['wins', 'losses', 'draws']
-        throw new Error 'invalid key'
-      if isNaN increment
-        throw new Error 'invalid increment'
-      knex.raw "\"#{key}\" + #{increment}"
-
-  updateById: (id, diff) ->
-    knex POSTGRES_DECKS_TABLE
-    .where {id}
-    .update diff
-
-  deleteById: (id) ->
-    knex POSTGRES_DECKS_TABLE
-    .where {id}
-    .limit 1
-    .del()
-
   sanitize: _.curry (requesterId, clashRoyaleDeck) ->
     _.pick clashRoyaleDeck, [
-      'id'
-      'name'
-      'cardIds'
+      'deckId'
       'cards'
       'averageElixirCost'
-      'thisWeekPopularity'
-      'timeRanges'
       'wins'
       'losses'
       'draws'
-      'addTime'
     ]
 
   # TODO: different sanitization for API
   sanitizeLite: _.curry (requesterId, clashRoyaleDeck) ->
-    console.log 'sanitize'
     clashRoyaleDeck = _.pick clashRoyaleDeck, [
-      'cardIds'
+      'deckId'
       'cards' # req for decks tab on profile
       'averageElixirCost'
       'wins'
       'losses'
       'draws'
-      'addTime'
     ]
     clashRoyaleDeck.cards = _.omit clashRoyaleDeck, ['data']
     clashRoyaleDeck

@@ -1,84 +1,83 @@
 _ = require 'lodash'
 uuid = require 'node-uuid'
+Promise = require 'bluebird'
 
 r = require '../services/rethinkdb'
 knex = require '../services/knex'
+cknex = require '../services/cknex'
 CacheService = require '../services/cache'
 config = require '../config'
 
-# FIXME: FIXME: make sure these work with new API before turning back on
-# so far can handle 20k per minute (1.2m per hour)
-DEFAULT_PLAYER_MATCHES_STALE_LIMIT = 0
-# 1,000 players per minute = ~1.4m per day
-DEFAULT_PLAYER_DATA_STALE_LIMIT = 0
 SIX_HOURS_S = 3600 * 6
 
-fields = [
-  {name: 'id', type: 'string', length: 20, index: 'primary'}
-  {name: 'updateFrequency', type: 'string', length: 20, defaultValue: 'default'}
-  {name: 'data', type: 'json'}
-  {name: 'lastQueuedTime', type: 'dateTime', defaultValue: new Date()}
-  {name: 'lastDataUpdateTime', type: 'dateTime', defaultValue: new Date()}
-  {name: 'lastMatchesUpdateTime', type: 'dateTime', defaultValue: new Date()}
-]
-
-defaultPlayer = (player) ->
+defaultClashRoyalePlayer = (player) ->
   unless player?
     return null
 
-  player = _.pick player, _.map(fields, 'name')
-
-  _.defaults player, _.reduce(fields, (obj, field) ->
-    {name, defaultValue} = field
-    if typeof defaultValue is 'function'
-      obj[name] = defaultValue()
-    else if defaultValue?
-      obj[name] = defaultValue
-    obj
-  , {})
-
-upsert = ({table, diff, constraint}) ->
-  insert = knex(table).insert(diff)
-  update = knex.queryBuilder().update(diff)
-
-  knex.raw "? ON CONFLICT #{constraint} DO ? returning *", [insert, update]
-  .then (result) -> result.rows[0]
+  player.data = if player.data then JSON.parse player.data else {}
+  player
 
 class ClashRoyalePlayerBaseModel
-  TABLE_NAME: 'players'
+  TABLE_NAME: 'players_by_id'
 
   constructor: ->
-    @POSTGRES_TABLES = [
+    @SCYLLA_TABLES = [
       {
-        tableName: @TABLE_NAME
-        fields: fields
-        indexes: [
-          {columns: ['updateFrequency', 'lastMatchesUpdateTime']}
-          {columns: ['updateFrequency', 'lastDataUpdateTime']}
-        ]
+        name: @TABLE_NAME
+        fields:
+          id: 'text'
+          data: 'text'
+          lastUpdateTime: 'timestamp'
+          lastQueuedTime: 'timestamp'
+        primaryKey:
+          partitionKey: ['id']
+          clusteringColumns: null
       }
-  ]
+      {
+        name: 'auto_refresh_playerIds'
+        fields:
+          bucket: 'text'
+          # playerIds overwhelmingly start with '2', but the last character is
+          # evenly distributed
+          reversedPlayerId: 'text'
+          playerId: 'text'
+        primaryKey:
+          partitionKey: ['bucket']
+          clusteringColumns: ['reversedPlayerId']
+      }
+    ]
 
-  batchCreate: (players) =>
-    players = _.map players, defaultPlayer
+  batchUpsert: (players) =>
+    chunks = cknex.chunkForBatch players
+    Promise.all _.map chunks, (chunk) =>
+      cknex.batchRun _.map chunk, (player) =>
+        playerId = player.id
+        @upsertById playerId, player, {skipRun: true}
 
-    knex(@TABLE_NAME).insert(players)
+  setAutoRefreshById: (id) ->
+    reversedPlayerId = id.split('').reverse().join('')
+    cknex().update 'auto_refresh_playerIds'
+    .set 'playerId', id # refreshes ttl if it exists
+    .where 'bucket', '=', reversedPlayerId.substr(0, 1)
+    .where 'reversedPlayerId', '=', reversedPlayerId
+    .usingTTL 3600 * 24 # 1 day
+    .run()
 
-  create: (player) =>
-    knex(@TABLE_NAME).insert defaultPlayer player
+  getAutoRefresh: (minReversedPlayerId) ->
+    cknex().select '*'
+    .where 'bucket', '=', minReversedPlayerId.substr(0, 1)
+    .andWhere 'reversedPlayerId', '>', minReversedPlayerId
+    .limit 100 # TODO: var
+    .from 'auto_refresh_playerIds'
+    .run()
 
   getById: (id, {preferCache} = {}) =>
     get = =>
-      knex @TABLE_NAME
-      .first '*'
-      .where {id}
-      .then defaultPlayer
-      .catch (err) ->
-        if err?.error?.indexOf('toast') isnt -1
-          # for some reason 8R29LRR0 is corrupt (top 200 player).
-          # can't delete row or select it
-          console.log 'pgerr', id
-        throw err
+      cknex().select '*'
+      .where 'id', '=', id
+      .from @TABLE_NAME
+      .run {isSingle: true}
+      .then defaultClashRoyalePlayer
 
     if preferCache
       prefix = CacheService.PREFIXES.PLAYER_CLASH_ROYALE_ID
@@ -88,70 +87,74 @@ class ClashRoyalePlayerBaseModel
       get()
 
   getAllByIds: (ids, {preferCache} = {}) =>
-    knex @TABLE_NAME
-    .whereIn 'id', ids
-    .map defaultPlayer
+    cknex().select '*'
+    .where 'id', 'in', ids
+    .from @TABLE_NAME
+    .run()
+    .map defaultClashRoyalePlayer
 
-  updateAllByIds: (ids, diff) =>
-    if @TABLE_NAME is 'players' and diff.data and not diff.data.trophies
-      throw new Error 'player updateall missing trophies'
+  upsertById: (id, diff, {skipRun} = {}) =>
+    # if @TABLE_NAME is 'players_by_id' and diff.data and not diff.data.trophies
+    #   throw new Error 'player upsert missing trophies'
 
-    knex @TABLE_NAME
-    .whereIn 'id', ids
-    .update diff
+    table = _.find @SCYLLA_TABLES, {name: @TABLE_NAME}
+    validKeys = _.filter _.keys(table.fields), (key) -> key isnt 'id'
 
-  updateById: (id, diff) =>
-    diff = _.pick diff, _.map(fields, 'name')
+    diff = _.pick diff, validKeys
 
-    if @TABLE_NAME is 'players' and diff.data and not diff.data.trophies
-      throw new Error 'player update missing trophies'
-
-    if diff.data
-      # json has weird bugs if not stringified
+    if typeof diff.data is 'object'
       diff.data = JSON.stringify diff.data
-    knex @TABLE_NAME
-    .where {id}
-    .limit 1
-    .update diff
-    .then defaultPlayer
 
-  upsertById: (id, diff) =>
-    if @TABLE_NAME is 'players' and diff.data and not diff.data.trophies
-      throw new Error 'player upsert missing trophies'
+    q = cknex().update @TABLE_NAME
+    .set diff
+    .where 'id', '=', id
 
-    if diff.data
-      # json has weird bugs if not stringified
-      diff.data = JSON.stringify diff.data
-    diff = defaultPlayer _.defaults(_.clone(diff), {id})
+    if @TABLE_NAME is 'players_daily'
+      q = q.usingTTL 3600 * 24 * 2 # 2 days
 
-    upsert {
-      table: @TABLE_NAME
-      diff: diff
-      constraint: '(id)'
-    }
+    if skipRun
+      return q
 
-  getStale: ({staleTimeS, type, limit}) =>
-    if type is 'matches'
-      field = 'lastMatchesUpdateTime'
-      limit ?= DEFAULT_PLAYER_MATCHES_STALE_LIMIT
-    else
-      field = 'lastDataUpdateTime'
-      limit ?= DEFAULT_PLAYER_DATA_STALE_LIMIT
+    q.run()
 
-    console.log 'gt', new Date(Date.now() - staleTimeS * 1000)
-    knex @TABLE_NAME
-    .where {updateFrequency: 'default'}
-    .andWhere field, '<', new Date(Date.now() - staleTimeS * 1000)
-    .limit limit
-    .map defaultPlayer
+  migrateAll: (order) =>
+    start = Date.now()
+    Promise.all [
+      CacheService.get 'migrate_players_min_id5'
+      .then (minId) =>
+        minId ?= '0'
+        knex('players').select '*'
+        .where {updateFrequency: 'default'}
+        .andWhere 'id', '>', minId
+        .orderBy 'id', 'asc'
+        .limit 125
+        .then (players) =>
+          # console.log 'players', players.length
+          @batchUpsert players
+          .catch (err) ->
+            console.log err
+          .then ->
+            console.log 'time', Date.now() - start, minId
+            CacheService.set 'migrate_players_min_id5', _.last(players).id
 
-  deleteById: (id) =>
-    if id
-      @upsertById id, {data: {splits: {}}}
-      # not sure why delete doesn't work. TODO
-      # knex(@TABLE_NAME).where({id}).delete()
-    else
-      Promise.resolve null
-
+      CacheService.get 'migrate_players_max_id6'
+      .then (maxId) =>
+        maxId ?= 'ZZZZZZZZZZZZZZZZZZZZZ'
+        knex('players').select '*'
+        .where {updateFrequency: 'default'}
+        .andWhere 'id', '<', maxId
+        .orderBy 'id', 'desc'
+        .limit 125
+        .then (players) =>
+          # console.log 'playersrev', players.length
+          @batchUpsert players
+          .catch (err) ->
+            console.log err
+          .then ->
+            console.log 'timerev', Date.now() - start, maxId
+            CacheService.set 'migrate_players_max_id6', _.last(players).id
+    ]
+    .then =>
+      @migrateAll()
 
 module.exports = ClashRoyalePlayerBaseModel

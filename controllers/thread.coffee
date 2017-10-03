@@ -49,28 +49,6 @@ class ThreadCtrl
       if bannedIp?.ip or bannedUserId?.userId
         router.throw status: 403, 'unable to post'
 
-  addDeck: (deck) ->
-    cardKeys = _.map deck, 'key'
-    cardIds = _.map deck, 'id'
-    name = ClashRoyaleDeck.getRandomName deck
-    ClashRoyaleDeck.getByCardKeys cardKeys
-    .then (deck) ->
-      if deck
-        deck
-      else
-        ClashRoyaleDeck.create {
-          cardIds, name, cardKeys, creatorId: user.id
-        }
-    .then (deck) ->
-      if deck
-        {
-          data:
-            deckId: deck.id
-          attachmentIds: [deck.id]
-        }
-      else
-        {}
-
   getAttachment: (body) ->
     if youtubeId = body?.match(YOUTUBE_ID_REGEX)?[1]
       return Promise.resolve {

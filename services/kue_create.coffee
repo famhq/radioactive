@@ -15,10 +15,9 @@ STUCK_JOB_INTERVAL_MS = 5000
 
 JOB_TYPES =
   DEFAULT: 'radioactive:default'
-  UPDATE_PLAYER_MATCHES: 'radioactive:update_player_matches'
-  UPDATE_PLAYER_DATA: 'radioactive:update_player_data'
-  UPDATE_CLAN_DATA: 'radioactive:update_clan'
   BATCH_NOTIFICATION: 'radioactive:batch_notification'
+  API_REQUEST: 'radioactive:api_request'
+  AUTO_REFRESH_PLAYER: 'radioactive:auto_refresh_player'
 
 CacheService.runOnce CacheService.KEYS.KUE_WATCH_STUCK, ->
   console.log 'watching stuck jobs'

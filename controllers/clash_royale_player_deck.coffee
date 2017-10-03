@@ -29,13 +29,13 @@ class ClashRoyalePlayerDeckCtrl
           playerId is player.id
         router.throw {status: 403, info: 'profile is private'}
 
-      # TODO: rm ~mid sept
-      # key = "#{CacheService.PREFIXES.USER_DECKS_MIGRATE}:#{player.id}"
-      # CacheService.runOnce key, ->
-      #   if user.joinTime?.getTime() < 1504620997117 # sept 5
-      #     ClashRoyalePlayerDeck.migrateUserDecks player.id
-      # .then ->
-      ClashRoyalePlayerDeck.getAllByPlayerId playerId, {sort, type}
+      # TODO: rm ~early nov
+      key = "pdmigrate8:#{player.id}"
+      CacheService.runOnce key, ->
+        if user.joinTime?.getTime() < 1507089178226 # oct 3
+          ClashRoyalePlayerDeck.migrate player.id
+      .then ->
+        ClashRoyalePlayerDeck.getAllByPlayerId playerId, {sort, type}
       .map EmbedService.embed {embed: defaultEmbed}
       .map ClashRoyalePlayerDeck.sanitize null
 
@@ -47,42 +47,5 @@ class ClashRoyalePlayerDeckCtrl
       ClashRoyalePlayerDeck.getByDeckIdAndPlayerId deckId, player.id
     .then EmbedService.embed {embed: defaultEmbed}
     .then ClashRoyalePlayerDeck.sanitize null
-
-  getById: ({id}, {user}) ->
-    ClashRoyalePlayerDeck.getById id
-    .then EmbedService.embed {embed: defaultEmbed}
-    .then ClashRoyalePlayerDeck.sanitize null
-
-  # favorite: ({deckId}, {user}) ->
-  #   ClashRoyalePlayerDeck.upsertByDeckIdAndUserId deckId, user.id, {
-  #     isFavorited: true
-  #   }
-  #   .tap ->
-  #     ClashRoyalePlayerDeck.processUpdate user.id
-  #
-  # unfavorite: ({deckId}, {user}) ->
-  #   console.log 'abc', user.id
-  #   ClashRoyalePlayerDeck.upsertByDeckIdAndUserId deckId, user.id, {
-  #     isFavorited: false
-  #   }
-  #   .tap ->
-  #     ClashRoyalePlayerDeck.processUpdate user.id
-  #
-  # create: ({cardIds, name, cardKeys}, {user}) ->
-  #   ClashRoyaleDeck.getByCardKeys cardKeys
-  #   .then (deck) ->
-  #     if deck
-  #       deck
-  #     else
-  #       ClashRoyaleDeck.create {
-  #         cardIds, name, cardKeys, creatorId: user.id
-  #       }
-  #   .then (deck) ->
-  #     ClashRoyalePlayerDeck.upsertByDeckIdAndUserId deck.id, user.id, {
-  #       name
-  #       isFavorited: true
-  #     }
-  #     .tap ->
-  #       ClashRoyalePlayerDeck.processUpdate user.id
 
 module.exports = new ClashRoyalePlayerDeckCtrl()

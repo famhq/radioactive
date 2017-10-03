@@ -25,10 +25,10 @@ class CronService
     # minute
     @addCron 'minute', '0 * * * * *', ->
       EventService.notifyForStart()
-      if config.ENV is config.ENVS.PROD
-        ClashRoyalePlayerService.updateStalePlayerData()
-        ClashRoyalePlayerService.updateStalePlayerMatches()
-        ClashRoyaleClanService.updateStale()
+      # if config.ENV is config.ENVS.PROD
+      # TODO: change this to check if auto update is running and start if not
+      # ClashRoyalePlayerService.updateAutoRefreshPlayers()
+      # ClashRoyaleClanService.updateAutoRefreshClans()
 
     @addCron 'quarterMinute', '15 * * * * *', ->
       CleanupService.clean()

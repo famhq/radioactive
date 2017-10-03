@@ -3,64 +3,48 @@ uuid = require 'node-uuid'
 moment = require 'moment'
 
 knex = require '../services/knex'
+cknex = require '../services/cknex'
 config = require '../config'
 
-fields = [
-  {name: 'id', type: 'bigIncrements', index: 'primary'}
-  {name: 'playerId', type: 'string', length: 20}
-  {name: 'gameRecordTypeId', type: 'uuid'}
-  {name: 'value', type: 'integer'}
-  {name: 'scaledTime', type: 'string', length: 50, index: 'default'}
-  {name: 'time', type: 'dateTime', defaultValue: new Date(), index: 'default'}
+tables = [
+  {
+    name: 'player_records_by_playerId'
+    fields:
+      playerId: 'text'
+      gameRecordTypeId: 'uuid'
+      value: 'int'
+      scaledTime: 'text'
+      time: 'timestamp'
+    primaryKey:
+      partitionKey: ['playerId', 'gameRecordTypeId']
+      clusteringColumns: ['scaledTime']
+    withClusteringOrderBy: ['scaledTime', 'desc']
+  }
 ]
 
 defaultPlayerRecord = (playerRecord) ->
   unless playerRecord?
     return null
 
-  _.defaults playerRecord, _.reduce(fields, (obj, field) ->
-    {name, defaultValue} = field
-    if defaultValue?
-      obj[name] = defaultValue
-    obj
-  , {})
-
-upsert = ({table, diff, constraint}) ->
-  insert = knex(table).insert(diff)
-  update = knex.queryBuilder().update(diff)
-
-  knex.raw "? ON CONFLICT #{constraint} DO ? returning *", [insert, update]
-  .then (result) -> result.rows[0]
+  _.defaults playerRecord, {
+    time: new Date()
+  }
 
 PLAYER_RECORDS_TABLE = 'player_records'
 
 class PlayerRecordModel
-  POSTGRES_TABLES: [
-    {
-      tableName: PLAYER_RECORDS_TABLE
-      fields: fields
-      indexes: [
-        {
-          columns: ['playerId', 'gameRecordTypeId', 'scaledTime']
-          type: 'unique'
-        }
-      ]
-    }
-  ]
+  SCYLLA_TABLES: tables
 
-  batchCreate: (playerRecords) ->
-    playerRecords = _.map playerRecords, defaultPlayerRecord
-
-    knex.insert(playerRecords).into(PLAYER_RECORDS_TABLE)
-
-  create: (playerRecord) ->
-    playerRecord = defaultPlayerRecord playerRecord
-
-    knex.insert(playerRecord).into(PLAYER_RECORDS_TABLE)
-
-  getAllByPlayerIdAndGameId: ({playerId, gameId}) ->
-    knex.select().table PLAYER_RECORDS_TABLE
-    .where {playerId}
+  batchUpsert: (playerRecords) ->
+    if _.isEmpty playerRecords
+      return Promise.resolve null
+    cknex.batchRun _.map playerRecords, (playerRecord) ->
+      playerRecord = defaultPlayerRecord playerRecord
+      cknex().update 'player_records_by_playerId'
+      .set _.omit playerRecord, ['playerId', 'gameRecordTypeId', 'scaledTime']
+      .where 'playerId', '=', playerRecord.playerId
+      .andWhere 'gameRecordTypeId', '=', playerRecord.gameRecordTypeId
+      .andWhere 'scaledTime', '=', playerRecord.scaledTime
 
   getScaledTimeByTimeScale: (timeScale, time) ->
     time ?= moment()
@@ -74,29 +58,33 @@ class PlayerRecordModel
       time.format time.format 'YYYY-MM-DD HH:mm'
 
   getRecord: ({gameRecordTypeId, playerId, scaledTime}) ->
-    knex.table PLAYER_RECORDS_TABLE
-    .first '*'
-    .where {playerId, gameRecordTypeId, scaledTime}
+    cknex().select '*'
+    .from 'player_records_by_playerId'
+    .where 'playerId', '=', playerId
+    .andWhere 'gameRecordTypeId', '=', gameRecordTypeId
+    .andWhere 'scaledTime', '=', scaledTime
+    .run {isSingle: true}
 
   getRecords: (options) ->
     {gameRecordTypeId, playerId, minScaledTime, maxScaledTime, limit} = options
     limit ?= 30
 
-    knex.select().table PLAYER_RECORDS_TABLE
-    .where {playerId, gameRecordTypeId}
-    .andWhere 'scaledTime', '>=', minScaledTime
-    .andWhere 'scaledTime', '<=', maxScaledTime
-    .orderBy 'scaledTime', 'desc'
+    cknex().select '*'
+    .from 'player_records_by_playerId'
+    .where 'playerId', '=', playerId
+    .where 'gameRecordTypeId', '=', gameRecordTypeId
+    .where 'scaledTime', '>=', minScaledTime
+    .where 'scaledTime', '<=', maxScaledTime
     .limit limit
+    .run()
 
-  upsert: ({playerId, gameRecordTypeId, scaledTime, diff}) ->
-    upsert {
-      table: PLAYER_RECORDS_TABLE
-      diff: defaultPlayerRecord _.defaults {
-        playerId, gameRecordTypeId, scaledTime
-      }, diff
-      constraint: '("playerId", "gameRecordTypeId", "scaledTime")'
-    }
+  upsert: (playerRecord) ->
+    playerRecord = defaultPlayerRecord playerRecord
+    cknex().update 'player_records_by_playerId'
+    .set _.omit playerRecord, ['playerId', 'gameRecordTypeId', 'scaledTime']
+    .where 'playerId', '=', playerRecord.playerId
+    .andWhere 'gameRecordTypeId', '=', playerRecord.gameRecordTypeId
+    .andWhere 'scaledTime', '=', playerRecord.scaledTime
 
   migrateUserRecords: (playerId) ->
     knex.select().table 'user_records'

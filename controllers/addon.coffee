@@ -17,7 +17,7 @@ defaultEmbed = [
 
 class AddonCtrl
   getAll: ->
-    Addon.getAll()
+    Addon.getAll {preferCache: true}
     .map Addon.sanitize null
 
   getById: ({id}, {user}) ->

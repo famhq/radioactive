@@ -21,7 +21,7 @@ class ClashRoyaleMatchCtrl
     ClashRoyaleMatch.getAllByPlayerId playerId, {sort, limit, cursor}
     .then ({rows, cursor}) ->
       Promise.props {
-        results: rows.map ClashRoyaleMatch.sanitize null
+        results: _.filter _.map rows, ClashRoyaleMatch.sanitize null
         cursor
       }
 

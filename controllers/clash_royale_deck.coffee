@@ -25,8 +25,8 @@ class ClashRoyaleDeckCtrl
           .map ({deck}) -> deck
           .then (decks) ->
             _.uniqBy _.filter(decks), 'id'
-    else
-      decks = ClashRoyaleDeck.getAll({sort})
+    # else # TODO
+    #   decks = ClashRoyaleDeck.getAll({sort})
 
     decks
     .map EmbedService.embed {embed: defaultEmbed}

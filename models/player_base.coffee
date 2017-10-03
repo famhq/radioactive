@@ -15,8 +15,8 @@ class PlayerModel
     @GamePlayers =
       "#{config.CLASH_ROYALE_ID}": ClashRoyalePlayer
 
-  batchCreateByGameId: (gameId, players) =>
-    @GamePlayers[gameId].batchCreate players
+  batchUpsertByGameId: (gameId, players) =>
+    @GamePlayers[gameId].batchUpsert players
 
   getByUserIdAndGameId: (userId, gameId, {preferCache, retry} = {}) =>
     get = =>
@@ -25,7 +25,6 @@ class PlayerModel
       CacheService.preferCache cacheKey, ->
         UserPlayer.getByUserIdAndGameId userId, gameId
       , {ignoreNull: true}
-      # TODO: remove after ~June 2017?
       .then (userPlayer) =>
         userPlayerExists = Boolean userPlayer?.playerId
         (if userPlayerExists
@@ -44,8 +43,11 @@ class PlayerModel
     else
       get()
 
-  updateByPlayerIdAndGameId: (playerId, gameId, diff) =>
-    @GamePlayers[gameId].updateById playerId, diff
+  setAutoRefreshByPlayerIdAndGameId: (playerId, gameId) =>
+    @GamePlayers[gameId].setAutoRefreshById playerId
+
+  getAutoRefreshByGameId: (gameId, minReversedPlayerId) =>
+    @GamePlayers[gameId].getAutoRefresh minReversedPlayerId
 
   getAllByUserIdsAndGameId: (userIds, gameId) =>
     UserPlayer.getAllByUserIdsAndGameId userIds, gameId
@@ -77,9 +79,6 @@ class PlayerModel
     .then =>
       @GamePlayers[gameId].upsertById playerId, clonedDiff
 
-  getStaleByGameId: (gameId, {staleTimeS, type, limit}) =>
-    @GamePlayers[gameId].getStale {staleTimeS, type, limit}
-
   removeUserId: (userId, gameId) ->
     unless userId
       console.log 'rm userId missing', userId
@@ -89,9 +88,6 @@ class PlayerModel
       prefix = CacheService.PREFIXES.USER_PLAYER_USER_ID_GAME_ID
       cacheKey = "#{prefix}:#{userId}:#{gameId}"
       CacheService.deleteByKey cacheKey
-
-  updateByPlayerIdsAndGameId: (playerIds, gameId, diff) =>
-    @GamePlayers[gameId].updateAllByIds playerIds, diff
 
   deleteByPlayerIdAndGameId: (playerId, gameId) =>
     @GamePlayers[gameId].deleteById playerId

@@ -21,11 +21,6 @@ class ClanModel
     @GameClans =
       "#{config.CLASH_ROYALE_ID}": ClashRoyaleClan
 
-  createByGameId: (gameId, diff) =>
-    GroupClan.create {clanId: diff.clanId, gameId: gameId}
-    .then =>
-      @GameClans[gameId].create diff
-
   # TODO: remove after ~June 2017?
   # migrate: ({clanId, gameId, groupClanExists}) =>
   #   console.log 'migrate'
@@ -72,17 +67,6 @@ class ClanModel
       .then ([groupClan, gameClan]) ->
         if groupClan and gameClan
           _.merge groupClan, gameClan
-        # else
-        #   @migrate {clanId, gameId, groupClanExists: Boolean groupClan}
-        #   .then =>
-        #     if not retry
-        #       @getByClanIdAndGameId clanId, gameId, {retry: true}
-        #     else
-        #       null
-      # .then (clan) ->
-      #   if clan
-      #     _.defaults {clanId}, clan
-      #   else null
 
     if preferCache
       prefix = CacheService.PREFIXES.CLAN_CLAN_ID_GAME_ID
@@ -93,7 +77,7 @@ class ClanModel
     else
       get()
 
-  upsertByClanIdAndGameId: (clanId, gameId, diff) ->
+  upsertByClanIdAndGameId: (clanId, gameId, diff) =>
     prefix = CacheService.PREFIXES.CLAN_CLAN_ID_GAME_ID
     cacheKey = "#{prefix}:#{clanId}:#{gameId}"
     CacheService.preferCache cacheKey, ->
@@ -102,19 +86,9 @@ class ClanModel
     .then =>
       @GameClans[gameId].upsertById clanId, diff
 
-    .tap ->
-      CacheService.PREFIXES.CLAN_PLAYERS + ':' + clanId
-
-  updateByClanIdAndGameId: (clanId, gameId, diff) =>
-    @GameClans[gameId].updateById clanId, diff
-    .tap ->
-      CacheService.PREFIXES.CLAN_PLAYERS + ':' + clanId
-
-  updateByClanIdsAndGameId: (clanIds, gameId, diff) =>
-    @GameClans[gameId].updateAllByIds clanIds, diff
-
-  getStaleByGameId: (gameId, {staleTimeS, type, limit}) =>
-    @GameClans[gameId].getStale {staleTimeS, type, limit}
+    # .tap ->
+    #   key = CacheService.PREFIXES.CLAN_PLAYERS + ':' + clanId
+    #   CacheService.deleteByKey key
 
   createGroup: ({userId, creatorId, name, clanId, password}) ->
     Group.create {

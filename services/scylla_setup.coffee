@@ -1,5 +1,7 @@
 Promise = require 'bluebird'
+_ = require 'lodash'
 
+CacheService = require './cache'
 cknex = require './cknex'
 config = require '../config'
 
@@ -7,15 +9,33 @@ config = require '../config'
 
 class ScyllaSetupService
   setup: (tables) =>
-    @createKeyspaceIfNotExists config.RETHINK.DB
-    Promise.map tables, (table) =>
-      @createTableIfNotExist table.name, table.options
+    CacheService.runOnce 'scylla_setup', =>
+      @createKeyspaceIfNotExists config.SCYLLA.KEYSPACE
+      .then =>
+        Promise.each tables, @createTableIfNotExist
+    , {expireSeconds: 300}
 
-  createKeyspaceIfNotExists: (dbName) ->
-    # cknex.createKeyspaceIfNotExists
+  createKeyspaceIfNotExists: (keyspaceName) ->
+    # TODO
+    Promise.resolve null
 
-  createTableIfNotExist: (tableName, options) ->
-    # cknex.createColumnFamilyIfNotExists
+  createTableIfNotExist: (table) ->
+    q = cknex().createColumnFamilyIfNotExists table.name
+    _.map table.fields, (type, key) ->
+      q[type] key
 
+    if table.primaryKey.clusteringColumns
+      q.primary(
+        table.primaryKey.partitionKey, table.primaryKey.clusteringColumns
+      )
+    else
+      q.primary table.primaryKey.partitionKey
+
+    if table.withClusteringOrderBy
+      q.withClusteringOrderBy(
+        table.withClusteringOrderBy[0]
+        table.withClusteringOrderBy[1]
+      )
+    q.run()
 
 module.exports = new ScyllaSetupService()

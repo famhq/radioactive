@@ -179,7 +179,6 @@ module.exports = router
 .on 'clashRoyaleAPI.refreshByClanId',
   authed ClashRoyaleAPICtrl.refreshByClanId
 
-.on 'clashRoyaleDecks.getAll', authed ClashRoyaleDeckCtrl.getAll
 .on 'clashRoyaleDecks.getById', authed ClashRoyaleDeckCtrl.getById
 
 .on 'clashRoyalePlayerDecks.getAllByPlayerId',

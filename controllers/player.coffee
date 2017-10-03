@@ -8,7 +8,7 @@ Player = require '../models/player'
 ClashRoyaleTopPlayer = require '../models/clash_royale_top_player'
 UserPlayer = require '../models/user_player'
 ClashRoyaleAPIService = require '../services/clash_royale_api'
-KueCreateService = require '../services/kue_create'
+ClashRoyalePlayerService = require '../services/clash_royale_player'
 CacheService = require '../services/cache'
 TagConverterService = require '../services/tag_converter'
 EmbedService = require '../services/embed'
@@ -49,7 +49,7 @@ class PlayerCtrl
       if player
         return player
       else
-        ClashRoyaleAPIService.updatePlayerById playerId, {
+        ClashRoyalePlayerService.updatePlayerById playerId, {
           priority: 'normal'
         }
         .then ->
@@ -70,6 +70,7 @@ class PlayerCtrl
         unless "#{gold}" is "#{playerData?.gold}"
           router.throw {status: 400, info: 'invalid gold', ignoreLog: true}
 
+        # mark others unverified
         UserPlayer.updateByPlayerIdAndGameId player.id, GAME_ID, {
           isVerified: false
         }
@@ -81,6 +82,8 @@ class PlayerCtrl
           {isVerified: true}
         )
         .tap ->
+          Player.setAutoRefreshByPlayerIdAndGameId player.id, GAME_ID
+
           key = "#{CacheService.PREFIXES.PLAYER_VERIFIED_USER}:#{player.id}"
           CacheService.deleteByKey key
 
@@ -112,7 +115,7 @@ class PlayerCtrl
           User.create {}
           .then ({id}) ->
             start = Date.now()
-            ClashRoyaleAPIService.updatePlayerById playerId, {
+            ClashRoyalePlayerService.updatePlayerById playerId, {
               userId: id
               priority: 'normal'
             }
@@ -172,6 +175,6 @@ class PlayerCtrl
             player.userId = player.verifiedUser?.id or player.userIds?[0]
             delete player.userIds
             {player}
-    , {expireSeconds: 1} # FIXME FIXME ONE_MINUTE_SECONDS}
+    , {expireSeconds: ONE_MINUTE_SECONDS}
 
 module.exports = new PlayerCtrl()

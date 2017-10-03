@@ -375,11 +375,14 @@ embedFn = _.curry (props, object) ->
       when TYPES.THREAD.PLAYER_DECK
         key = CacheService.PREFIXES.THREAD_DECK + ':' + embedded.id
         embedded.playerDeck = CacheService.preferCache key, ->
-          ClashRoyalePlayerDeck.getById embedded.data.playerDeckId
+          ClashRoyalePlayerDeck.getByDeckIdAndPlayerId(
+            embedded.data.deckId
+            embedded.data.playerId
+          )
           .then embedFn {embed: [TYPES.CLASH_ROYALE_PLAYER_DECK.DECK]}
           .then (playerDeck) ->
             playerDeck = _.pick playerDeck, [
-              'deck', 'wins', 'losses', 'draws', 'type', 'playerId', 'deck'
+              'deck', 'wins', 'losses', 'draws', 'gameType', 'playerId', 'deck'
             ]
             playerDeck.deck = _.pick playerDeck.deck, [
               'wins', 'losses', 'draws', 'cards'
@@ -455,13 +458,14 @@ embedFn = _.curry (props, object) ->
           , {expireSeconds: ONE_DAY_SECONDS, ignoreNull: true}
 
       when TYPES.CLASH_ROYALE_DECK.CARDS
-        embedded.cards = Promise.map embedded.cardIds, (cardId) ->
-          key = CacheService.PREFIXES.CLASH_ROYALE_CARD + ':' + cardId
+        cardKeys = embedded.deckId.split('|')
+        embedded.cards = Promise.map cardKeys, (cardKey) ->
+          key = CacheService.PREFIXES.CLASH_ROYALE_CARD + ':' + cardKey
           CacheService.preferCache key, ->
-            (if cardId
-              ClashRoyaleCard.getById cardId
+            (if cardKey
+              ClashRoyaleCard.getByKey cardKey
             else
-              console.log 'missing cardId', embedded
+              console.log 'missing cardKey', embedded
               Promise.resolve {})
             .then ClashRoyaleCard.sanitize(null)
           , {expireSeconds: FIVE_MINUTES_SECONDS}
@@ -480,7 +484,7 @@ embedFn = _.curry (props, object) ->
 
       when TYPES.CLASH_ROYALE_PLAYER_DECK.DECK
         prefix = CacheService.PREFIXES.CLASH_ROYALE_PLAYER_DECK_DECK
-        key = "#{prefix}:#{embedded.id}"
+        key = "#{prefix}:#{embedded.deckId}"
         embedded.deck = CacheService.preferCache key, ->
           ClashRoyaleDeck.getById embedded.deckId
           .then embedFn {embed: [TYPES.CLASH_ROYALE_DECK.CARDS]}

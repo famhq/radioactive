@@ -3,30 +3,40 @@ Promise = require 'bluebird'
 uuid = require 'node-uuid'
 
 knex = require '../services/knex'
+cknex = require '../services/cknex'
 CacheService = require '../services/cache'
 config = require '../config'
 
 PLAYER_DECKS_TABLE = 'player_decks'
 
 ONE_HOUR_SECONDS = 3600
+ONE_MONTH_SECONDS = 3600 * 24 * 30
 
-fields = [
-  {name: 'id', type: 'uuid', index: 'primary', defaultValue: -> uuid.v4()}
-  {name: 'deckId', type: 'string', length: 150}
-  {name: 'playerId', type: 'string', length: 20}
-  {name: 'deckIdPlayerIdType', type: 'string', length: 250, index: 'default'}
-  {name: 'name', type: 'string'}
-  {name: 'type', type: 'string', length: 100, defaultValue: 'all'}
-  {name: 'wins', type: 'integer', defaultValue: 0}
-  {name: 'losses', type: 'integer', defaultValue: 0}
-  {name: 'draws', type: 'integer', defaultValue: 0}
+tables = [
   {
-    name: 'addTime', type: 'dateTime'
-    defaultValue: new Date(), index: 'default'
+    name: 'counter_by_playerId_deckId'
+    fields:
+      playerId: 'text'
+      deckId: 'text'
+      gameType: 'text'
+      wins: 'counter'
+      losses: 'counter'
+      draws: 'counter'
+    primaryKey:
+      partitionKey: ['playerId']
+      clusteringColumns: ['gameType', 'deckId']
   }
   {
-    name: 'lastUpdateTime', type: 'dateTime', defaultValue: new Date()
-    index: 'default'
+    # ttl 30 days so we only sort through decks used in last 30 days
+    name: 'player_decks_by_playerId'
+    fields:
+      playerId: 'text'
+      gameType: 'text'
+      deckId: 'text'
+      lastUpdateTime: 'timestamp'
+    primaryKey:
+      partitionKey: ['playerId']
+      clusteringColumns: ['gameType', 'deckId']
   }
 ]
 
@@ -34,85 +44,97 @@ defaultClashRoyalePlayerDeck = (clashRoyalePlayerDeck) ->
   unless clashRoyalePlayerDeck?
     return null
 
-  clashRoyalePlayerDeck = _.pick clashRoyalePlayerDeck, _.map(fields, 'name')
-
-  clashRoyalePlayerDeck?.deckIdPlayerIdType =
-    "#{clashRoyalePlayerDeck?.deckId}:#{clashRoyalePlayerDeck?.playerId}" +
-    ":#{clashRoyalePlayerDeck?.type}"
-
-  _.defaults clashRoyalePlayerDeck, _.reduce(fields, (obj, field) ->
-    {name, defaultValue} = field
-    if typeof defaultValue is 'function'
-      obj[name] = defaultValue()
-    else if defaultValue?
-      obj[name] = defaultValue
-    obj
-  , {})
-
-upsert = ({table, diff, constraint}) ->
-  insert = knex(table).insert(diff)
-  update = knex.queryBuilder().update(diff)
-  knex.raw "? ON CONFLICT #{constraint} DO ? returning *", [insert, update]
-  .then (result) -> result.rows[0]
+  _.defaults {
+    arena: parseInt clashRoyalePlayerDeck.arena
+    wins: parseInt clashRoyalePlayerDeck.wins
+    losses: parseInt clashRoyalePlayerDeck.losses
+    draws: parseInt clashRoyalePlayerDeck.draws
+  }, clashRoyalePlayerDeck
 
 class ClashRoyalePlayerDeckModel
-  POSTGRES_TABLES: [
-    {
-      tableName: PLAYER_DECKS_TABLE
-      fields: fields
-      indexes: [
-        # for some reason postgres/knex tries adding this again on restart
-        # {columns: ['playerId', 'type', 'deckId'], type: 'unique'}
-        {columns: ['playerId', 'lastUpdateTime']}
-      ]
-    }
-  ]
+  SCYLLA_TABLES: tables
 
+  batchUpsertByMatches: (matches) ->
+    playerIdDeckIdCnt = {}
 
-  batchCreate: (playerDecks) ->
-    playerDecks = _.map playerDecks, defaultClashRoyalePlayerDeck
+    mapDeckCondition = (condition, playerIds, deckIds, gameType) ->
+      _.forEach playerIds, (playerId, i) ->
+        deckId = deckIds[i]
+        deckKey = [playerId, deckId, gameType].join(',')
+        allDeckKey = [playerId, deckId, 'all'].join(',')
+        playerIdDeckIdCnt[deckKey] ?= {wins: 0, losses: 0, draws: 0}
+        playerIdDeckIdCnt[deckKey][condition] += 1
+        playerIdDeckIdCnt[allDeckKey] ?= {wins: 0, losses: 0, draws: 0}
+        playerIdDeckIdCnt[allDeckKey][condition] += 1
 
-    knex(PLAYER_DECKS_TABLE).insert(playerDecks)
+    _.forEach matches, (match) ->
+      gameType = match.type
+      mapDeckCondition(
+        'wins', match.winningPlayerIds, match.winningDeckIds, gameType
+      )
+      mapDeckCondition(
+        'losses', match.losingPlayerIds, match.losingDeckIds, gameType
+      )
+      mapDeckCondition(
+        'draws', match.drawPlayerIds, match.drawDeckIds, gameType
+      )
 
-  create: (clashRoyalePlayerDeck) ->
-    clashRoyalePlayerDeck = defaultClashRoyalePlayerDeck clashRoyalePlayerDeck
-    knex.insert(clashRoyalePlayerDeck).into(PLAYER_DECKS_TABLE)
-    # .catch (err) ->
-    #   console.log 'postgres', err
-    .then ->
-      clashRoyalePlayerDeck
+    deckIdQueries = _.map playerIdDeckIdCnt, (diff, key) ->
+      [playerId, deckId, gameType] = key.split ','
+      cknex().update 'player_decks_by_playerId'
+      .set {lastUpdateTime: new Date()}
+      .where 'playerId', '=', playerId
+      .andWhere 'gameType', '=', gameType
+      .andWhere 'deckId', '=', deckId
+      .usingTTL ONE_MONTH_SECONDS
 
-  getById: (id) ->
-    unless id
-      return Promise.resolve null
-    knex PLAYER_DECKS_TABLE
-    .first '*'
-    .where {id}
-    .then defaultClashRoyalePlayerDeck
+    countQueries = _.map playerIdDeckIdCnt, (diff, key) ->
+      [playerId, deckId, gameType] = key.split ','
+      q = cknex().update 'counter_by_playerId_deckId'
+      _.forEach diff, (amount, key) ->
+        q = q.increment key, amount
+      q.where 'playerId', '=', playerId
+      .andWhere 'deckId', '=', deckId
+      .andWhere 'gameType', '=', gameType
+
+    Promise.all [
+      # batch is faster, but can't exceed 100mb
+      cknex.batchRun deckIdQueries
+      cknex.batchRun countQueries
+    ]
 
   getByDeckIdAndPlayerId: (deckId, playerId) ->
-    knex PLAYER_DECKS_TABLE
-    .first '*'
-    .where {deckId, playerId}
+    cknex().select '*'
+    .where 'deckId', '=', deckId
+    .andWhere 'playerId', '=', playerId
+    .from 'counter_by_playerId_deckId'
+    .run {isSingle: true}
     .then defaultClashRoyalePlayerDeck
 
-  getAll: ({limit, sort, type, playerId} = {}) ->
+  getAll: ({limit, type, playerId} = {}) ->
     limit ?= 10
 
-    # TODO: index on wins?
-    sortColumn = if sort is 'recent' then 'lastUpdateTime' else 'wins'
-    q = knex PLAYER_DECKS_TABLE
-    .select '*'
-    if playerId or type
-      where = {}
-      if playerId
-        where.playerId = playerId
-      if type
-        where.type = type
-      q.where where
+    Promise.all [
+      cknex().select '*'
+      .where 'playerId', '=', playerId
+      .andWhere 'gameType', '=', type
+      .from 'player_decks_by_playerId'
+      .run()
 
-    q.orderBy sortColumn, 'desc'
-    .limit limit
+      q = cknex().select '*'
+      .where 'playerId', '=', playerId
+      .andWhere 'gameType', '=', type
+      .from 'counter_by_playerId_deckId'
+      .run()
+    ]
+    .then ([playerDecksWithTime, playerDecks]) ->
+      selectedDecks = _.take(
+        _.orderBy(playerDecksWithTime, 'time', 'desc')
+        limit
+      )
+
+      _.map selectedDecks, ({deckId}) ->
+        _.find playerDecks, {deckId}
     .map defaultClashRoyalePlayerDeck
 
   getAllByPlayerId: (playerId, {limit, sort, type} = {}) =>
@@ -122,162 +144,54 @@ class ClashRoyalePlayerDeckModel
 
     @getAll {limit, sort, type, playerId}
 
-  processUpdate: (playerId) ->
-    key = CacheService.PREFIXES.USER_DATA_CLASH_ROYALE_DECK_IDS + ':' + playerId
-    CacheService.deleteByKey key
-
-  # the fact that this actually works is a little peculiar. technically, it
-  # should only increment a batched deck by max of 1, but getAll
-  # for multiple of same id grabs the same id multiple times (and updates).
-  # TODO: group by count, separate query to .add(count)
-  # processIncrementByDeckIdAndPlayerId: ->
-  #   states = ['win', 'loss', 'draw']
-  #   _.map states, (state) ->
-  #     subKey = "CLASH_ROYALE_PLAYER_DECK_QUEUED_INCREMENTS_#{state.toUpperCase()}"
-  #     key = CacheService.KEYS[subKey]
-  #     CacheService.arrayGet key
-  #     .then (queue) ->
-  #       CacheService.deleteByKey key
-  #       console.log 'batch', queue.length
-  #       if _.isEmpty queue
-  #         return
-  #
-  #       queue = _.map queue, JSON.parse
-  #       if state is 'win'
-  #         diff = {
-  #           wins: r.row('wins').add(1)
-  #         }
-  #       else if state is 'loss'
-  #         diff = {
-  #           losses: r.row('losses').add(1)
-  #         }
-  #       else if state is 'draw'
-  #         diff = {
-  #           draws: r.row('draws').add(1)
-  #         }
-  #       else
-  #         diff = {}
-  #
-  #       diff.lastUpdateTime = new Date()
-  #
-  #       r.table CLASH_ROYALE_PLAYER_DECK_TABLE
-  #       .getAll r.args(queue), {index: DECK_ID_PLAYER_ID_INDEX}
-  #       .update diff
-  #       .run()
-
-
-  # incrementByDeckIdAndPlayerId: (deckId, playerId, state, {batch} = {}) ->
-  #   if batch
-  #     subKey = "CLASH_ROYALE_PLAYER_DECK_QUEUED_INCREMENTS_#{state.toUpperCase()}"
-  #     key = CacheService.KEYS[subKey]
-  #     CacheService.arrayAppend key, [deckId, playerId]
-  #     Promise.resolve null # don't wait
-  #   else
-  #     if state is 'win'
-  #       diff = {
-  #         wins: r.row('wins').add(1)
-  #       }
-  #     else if state is 'loss'
-  #       diff = {
-  #         losses: r.row('losses').add(1)
-  #       }
-  #     else if state is 'draw'
-  #       diff = {
-  #         draws: r.row('draws').add(1)
-  #       }
-  #     else
-  #       diff = {}
-  #
-  #     r.table CLASH_ROYALE_PLAYER_DECK_TABLE
-  #     .getAll [deckId, playerId], {index: DECK_ID_PLAYER_ID_INDEX}
-  #     .update diff, {durability: 'soft'}
-  #     .run()
-
-
-  getAllByDeckIdAndPlayerIdAndTypes: (deckIdPlayerIdTypes) ->
-    deckIdPlayerIdTypesStr = _.map deckIdPlayerIdTypes, (dpt) ->
-      {deckId, playerId, type} = dpt
-      "#{deckId}:#{playerId}:#{type}"
-
-    # deckIdPlayerIdTypes = _.chunk deckIdPlayerIdTypes, 30
-
-    knex PLAYER_DECKS_TABLE
-    .select '*'
-    .whereIn 'deckIdPlayerIdType', deckIdPlayerIdTypesStr
-    .map defaultClashRoyalePlayerDeck
-
-
-  incrementAllByDeckIdAndPlayerIdAndType: (deckId, playerId, type, changes) ->
-    changes = _.mapValues changes, (increment, key) ->
-      unless key in ['wins', 'losses', 'draws']
-        throw new Error 'invalid key'
-      if isNaN increment
-        throw new Error 'invalid increment'
-      knex.raw "\"#{key}\" + #{increment}"
-    knex PLAYER_DECKS_TABLE
-    .where {playerId, type, deckId}
-    .update _.defaults({lastUpdateTime: new Date()}, changes)
-    .catch (err) ->
-      console.log 'postgres err', err
-
-    # diff = {
-    #   wins: r.row('wins').add(changes.wins or 0)
-    #   losses: r.row('losses').add(changes.losses or 0)
-    #   draws: r.row('draws').add(changes.draws or 0)
-    # }
-    # r.table CLASH_ROYALE_PLAYER_DECK_TABLE
-    # .getAll [deckId, playerId], {index: DECK_ID_PLAYER_ID_INDEX}
-    # .update diff, {durability: 'soft'}
-    # .run()
-
-  # technically current deck is just the most recently used one...
-  # resetCurrentByPlayerId: (playerId, diff) ->
-  #   r.table CLASH_ROYALE_PLAYER_DECK_TABLE
-  #   .getAll playerId, {index: PLAYER_ID_INDEX}
-  #   .filter {isCurrentDeck: true}
-  #   .update {isCurrentDeck: false}
-  #   .run()
-
-  upsertByDeckIdAndPlayerId: (deckId, playerId, diff) ->
-    unless deckId and playerId
-      return Promise.resolve null
-
-    upsert {
-      table: PLAYER_DECKS_TABLE
-      diff: defaultClashRoyalePlayerDeck _.defaults _.clone(diff), {
-        playerId, deckId
-      }
-      constraint: '("deckId", "playerId")'
-    }
-
-  migrateUserDecks: (playerId) ->
-    knex 'user_decks'
+  migrate: (playerId) ->
+    console.log 'migrate'
+    knex 'player_decks'
     .select()
     .where {playerId}
-    .distinct(knex.raw('ON ("deckId") *'))
-    .map (userDeck) ->
-      delete userDeck.id
-      delete userDeck.isFavorited
-      delete userDeck.deckIdPlayerId
+    .map (playerDeck) ->
+      delete playerDeck.id
+      delete playerDeck.isFavorited
+      delete playerDeck.deckIdPlayerId
       _.defaults {
         type: 'all'
-      }, userDeck
-    .then (playerDecks) =>
-      @batchCreate playerDecks
+      }, playerDeck
+    .then (playerDecks) ->
+      playerDecks = _.filter playerDecks, ({deckId}) ->
+        deckId.indexOf('|') isnt -1
+      chunks = cknex.chunkForBatch playerDecks
+      Promise.all _.map chunks, (chunk) ->
+        cknex.batchRun _.map chunk, ({playerId, deckId, type, lastUpdateTime} = {}) ->
+          cknex().update 'player_decks_by_playerId'
+          .set {lastUpdateTime}
+          .where 'playerId', '=', playerId
+          .andWhere 'gameType', '=', type
+          .andWhere 'deckId', '=', deckId
+          .usingTTL ONE_MONTH_SECONDS
+        cknex.batchRun _.map chunk, ({playerId, deckId, type, wins, losses, draws} = {}) ->
+          console.log playerId, deckId, type, wins, losses, draws
+          cknex().update 'counter_by_playerId_deckId'
+          .increment 'wins', wins
+          .increment 'losses', losses
+          .increment 'draws', draws
+          .where 'playerId', '=', playerId
+          .andWhere 'gameType', '=', type
+          .andWhere 'deckId', '=', deckId
+        cknex.batchRun _.map chunk, ({playerId, deckId, type, wins, losses, draws} = {}) ->
+          console.log playerId, deckId, type, wins, losses, draws
+          cknex().update 'counter_by_deckId'
+          .increment 'wins', wins
+          .increment 'losses', losses
+          .increment 'draws', draws
+          .andWhere 'gameType', '=', type
+          .andWhere 'arena', '=', 0
+          .andWhere 'deckId', '=', deckId
       # .catch (err) ->
       #   console.log 'migrate deck err', err
-    .catch -> null
-
-  deleteById: (id) ->
-    knex PLAYER_DECKS_TABLE
-    .where {id}
-    .limit 1
-    .del()
-
-    # r.table CLASH_ROYALE_PLAYER_DECK_TABLE
-    # .get id
-    # .delete()
-    # .run()
+    .then ->
+      console.log 'migrate done'
+    .catch (err) ->
+      console.log 'caught', err
 
   sanitize: _.curry (requesterId, clashRoyalePlayerDeck) ->
     _.pick clashRoyalePlayerDeck, [

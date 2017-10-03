@@ -6,6 +6,7 @@ geoip = require 'geoip-lite'
 User = require '../models/user'
 UserData = require '../models/user_data'
 UserPlayer = require '../models/user_player'
+Player = require '../models/player'
 EmbedService = require '../services/embed'
 ImageService = require '../services/image'
 CacheService = require '../services/cache'
@@ -23,10 +24,10 @@ LAST_ACTIVE_UPDATE_FREQ_MS = 60 * 10 * 1000 # 10 min
 defaultEmbed = [EmbedService.TYPES.USER.DATA]
 
 class UserCtrl
-  getMe: ({}, {user, headers, connection}) ->
+  getMe: ({}, {user, headers, connection}) =>
     start = Date.now()
     EmbedService.embed {embed: defaultEmbed}, user
-    .tap ->
+    .tap =>
       ip = headers['x-forwarded-for'] or
             connection.remoteAddress
       isRecent =
@@ -34,16 +35,27 @@ class UserCtrl
       # rendered via starfire server (wrong ip)
       isServerSide = ip?.indexOf('::ffff:10.') isnt -1
       if (isRecent or not user.ip) and not isServerSide
-        diff = {
-          lastActiveIp: ip
-          lastActiveTime: new Date()
-        }
-        unless user.ip
-          diff.ip = ip
-        User.updateById user.id, diff
-      null # don't block
+        @updateLastActiveTime user, ip
+        null # don't block
     .then User.sanitize null
 
+  updateLastActiveTime: (user, ip) ->
+    diff = {
+      lastActiveIp: ip
+      lastActiveTime: new Date()
+    }
+    unless user.ip
+      diff.ip = ip
+    User.updateById user.id, diff
+    # TODO: cache this
+    Player.getByUserIdAndGameId user.id, config.CLASH_ROYALE_ID
+    .then EmbedService.embed {
+      embed: [EmbedService.TYPES.PLAYER.VERIFIED_USER]
+      gameId: config.CLASH_ROYALE_ID
+    }
+    .then (player) ->
+      if player?.verifiedUser?.id is user.id
+        Player.setAutoRefreshByPlayerIdAndGameId player.id, config.CLASH_ROYALE_ID
 
   getById: ({id}) ->
     User.getById id

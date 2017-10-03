@@ -4,7 +4,6 @@ uuid = require 'node-uuid'
 
 r = require '../services/rethinkdb'
 User = require './user'
-CacheService = require '../services/cache'
 
 defaultThreadComment = (threadComment) ->
   unless threadComment?

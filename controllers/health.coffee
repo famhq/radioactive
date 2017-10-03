@@ -9,7 +9,7 @@ User = require '../models/user'
 ClashRoyaleMatch = require '../models/clash_royale_match'
 config = require '../config'
 
-HEALTHCHECK_TIMEOUT = 10000
+HEALTHCHECK_TIMEOUT = 20000
 AUSTIN_TAG = '22CJ9CQC0'
 AUSTIN_USERNAME = 'austin'
 

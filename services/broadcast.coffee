@@ -39,7 +39,7 @@ class BroadcastService
     )
     .then (users) =>
       if message.filterLang
-        console.log 'filtering', message.filterLang
+        console.log 'filtering', message.filterLang, users.length
         users = _.filter users, ({language, country}) =>
           language or= @getLangCode(country)
           language is message.filterLang

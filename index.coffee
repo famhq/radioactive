@@ -43,6 +43,7 @@ knex = require './services/knex'
 cknex = require './services/cknex'
 RethinkSetupService = require './services/rethink_setup'
 PostgresSetupService = require './services/postgres_setup'
+ScyllaSetupService = require './services/scylla_setup'
 AuthService = require './services/auth'
 CronService = require './services/cron'
 KueRunnerService = require './services/kue_runner'
@@ -76,10 +77,17 @@ setup = ->
   postgresTables = _.flatten _.map models, (modelFile) ->
     model = require('./models/' + modelFile)
     model?.POSTGRES_TABLES or []
+  scyllaTables = _.flatten _.map models, (modelFile) ->
+    model = require('./models/' + modelFile)
+    model?.SCYLLA_TABLES or []
 
   Promise.all [
     RethinkSetupService.setup rethinkTables
+    .then -> console.log 'rethink setup'
     PostgresSetupService.setup postgresTables
+    .then -> console.log 'postgres setup'
+    ScyllaSetupService.setup scyllaTables
+    .then -> console.log 'scylla setup'
   ]
   .catch (err) ->
     console.log 'setup', err
@@ -184,18 +192,6 @@ app.post '/clashRoyaleApi/updateClan', (req, res) ->
   .then ->
     res.status(200).send()
 
-app.get '/queuePlayerData/:tag', (req, res) ->
-  ClashRoyaleAPICtrl.queuePlayerData req, res
-  res.status(200).send()
-
-app.get '/queueClan/:tag', (req, res) ->
-  ClashRoyaleAPICtrl.queueClan req, res
-  res.status(200).send()
-
-app.get '/queuePlayerMatches/:tag', (req, res) ->
-  ClashRoyaleAPICtrl.queuePlayerMatches req, res
-  res.status(200).send()
-
 app.get '/updateTopPlayers', (req, res) ->
   ClashRoyaleAPICtrl.updateTopPlayers req, res
   res.status(200).send()
@@ -207,19 +203,17 @@ app.get '/queueTop200', (req, res) ->
   ClashRoyaleAPICtrl.queueTop200 req, res
   res.status(200).send()
 
-app.get '/clashApiProcess', (req, res) ->
-  ClashRoyaleAPICtrl.process()
+app.get '/updateAutoRefreshDebug', (req, res) ->
+  ClashRoyaleAPICtrl.updateAutoRefreshDebug()
   res.status(200).send()
 
 app.get '/videoDiscovery', (req, res) ->
   VideoDiscoveryService.discover()
   res.status(200).send()
 
-app.get '/updateCards', (req, res) ->
-  # Promise.all [
-  #   # ClashRoyaleCard.updateWinsAndLosses()
-  ClashRoyaleDeck.updateWinsAndLosses()
-  # ]
+app.get '/migrate', (req, res) ->
+  ClashRoyalePlayer = require './models/clash_royale_player'
+  ClashRoyalePlayer.migrateAll()
   res.status(200).send()
 
 app.get '/cleanKueFailed', (req, res) ->

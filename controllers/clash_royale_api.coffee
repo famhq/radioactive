@@ -6,8 +6,8 @@ basicAuth = require 'basic-auth'
 
 ClashRoyaleAPIService = require '../services/clash_royale_api'
 ClashRoyalePlayerService = require '../services/clash_royale_player'
+ClashRoyaleClanService = require '../services/clash_royale_clan'
 ClashRoyaleAPIService = require '../services/clash_royale_api'
-KueCreateService = require '../services/kue_create'
 CacheService = require '../services/cache'
 User = require '../models/user'
 ClashRoyaleDeck = require '../models/clash_royale_deck'
@@ -41,11 +41,8 @@ class ClashRoyaleAPICtrl
       }, {user}
       .then ->
         if existingPlayer?.id
-          Player.updateByPlayerIdAndGameId existingPlayer.id, GAME_ID, {
+          Player.upsertByPlayerIdAndGameId existingPlayer.id, GAME_ID, {
             lastQueuedTime: new Date()
-            updateFrequency: if existingPlayer.updateFrequency is 'none' \
-                             then 'default'
-                             else existingPlayer.updateFrequency
           }
 
   refreshByPlayerId: ({playerId, userId, isLegacy, priority}, {user}) ->
@@ -60,15 +57,15 @@ class ClashRoyaleAPICtrl
     # should "fix". multiple at same time causes actions on matches
     # to be duplicated
     CacheService.lock key, ->
-      console.log 'refesh', playerId
+      console.log 'refresh', playerId
       Player.getByUserIdAndGameId user.id, config.CLASH_ROYALE_ID
       .then (mePlayer) ->
         if mePlayer?.id is playerId
           userId = user.id
-        Player.updateByPlayerIdAndGameId playerId, config.CLASH_ROYALE_ID, {
+        Player.upsertByPlayerIdAndGameId playerId, config.CLASH_ROYALE_ID, {
           lastQueuedTime: new Date()
         }
-        ClashRoyaleAPIService.updatePlayerById playerId, {
+        ClashRoyalePlayerService.updatePlayerById playerId, {
           userId, isLegacy, priority
         }
         .catch ->
@@ -83,7 +80,7 @@ class ClashRoyaleAPICtrl
   refreshByClanId: ({clanId}, {user}) ->
     Clan.getByClanIdAndGameId clanId, config.CLASH_ROYALE_ID
     .then (clan) ->
-      Clan.updateByClanIdAndGameId clanId, config.CLASH_ROYALE_ID, {
+      Clan.upsertByClanIdAndGameId clanId, config.CLASH_ROYALE_ID, {
         lastQueuedTime: new Date()
       }
     .then ->
@@ -96,12 +93,7 @@ class ClashRoyaleAPICtrl
       {tag, playerData} = body
       unless tag
         return
-      KueCreateService.createJob {
-        job: {id: tag, playerData}
-        type: KueCreateService.JOB_TYPES.UPDATE_PLAYER_DATA
-        ttlMs: PLAYER_DATA_TIMEOUT_MS
-        priority: 'low'
-      }
+      ClashRoyalePlayerService.updatePlayerMatches {id: tag, playerData}
 
   updateClan: ({body, params, headers}) ->
     radioactiveHost = config.RADIOACTIVE_API_URL.replace /https?:\/\//i, ''
@@ -110,11 +102,7 @@ class ClashRoyaleAPICtrl
       {tag, clan} = body
       unless tag
         return
-      KueCreateService.createJob {
-        job: {tag, clan}
-        type: KueCreateService.JOB_TYPES.UPDATE_CLAN_DATA
-        priority: 'low'
-      }
+      ClashRoyaleClanService.updateClan {tag, clan}
 
   updatePlayerMatches: ({body, params, headers}) ->
     radioactiveHost = config.RADIOACTIVE_API_URL.replace /https?:\/\//i, ''
@@ -123,30 +111,7 @@ class ClashRoyaleAPICtrl
       {matches} = body
       unless matches
         return
-      KueCreateService.createJob {
-        job: {matches, isBatched: true}
-        type: KueCreateService.JOB_TYPES.UPDATE_PLAYER_MATCHES
-        ttlMs: PLAYER_MATCHES_TIMEOUT_MS
-        priority: 'low'
-      }
-
-  queueClan: ({params}) ->
-    console.log 'single queue clan', params.tag
-    request "#{config.CR_API_URL}/clans/#{params.tag}", {
-      json: true
-      qs:
-        callbackUrl:
-          "#{config.RADIOACTIVE_API_URL}/clashRoyaleAPI/updateClan"
-    }
-
-  queuePlayerData: ({params}) ->
-    console.log 'single queue', params.tag, "#{config.CR_API_URL}/players/#{params.tag}"
-    request "#{config.CR_API_URL}/players/#{params.tag}", {
-      json: true
-      qs:
-        callbackUrl:
-          "#{config.RADIOACTIVE_API_URL}/clashRoyaleAPI/updatePlayerData"
-    }
+      ClashRoyalePlayerService.updatePlayerMatches {matches, isBatched: true}
 
   queueTop200: ({params}) ->
     ClashRoyaleTopPlayer.getAll()
@@ -165,15 +130,6 @@ class ClashRoyaleAPICtrl
           callbackUrl:
             "#{config.RADIOACTIVE_API_URL}/clashRoyaleAPI/updatePlayerData"
       }
-
-  queuePlayerMatches: ({params}) ->
-    console.log 'single queue', params.tag
-    request "#{config.CR_API_URL}/players/#{params.tag}/games", {
-      json: true
-      qs:
-        callbackUrl:
-          "#{config.RADIOACTIVE_API_URL}/clashRoyaleAPI/updatePlayerMatches"
-    }
 
   updateTopPlayers: ->
     ClashRoyalePlayerService.updateTopPlayers()
@@ -228,12 +184,10 @@ class ClashRoyaleAPICtrl
 
       res.status(200).send {popularCards, popularDecks, decks}
 
-  process: ->
+  updateAutoRefreshDebug: ->
     console.log '============='
     console.log 'process url called'
     console.log '============='
-    # this triggers daily recap push notification
-    # ClashRoyalePlayerService.updateStalePlayerData {force: true}
-    ClashRoyalePlayerService.updateStalePlayerMatches {force: true}
+    ClashRoyalePlayerService.updateAutoRefreshPlayers()
 
 module.exports = new ClashRoyaleAPICtrl()

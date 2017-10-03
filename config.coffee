@@ -79,7 +79,8 @@ config =
     #        else [env.REDIS_HOST]
   CDN_HOST: env.CDN_HOST
   SCYLLA:
-    port: 9042
+    KEYSPACE: 'clash_royale'
+    PORT: 9042
     CONTACT_POINTS: env.SCYLLA_CONTACT_POINTS.split(',')
   AWS:
     REGION: 'us-west-2'

@@ -4,8 +4,8 @@ kue = require 'kue'
 KueService = require './kue'
 KueCreateService = require './kue_create'
 BroadcastService = require './broadcast'
+ClashRoyaleAPIService = require './clash_royale_api'
 ClashRoyalePlayerService = require './clash_royale_player'
-ClashRoyaleClanService = require './clash_royale_clan'
 config = require '../config'
 
 # TODO: make separate lib, used by cr-api
@@ -13,16 +13,28 @@ config = require '../config'
 # concurrency is multiplied by number of replicas (3 as of 4/11/2017)
 # higher concurrency means more load on rethink nodes, but less on rethink
 # proxies / radioactive (since it's split evenly between replicas)
-# 12 cpus
+# 24 cpus
 TYPES =
   "#{KueCreateService.JOB_TYPES.BATCH_NOTIFICATION}":
     {fn: BroadcastService.batchNotify, concurrencyPerCpu: 1}
-  "#{KueCreateService.JOB_TYPES.UPDATE_PLAYER_MATCHES}":
-    {fn: ClashRoyalePlayerService.processUpdatePlayerMatches, concurrencyPerCpu: 8}
-  "#{KueCreateService.JOB_TYPES.UPDATE_PLAYER_DATA}":
-    {fn: ClashRoyalePlayerService.processUpdatePlayerData, concurrencyPerCpu: 4}
-  "#{KueCreateService.JOB_TYPES.UPDATE_CLAN_DATA}":
-    {fn: ClashRoyaleClanService.processUpdateClan, concurrencyPerCpu: 4}
+  "#{KueCreateService.JOB_TYPES.AUTO_REFRESH_PLAYER}":
+    {
+      fn: ({playerId}) ->
+        ClashRoyalePlayerService.updatePlayerById playerId, {priority: 'normal'}
+      concurrencyPerCpu: 5
+    }
+  # ideally we'd throttle this at 300 per second, but we can't do that
+  # sort of throttling with kue (or any redis-backed lib from what I can tell).
+  # so we estimate based on average request time and concurrent requests.
+
+  # alternative is to wait until we get a rate limit error, then pause the
+  # queue workers for a bit (we did this with the kik bot)
+
+  # eg 250ms request time = 4 req per job per second
+  # 300 / 4 = 75 concurrent jobs. currently have 24 cpus. 75/24 = 3
+
+  "#{KueCreateService.JOB_TYPES.API_REQUEST}":
+    {fn: ClashRoyaleAPIService.processRequest, concurrencyPerCpu: 3}
 
 class KueRunnerService
   listen: ->
@@ -34,7 +46,7 @@ class KueRunnerService
         .then (response) ->
           done null, response
         .catch (err) ->
-          console.log 'err', err
+          console.log 'kue err', err
           done err
 
 module.exports = new KueRunnerService()

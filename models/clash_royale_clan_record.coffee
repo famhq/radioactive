@@ -2,67 +2,46 @@ _ = require 'lodash'
 uuid = require 'node-uuid'
 moment = require 'moment'
 
-knex = require '../services/knex'
+cknex = require '../services/cknex'
 config = require '../config'
 
-fields = [
-  {name: 'id', type: 'bigIncrements', index: 'primary'}
-  {name: 'clanId', type: 'string', length: 20}
-  {name: 'clanRecordTypeId', type: 'uuid'}
-  {name: 'value', type: 'integer'}
-  {name: 'scaledTime', type: 'string', length: 50}
-  {name: 'time', type: 'dateTime', defaultValue: new Date()}
+tables = [
+  {
+    name: 'clan_records_by_clanId'
+    fields:
+      clanId: 'text'
+      clanRecordTypeId: 'uuid'
+      value: 'int'
+      scaledTime: 'text'
+      time: 'timestamp'
+    primaryKey:
+      partitionKey: ['clanId', 'clanRecordTypeId']
+      clusteringColumns: ['scaledTime']
+    withClusteringOrderBy: ['scaledTime', 'desc']
+  }
 ]
 
 defaultClanRecord = (clanRecord) ->
   unless clanRecord?
     return null
 
-  _.defaults clanRecord, _.reduce(fields, (obj, field) ->
-    {name, defaultValue} = field
-    if defaultValue?
-      obj[name] = defaultValue
-    obj
-  , {})
-
-upsert = ({table, diff, constraint}) ->
-  insert = knex(table).insert(diff)
-  update = knex.queryBuilder().update(diff)
-
-  knex.raw "? ON CONFLICT #{constraint} DO ? returning *", [insert, update]
-  .then (result) -> result.rows[0]
-
-CLAN_RECORDS_TABLE = 'clan_records'
+  _.defaults clanRecord, {
+    time: new Date()
+  }
 
 class ClanRecordModel
-  POSTGRES_TABLES: [
-    {
-      tableName: CLAN_RECORDS_TABLE
-      fields: fields
-      indexes: [
-        {
-          columns: ['clanId', 'clanRecordTypeId', 'scaledTime']
-          type: 'unique'
-        }
-      ]
-    }
-  ]
+  SCYLLA_TABLES: tables
 
   batchCreate: (clanRecords) ->
-    clanRecords = _.map clanRecords, defaultClanRecord
-
-    knex.insert(clanRecords).into(CLAN_RECORDS_TABLE)
-    .catch (err) ->
-      console.log 'postgres err', err
-
-  create: (clanRecord) ->
-    clanRecord = defaultClanRecord clanRecord
-
-    knex.insert(clanRecord).into(CLAN_RECORDS_TABLE)
-
-  getAllByClanIdAndGameId: ({clanId, gameId}) ->
-    knex.select().table CLAN_RECORDS_TABLE
-    .where {clanId}
+    if _.isEmpty clanRecords
+      return Promise.resolve null
+    cknex.batchRun _.map clanRecords, (clanRecord) ->
+      clanRecord = defaultClanRecord clanRecord
+      cknex().update 'clan_records_by_clanId'
+      .set _.omit clanRecord, ['clanId', 'clanRecordTypeId', 'scaledTime']
+      .where 'clanId', '=', clanRecord.clanId
+      .andWhere 'clanRecordTypeId', '=', clanRecord.clanRecordTypeId
+      .andWhere 'scaledTime', '=', clanRecord.scaledTime
 
   getScaledTimeByTimeScale: (timeScale, time) ->
     time ?= moment()
@@ -76,28 +55,33 @@ class ClanRecordModel
       time.format time.format 'YYYY-MM-DD HH:mm'
 
   getRecord: ({clanRecordTypeId, clanId, scaledTime}) ->
-    knex.table CLAN_RECORDS_TABLE
-    .first '*'
-    .where {clanId, clanRecordTypeId, scaledTime}
+    cknex().select '*'
+    .from 'clan_records_by_clanId'
+    .where 'clanId', '=', clanId
+    .andWhere 'clanRecordTypeId', '=', clanRecordTypeId
+    .andWhere 'scaledTime', '=', scaledTime
+    .run {isSingle: true}
 
   getRecords: (options) ->
     {clanRecordTypeId, clanId, minScaledTime, maxScaledTime, limit} = options
     limit ?= 30
 
-    knex.select().table CLAN_RECORDS_TABLE
-    .where {clanId, clanRecordTypeId}
-    .andWhere 'scaledTime', '>=', minScaledTime
-    .andWhere 'scaledTime', '<=', maxScaledTime
-    .orderBy 'scaledTime', 'desc'
+    cknex().select '*'
+    .from 'clan_records_by_clanId'
+    .where 'clanId', '=', clanId
+    .where 'clanRecordTypeId', '=', clanRecordTypeId
+    .where 'scaledTime', '>=', minScaledTime
+    .where 'scaledTime', '<=', maxScaledTime
     .limit limit
+    .run()
 
   upsert: ({clanId, clanRecordTypeId, scaledTime, diff}) ->
-    upsert {
-      table: CLAN_RECORDS_TABLE
-      diff: defaultClanRecord _.defaults {
-        clanId, clanRecordTypeId, scaledTime
-      }, diff
-      constraint: '("clanId", "clanRecordTypeId", "scaledTime")'
-    }
+    clanRecord = defaultClanRecord clanRecord
+    cknex().update 'clan_records_by_clanId'
+    .set _.omit diff, ['clanId', 'clanRecordTypeId', 'scaledTime']
+    .where 'clanId', '=', clanId
+    .andWhere 'clanRecordTypeId', '=', clanRecordTypeId
+    .andWhere 'scaledTime', '=', scaledTime
+    .run()
 
 module.exports = new ClanRecordModel()

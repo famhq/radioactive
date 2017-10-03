@@ -3,6 +3,7 @@ uuid = require 'node-uuid'
 Promise = require 'bluebird'
 
 r = require '../services/rethinkdb'
+CacheService = require '../services/cache'
 
 ADDONS_TABLE = 'addons'
 CREATOR_ID_INDEX = 'creatorId'
@@ -10,6 +11,8 @@ KEY_INDEX = 'key'
 SCORE_INDEX = 'score'
 ADD_TIME_INDEX = 'addTime'
 LAST_UPDATE_TIME_INDEX = 'lastUpdateTime'
+
+FIVE_MINUTE_SECONDS = 60 * 5
 
 # SDK ids. These will eventually be stored in database,
 # but hardcoded until then.
@@ -76,11 +79,18 @@ class AddonModel
     .run()
     .then defaultAddon
 
-  getAll: ->
-    r.table ADDONS_TABLE
-    .orderBy {index: r.desc 'score'}
-    .run()
-    .map defaultAddon
+  getAll: ({preferCache} = {}) ->
+    get = ->
+      r.table ADDONS_TABLE
+      .orderBy {index: r.desc 'score'}
+      .run()
+      .map defaultAddon
+
+    if preferCache
+      key = "#{CacheService.KEYS.ADDON_GET_ALL}"
+      CacheService.preferCache key, get, {expireSeconds: FIVE_MINUTE_SECONDS}
+    else
+      get()
 
   updateById: (id, diff) ->
     r.table ADDONS_TABLE
