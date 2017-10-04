@@ -5,6 +5,7 @@ Joi = require 'joi'
 User = require '../models/user'
 UserFollower = require '../models/user_follower'
 Player = require '../models/player'
+ClashRoyalePlayer = require '../models/clash_royale_player'
 ClashRoyaleTopPlayer = require '../models/clash_royale_top_player'
 UserPlayer = require '../models/user_player'
 ClashRoyaleAPIService = require '../services/clash_royale_api'
@@ -16,6 +17,7 @@ config = require '../config'
 
 defaultEmbed = [
   EmbedService.TYPES.PLAYER.HI
+  EmbedService.TYPES.PLAYER.COUNTERS
 ]
 userIdsEmbed = [
   EmbedService.TYPES.PLAYER.USER_IDS
@@ -35,6 +37,17 @@ class PlayerCtrl
 
     # TODO: cache, but need to clear the cache whenever player is updated...
     Player.getByUserIdAndGameId userId, gameId #, {preferCache: true}
+    .tap (player) ->
+      # TODO: rm ~early nov
+      if player
+        key = "playermigrate7:#{player.id}"
+        CacheService.runOnce key, ->
+          if user.joinTime?.getTime() < 1507106200492 # oct 3
+            ClashRoyalePlayer.migrate player.id
+            .then ->
+              Player.getByPlayerIdAndGameId player.id, gameId
+
+
     .then EmbedService.embed {embed: defaultEmbed}
 
   getByPlayerIdAndGameId: ({playerId, gameId}, {user}) ->

@@ -8,6 +8,8 @@ PlayersDaily = require '../models/player_daily'
 Clan = require '../models/clan'
 Group = require '../models/group'
 ClashRoyalePlayerDeck = require '../models/clash_royale_player_deck'
+ClashRoyalePlayer = require '../models/clash_royale_player'
+ClashRoyalePlayerDaily = require '../models/clash_royale_player_daily'
 ClashRoyaleDeck = require '../models/clash_royale_deck'
 ClashRoyaleCard = require '../models/clash_royale_card'
 ClashRoyaleTopPlayer = require '../models/clash_royale_top_player'
@@ -46,7 +48,7 @@ ALLOWED_GAME_TYPES = [
 DEBUG = true
 IS_TEST_RUN = true and config.ENV is config.ENVS.DEV
 
-class ClashRoyalePlayer
+class ClashRoyalePlayerService
   filterMatches: ({matches, player}) ->
     # only grab matches since the last update time
     matches = _.filter matches, (match) ->
@@ -80,252 +82,157 @@ class ClashRoyalePlayer
       console.log 'no matches'
       return Promise.resolve null
     matches = _.uniqBy matches, 'id'
-    matches = _.orderBy matches, ['battleTime'], ['asc']
-    reqPlayerIds = _.map reqPlayers, ({id}) -> "##{id}"
+    # matches = _.orderBy matches, ['battleTime'], ['asc']
 
     if DEBUG
       console.log 'filtered matches: ' + matches.length
 
-    # store diffs in here so we can update once after all the matches are
-    # processed, instead of once per match
-    playerIds = _.uniq _.flatten _.map matches, (match) ->
-      _.map match.team.concat(match.opponent), (player) ->
-        player.tag
+    formattedMatches = _.map matches, (match, i) ->
+      matchId = match.id
 
-    playerDiffs = new PlayerSplitsDiffs()
-    # batch
-    batchClashRoyalePlayerRecords = []
-    batchMatches = []
-    batchPlayerDecks = {}
+      team = match.team
+      teamDeckIds = _.map team, (player) ->
+        cardKeys = _.map player.cards, ({name}) ->
+          ClashRoyaleCard.getKeyByName name
+        ClashRoyaleDeck.getDeckId cardKeys
+      teamCardIds = _.flatten _.map team, (player) ->
+        _.map player.cards, ({name}) ->
+          ClashRoyaleCard.getKeyByName name
 
-    playerDiffs.setInitialDiffs playerIds, reqPlayerIds
-    .then (initialDiffs) =>
-      # needs to be each for streak to work
-      Promise.each matches, (match, i) ->
-        matchId = match.id
+      opponent = match.opponent
+      opponentDeckIds = _.map opponent, (player) ->
+        cardKeys = _.map player.cards, ({name}) ->
+          ClashRoyaleCard.getKeyByName name
+        ClashRoyaleDeck.getDeckId cardKeys
+      opponentCardIds = _.flatten _.map opponent, (player) ->
+        _.map player.cards, ({name}) ->
+          ClashRoyaleCard.getKeyByName name
 
-        team = match.team
-        teamPlayers = _.filter _.map team, (player) ->
-          playerDiffs.getCachedById player.tag
-        teamDeckIds = _.map team, (player) ->
-          cardKeys = _.map player.cards, ({name}) ->
-            ClashRoyaleCard.getKeyByName name
-          ClashRoyaleDeck.getDeckId cardKeys
-        teamCardIds = _.flatten _.map team, (player) ->
-          _.map player.cards, ({name}) ->
-            ClashRoyaleCard.getKeyByName name
+      type = match.battleType
 
-        opponent = match.opponent
-        opponentPlayers = _.filter _.map opponent, (player) ->
-          playerDiffs.getCachedById player.tag
-        opponentDeckIds = _.map opponent, (player) ->
-          cardKeys = _.map player.cards, ({name}) ->
-            ClashRoyaleCard.getKeyByName name
-          ClashRoyaleDeck.getDeckId cardKeys
-        opponentCardIds = _.flatten _.map opponent, (player) ->
-          _.map player.cards, ({name}) ->
-            ClashRoyaleCard.getKeyByName name
+      teamWon = match.team[0].crowns > match.opponent[0].crowns
+      opponentWon = match.opponent[0].crowns > match.team[0].crowns
 
-        type = match.battleType
+      if teamWon
+        winningDeckIds = teamDeckIds
+        losingDeckIds = opponentDeckIds
+        drawDeckIds = null
+        winningDeckCardIds = teamCardIds
+        losingDeckCardIds = opponentCardIds
+        drawDeckCardIds = null
+        winningCrowns = match.team[0].crowns
+        losingCrowns = match.opponent[0].crowns
+        winners = team
+        losers = opponent
+        draws = null
+      else if opponentWon
+        winningDeckIds = opponentDeckIds
+        losingDeckIds = teamDeckIds
+        drawDeckIds = null
+        winningDeckCardIds = opponentCardIds
+        losingDeckCardIds = teamCardIds
+        drawDeckCardIds = null
+        winningCrowns = match.opponent[0].crowns
+        losingCrowns = match.team[0].crowns
+        winners = opponent
+        losers = opponent
+        draws = null
+      else
+        winningDeckIds = null
+        losingDeckIds = null
+        drawDeckIds = teamDeckIds.concat opponentDeckIds
+        winningDeckCardIds = null
+        losingDeckCardIds = null
+        drawDeckCardIds = teamCardIds.concat opponentCardIds
+        winningCrowns = match.team[0].crowns
+        losingCrowns = match.opponent[0].crowns
+        winners = null
+        losers = null
+        draws = team.concat opponent
 
-        teamWon = match.team[0].crowns > match.opponent[0].crowns
-        opponentWon = match.opponent[0].crowns > match.team[0].crowns
+      winningPlayerIds = _.map winners, (player) ->
+        ClashRoyaleAPIService.formatHashtag player.tag
+      losingPlayerIds = _.map losers, (player) ->
+        ClashRoyaleAPIService.formatHashtag player.tag
+      drawPlayerIds = _.map draws, (player) ->
+        ClashRoyaleAPIService.formatHashtag player.tag
 
-        _.map team.concat(opponent), (player) ->
-          diff = {
-            lastUpdateTime: new Date()
-            data:
-              lastMatchTime: moment(match.battleTime).toDate()
-          }
-          if type is 'PvP'
-            diff.data.trophies = player.trophies
-          playerDiffs.setDiffById player.tag, diff
+      prefix = CacheService.PREFIXES.CLASH_ROYALE_MATCHES_ID_EXISTS
+      key = "#{prefix}:#{matchId}"
 
-          playerDiffs.incById {
-            id: player.tag
-            field: 'crownsEarned'
-            amount: player.crowns
-            type: type
-          }
-          playerDiffs.incById {
-            id: player.tag
-            field: 'crownsLost'
-            amount: player.crowns
-            type: type
-          }
+      # get rid of iconUrls (wasted space)
+      match.team = _.map match.team, (player) ->
+        _.defaults {
+          cards: _.map player.cards, (card) ->
+            _.omit card, ['iconUrls']
+        }, player
+      match.opponent = _.map match.opponent, (player) ->
+        _.defaults {
+          cards: _.map player.cards, (card) ->
+            _.omit card, ['iconUrls']
+        }, player
 
-        if teamWon
-          winningDeckIds = teamDeckIds
-          losingDeckIds = opponentDeckIds
-          drawDeckIds = null
-          winningDeckCardIds = teamCardIds
-          losingDeckCardIds = opponentCardIds
-          drawDeckCardIds = null
-          teamDecksState = 'wins'
-          opponentDecksState = 'losses'
-          winners = team
-          losers = opponent
-          draws = null
-        else if opponentWon
-          winningDeckIds = opponentDeckIds
-          losingDeckIds = teamDeckIds
-          drawDeckIds = null
-          winningDeckCardIds = opponentCardIds
-          losingDeckCardIds = teamCardIds
-          drawDeckCardIds = null
-          teamDecksState = 'losses'
-          opponentDecksState = 'wins'
-          winners = opponent
-          losers = opponent
-          draws = null
-        else
-          winningDeckIds = null
-          losingDeckIds = null
-          drawDeckIds = teamDeckIds.concat opponentDeckIds
-          winningDeckCardIds = null
-          losingDeckCardIds = null
-          drawDeckCardIds = teamCardIds.concat opponentCardIds
-          teamDecksState = 'draws'
-          opponentDecksState = 'draws'
-          winners = null
-          losers = null
-          draws = team.concat opponent
 
-        winningPlayerIds = _.map winners, (player) ->
-          ClashRoyaleAPIService.formatHashtag player.tag
-        losingPlayerIds = _.map losers, (player) ->
-          ClashRoyaleAPIService.formatHashtag player.tag
-        drawPlayerIds = _.map draws, (player) ->
-          ClashRoyaleAPIService.formatHashtag player.tag
+      # don't need to block for this
+      CacheService.set key, true, {expireSeconds: SIX_HOURS_S}
 
-        _.map winners, (player) ->
-          playerDiffs.incById {id: player.tag, field: 'wins', type: type}
-          playerDiffs.incById {
-            id: player.tag, field: 'currentWinStreak', type: type
-          }
-          playerDiffs.setSplitStatById {
-            id: player.tag, field: 'currentLossStreak'
-            value: 0, type: type
-          }
+      {
+        id: matchId
+        data: match
+        arena: match.arena?.id
+        type: type
+        winningPlayerIds: winningPlayerIds
+        losingPlayerIds: losingPlayerIds
+        drawPlayerIds: drawPlayerIds
+        winningDeckIds: winningDeckIds
+        losingDeckIds: losingDeckIds
+        drawDeckIds: drawDeckIds
+        winningCardIds: winningDeckCardIds
+        losingCardIds: losingDeckCardIds
+        drawCardIds: drawDeckCardIds
+        winningCrowns: winningCrowns
+        losingCrowns: losingCrowns
+        time: moment(match.battleTime).toDate()
+      }
 
-        _.map losers, (player) ->
-          playerDiffs.incById {
-            id: player.tag, field: 'losses', type: type
-          }
-          playerDiffs.incById {
-            id: player.tag, field: 'currentLossStreak', type: type
-          }
-          playerDiffs.setSplitStatById {
-            id: player.tag, field: 'currentWinStreak'
-            value: 0, type: type
-          }
+    start = Date.now()
 
-        _.map draws, (player) ->
-          playerDiffs.incById {id: player.tag, field: 'draws', type: type}
-          playerDiffs.setSplitStatById {
-            id: player.tag, field: 'currentWinStreak'
-            value: 0, type: type
-          }
-          playerDiffs.setSplitStatById {
-            id: player.tag, field: 'currentLossStreak'
-            value: 0, type: type
-          }
+    try
+      Promise.all [
+        ClashRoyalePlayer.batchUpsertCounterByMatches formattedMatches
+        .catch (err) -> console.log 'player err', err
+        .then -> console.log '---player', Date.now() - start
 
-        _.map team.concat(opponent), (player) ->
-          playerDiffs.setStreak {
-            id: player.tag, maxField: 'maxWinStreak'
-            currentField: 'currentWinStreak', type: type
-          }
-          playerDiffs.setStreak {
-            id: player.tag, maxField: 'maxLossStreak'
-            currentField: 'currentLossStreak', type: type
-          }
+        ClashRoyalePlayerDaily.batchUpsertCounterByMatches formattedMatches
+        .catch (err) -> console.log 'playerdaily err', err
+        .then -> console.log '---playerdaily', Date.now() - start
 
-        # for records (graph)
-        scaledTime = ClashRoyalePlayerRecord.getScaledTimeByTimeScale(
-          'minute', moment(match.battleTime)
-        )
+        Match.batchCreate formattedMatches
+        .catch (err) -> console.log 'match err', err
+        .then -> console.log '---match', Date.now() - start
 
-        prefix = CacheService.PREFIXES.CLASH_ROYALE_MATCHES_ID_EXISTS
-        key = "#{prefix}:#{matchId}"
+        ClashRoyalePlayerRecord.batchUpsertByMatches formattedMatches
+        .catch (err) -> console.log 'playerrecord err', err
+        .then -> console.log '---gr', Date.now() - start
 
-        # get rid of iconUrls (wasted space)
-        match.team = _.map match.team, (player) ->
-          _.defaults {
-            cards: _.map player.cards, (card) ->
-              _.omit card, ['iconUrls']
-          }, player
-        match.opponent = _.map match.opponent, (player) ->
-          _.defaults {
-            cards: _.map player.cards, (card) ->
-              _.omit card, ['iconUrls']
-          }, player
+        ClashRoyalePlayerDeck.batchUpsertByMatches formattedMatches
+        .catch (err) -> console.log 'playerDeck err', err
+        .then -> console.log '---pdeck', Date.now() - start
 
-        matchObj = {
-          id: matchId
-          data: match
-          arena: match.arena?.id
-          type: type
-          winningPlayerIds: winningPlayerIds
-          losingPlayerIds: losingPlayerIds
-          drawPlayerIds: drawPlayerIds
-          winningDeckIds: winningDeckIds
-          losingDeckIds: losingDeckIds
-          drawDeckIds: drawDeckIds
-          winningCardIds: winningDeckCardIds
-          losingCardIds: losingDeckCardIds
-          drawCardIds: drawDeckCardIds
-          time: moment(match.battleTime).toDate()
-        }
-        batchMatches.push matchObj
+        ClashRoyaleDeck.batchUpsertByMatches formattedMatches
+        .catch (err) -> console.log 'decks err', err
+        .then -> console.log '---deck', Date.now() - start
 
-        if type is 'PvP'
-          _.forEach team.concat(opponent), (player, i) ->
-            batchClashRoyalePlayerRecords.push {
-              playerId: player.tag.replace '#', ''
-              gameRecordTypeId: config.CLASH_ROYALE_TROPHIES_RECORD_ID
-              scaledTime
-              value: player.startingTrophies + player.trophyChange
-            }
-
-        # don't need to block for any of these
-        CacheService.set key, true, {expireSeconds: SIX_HOURS_S}
-
+        ClashRoyaleCard.batchUpsertByMatches formattedMatches
+        .catch (err) -> console.log 'cards err', err
+        .then -> console.log '---card', Date.now() - start
+      ]
       .then ->
-        start = Date.now()
-        Promise.all [
-          Player.batchUpsertByGameId GAME_ID, playerDiffs.getAll().all
-          .catch (err) -> console.log 'player err', err
-          .then -> console.log '---player', Date.now() - start
-
-          PlayersDaily.batchUpsertByGameId GAME_ID, playerDiffs.getAll().day
-          .catch (err) -> console.log 'playerdaily err', err
-          .then -> console.log '---playerdaily', Date.now() - start
-
-          Match.batchCreate batchMatches
-          .catch (err) -> console.log 'match err', err
-          .then -> console.log '---match', Date.now() - start
-
-          ClashRoyalePlayerRecord.batchUpsert batchClashRoyalePlayerRecords
-          .catch (err) -> console.log 'playerrecord err', err
-          .then -> console.log '---gr', Date.now() - start
-
-          ClashRoyalePlayerDeck.batchUpsertByMatches batchMatches
-          .catch (err) -> console.log 'playerDeck err', err
-          .then -> console.log '---pdeck', Date.now() - start
-
-          ClashRoyaleDeck.batchUpsertByMatches batchMatches
-          .catch (err) -> console.log 'decks err', err
-          .then -> console.log '---deck', Date.now() - start
-
-          ClashRoyaleCard.batchUpsertByMatches batchMatches
-          .catch (err) -> console.log 'cards err', err
-          .then -> console.log '---card', Date.now() - start
-        ]
-        .then ->
-          console.log 'processed'
-          null
+        console.log 'processed'
+        formattedMatches
       .catch (err) -> console.log err
+    catch err
+      console.log err
 
   updatePlayerMatches: ({matches, isBatched, tag}) =>
     if _.isEmpty matches
@@ -353,14 +260,26 @@ class ClashRoyalePlayer
         @processMatches {
           matches: filteredMatches, reqPlayers: players
         }
+        .then (matches) ->
+          unless _.isEmpty matches
+            Player.upsertByPlayerIdAndGameId players[0].id, GAME_ID, {
+              data: _.defaults {
+                lastMatchTime: _.last(matches).time
+              }, players[0].data
+            }
 
   updatePlayerById: (playerId, {userId, isLegacy, priority} = {}) =>
-    console.log 'update player', playerId
-    Promise.all [
-      ClashRoyaleAPIService.getPlayerDataByTag playerId, {priority, isLegacy}
-      ClashRoyaleAPIService.getPlayerMatchesByTag playerId, {priority}
-      .catch -> null
-    ]
+    start = Date.now()
+    ClashRoyaleAPIService.isInvalidTagInCache 'player', playerId
+    .then (isInvalid) ->
+      if isInvalid
+        throw new Error 'invalid tag'
+      Promise.all [
+        ClashRoyaleAPIService.getPlayerDataByTag playerId, {priority, isLegacy}
+        ClashRoyaleAPIService.getPlayerMatchesByTag playerId, {priority}
+        .catch -> null
+      ]
+    .catch (err) -> console.log 'err, err', err
     .then ([playerData, matches]) =>
       unless playerId and playerData
         console.log 'update missing tag or data', playerId, playerData
@@ -368,9 +287,21 @@ class ClashRoyalePlayer
       unless matches
         console.log 'matches error', playerId
 
-      @updatePlayerData {userId: userId, id: playerId, playerData}
-      .then =>
+      if DEBUG
+        console.log 'api requests', Date.now() - start
+        start = Date.now()
+
+      Promise.all [
+        @updatePlayerData {userId: userId, id: playerId, playerData}
+        .then ->
+          if DEBUG
+            console.log 'player data updated', Date.now() - start
+
         @updatePlayerMatches {tag: playerId, matches}
+        .then ->
+          if DEBUG
+            console.log 'player matches updated', Date.now() - start
+      ]
       .then ->
         true # notify auto_refresher of success
 
@@ -396,7 +327,7 @@ class ClashRoyalePlayer
         lastUpdateTime: new Date()
       }
 
-      # NOTE: any time you update, keep in mind postgress replaces
+      # NOTE: any time you update, keep in mind scylla replaces
       # entire fields (data), so need to merge with old data manually
       Player.upsertByPlayerIdAndGameId id, GAME_ID, diff, {userId}
       .then =>
@@ -406,20 +337,14 @@ class ClashRoyalePlayer
         console.log 'upsert err', err
         null
 
-      .then ->
-        if userId
-          User.getById userId
-        else
-          Promise.resolve null
-      .then (user) =>
+      .tap =>
         key = CacheService.PREFIXES.USER_DAILY_DATA_PUSH + ':' + id
         CacheService.runOnce key, =>
-          msSinceJoin = Date.now() - user?.joinTime?.getTime()
-          if user and msSinceJoin >= ONE_DAY_MS
-            @sendDailyPush {playerId: id}
-            .catch (err) ->
-              console.log 'push err', err
+          @sendDailyPush {playerId: id}
+          .catch (err) ->
+            console.log 'push err', err
         , {expireSeconds: ONE_DAY_S}
+        null # don't need to block
 
   _setClan: ({clanId, userId}) ->
     Clan.getByClanIdAndGameId clanId, GAME_ID, {
@@ -480,6 +405,10 @@ class ClashRoyalePlayer
       null
 
   sendDailyPush: ({playerId}) ->
+    yesterday = ClashRoyalePlayerRecord.getScaledTimeByTimeScale(
+      'day'
+      moment().subtract 1, 'day'
+    )
     Promise.all [
       Player.getByPlayerIdAndGameId playerId, GAME_ID
       .then EmbedService.embed {
@@ -489,9 +418,11 @@ class ClashRoyalePlayer
         ]
         gameId: GAME_ID
       }
-      PlayersDaily.getByPlayerIdAndGameId playerId, GAME_ID
+      Player.getCountersByPlayerIdAndScaledTimeAndGameId(
+        playerId, yesterday, GAME_ID
+      )
     ]
-    .then ([player, playerDaily]) ->
+    .then ([player, playerCounters]) ->
       if player
         goodChests = ['giantChest', 'epicChest', 'legendaryChest',
                       'superMagicalChest', 'magicalChest']
@@ -500,21 +431,11 @@ class ClashRoyalePlayer
         nextGoodChest = _.minBy goodChests, 'index'
         countUntilNextGoodChest = nextGoodChest.index + 1
 
-        if playerDaily
-          splits = playerDaily.data.splits
-          stats = _.reduce splits, (aggregate, split, gameType) ->
-            aggregate.wins += split.wins
-            aggregate.losses += split.losses
-            aggregate
-          , {wins: 0, losses: 0}
-          PlayersDaily.deleteByPlayerIdAndGameId(
-            playerDaily.id
-            GAME_ID
-          )
+        if playerCounter = _.find playerCounters, {gameType: 'all'}
           text = "#{countUntilNextGoodChest} chests until a
             #{_.startCase(nextGoodChest?.name)}.
-            You had #{stats.wins} wins and
-            #{stats.losses} losses today."
+            You had #{playerCounter.wins} wins and
+            #{playerCounter.losses} losses today."
         else
           text = "#{countUntilNextGoodChest} chests until a
             #{_.startCase(nextGoodChest?.name)}."
@@ -564,86 +485,4 @@ class ClashRoyalePlayer
             playerId: playerId
           }
 
-
-class PlayerSplitsDiffs
-  constructor: ->
-    @playerDiffs = {all: {}, day: {}}
-
-  setInitialDiffs: (playerIds, reqPlayerIds) =>
-    playerIds = _.map _.uniq(playerIds.concat reqPlayerIds), (id) ->
-      id.replace '#', ''
-    Promise.all [
-      Player.getAllByPlayerIdsAndGameId playerIds, GAME_ID
-      PlayersDaily.getAllByPlayerIdsAndGameId playerIds, GAME_ID
-    ]
-    .then ([players, playersDaily]) =>
-      _.map playerIds, (playerId) =>
-        player = _.find players, {id: playerId}
-        @playerDiffs['all']["##{playerId}"] = _.defaultsDeep player, {
-          id: playerId
-          data: {splits: {}}, preExisting: true
-        }
-
-        playerDaily = _.find playersDaily, {id: playerId}
-        @playerDiffs['day']["##{playerId}"] = _.defaultsDeep playerDaily, {
-          id: playerId
-          data: {splits: {}}, preExisting: Boolean playerDaily
-        }
-
-  getAll: =>
-    @playerDiffs
-
-  getCachedById: (playerId) =>
-    @playerDiffs['all'][playerId]
-
-  getCachedSplits: ({id, type, set}) =>
-    unless @playerDiffs[set][id]?.data?.splits
-      return
-    splits = @playerDiffs[set][id].data.splits[type]
-    @playerDiffs[set][id].data.splits[type] = _.defaults splits, {
-      currentWinStreak: 0
-      currentLossStreak: 0
-      maxWinStreak: 0
-      maxLossStreak: 0
-      crownsEarned: 0
-      crownsLost: 0
-      wins: 0
-      losses: 0
-      draws: 0
-    }
-    @playerDiffs[set][id].data.splits[type]
-
-  getFieldById: ({id, field, type, set}) =>
-    unless @playerDiffs[set][id]
-      return
-    @getCachedSplits({id, type, set})[field]
-
-  incById: ({id, field, type, amount}) =>
-    amount ?= 1
-    _.map @playerDiffs, (diffs, set) =>
-      @getCachedSplits({id, type, set})?[field] += amount
-
-  setSplitStatById: ({id, field, type, value, set}) =>
-    if set
-      @getCachedSplits({id, type, set})?[field] = value
-    else
-      _.map @playerDiffs, (diffs, set) =>
-        @getCachedSplits({id, type, set})?[field] = value
-
-  setDiffById: (id, diff) =>
-    _.map @playerDiffs, (diffs, set) =>
-      unless @playerDiffs[set][id]
-        return
-      @playerDiffs[set][id] = _.merge @playerDiffs[set][id], diff
-
-  setStreak: ({id, type, maxField, currentField}) =>
-    _.map @playerDiffs, (diffs, set) =>
-      max = @getFieldById {id, field: maxField, type, set}
-      current = @getFieldById {id, field: currentField, type, set}
-      if current > max
-        @setSplitStatById {
-          id: id, field: maxField
-          value: current, type: type, set: set
-        }
-
-module.exports = new ClashRoyalePlayer()
+module.exports = new ClashRoyalePlayerService()

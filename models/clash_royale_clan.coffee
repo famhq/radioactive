@@ -71,7 +71,7 @@ class ClashRoyaleClan
       diff.data = JSON.stringify diff.data
 
     cknex().update 'clans_by_id'
-    .set _.omit diff, ['clanId']
+    .set _.omit(diff, ['clanId'])
     .where 'id', '=', id
     .run()
 

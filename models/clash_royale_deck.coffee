@@ -104,6 +104,8 @@ class ClashRoyaleDeckModel
 
     _.forEach matches, (match) ->
       gameType = match.type
+      if config.DECK_TRACKED_GAME_TYPES.indexOf(gameType) is -1
+        return
       arena = if gameType is 'PvP' then match.arena else 0
       mapDeckCondition(
         'wins', match.winningDeckIds, match.losingCardIds, gameType, arena
@@ -135,13 +137,10 @@ class ClashRoyaleDeckModel
       .andWhere 'arena', '=', arena
       .andWhere 'opponentCardId', '=', cardId
 
-    # console.log 'queriesDeckId', deckIdQueries.length
-    # console.log 'queriesDeckIdCardId', deckIdCardIdQueries.length
-
     Promise.all [
       # batch is faster, but can't exceed 50kb
       cknex.batchRun deckIdQueries
-      cknex.batchRun deckIdCardIdQueries
+      # cknex.batchRun deckIdCardIdQueries
     ]
 
   # getRandomName: (cards, attempts = 0) =>

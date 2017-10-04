@@ -67,6 +67,7 @@ TYPES =
   PLAYER:
     VERIFIED_USER: 'player:verifiedUser'
     HI: 'player:hi'
+    COUNTERS: 'player:counters'
     USER_IDS: 'player:user_ids'
   THREAD_COMMENT:
     CREATOR: 'threadComment:creator'
@@ -432,6 +433,13 @@ embedFn = _.curry (props, object) ->
       when TYPES.PLAYER.HI
         embedded.hi = Promise.resolve(
           TagConverterService.getHiLoFromTag(embedded.id)?.hi
+        )
+
+      when TYPES.PLAYER.COUNTERS
+        embedded.counters = Player.getCountersByPlayerIdAndScaledTimeAndGameId(
+          embedded.id
+          'all'
+          config.CLASH_ROYALE_ID
         )
 
       when TYPES.PLAYER.VERIFIED_USER

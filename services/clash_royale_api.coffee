@@ -26,7 +26,7 @@ class ClashRoyaleAPIService
 
   isInvalidTagInCache: (type, tag) ->
     unless type or tag
-      return false
+      return Promise.resolve false
     key = "#{CacheService.PREFIXES.CLASH_ROYALE_INVALID_TAG}:#{type}:#{tag}"
     CacheService.get key
 
@@ -48,25 +48,20 @@ class ClashRoyaleAPIService
     }
 
   processRequest: ({path, tag, type, method, body, qs}) =>
-    @isInvalidTagInCache type, tag
-    .then (isInvalid) =>
-      if isInvalid
-        throw new Error 'invalid tag'
-
-      request "#{config.CLASH_ROYALE_API_URL}#{path}", {
-        json: true
-        method: method
-        headers:
-          'Authorization': "Bearer #{config.CLASH_ROYALE_API_KEY}"
-        body: body
-      }
-      .catch (err) =>
-        if err.statusCode is 404
-          @setInvalidTag type, tag
-          .then ->
-            throw err
-        else
+    request "#{config.CLASH_ROYALE_API_URL}#{path}", {
+      json: true
+      method: method
+      headers:
+        'Authorization': "Bearer #{config.CLASH_ROYALE_API_KEY}"
+      body: body
+    }
+    .catch (err) =>
+      if err.statusCode is 404
+        @setInvalidTag type, tag
+        .then ->
           throw err
+      else
+        throw err
 
   getPlayerDataByTag: (tag, {priority, skipCache, isLegacy} = {}) =>
     tag = @formatHashtag tag
@@ -75,12 +70,13 @@ class ClashRoyaleAPIService
       throw new Error 'invalid tag'
 
     if not isLegacy
-      @request "/players/%23#{tag}", {type: 'player', tag, priority}
-      .then (player) =>
+      Promise.all [
+        @request "/players/%23#{tag}", {type: 'player', tag, priority}
         @request "/players/%23#{tag}/upcomingchests", {type: 'player', tag}
-        .then (upcomingChests) ->
-          player.upcomingChests = upcomingChests
-          player
+      ]
+      .then ([player, upcomingChests]) ->
+        player.upcomingChests = upcomingChests
+        player
     else # verifying with gold or getting shop offers
       request "#{config.CR_API_URL}/players/#{tag}", {
         json: true

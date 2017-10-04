@@ -30,9 +30,9 @@ class ClashRoyalePlayerDeckCtrl
         router.throw {status: 403, info: 'profile is private'}
 
       # TODO: rm ~early nov
-      key = "pdmigrate8:#{player.id}"
+      key = "pdmigrate16:#{player.id}"
       CacheService.runOnce key, ->
-        if user.joinTime?.getTime() < 1507089178226 # oct 3
+        if user.joinTime?.getTime() < 1507108006320 # oct 3
           ClashRoyalePlayerDeck.migrate player.id
       .then ->
         ClashRoyalePlayerDeck.getAllByPlayerId playerId, {sort, type}

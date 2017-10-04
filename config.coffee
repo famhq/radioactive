@@ -17,6 +17,9 @@ config =
   CLASH_ROYALE_CLAN_TROPHIES_RECORD_ID: '0135ddf8-7a24-4f40-b828-d43c39d6553c'
   MAIN_GROUP_ID: '73ed4af0-a2f2-4371-a893-1360d3989708' # TODO: remove?
   WITH_ZACK_GROUP_ID: 'e4495c00-977b-4632-8e7c-01b352401b4f' # TODO: remove?
+  DECK_TRACKED_GAME_TYPES: [
+    'PvP', 'classicChallenge', 'grandChallenge', 'tournament', '2v2'
+]
 
   IS_POSTGRES: env.IS_POSTGRES or false
 

@@ -17,7 +17,7 @@ cassanknexInstance = cassanknex
     prepare: true
   pooling:
     coreConnectionsPerHost:
-      "#{distance.local}": 2
+      "#{distance.local}": 4
       "#{distance.remote}": 1
 
 # queryCount = 0

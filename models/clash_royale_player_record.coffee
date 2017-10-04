@@ -35,16 +35,29 @@ PLAYER_RECORDS_TABLE = 'player_records'
 class PlayerRecordModel
   SCYLLA_TABLES: tables
 
-  batchUpsert: (playerRecords) ->
-    if _.isEmpty playerRecords
+  batchUpsertByMatches: (matches) =>
+    records = _.filter _.flatten _.map matches, (match) =>
+      if match.type is 'PvP'
+        scaledTime = @getScaledTimeByTimeScale(
+          'minute', moment(match.time)
+        )
+        players = match.data.team.concat match.data.opponent
+        _.map players, (player, i) ->
+          value = player.startingTrophies + player.trophyChange
+          if isNaN value
+            return
+          {
+            playerId: player.tag.replace '#', ''
+            gameRecordTypeId: config.CLASH_ROYALE_TROPHIES_RECORD_ID
+            scaledTime
+            value: value
+          }
+
+    if _.isEmpty records
       return Promise.resolve null
-    cknex.batchRun _.map playerRecords, (playerRecord) ->
-      playerRecord = defaultPlayerRecord playerRecord
-      cknex().update 'player_records_by_playerId'
-      .set _.omit playerRecord, ['playerId', 'gameRecordTypeId', 'scaledTime']
-      .where 'playerId', '=', playerRecord.playerId
-      .andWhere 'gameRecordTypeId', '=', playerRecord.gameRecordTypeId
-      .andWhere 'scaledTime', '=', playerRecord.scaledTime
+
+    cknex.batchRun _.map records, (record) =>
+      @upsert record, {skipRun: true}
 
   getScaledTimeByTimeScale: (timeScale, time) ->
     time ?= moment()
@@ -78,28 +91,54 @@ class PlayerRecordModel
     .limit limit
     .run()
 
-  upsert: (playerRecord) ->
+  upsert: (playerRecord, {skipRun} = {}) ->
     playerRecord = defaultPlayerRecord playerRecord
-    cknex().update 'player_records_by_playerId'
+    q = cknex().update 'player_records_by_playerId'
     .set _.omit playerRecord, ['playerId', 'gameRecordTypeId', 'scaledTime']
     .where 'playerId', '=', playerRecord.playerId
     .andWhere 'gameRecordTypeId', '=', playerRecord.gameRecordTypeId
     .andWhere 'scaledTime', '=', playerRecord.scaledTime
 
-  migrateUserRecords: (playerId) ->
-    knex.select().table 'user_records'
+    if skipRun
+      q
+    else
+      q.run()
+
+  migrate: (playerId) ->
+    console.log 'migratepr'
+    knex.select().table 'player_records'
     .where {playerId}
-    .distinct(knex.raw('ON ("scaledTime") *'))
     .map (record) ->
       delete record.id
-      delete record.userId
-      _.defaults {
-        playerId: playerId
-      }, record
-    .then (records) =>
-      @batchCreate records
-      .catch (err) ->
-        null
+      record
+    .then (playerRecords) ->
+      console.log 'migrate pr', playerRecords?.length
+      if _.isEmpty playerRecords
+        return Promise.resolve null
+
+      chunks = cknex.chunkForBatch playerRecords
+      Promise.all _.map chunks, (chunk) ->
+        cknex.batchRun _.map chunk, (playerRecord) ->
+          playerRecord = defaultPlayerRecord playerRecord
+          cknex().update 'player_records_by_playerId'
+          .set _.omit playerRecord, [
+            'playerId', 'gameRecordTypeId', 'scaledTime'
+          ]
+          .where 'playerId', '=', playerRecord.playerId
+          .andWhere 'gameRecordTypeId', '=', playerRecord.gameRecordTypeId
+          .andWhere 'scaledTime', '=', playerRecord.scaledTime
+        .catch (err) ->
+          console.log err
+          null
         # console.log 'migrate records err', playerId
+    # .then ->
+    # don't need to delete these since they just overwrite if called twice
+    #   knex 'player_records'
+    #   .where {playerId}
+    #   .delete()
+    #   .then ->
+    #     console.log 'deleted'
+    #   .catch (err) ->
+    #     console.log 'delete err', err
 
 module.exports = new PlayerRecordModel()

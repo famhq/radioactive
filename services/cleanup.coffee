@@ -16,9 +16,9 @@ class CleanupService
     console.log 'cleaning...'
     start = Date.now()
     Promise.all [
-      @cleanPlayerRecords()
-      @cleanClashRoyaleMatches()
-      @cleanPlayerDecks()
+      # @cleanPlayerRecords()
+      # @cleanClashRoyaleMatches()
+      # @cleanPlayerDecks()
       @cleanKue()
     ]
     .then ->
@@ -29,22 +29,22 @@ class CleanupService
       types: ['active', 'failed'], minStuckTimeMs: MIN_KUE_STUCK_TIME_MS
     }
 
-  cleanClashRoyaleMatches: ->
-    knex.table 'matches_new'
-    .where 'time', '>', moment().subtract(ONE_WEEK_MS + TWO_MIN_MS).toDate()
-    .andWhere 'time', '<', moment().subtract(ONE_WEEK_MS).toDate()
-    .delete()
-
-  cleanPlayerRecords: ->
-    knex.table 'player_records'
-    .where 'time', '>', moment().subtract(FOUR_WEEKS_MS + TWO_MIN_MS).toDate()
-    .andWhere 'time', '<', moment().subtract(FOUR_WEEKS_MS).toDate()
-    .delete()
-
-  cleanPlayerDecks: ->
-    knex.table 'player_decks'
-    .where 'lastUpdateTime', '>', moment().subtract(FOUR_WEEKS_MS + TWO_MIN_MS).toDate()
-    .andWhere 'lastUpdateTime', '<', moment().subtract(FOUR_WEEKS_MS).toDate()
-    .delete()
+  # cleanClashRoyaleMatches: ->
+  #   knex.table 'matches_new'
+  #   .where 'time', '>', moment().subtract(ONE_WEEK_MS + TWO_MIN_MS).toDate()
+  #   .andWhere 'time', '<', moment().subtract(ONE_WEEK_MS).toDate()
+  #   .delete()
+  #
+  # cleanPlayerRecords: ->
+  #   knex.table 'player_records'
+  #   .where 'time', '>', moment().subtract(FOUR_WEEKS_MS + TWO_MIN_MS).toDate()
+  #   .andWhere 'time', '<', moment().subtract(FOUR_WEEKS_MS).toDate()
+  #   .delete()
+  #
+  # cleanPlayerDecks: ->
+  #   knex.table 'player_decks'
+  #   .where 'lastUpdateTime', '>', moment().subtract(FOUR_WEEKS_MS + TWO_MIN_MS).toDate()
+  #   .andWhere 'lastUpdateTime', '<', moment().subtract(FOUR_WEEKS_MS).toDate()
+  #   .delete()
 
 module.exports = new CleanupService()

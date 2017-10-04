@@ -211,10 +211,10 @@ app.get '/videoDiscovery', (req, res) ->
   VideoDiscoveryService.discover()
   res.status(200).send()
 
-app.get '/migrate', (req, res) ->
-  ClashRoyalePlayer = require './models/clash_royale_player'
-  ClashRoyalePlayer.migrateAll()
-  res.status(200).send()
+# app.get '/migrate', (req, res) ->
+#   ClashRoyalePlayer = require './models/clash_royale_player'
+#   ClashRoyalePlayer.migrateAll()
+#   res.status(200).send()
 
 app.get '/cleanKueFailed', (req, res) ->
   KueCreateService = require './services/kue_create'

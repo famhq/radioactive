@@ -67,15 +67,13 @@ class ClashRoyaleClan
             playerId: existingPlayer.id
             gameRecordTypeId: config.CLASH_ROYALE_DONATIONS_RECORD_ID
             scaledTime: ClashRoyalePlayerRecord.getScaledTimeByTimeScale 'week'
-            diff: {value: donations, playerId: existingPlayer.id}
+            value: donations
           }
           ClashRoyalePlayerRecord.upsert {
             playerId: existingPlayer.id
             gameRecordTypeId: config.CLASH_ROYALE_CLAN_CROWNS_RECORD_ID
             scaledTime: ClashRoyalePlayerRecord.getScaledTimeByTimeScale 'week'
-            diff: {
-              value: clanChestCrowns, playerId: existingPlayer.id
-            }
+            value: clanChestCrowns
           }
 
         newPlayers = _.filter _.map clan.memberList, (player) ->
@@ -83,7 +81,6 @@ class ClashRoyaleClan
             {
               id: player.tag.replace '#', ''
               data:
-                splits: {}
                 name: player.name
                 trophies: player.trophies
                 expLevel: player.expLevel
@@ -100,7 +97,6 @@ class ClashRoyaleClan
       else
         Clan.upsertByClanIdAndGameId tag, GAME_ID, diff
         .then ->
-          console.log 'create group'
           Clan.createGroup {
             userId: userId
             name: clan.name

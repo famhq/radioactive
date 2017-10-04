@@ -46,6 +46,9 @@ class PlayerModel
   setAutoRefreshByPlayerIdAndGameId: (playerId, gameId) =>
     @GamePlayers[gameId].setAutoRefreshById playerId
 
+  getCountersByPlayerIdAndScaledTimeAndGameId: (playerId, scaledTime, gameId) =>
+    @GamePlayers[gameId].getCountersByPlayerIdAndScaledTime playerId, scaledTime
+
   getAutoRefreshByGameId: (gameId, minReversedPlayerId) =>
     @GamePlayers[gameId].getAutoRefresh minReversedPlayerId
 
