@@ -87,9 +87,12 @@ cknex.chunkForBatch = (rows) ->
     chunks[chunkIndex].push row
   return chunks
 
-# batching shouldn't be used much. 50kb limit and:
+# batching supposedly shouldn't be used much. 50kb limit and:
 # https://docs.datastax.com/en/cql/3.1/cql/cql_using/useBatch.html
+# but indiv queries take long and seem to use more cpu
 cknex.batchRun = (queries) ->
+  if _.isEmpty queries
+    return Promise.resolve null
   # queryCount += queries.length
   ready.then ->
     new Promise (resolve, reject) ->

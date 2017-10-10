@@ -36,28 +36,29 @@ class PlayerRecordModel
   SCYLLA_TABLES: tables
 
   batchUpsertByMatches: (matches) =>
-    records = _.filter _.flatten _.map matches, (match) =>
+    queries = _.filter _.flatten _.map matches, (match) =>
       if match.type is 'PvP'
         scaledTime = @getScaledTimeByTimeScale(
-          'minute', moment(match.time)
+          'minute', match.momentTime
         )
         players = match.data.team.concat match.data.opponent
-        _.map players, (player, i) ->
+        _.map players, (player, i) =>
           value = player.startingTrophies + player.trophyChange
           if isNaN value
             return
-          {
+          record = {
             playerId: player.tag.replace '#', ''
             gameRecordTypeId: config.CLASH_ROYALE_TROPHIES_RECORD_ID
             scaledTime
+            time: match.time
             value: value
           }
+          @upsert record, {skipRun: true}
 
-    if _.isEmpty records
+    if _.isEmpty queries
       return Promise.resolve null
 
-    cknex.batchRun _.map records, (record) =>
-      @upsert record, {skipRun: true}
+    cknex.batchRun queries
 
   getScaledTimeByTimeScale: (timeScale, time) ->
     time ?= moment()
@@ -94,7 +95,10 @@ class PlayerRecordModel
   upsert: (playerRecord, {skipRun} = {}) ->
     playerRecord = defaultPlayerRecord playerRecord
     q = cknex().update 'player_records_by_playerId'
-    .set _.omit playerRecord, ['playerId', 'gameRecordTypeId', 'scaledTime']
+    .set {
+      value: playerRecord.value
+      time: playerRecord.time
+    }
     .where 'playerId', '=', playerRecord.playerId
     .andWhere 'gameRecordTypeId', '=', playerRecord.gameRecordTypeId
     .andWhere 'scaledTime', '=', playerRecord.scaledTime
@@ -105,14 +109,14 @@ class PlayerRecordModel
       q.run()
 
   migrate: (playerId) ->
-    console.log 'migratepr'
+    # console.log 'migratepr'
     knex.select().table 'player_records'
     .where {playerId}
     .map (record) ->
       delete record.id
       record
     .then (playerRecords) ->
-      console.log 'migrate pr', playerRecords?.length
+      # console.log 'migrate pr', playerRecords?.length
       if _.isEmpty playerRecords
         return Promise.resolve null
 

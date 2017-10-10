@@ -148,7 +148,7 @@ class GroupCtrl
       unless group
         router.throw {status: 404, info: 'Group not found'}
 
-      if group.mode is 'private' and group.invitedIds.indexOf(userId) is -1
+      if group.privacy is 'private' and group.invitedIds.indexOf(userId) is -1
         router.throw {status: 401, info: 'Not invited'}
 
       name = User.getDisplayName user

@@ -150,7 +150,9 @@ module.exports = router
 .on 'players.getTop', authed PlayerCtrl.getTop
 .on 'players.search', authed PlayerCtrl.search
 .on 'players.getMeFollowing', authed PlayerCtrl.getMeFollowing
-.on 'players.verifyMe', authed PlayerCtrl.verifyMe
+# .on 'players.verifyMe', authed PlayerCtrl.verifyMe
+.on 'players.getIsAutoRefreshByPlayerIdAndGameId',
+  authed PlayerCtrl.getIsAutoRefreshByPlayerIdAndGameId
 
 .on 'clan.getById', authed ClanCtrl.getById
 .on 'clan.claimById', authed ClanCtrl.claimById
@@ -183,15 +185,14 @@ module.exports = router
 
 .on 'clashRoyalePlayerDecks.getAllByPlayerId',
   authed ClashRoyalePlayerDeckCtrl.getAllByPlayerId
-.on 'clashRoyalePlayerDecks.getByDeckId',
-  authed ClashRoyalePlayerDeckCtrl.getByDeckId
-.on 'clashRoyalePlayerDecks.getById',
-  authed ClashRoyalePlayerDeckCtrl.getById
+.on 'clashRoyalePlayerDecks.getByDeckIdAndPlayerId',
+  authed ClashRoyalePlayerDeckCtrl.getByDeckIdAndPlayerId
 
 .on 'clashRoyaleCards.getAll', authed ClashRoyaleCardCtrl.getAll
 .on 'clashRoyaleCards.getById', authed ClashRoyaleCardCtrl.getById
 .on 'clashRoyaleCards.getByKey', authed ClashRoyaleCardCtrl.getByKey
 .on 'clashRoyaleCards.getChestCards', authed ClashRoyaleCardCtrl.getChestCards
+.on 'clashRoyaleCards.getTop', authed ClashRoyaleCardCtrl.getTop
 
 .on 'clashRoyaleMatches.getAllByUserId',
   authed ClashRoyaleMatchCtrl.getAllByUserId

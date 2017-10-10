@@ -1,7 +1,6 @@
 Promise = require 'bluebird'
 _ = require 'lodash'
 request = require 'request-promise'
-moment = require 'moment'
 
 GroupClan = require '../models/group_clan'
 Clan = require '../models/clan'
@@ -91,7 +90,7 @@ class ClashRoyaleClan
                   tag: clan.tag
             }
         Player.batchUpsertByGameId GAME_ID, newPlayers
-      console.log 'existingclan', Boolean existingClan
+
       (if existingClan
         Clan.upsertByClanIdAndGameId tag, GAME_ID, diff
       else

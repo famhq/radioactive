@@ -45,7 +45,7 @@ class KueCreateService
           resolve Promise.each selectedJobs, (job) ->
             lastUpdate = Date.now() - parseInt(job?.updated_at)
             if not minStuckTimeMs or lastUpdate > minStuckTimeMs
-              console.log 'delete stuck active', job.type
+              console.log 'delete stuck', type, job.type
               try
                 job.remove (err) ->
                   if err
@@ -184,6 +184,9 @@ class KueCreateService
             resolve response
           kueJob.on 'failed', (err) ->
             console.log 'job failed', type, err
+            reject()
+          kueJob.on 'ttl exceeded', (err) ->
+            console.log 'job timed out', type, err
             reject()
 
 module.exports = new KueCreateService()

@@ -12,7 +12,6 @@ CacheService = require '../services/cache'
 User = require '../models/user'
 ClashRoyaleDeck = require '../models/clash_royale_deck'
 Player = require '../models/player'
-PlayersDaily = require '../models/player_daily'
 ClashRoyalePlayerDeck = require '../models/clash_royale_player_deck'
 Clan = require '../models/clan'
 ClashRoyaleTopPlayer = require '../models/clash_royale_top_player'
@@ -93,7 +92,7 @@ class ClashRoyaleAPICtrl
       {tag, playerData} = body
       unless tag
         return
-      ClashRoyalePlayerService.updatePlayerMatches {id: tag, playerData}
+      ClashRoyalePlayerService.updatePlayerData {id: tag, playerData}
 
   updateClan: ({body, params, headers}) ->
     radioactiveHost = config.RADIOACTIVE_API_URL.replace /https?:\/\//i, ''
@@ -111,7 +110,10 @@ class ClashRoyaleAPICtrl
       {matches} = body
       unless matches
         return
-      ClashRoyalePlayerService.updatePlayerMatches {matches, isBatched: true}
+      ClashRoyalePlayerService.filterMatches {matches, isBatched: true}
+      .then (filteredMatches) ->
+        # this doesn't set lastMatchTime for players...
+        ClashRoyalePlayerService.updatePlayerMatches filteredMatches
 
   queueTop200: ({params}) ->
     ClashRoyaleTopPlayer.getAll()

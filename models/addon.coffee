@@ -20,6 +20,10 @@ FIVE_MINUTE_SECONDS = 60 * 5
 # t.lombart97: 93d9d6b7-aec2-4ae1-a1a2-b76bb81ddb98
 # the1nk: e27297be-ee97-4216-b854-cfc0d15811b5
 # tzelon: 18ec096a-0826-458e-8d8e-114ba3292cc2
+# king_dragonhoff 9e27a585-794a-42a8-bd8f-98925d7e3fd4
+# isaiass18 91835a33-f775-4d5f-8930-476df556c611
+# s1032319: cdd55064-2832-421b-96e7-0cb1533a8ff2
+
 
 defaultAddon = (addon) ->
   unless addon?

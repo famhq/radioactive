@@ -39,12 +39,13 @@ class ClashRoyalePlayerDeckCtrl
       .map EmbedService.embed {embed: defaultEmbed}
       .map ClashRoyalePlayerDeck.sanitize null
 
-  getByDeckId: ({deckId}, {user}) ->
-    Player.getByUserIdAndGameId userId, config.CLASH_ROYALE_ID
-    .then (player) ->
-      unless player
-        router.throw {status: 404, info: 'player not found'}
-      ClashRoyalePlayerDeck.getByDeckIdAndPlayerId deckId, player.id
+  getByDeckIdAndPlayerId: ({deckId, playerId}, {user}) ->
+    # TODO: rm ~early nov
+    key = "pdmigrate16:#{playerId}"
+    CacheService.runOnce key, ->
+      ClashRoyalePlayerDeck.migrate playerId
+    .then ->
+      ClashRoyalePlayerDeck.getByDeckIdAndPlayerId deckId, playerId
     .then EmbedService.embed {embed: defaultEmbed}
     .then ClashRoyalePlayerDeck.sanitize null
 

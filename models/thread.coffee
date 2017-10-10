@@ -3,15 +3,20 @@ uuid = require 'node-uuid'
 Promise = require 'bluebird'
 
 r = require '../services/rethinkdb'
+config = require '../config'
+
+# TODO: move to scylla. need to figure out how to order by score though...
+# may have to do combo of scylla and postgres :(
 
 THREADS_TABLE = 'threads'
 CREATOR_ID_INDEX = 'creatorId'
 ATTACHMENT_IDS_INDEX = 'attachmentIds'
-SCORE_INDEX = 'score'
-CATEGORY_SCORE_INDEX = 'categoryScore'
-CATEGORY_ADD_TIME_INDEX = 'categoryAddTime'
+GAME_ID_LANGUAGE_SCORE_INDEX = 'gameIdLanguageScore'
+GAME_ID_LANGUAGE_CATEGORY_SCORE_INDEX = 'gameIdLanguageCategoryScore'
+GAME_ID_LANGUAGE_CATEGORY_ADD_TIME_INDEX = 'gameIdLanguageCategoryAddTime'
+GAME_ID_LANGUAGE_ADD_TIME_INDEX = 'gameIdLanguageAddTime'
+GAME_ID_LANGUAGE_LAST_UPDATE_TIME_INDEX = 'gameIdLanguageLastUpdateTime'
 ADD_TIME_INDEX = 'addTime'
-LAST_UPDATE_TIME_INDEX = 'lastUpdateTime'
 IS_SCORE_STALE_INDEX = 'isScoreStale'
 
 # update the scores for posts up until they're 10 days old
@@ -24,7 +29,6 @@ defaultThread = (thread) ->
   _.defaults thread, {
     id: uuid.v4()
     creatorId: null
-    groupId: null
     title: null
     body: null
     summary: null
@@ -32,6 +36,8 @@ defaultThread = (thread) ->
     headerImage: null
     type: 'text'
     category: 'general'
+    gameId: config.CLASH_ROYALE_ID
+    language: 'es'
     upvotes: 0
     downvotes: 0
     score: 0
@@ -50,15 +56,18 @@ class ThreadModel
       options: {}
       indexes: [
         {name: CREATOR_ID_INDEX}
-        {name: SCORE_INDEX}
-        {name: CATEGORY_SCORE_INDEX, fn: (row) ->
-          [row('category'), row('score')]}
-        {name: CATEGORY_ADD_TIME_INDEX, fn: (row) ->
-          [row('category'), row('addTime')]}
+        {name: GAME_ID_LANGUAGE_SCORE_INDEX}
+        {name: GAME_ID_LANGUAGE_CATEGORY_SCORE_INDEX, fn: (row) ->
+          [row('gameId'), row('language'), row('category'), row('score')]}
+        {name: GAME_ID_LANGUAGE_CATEGORY_ADD_TIME_INDEX, fn: (row) ->
+          [row('gameId'), row('language'), row('category'), row('addTime')]}
+        {name: GAME_ID_LANGUAGE_ADD_TIME_INDEX, fn: (row) ->
+          [row('gameId'), row('language'), row('addTime')]}
+        {name: GAME_ID_LANGUAGE_LAST_UPDATE_TIME_INDEX, fn: (row) ->
+          [row('gameId'), row('language'), row('lastUpdateTime')]}
         {name: ATTACHMENT_IDS_INDEX}
         {name: IS_SCORE_STALE_INDEX}
         {name: ADD_TIME_INDEX}
-        {name: LAST_UPDATE_TIME_INDEX}
       ]
     }
   ]
@@ -113,7 +122,7 @@ class ThreadModel
       , {concurrency: 50}
 
 
-  getAll: ({categories, language, sort, skip, limit} = {}) ->
+  getAll: ({categories, language, gameId, sort, skip, limit} = {}) ->
     limit ?= 20
     skip ?= 0
 
@@ -123,16 +132,18 @@ class ThreadModel
     # https://github.com/rethinkdb/rethinkdb/issues/4325
     if not _.isEmpty categories
       index = if sort is 'new' \
-              then CATEGORY_ADD_TIME_INDEX
-              else CATEGORY_SCORE_INDEX
+              then GAME_ID_LANGUAGE_CATEGORY_ADD_TIME_INDEX
+              else GAME_ID_LANGUAGE_CATEGORY_SCORE_INDEX
 
       q = r.expr []
       _.map categories, (category) ->
         q = q.union(
           r.table THREADS_TABLE
-          .between [category], [category + 'Z'], {
-            index: index
-          }
+          .between(
+            [gameId, language, category]
+            [gameId, language, category + 'Z']
+            {index: index}
+          )
           .orderBy({index: r.desc(index)})
           .limit skip + limit
           # , {interleave: 'time'} # this crashes rethinkdb...
@@ -142,9 +153,9 @@ class ThreadModel
     else
       q = r.table THREADS_TABLE
       if sort is 'new'
-        q = q.orderBy {index: r.desc(ADD_TIME_INDEX)}
+        q = q.orderBy {index: r.desc(GAME_ID_LANGUAGE_ADD_TIME_INDEX)}
       else
-        q = q.orderBy {index: r.desc(SCORE_INDEX)}
+        q = q.orderBy {index: r.desc(GAME_ID_LANGUAGE_SCORE_INDEX)}
 
     q = q.skip skip
     .limit limit

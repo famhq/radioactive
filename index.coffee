@@ -94,8 +94,11 @@ setup = ->
   .tap ->
     CronService.start()
     KueRunnerService.listen()
+    null # don't block
 
-    null
+childSetup = ->
+  KueRunnerService.listen()
+  return Promise.resolve null # don't block
 
 app = express()
 
@@ -199,6 +202,15 @@ app.get '/updateTopPlayers', (req, res) ->
 app.get '/top200Decks', (req, res) ->
   ClashRoyaleAPICtrl.top200Decks req, res
 
+app.get '/topTouchdown', (req, res) ->
+  ClashRoyaleCard.getTop {gameType: 'touchdown2v2DraftPractice'}
+  .then (cards) ->
+    cards = _.map cards, (card) ->
+      winRate = card.winRate * 100
+      roundedWinRate = Math.round(winRate * 100) / 100
+      "#{card.cardId}: #{roundedWinRate}%"
+    res.status(200).send cards
+
 app.get '/queueTop200', (req, res) ->
   ClashRoyaleAPICtrl.queueTop200 req, res
   res.status(200).send()
@@ -286,4 +298,5 @@ io.on 'connection', routes.onConnection
 module.exports = {
   server
   setup
+  childSetup
 }

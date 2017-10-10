@@ -26,6 +26,17 @@ defaultClashRoyaleCard = (clashRoyaleCard) ->
     draws: 0
   }
 
+defaultClashRoyaleCardC = (clashRoyaleCard) ->
+  unless clashRoyaleCard?
+    return null
+
+  _.defaults {
+    arena: parseInt clashRoyaleCard.arena
+    wins: parseInt clashRoyaleCard.wins
+    losses: parseInt clashRoyaleCard.losses
+    draws: parseInt clashRoyaleCard.draws
+  }, clashRoyaleCard
+
 class ClashRoyaleCardModel
   SCYLLA_TABLES: [
     {
@@ -71,8 +82,8 @@ class ClashRoyaleCardModel
       arena = if gameType is 'PvP' then match.arena else 0
 
       mapCardCondition 'wins', match.winningCardIds, gameType, arena
-      mapCardCondition 'losses', match.winningCardIds, gameType, arena
-      mapCardCondition 'draws', match.winningCardIds, gameType, arena
+      mapCardCondition 'losses', match.losingCardIds, gameType, arena
+      mapCardCondition 'draws', match.drawCardIds, gameType, arena
 
     cardIdQueries = _.map cardIdCnt, (diff, key) ->
       [cardId, gameType, arena] = key.split ','
@@ -82,9 +93,8 @@ class ClashRoyaleCardModel
       q.where 'cardId', '=', cardId
       .andWhere 'gameType', '=', gameType
       .andWhere 'arena', '=', arena
-      .run()
 
-    Promise.all cardIdQueries
+    cknex.batchRun cardIdQueries
 
   create: (clashRoyaleCard) ->
     clashRoyaleCard = defaultClashRoyaleCard clashRoyaleCard
@@ -103,6 +113,19 @@ class ClashRoyaleCardModel
     .catch (err) ->
       console.log 'fail', id
       throw err
+
+  getTop: ({gameType} = {}) ->
+    cknex().select '*'
+    .from 'counter_by_cardId'
+    .run()
+    .then (allCards) ->
+      cards = _.filter allCards, {gameType}
+      cards = _.map cards, defaultClashRoyaleCardC
+      cards = _.map cards, (card) ->
+        _.defaults {
+          winRate: card.wins / (card.wins + card.losses)
+        }, card
+      _.orderBy cards, 'winRate', 'desc'
 
   getByKey: (key, {preferCache} = {}) ->
     unless key

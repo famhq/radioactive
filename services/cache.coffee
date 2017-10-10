@@ -13,7 +13,7 @@ PREFIXES =
   CHAT_USER: 'chat:user3'
   THREAD_USER: 'thread:user1'
   THREAD: 'thread:id'
-  THREAD_DECK: 'thread:deck9'
+  THREAD_DECK: 'thread:deck11'
   THREAD_COMMENTS: 'thread:comments2'
   THREAD_COMMENT_COUNT: 'thread:comment_count'
   THREADS: 'threads2'
@@ -28,7 +28,7 @@ PREFIXES =
   USER_DATA_CLASH_ROYALE_DECK_IDS: 'user_data:clash_royale_deck_ids6'
   USER_DAILY_DATA_PUSH: 'user_daily_data:push5'
   CLASH_ROYALE_MATCHES_ID: 'clash_royale_matches:id52'
-  CLASH_ROYALE_MATCHES_ID_EXISTS: 'clash_royale_matches:id:exists1'
+  CLASH_ROYALE_MATCHES_ID_EXISTS: 'clash_royale_matches:id:exists2'
   CLASH_ROYALE_INVALID_TAG: 'clash_royale:invalid_tag'
   CLASH_ROYALE_CARD: 'clash_royale_card2'
   CLASH_ROYALE_CARD_ALL: 'clash_royale_card:all1'
@@ -47,7 +47,7 @@ PREFIXES =
   GROUP_ID: 'group:id1'
   GROUP_GET_ALL: 'group:getAll'
   GROUP_GET_ALL_CATEGORY: 'group:getAll:category'
-  GROUP_STAR: 'group:star'
+  GROUP_STAR: 'group:star1'
   USERNAME_SEARCH: 'username:search1'
   RATE_LIMIT_CHAT_MESSAGES_TEXT: 'rate_limit:chat_messages:text'
   RATE_LIMIT_CHAT_MESSAGES_MEDIA: 'rate_limit:chat_messages:media'
@@ -73,7 +73,8 @@ PREFIXES =
 class CacheService
   KEYS:
     ADDON_GET_ALL: 'addon:get_all'
-    AUTO_REFRESH_SUCCESS_COUNT: 'auto_refresh:success_count'
+    AUTO_REFRESH_MAX_REVERSED_PLAYER_ID: 'auto_refresh:max_reversed_player_id'
+    AUTO_REFRESH_SUCCESS_COUNT: 'auto_refresh:success_count1'
     BROADCAST_FAILSAFE: 'broadcast:failsafe'
     CLASH_ROYALE_DECK_QUEUED_INCREMENTS_WIN:
       'clash_royal_deck:queued_increments:win1'
@@ -93,7 +94,8 @@ class CacheService
   LOCK_PREFIXES:
     KUE_PROCESS: 'kue:process'
     BROADCAST: 'broadcast'
-  LOCKS: {}
+  LOCKS:
+    AUTO_REFRESH: 'auto_refresh'
   PREFIXES: PREFIXES
 
   constructor: ->

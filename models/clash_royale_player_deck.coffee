@@ -56,6 +56,7 @@ class ClashRoyalePlayerDeckModel
 
   batchUpsertByMatches: (matches) ->
     playerIdDeckIdCnt = {}
+    now = new Date()
 
     mapDeckCondition = (condition, playerIds, deckIds, gameType) ->
       _.forEach playerIds, (playerId, i) ->
@@ -84,7 +85,7 @@ class ClashRoyalePlayerDeckModel
     deckIdQueries = _.map playerIdDeckIdCnt, (diff, key) ->
       [playerId, deckId, gameType] = key.split ','
       cknex().update 'player_decks_by_playerId'
-      .set {lastUpdateTime: new Date()}
+      .set {lastUpdateTime: now}
       .where 'playerId', '=', playerId
       .andWhere 'gameType', '=', gameType
       .andWhere 'deckId', '=', deckId
@@ -96,8 +97,8 @@ class ClashRoyalePlayerDeckModel
       _.forEach diff, (amount, key) ->
         q = q.increment key, amount
       q.where 'playerId', '=', playerId
-      .andWhere 'deckId', '=', deckId
       .andWhere 'gameType', '=', gameType
+      .andWhere 'deckId', '=', deckId
 
     Promise.all [
       # batch is faster, but can't exceed 100mb
@@ -106,14 +107,18 @@ class ClashRoyalePlayerDeckModel
     ]
 
   getByDeckIdAndPlayerId: (deckId, playerId) ->
+    unless playerId and deckId
+      return Promise.resolve null
     cknex().select '*'
-    .where 'deckId', '=', deckId
+    .where 'gameType', '=', 'all'
+    .andWhere 'deckId', '=', deckId
     .andWhere 'playerId', '=', playerId
     .from 'counter_by_playerId_deckId'
     .run {isSingle: true}
     .then defaultClashRoyalePlayerDeck
 
   getAll: ({limit, type, playerId} = {}) ->
+    type ?= 'all'
     limit ?= 10
 
     Promise.all [
@@ -131,7 +136,7 @@ class ClashRoyalePlayerDeckModel
     ]
     .then ([playerDecksWithTime, playerDecks]) ->
       selectedDecks = _.take(
-        _.orderBy(playerDecksWithTime, 'time', 'desc')
+        _.orderBy(playerDecksWithTime, 'lastUpdateTime', 'desc')
         limit
       )
 
@@ -165,7 +170,6 @@ class ClashRoyalePlayerDeckModel
         .then (playerDecks) ->
           playerDecks = _.filter playerDecks, ({deckId}) ->
             deckId.indexOf('|') isnt -1
-          console.log 'migrate', playerDecks.length
           chunks = cknex.chunkForBatch playerDecks
           Promise.all _.map chunks, (chunk) ->
             cknex.batchRun _.map chunk, ({playerId, deckId, type, lastUpdateTime} = {}) ->
@@ -208,9 +212,8 @@ class ClashRoyalePlayerDeckModel
         #   console.log 'deleted'
         # .catch (err) ->
         #   console.log 'delete err', err
-        console.log 'migrate done'
     .catch (err) ->
-      console.log 'caught', err
+      console.log 'caughtmig', err
 
   sanitize: _.curry (requesterId, clashRoyalePlayerDeck) ->
     _.pick clashRoyalePlayerDeck, [

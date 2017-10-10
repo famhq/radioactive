@@ -48,6 +48,7 @@ class ClashRoyaleAPIService
     }
 
   processRequest: ({path, tag, type, method, body, qs}) =>
+    # start = Date.now()
     request "#{config.CLASH_ROYALE_API_URL}#{path}", {
       json: true
       method: method
@@ -55,6 +56,9 @@ class ClashRoyaleAPIService
         'Authorization': "Bearer #{config.CLASH_ROYALE_API_KEY}"
       body: body
     }
+    .then (response) ->
+      # console.log 'realAPIreq', Date.now() - start
+      response
     .catch (err) =>
       if err.statusCode is 404
         @setInvalidTag type, tag
@@ -95,13 +99,18 @@ class ClashRoyaleAPIService
 
     @request "/players/%23#{tag}/battlelog", {type: 'player', tag, priority}
     .then (matches) ->
+      if _.isEmpty matches
+        throw new Error '404' # api should do this, but just does empty arr
       _.map matches, (match) ->
         match.id = "#{match.battleTime}:" +
                     "#{match.team[0].tag}:#{match.opponent[0].tag}"
+        match.battleTime = moment(match.battleTime).toDate()
         match.battleType = if match.challengeId is 65000000 \
                      then 'grandChallenge'
-                     else if match.type is 'challenge'
+                     else if match.challengeId is 65000001
                      then 'classicChallenge'
+                     else if match.challengeId is 73001201
+                     then 'touchdown2v2DraftPractice'
                      else match.type
         match
 
@@ -120,7 +129,6 @@ class ClashRoyaleAPIService
     .then (clan) ->
       ClashRoyaleClanService.updateClan {userId: userId, tag: clanId, clan}
     .then ->
-      console.log 'clan updated', clanId
       Clan.getByClanIdAndGameId clanId, config.CLASH_ROYALE_ID, {
         preferCache: true
       }

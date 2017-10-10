@@ -52,6 +52,8 @@ thread =
   title: Joi.string()
   summary: Joi.string()
   category: Joi.string()
+  language: Joi.string()
+  gameId: Joi.string()
   attachmentIds: Joi.array()
   attachments: Joi.array()
   body: Joi.string()

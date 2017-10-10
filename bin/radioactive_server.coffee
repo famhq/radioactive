@@ -4,7 +4,7 @@ log = require 'loga'
 cluster = require 'cluster'
 os = require 'os'
 
-{setup, server} = require '../'
+{setup, childSetup, server} = require '../'
 config = require '../config'
 
 if config.ENV is config.ENVS.PROD
@@ -19,8 +19,9 @@ if config.ENV is config.ENVS.PROD
         cluster.fork()
     .catch log.error
   else
-    server.listen config.PORT, ->
-      log.info 'Worker %d, listening on port %d', cluster.worker.id, config.PORT
+    childSetup().then ->
+      server.listen config.PORT, ->
+        log.info 'Worker %d, listening on %d', cluster.worker.id, config.PORT
 else
   console.log 'Setting up (make sure connected to vpn for postgres)'
   setup().then ->

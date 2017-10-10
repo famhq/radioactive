@@ -1,6 +1,5 @@
 _ = require 'lodash'
 uuid = require 'node-uuid'
-moment = require 'moment'
 
 r = require '../services/rethinkdb'
 

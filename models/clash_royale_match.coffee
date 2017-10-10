@@ -1,7 +1,6 @@
 _ = require 'lodash'
 Promise = require 'bluebird'
 uuid = require 'node-uuid'
-moment = require 'moment'
 Promise = require 'bluebird'
 shortid = require 'shortid'
 
@@ -56,22 +55,25 @@ class ClashRoyaleMatchModel
   SCYLLA_TABLES: tables
 
   batchCreate: (clashRoyaleMatches) ->
-    Promise.all _.flatten _.map clashRoyaleMatches, (match) ->
-      playerIds = match.winningPlayerIds.concat match.losingPlayerIds
+    matches = _.flatten _.map clashRoyaleMatches, (match) ->
+      playerIds = match.winningPlayerIds.concat(
+        match.losingPlayerIds, match.drawPlayerIds
+      )
       _.map playerIds, (playerId) ->
-        # batch isn't meant for performance, but we could groupBy playerId and
-        #  batchRun (it helps performance some if used correctly)
-        cknex().insert _.pickBy {
+        _.pickBy {
           playerId: playerId
           gameType: match.type
           arena: match.arena
           league: match.league
           data: JSON.stringify match.data
-          time: cknex.getTime match.time
+          time: match.time
         }, (val) -> val?
+    chunks = cknex.chunkForBatch matches
+    Promise.all _.map chunks, (chunk) ->
+      cknex.batchRun _.map chunk, (match) ->
+        cknex().insert match
         .usingTTL 3600 * 24 * 30 # 1 month
         .into 'matches_by_playerId'
-        .run()
 
   getAllByPlayerId: (playerId, {limit, cursor} = {}) ->
     limit ?= 10
@@ -104,11 +106,14 @@ class ClashRoyaleMatchModel
     get = ->
       cknex().select '*'
       .where 'playerId', '=', playerId
-      .andWhere 'time', '=', cknex.getTime time
+      .andWhere 'time', '=', time
       .from 'matches_by_playerId'
       .run {isSingle: true}
       .then (match) ->
-        Boolean match
+        if match
+          true
+        else
+          null
 
     if preferCache
       prefix = CacheService.PREFIXES.CLASH_ROYALE_MATCHES_ID_EXISTS

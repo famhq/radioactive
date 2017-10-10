@@ -90,6 +90,9 @@ class ClashRoyaleCardCtrl
     .map EmbedService.embed {embed: defaultEmbed}
     .map ClashRoyaleCard.sanitize null
 
+  getTop: ({gameType}) ->
+    ClashRoyaleCard.getTop({gameType, preferCache: true})
+
   getById: ({id}) ->
     ClashRoyaleCard.getById id
     .then EmbedService.embed {embed: defaultEmbed}

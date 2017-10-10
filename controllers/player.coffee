@@ -50,6 +50,9 @@ class PlayerCtrl
 
     .then EmbedService.embed {embed: defaultEmbed}
 
+  getIsAutoRefreshByPlayerIdAndGameId: ({playerId, gameId}) ->
+    Player.getIsAutoRefreshByPlayerIdAndGameId playerId, gameId
+
   getByPlayerIdAndGameId: ({playerId, gameId}, {user}) ->
     unless playerId
       return
@@ -69,36 +72,36 @@ class PlayerCtrl
           Player.getByPlayerIdAndGameId playerId, gameId
     .then EmbedService.embed {embed: defaultEmbed}
 
-  verifyMe: ({gold, lo}, {user}) ->
-    Player.getByUserIdAndGameId user.id, GAME_ID
-    .then (player) ->
-      hiLo = TagConverterService.getHiLoFromTag player.id
-      unless "#{lo}" is "#{hiLo.lo}"
-        router.throw {status: 400, info: 'invalid player id', ignoreLog: true}
-
-      ClashRoyaleAPIService.getPlayerDataByTag player.id, {
-        priority: 'high', skipCache: true, isLegacy: true
-      }
-      .then (playerData) ->
-        unless "#{gold}" is "#{playerData?.gold}"
-          router.throw {status: 400, info: 'invalid gold', ignoreLog: true}
-
-        # mark others unverified
-        UserPlayer.updateByPlayerIdAndGameId player.id, GAME_ID, {
-          isVerified: false
-        }
-      .then ->
-        UserPlayer.updateByUserIdAndPlayerIdAndGameId(
-          user.id
-          player.id
-          GAME_ID
-          {isVerified: true}
-        )
-        .tap ->
-          Player.setAutoRefreshByPlayerIdAndGameId player.id, GAME_ID
-
-          key = "#{CacheService.PREFIXES.PLAYER_VERIFIED_USER}:#{player.id}"
-          CacheService.deleteByKey key
+  # verifyMe: ({gold, lo}, {user}) ->
+  #   Player.getByUserIdAndGameId user.id, GAME_ID
+  #   .then (player) ->
+  #     hiLo = TagConverterService.getHiLoFromTag player.id
+  #     unless "#{lo}" is "#{hiLo.lo}"
+  #       router.throw {status: 400, info: 'invalid player id', ignoreLog: true}
+  #
+  #     ClashRoyaleAPIService.getPlayerDataByTag player.id, {
+  #       priority: 'high', skipCache: true, isLegacy: true
+  #     }
+  #     .then (playerData) ->
+  #       unless "#{gold}" is "#{playerData?.gold}"
+  #         router.throw {status: 400, info: 'invalid gold', ignoreLog: true}
+  #
+  #       # mark others unverified
+  #       UserPlayer.updateByPlayerIdAndGameId player.id, GAME_ID, {
+  #         isVerified: false
+  #       }
+  #     .then ->
+  #       UserPlayer.updateByUserIdAndPlayerIdAndGameId(
+  #         user.id
+  #         player.id
+  #         GAME_ID
+  #         {isVerified: true}
+  #       )
+  #       .tap ->
+  #         Player.setAutoRefreshByPlayerIdAndGameId player.id, GAME_ID
+  #
+  #         key = "#{CacheService.PREFIXES.PLAYER_VERIFIED_USER}:#{player.id}"
+  #         CacheService.deleteByKey key
 
   search: ({playerId}, {user, headers, connection}) ->
     ip = headers['x-forwarded-for'] or

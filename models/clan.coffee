@@ -21,35 +21,6 @@ class ClanModel
     @GameClans =
       "#{config.CLASH_ROYALE_ID}": ClashRoyaleClan
 
-  # TODO: remove after ~June 2017?
-  # migrate: ({clanId, gameId, groupClanExists}) =>
-  #   console.log 'migrate'
-  #   prefix = CacheService.PREFIXES.CLAN_MIGRATE
-  #   key = "#{prefix}:#{clanId}"
-  #   CacheService.runOnce key, =>
-  #     r.db('radioactive').table('clans')
-  #     .get "#{gameId}:#{clanId}"
-  #     .run()
-  #     .then (oldClan) =>
-  #       if oldClan?.id
-  #         groupClan = {
-  #           id: oldClan.id
-  #           creatorId: oldClan.creatorId
-  #           code: oldClan.code
-  #           groupId: oldClan.groupId
-  #           gameId: oldClan.gameId
-  #           clanId: oldClan.clanId
-  #           password: oldClan.password
-  #           playerIds: _.map oldClan.players, 'playerId'
-  #         }
-  #
-  #         console.log 'create', groupClanExists
-  #         Promise.all [
-  #           unless groupClanExists
-  #             GroupClan.create groupClan
-  #           @GameClans[gameId].create _.defaults {id: oldClan.clanId}, oldClan
-  #         ]
-
   getByClanIdAndGameId: (clanId, gameId, {preferCache, retry} = {}) =>
     get = =>
       prefix = CacheService.PREFIXES.GROUP_CLAN_CLAN_ID_GAME_ID

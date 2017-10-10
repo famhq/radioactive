@@ -4,12 +4,10 @@ request = require 'request-promise'
 moment = require 'moment'
 
 Player = require '../models/player'
-PlayersDaily = require '../models/player_daily'
 Clan = require '../models/clan'
 Group = require '../models/group'
 ClashRoyalePlayerDeck = require '../models/clash_royale_player_deck'
 ClashRoyalePlayer = require '../models/clash_royale_player'
-ClashRoyalePlayerDaily = require '../models/clash_royale_player_daily'
 ClashRoyaleDeck = require '../models/clash_royale_deck'
 ClashRoyaleCard = require '../models/clash_royale_card'
 ClashRoyaleTopPlayer = require '../models/clash_royale_top_player'
@@ -39,32 +37,43 @@ GAME_ID = config.CLASH_ROYALE_ID
 ALLOWED_GAME_TYPES = [
   'PvP', 'tournament',
   'classicChallenge', 'grandChallenge'
-  'friendly', 'clanMate', '2v2',
+  'friendly', 'clanMate', '2v2', 'touchdown2v2DraftPractice'
 ]
-# DECK_TRACKED_GAME_TYPES = [
-#   'PvP', 'classicChallenge', 'grandChallenge', 'tournament', '2v2'
-# ]
 
-DEBUG = true
-IS_TEST_RUN = true and config.ENV is config.ENVS.DEV
+DEBUG = false or config.ENV is config.ENVS.DEV
+IS_TEST_RUN = false and config.ENV is config.ENVS.DEV
 
 class ClashRoyalePlayerService
-  filterMatches: ({matches, player}) ->
+  filterMatches: ({matches, tag, isBatched}) =>
+    tags = if isBatched then _.map matches, 'tag' else [tag]
+
+    # get before update so we have accurate lastMatchTime
+    Player.getAllByPlayerIdsAndGameId tags, GAME_ID
+    .then (players) =>
+      if isBatched
+        Promise.map(players, (player) =>
+          chunkMatches = _.find(matches, {tag: player.id})?.matches
+          @filterMatchesByPlayer {matches: chunkMatches, player}
+        ).then _.flatten
+      else
+        @filterMatchesByPlayer {matches, player: players[0]}
+
+  filterMatchesByPlayer: ({matches, player}) ->
     # only grab matches since the last update time
     matches = _.filter matches, (match) ->
       unless match
         return false
       {battleTime, battleType} = match
 
-      if player.data?.lastMatchTime
+      if player?.data?.lastMatchTime
         lastMatchTime = new Date player.data.lastMatchTime
       else
         lastMatchTime = 0
       # the server time isn't 100% accurate, so +- 15 seconds
       (battleType in ALLOWED_GAME_TYPES) and
         (
-          IS_TEST_RUN or
-          moment(battleTime).toDate().getTime() >
+          IS_TEST_RUN
+          battleTime.getTime() >
             (new Date(lastMatchTime).getTime() + 15)
         )
 
@@ -77,9 +86,8 @@ class ClashRoyalePlayerService
         if existingMatch and not IS_TEST_RUN then null else match
     .then _.filter
 
-  processMatches: ({matches, reqPlayers}) ->
+  processMatches: ({matches}) ->
     if _.isEmpty matches
-      console.log 'no matches'
       return Promise.resolve null
     matches = _.uniqBy matches, 'id'
     # matches = _.orderBy matches, ['battleTime'], ['asc']
@@ -135,7 +143,7 @@ class ClashRoyalePlayerService
         winningCrowns = match.opponent[0].crowns
         losingCrowns = match.team[0].crowns
         winners = opponent
-        losers = opponent
+        losers = team
         draws = null
       else
         winningDeckIds = null
@@ -160,21 +168,18 @@ class ClashRoyalePlayerService
       prefix = CacheService.PREFIXES.CLASH_ROYALE_MATCHES_ID_EXISTS
       key = "#{prefix}:#{matchId}"
 
-      # get rid of iconUrls (wasted space)
-      match.team = _.map match.team, (player) ->
-        _.defaults {
-          cards: _.map player.cards, (card) ->
-            _.omit card, ['iconUrls']
-        }, player
-      match.opponent = _.map match.opponent, (player) ->
-        _.defaults {
-          cards: _.map player.cards, (card) ->
-            _.omit card, ['iconUrls']
-        }, player
-
+      # uses less cpu than a map and omit
+      _.forEach match.team, (player, i) ->
+        _.forEach player.cards, (card, j) ->
+          delete match.team[i].cards[j].iconUrls
+      _.forEach match.opponent, (player, i) ->
+        _.forEach player.cards, (card, j) ->
+          delete match.opponent[i].cards[j].iconUrls
 
       # don't need to block for this
       CacheService.set key, true, {expireSeconds: SIX_HOURS_S}
+
+      matchMomentTime = moment(match.battleTime)
 
       {
         id: matchId
@@ -192,7 +197,8 @@ class ClashRoyalePlayerService
         drawCardIds: drawDeckCardIds
         winningCrowns: winningCrowns
         losingCrowns: losingCrowns
-        time: moment(match.battleTime).toDate()
+        time: match.battleTime
+        momentTime: matchMomentTime
       }
 
     start = Date.now()
@@ -201,111 +207,87 @@ class ClashRoyalePlayerService
       Promise.all [
         ClashRoyalePlayer.batchUpsertCounterByMatches formattedMatches
         .catch (err) -> console.log 'player err', err
-        .then -> console.log '---player', Date.now() - start
-
-        ClashRoyalePlayerDaily.batchUpsertCounterByMatches formattedMatches
-        .catch (err) -> console.log 'playerdaily err', err
-        .then -> console.log '---playerdaily', Date.now() - start
+        .then -> if DEBUG then console.log '---player', Date.now() - start
 
         Match.batchCreate formattedMatches
         .catch (err) -> console.log 'match err', err
-        .then -> console.log '---match', Date.now() - start
+        .then -> if DEBUG then console.log '---match', Date.now() - start
 
         ClashRoyalePlayerRecord.batchUpsertByMatches formattedMatches
         .catch (err) -> console.log 'playerrecord err', err
-        .then -> console.log '---gr', Date.now() - start
+        .then -> if DEBUG then console.log '---gr', Date.now() - start
 
         ClashRoyalePlayerDeck.batchUpsertByMatches formattedMatches
         .catch (err) -> console.log 'playerDeck err', err
-        .then -> console.log '---pdeck', Date.now() - start
+        .then -> if DEBUG then console.log '---pdeck', Date.now() - start
 
         ClashRoyaleDeck.batchUpsertByMatches formattedMatches
         .catch (err) -> console.log 'decks err', err
-        .then -> console.log '---deck', Date.now() - start
+        .then -> if DEBUG then console.log '---deck', Date.now() - start
 
         ClashRoyaleCard.batchUpsertByMatches formattedMatches
         .catch (err) -> console.log 'cards err', err
-        .then -> console.log '---card', Date.now() - start
+        .then -> if DEBUG then console.log '---card', Date.now() - start
       ]
       .then ->
-        console.log 'processed'
         formattedMatches
       .catch (err) -> console.log err
     catch err
       console.log err
 
-  updatePlayerMatches: ({matches, isBatched, tag}) =>
+  updatePlayerMatches: ({matches, tag}) =>
     if _.isEmpty matches
-      return Promise.resolve null
+      Player.upsertByPlayerIdAndGameId tag, GAME_ID, {
+        lastUpdateTime: new Date()
+      }
 
-    if isBatched
-      tags = _.map matches, 'tag'
-    else
-      tags = [tag]
+    @processMatches {matches}
+    .tap (matches) ->
+      if tag
+        Player.getByPlayerIdAndGameId tag, GAME_ID
 
-    start = Date.now()
-    filteredMatches = null
-
-    # get before update so we have accurate lastMatchTime
-    Player.getAllByPlayerIdsAndGameId tags, GAME_ID
-    .then (players) =>
-      (if isBatched
-        Promise.map(players, (player) =>
-          chunkMatches = _.find(matches, {tag: player.id})?.matches
-          @filterMatches {matches: chunkMatches, player}
-        ).then _.flatten
-      else
-        @filterMatches {matches, player: players[0]})
-      .then (filteredMatches) =>
-        @processMatches {
-          matches: filteredMatches, reqPlayers: players
-        }
-        .then (matches) ->
-          unless _.isEmpty matches
-            Player.upsertByPlayerIdAndGameId players[0].id, GAME_ID, {
-              data: _.defaults {
-                lastMatchTime: _.last(matches).time
-              }, players[0].data
-            }
-
-  updatePlayerById: (playerId, {userId, isLegacy, priority} = {}) =>
+  updatePlayerById: (playerId, {userId, isLegacy, priority, isAuto} = {}) =>
     start = Date.now()
     ClashRoyaleAPIService.isInvalidTagInCache 'player', playerId
-    .then (isInvalid) ->
+    .then (isInvalid) =>
       if isInvalid
         throw new Error 'invalid tag'
-      Promise.all [
-        ClashRoyaleAPIService.getPlayerDataByTag playerId, {priority, isLegacy}
-        ClashRoyaleAPIService.getPlayerMatchesByTag playerId, {priority}
-        .catch -> null
-      ]
-    .catch (err) -> console.log 'err, err', err
-    .then ([playerData, matches]) =>
-      unless playerId and playerData
-        console.log 'update missing tag or data', playerId, playerData
-        throw new Error 'unable to find that tag'
-      unless matches
-        console.log 'matches error', playerId
-
-      if DEBUG
-        console.log 'api requests', Date.now() - start
-        start = Date.now()
-
-      Promise.all [
-        @updatePlayerData {userId: userId, id: playerId, playerData}
-        .then ->
+      ClashRoyaleAPIService.getPlayerMatchesByTag playerId, {priority}
+      .then (matches) =>
+        if DEBUG
+          console.log 'all', matches.length
+        @filterMatches {matches, tag: playerId}
+      .then (matches) =>
+        if DEBUG
+          console.log 'filtered', matches.length
+        (if not isAuto or not _.isEmpty matches
+          ClashRoyaleAPIService.getPlayerDataByTag playerId, {
+            priority, isLegacy
+          }
+        else
+          console.log 'skip player'
+          Promise.resolve null)
+        .then (playerData) =>
           if DEBUG
-            console.log 'player data updated', Date.now() - start
+            console.log 'api requests', Date.now() - start
 
-        @updatePlayerMatches {tag: playerId, matches}
-        .then ->
-          if DEBUG
-            console.log 'player matches updated', Date.now() - start
-      ]
-      .then ->
-        true # notify auto_refresher of success
+          Promise.all _.filter [
+            if playerData
+              @updatePlayerData {
+                id: playerId, lastMatchTime: _.first(matches)?.time
+                playerData, userId, isAuto
+              }
 
-  updatePlayerData: ({userId, playerData, id}) =>
+            @updatePlayerMatches {tag: playerId, matches}
+          ]
+
+      .catch (err) ->
+        console.log 'caught updatePlayerId', err
+        throw err
+    .then ->
+      true # notify auto_refresher of success
+
+  updatePlayerData: ({userId, playerData, id, lastMatchTime, isAuto}) =>
     if DEBUG
       console.log 'update player data', id
     unless id and playerData
@@ -326,6 +308,8 @@ class ClashRoyalePlayerService
         )
         lastUpdateTime: new Date()
       }
+      if lastMatchTime
+        diff.data.lastMatchTime = lastMatchTime
 
       # NOTE: any time you update, keep in mind scylla replaces
       # entire fields (data), so need to merge with old data manually
@@ -340,7 +324,7 @@ class ClashRoyalePlayerService
       .tap =>
         key = CacheService.PREFIXES.USER_DAILY_DATA_PUSH + ':' + id
         CacheService.runOnce key, =>
-          @sendDailyPush {playerId: id}
+          @sendDailyPush {playerId: id, isAuto}
           .catch (err) ->
             console.log 'push err', err
         , {expireSeconds: ONE_DAY_S}
@@ -361,60 +345,68 @@ class ClashRoyalePlayerService
           null
 
   updateAutoRefreshPlayers: =>
-    key = CacheService.KEYS.AUTO_REFRESH_MAX_REVERSED_PLAYER_ID
-    CacheService.get key
-    .then (minReversedPlayerId) ->
-      minReversedPlayerId ?= '0'
-      console.log 'min', minReversedPlayerId
-      # TODO: add a check to make sure this is always running. healtcheck?
-      Player.getAutoRefreshByGameId GAME_ID, minReversedPlayerId
-      .then (players) ->
-        console.log 'p', players
-        if _.isEmpty players
-          buckets = '0289PYLQGRJCUV'.split ''
-          currentBucket = minReversedPlayerId.substr 0, 1
-          currentBucketIndex = buckets.indexOf currentBucket
-          newBucketIndex = (currentBucketIndex + 1) % buckets.length
-          newBucket = buckets[newBucketIndex]
-          newMinReversedPlayerId = newBucket
-        else
-          newMinReversedPlayerId = _.last(players).reversedPlayerId
+    start = Date.now()
+    CacheService.lock CacheService.LOCKS.AUTO_REFRESH, ->
+      key = CacheService.KEYS.AUTO_REFRESH_MAX_REVERSED_PLAYER_ID
+      CacheService.get key
+      .then (minReversedPlayerId) ->
+        minReversedPlayerId ?= '0'
+        # TODO: add a check to make sure this is always running. healtcheck?
+        Player.getAutoRefreshByGameId GAME_ID, minReversedPlayerId
+        .then (players) ->
+          console.log 'auto refreshing', minReversedPlayerId, players.length
+          if _.isEmpty players
+            buckets = '0289PYLQGRJCUV'.split ''
+            currentBucket = minReversedPlayerId.substr 0, 1
+            currentBucketIndex = buckets.indexOf currentBucket
+            newBucketIndex = (currentBucketIndex + 1) % buckets.length
+            newBucket = buckets[newBucketIndex]
+            newMinReversedPlayerId = newBucket
+          else
+            newMinReversedPlayerId = _.last(players).reversedPlayerId
 
-        CacheService.set key, newMinReversedPlayerId, {
-          expireSeconds: ONE_MINUTE_SECONDS
-        }
-        # add each player to kue
-        # once all processed, call update again with new minPlayerId
-        Promise.map players, ({playerId}) ->
-          KueCreateService.createJob {
-            job: {playerId}
-            type: KueCreateService.JOB_TYPES.AUTO_REFRESH_PLAYER
-            ttlMs: AUTO_REFRESH_PLAYER_TIMEOUT_MS
-            priority: 'high'
-            waitForCompletion: true
+          CacheService.set key, newMinReversedPlayerId, {
+            expireSeconds: ONE_MINUTE_SECONDS
           }
-          .catch (err) -> null
+          # add each player to kue
+          # once all processed, call update again with new minPlayerId
+          Promise.map players, ({playerId}) ->
+            KueCreateService.createJob {
+              job: {playerId}
+              type: KueCreateService.JOB_TYPES.AUTO_REFRESH_PLAYER
+              ttlMs: AUTO_REFRESH_PLAYER_TIMEOUT_MS
+              priority: 'high'
+              waitForCompletion: true
+            }
+            .catch (err) ->
+              console.log 'caught', playerId, err
+    , {expireSeconds: 120, unlockWhenCompleted: true}
     .then (responses) =>
-      successes = _.filter(responses).length
-      console.log 'successes', successes
-      key = CacheService.KEYS.AUTO_REFRESH_SUCCESS_COUNT
-      CacheService.set key, successes, {expireSeconds: ONE_MINUTE_SECONDS}
-      # TODO: make sure this doesn't cause memory leak.
-      # i think the null prevents it
-      @updateAutoRefreshPlayers()
+      isLocked = not responses
+      if isLocked
+        console.log 'skip (locked)'
+      else
+        # always be truthy for cron-check
+        successes = _.filter(responses).length or 1
+        console.log 'refreshing success', successes, 'time', Date.now() - start
+        key = CacheService.KEYS.AUTO_REFRESH_SUCCESS_COUNT
+        CacheService.set key, successes, {expireSeconds: ONE_MINUTE_SECONDS}
+        # TODO: make sure this doesn't cause memory leak.
+        # i think the null prevents it
+        @updateAutoRefreshPlayers()
       null
 
-  sendDailyPush: ({playerId}) ->
+  sendDailyPush: ({playerId, isAuto}) ->
     yesterday = ClashRoyalePlayerRecord.getScaledTimeByTimeScale(
       'day'
       moment().subtract 1, 'day'
     )
+    console.log 'sending daily push', playerId, isAuto
     Promise.all [
       Player.getByPlayerIdAndGameId playerId, GAME_ID
       .then EmbedService.embed {
         embed: [
           EmbedService.TYPES.PLAYER.USER_IDS
-          EmbedService.TYPES.PLAYER.CHEST_CYCLE
         ]
         gameId: GAME_ID
       }
@@ -429,6 +421,8 @@ class ClashRoyalePlayerService
         goodChests = _.map goodChests, (chest) ->
           _.find player.data.upcomingChests?.items, {name: _.startCase(chest)}
         nextGoodChest = _.minBy goodChests, 'index'
+        unless nextGoodChest
+          return
         countUntilNextGoodChest = nextGoodChest.index + 1
 
         if playerCounter = _.find playerCounters, {gameType: 'all'}

@@ -23,7 +23,7 @@ defaultGroup = (group) ->
     badgeId: null
     background: null
     language: 'en'
-    mode: 'open' # open | private | inviteOnly
+    privacy: 'open' # open | private | inviteOnly
     type: 'general' # public | general | clan | star
     gameIds: []
     clanIds: []

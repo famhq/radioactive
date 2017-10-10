@@ -22,8 +22,7 @@ defaultGroupClan = (groupClan) ->
     mode: 'public'
     password: null
     creatorId: null
-    # no 0 or O (avoid confusion)
-    code: _.sampleSize('ABCDEFGHIJKLMNPQRSTUFWXYZ123456789', 6).join ''
+    code: module.exports.generateCode()
     playerIds: []
   }
 
@@ -43,6 +42,10 @@ class GroupClan
     .run()
     .then ->
       groupClan
+
+  generateCode: ->
+    # no 0 or O (avoid confusion)
+    _.sampleSize('ABCDEFGHIJKLMNPQRSTUFWXYZ123456789', 6).join ''
 
   getById: (id) ->
     r.table GROUP_CLANS_TABLE

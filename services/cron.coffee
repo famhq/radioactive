@@ -25,23 +25,19 @@ class CronService
     # minute
     @addCron 'minute', '0 * * * * *', ->
       EventService.notifyForStart()
-      # if config.ENV is config.ENVS.PROD
-      # TODO: change this to check if auto update is running and start if not
-      # ClashRoyalePlayerService.updateAutoRefreshPlayers()
-      # ClashRoyaleClanService.updateAutoRefreshClans()
+      if config.ENV is config.ENVS.PROD
+        CacheService.get CacheService.KEYS.AUTO_REFRESH_SUCCESS_COUNT
+        .then (successCount) ->
+          unless successCount
+            console.log 'starting auto refresh'
+            ClashRoyalePlayerService.updateAutoRefreshPlayers()
 
     @addCron 'quarterMinute', '15 * * * * *', ->
       CleanupService.clean()
       Thread.updateScores 'stale'
 
-    # minute on half minute
-    # @addCron 'halfMinute', '30 * * * * *', ->
-      # ClashRoyalePlayerDeck.processIncrementByDeckIdAndPlayerId()
-      # ClashRoyaleDeck.processIncrementById()
-
     # minute on 3/4 minute
     @addCron 'threeQuarterMinute', '45 * * * * *', ->
-      CleanupService.clean()
       if config.ENV is config.ENVS.PROD
         ClashRoyalePlayerService.updateTopPlayers()
 
@@ -51,16 +47,6 @@ class CronService
     @addCron 'hourly', '0 0 * * * *', ->
       # VideoDiscoveryService.discover()
       Ban.unbanTemp()
-
-    # @addCron 'halfHourly', ' 0 0,30 * * * *', ->
-    #   null
-
-    # daily 6pm PT
-    @addCron 'winRates', '0 0 2 * * *', ->
-      Promise.all [
-        ClashRoyaleDeck.updateWinsAndLosses()
-        # ClashRoyaleCard.updateWinsAndLosses()
-      ]
 
   addCron: (key, time, fn) =>
     @crons.push new CronJob {

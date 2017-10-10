@@ -46,7 +46,6 @@ class ClanCtrl
       unless clan
         router.throw {status: 404, info: 'clan not found'}
 
-      # TODO: make sure api doesn't use cached version
       Promise.all [
         ClashRoyaleAPIService.getClanByTag clan.clanId
         Player.getByUserIdAndGameId user.id, GAME_ID
@@ -58,18 +57,21 @@ class ClanCtrl
         unless isValid
           router.throw {status: 400, info: 'unable to verify'}
 
-        clanPlayer = _.find clan?.players, {playerId: player?.id}
+        clanPlayer = _.find clan?.data?.memberList, {tag: "##{player?.id}"}
         isLeader = clanPlayer?.role in ['coLeader', 'leader']
         unless isLeader
           router.throw {status: 400, info: 'must be at least co-leader'}
 
         Promise.all [
-          GroupClan.updateByClanIdAndGameId id, GAME_ID, {creatorId: user.id}
-          UserPlayer.updateByUserIdAndPlayerIdAndGameId(
+          # reset code so others can't use
+          GroupClan.updateByClanIdAndGameId id, GAME_ID, {
+            creatorId: user.id
+            code: GroupClan.generateCode()
+          }
+          UserPlayer.setVerifiedByUserIdAndPlayerIdAndGameId(
             user.id
             player.id
             GAME_ID
-            {isVerified: true}
           )
           Group.updateById clan?.groupId, {creatorId: user.id}
         ]
@@ -93,21 +95,20 @@ class ClanCtrl
       Player.getByUserIdAndGameId user.id, GAME_ID
     ]
     .then ([clan, player]) ->
-      clanPlayer = _.find clan?.players, {playerId: player?.id}
+      clanPlayer = _.find clan?.data?.memberList, {tag: "##{player?.id}"}
       unless clanPlayer
         router.throw {status: 401, info: 'not a clan member'}
 
-      if not clanPassword or clanPassword isnt clan.group.password
+      if not clanPassword or clanPassword isnt clan.password
         router.throw {status: 401, info: 'incorrect password'}
 
       Promise.all [
         Group.updateById clan.groupId,
           userIds: r.row('userIds').append(user.id).distinct()
-        UserPlayer.updateByUserIdAndPlayerIdAndGameId(
+        UserPlayer.setVerifiedByUserIdAndPlayerIdAndGameId(
           user.id
           player.id
           GAME_ID
-          {isVerified: true}
         )
       ]
 

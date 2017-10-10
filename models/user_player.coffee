@@ -88,6 +88,19 @@ class UserPlayer
     .run()
     .then defaultUserPlayer
 
+  setVerifiedByUserIdAndPlayerIdAndGameId: (userId, playerId, gameId) =>
+    # mark others unverified
+    @updateByPlayerIdAndGameId playerId, gameId, {
+      isVerified: false
+    }
+    .then =>
+      @updateByUserIdAndPlayerIdAndGameId(
+        userId
+        playerId
+        gameId
+        {isVerified: true}
+      )
+
   getByPlayerIdAndGameId: (playerId, gameId) ->
     r.table USER_PLAYERS_TABLE
     .getAll [playerId, gameId], {index: PLAYER_ID_GAME_ID_INDEX}

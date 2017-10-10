@@ -94,13 +94,13 @@ class ClashRoyaleDeckModel
         deckIdCnt[deckKey][condition] += 1
         deckIdCnt[allDeckKey] ?= {wins: 0, losses: 0, draws: 0}
         deckIdCnt[allDeckKey][condition] += 1
-        _.forEach opponentCardIds, (cardId) ->
-          key = [deckId, gameType, arena, cardId].join(',')
-          allKey = [deckId, 'all', 0, cardId].join(',')
-          deckIdCardIdCnt[key] ?= {wins: 0, losses: 0, draws: 0}
-          deckIdCardIdCnt[key][condition] += 1
-          deckIdCardIdCnt[allKey] ?= {wins: 0, losses: 0, draws: 0}
-          deckIdCardIdCnt[allKey][condition] += 1
+        # _.forEach opponentCardIds, (cardId) ->
+        #   key = [deckId, gameType, arena, cardId].join(',')
+        #   allKey = [deckId, 'all', 0, cardId].join(',')
+        #   deckIdCardIdCnt[key] ?= {wins: 0, losses: 0, draws: 0}
+        #   deckIdCardIdCnt[key][condition] += 1
+        #   deckIdCardIdCnt[allKey] ?= {wins: 0, losses: 0, draws: 0}
+        #   deckIdCardIdCnt[allKey][condition] += 1
 
     _.forEach matches, (match) ->
       gameType = match.type
@@ -126,16 +126,16 @@ class ClashRoyaleDeckModel
       .andWhere 'gameType', '=', gameType
       .andWhere 'arena', '=', arena
 
-    deckIdCardIdQueries = _.map deckIdCardIdCnt, (diff, key) ->
-      [deckId, gameType, arena, cardId] = key.split ','
-      diff = _.pickBy diff
-      q = cknex().update 'counter_by_deckId_opponentCardId'
-      _.forEach diff, (amount, key) ->
-        q = q.increment key, amount
-      q.where 'deckId', '=', deckId
-      .andWhere 'gameType', '=', gameType
-      .andWhere 'arena', '=', arena
-      .andWhere 'opponentCardId', '=', cardId
+    # deckIdCardIdQueries = _.map deckIdCardIdCnt, (diff, key) ->
+    #   [deckId, gameType, arena, cardId] = key.split ','
+    #   diff = _.pickBy diff
+    #   q = cknex().update 'counter_by_deckId_opponentCardId'
+    #   _.forEach diff, (amount, key) ->
+    #     q = q.increment key, amount
+    #   q.where 'deckId', '=', deckId
+    #   .andWhere 'gameType', '=', gameType
+    #   .andWhere 'arena', '=', arena
+    #   .andWhere 'opponentCardId', '=', cardId
 
     Promise.all [
       # batch is faster, but can't exceed 50kb

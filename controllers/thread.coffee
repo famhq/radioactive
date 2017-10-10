@@ -199,8 +199,10 @@ class ThreadCtrl
         Thread.updateById id, diff
       ]
 
-  getAll: ({categories, language, sort, skip, limit}, {user}) ->
-    if language isnt 'es' and user.username isnt 'austin'
+  getAll: ({categories, language, sort, skip, limit, gameId}, {user}) ->
+    gameId ?= config.CLASH_ROYALE_ID
+    if not language in config.COMMUNITY_LANGUAGES and
+        user.username isnt 'austin'
       categories ?= ['news']
 
     # default to this so clan recruiting isn't shown
@@ -213,10 +215,10 @@ class ThreadCtrl
 
     CacheService.preferCache key, ->
       Promise.all [
-        Thread.getAll {categories, sort, language, skip, limit}
+        Thread.getAll {categories, sort, language, gameId, skip, limit}
         # mix in some new posts
         if sort is 'top' and not skip
-          Thread.getAll {categories, sort: 'new', language, limit: 3}
+          Thread.getAll {categories, sort: 'new', language, gameId, limit: 3}
         else
           Promise.resolve null
       ]
