@@ -156,6 +156,8 @@ class ClashRoyalePlayerModel
     .run()
 
   getIsAutoRefreshById: (id) ->
+    unless id
+      return Promise.resolve null
     reversedPlayerId = id.split('').reverse().join('')
     cknex().select '*'
     .where 'bucket', '=', reversedPlayerId.substr(0, 1)

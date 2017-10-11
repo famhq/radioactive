@@ -26,6 +26,7 @@ userIdsEmbed = [
 
 GAME_ID = config.CLASH_ROYALE_ID
 TWELVE_HOURS_SECONDS = 12 * 3600
+TEN_MINUTES_SECONDS = 10 * 60
 ONE_MINUTE_SECONDS = 60
 
 class PlayerCtrl
@@ -71,6 +72,21 @@ class PlayerCtrl
         .then ->
           Player.getByPlayerIdAndGameId playerId, gameId
     .then EmbedService.embed {embed: defaultEmbed}
+
+  setAutoRefreshByGameId: ({gameId}, {user}) ->
+    key = "#{CacheService.LOCK_PREFIXES.SET_AUTO_REFRESH}:#{gameId}:#{user.id}"
+    CacheService.lock key, ->
+      Player.getByUserIdAndGameId user.id, config.CLASH_ROYALE_ID
+      .then EmbedService.embed {
+        embed: [EmbedService.TYPES.PLAYER.VERIFIED_USER]
+        gameId: config.CLASH_ROYALE_ID
+      }
+      .then (player) ->
+        if player?.verifiedUser?.id is user.id
+          Player.setAutoRefreshByPlayerIdAndGameId(
+            player.id, config.CLASH_ROYALE_ID
+          )
+    , {expireSeconds: TEN_MINUTES_SECONDS}
 
   # verifyMe: ({gold, lo}, {user}) ->
   #   Player.getByUserIdAndGameId user.id, GAME_ID

@@ -12,6 +12,7 @@ KEY_INDEX = 'key'
 POPULARITY_INDEX = 'thisWeekPopularity'
 ONE_WEEK_S = 3600 * 24 * 7
 ONE_HOUR_S = 3600
+TEN_MINUTES_SECONDS = 10 * 60
 
 defaultClashRoyaleCard = (clashRoyaleCard) ->
   unless clashRoyaleCard?
@@ -114,18 +115,28 @@ class ClashRoyaleCardModel
       console.log 'fail', id
       throw err
 
-  getTop: ({gameType} = {}) ->
-    cknex().select '*'
-    .from 'counter_by_cardId'
-    .run()
-    .then (allCards) ->
-      cards = _.filter allCards, {gameType}
-      cards = _.map cards, defaultClashRoyaleCardC
-      cards = _.map cards, (card) ->
-        _.defaults {
-          winRate: card.wins / (card.wins + card.losses)
-        }, card
-      _.orderBy cards, 'winRate', 'desc'
+  getTop: ({gameType, preferCache} = {}) ->
+    get = ->
+      cknex().select '*'
+      .from 'counter_by_cardId'
+      .run()
+      .then (allCards) ->
+        cards = _.filter allCards, {gameType}
+        cards = _.map cards, defaultClashRoyaleCardC
+        cards = _.map cards, (card) ->
+          _.defaults {
+            winRate: card.wins / (card.wins + card.losses)
+          }, card
+        _.orderBy cards, 'winRate', 'desc'
+
+    if preferCache
+      prefix = CacheService.PREFIXES.CLASH_ROYALE_CARD_TOP
+      cacheKey = "#{prefix}:#{gameType}"
+      CacheService.preferCache cacheKey, get, {
+        expireSeconds: TEN_MINUTES_SECONDS
+      }
+    else
+      get()
 
   getByKey: (key, {preferCache} = {}) ->
     unless key

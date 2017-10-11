@@ -100,6 +100,9 @@ class UserPlayer
         gameId
         {isVerified: true}
       )
+    .then ->
+      key = CacheService.PREFIXES.PLAYER_VERIFIED_USER + ':' + playerId
+      CacheService.deleteByKey key
 
   getByPlayerIdAndGameId: (playerId, gameId) ->
     r.table USER_PLAYERS_TABLE

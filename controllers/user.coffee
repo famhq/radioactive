@@ -47,15 +47,6 @@ class UserCtrl
     unless user.ip
       diff.ip = ip
     User.updateById user.id, diff
-    # TODO: cache this
-    Player.getByUserIdAndGameId user.id, config.CLASH_ROYALE_ID
-    .then EmbedService.embed {
-      embed: [EmbedService.TYPES.PLAYER.VERIFIED_USER]
-      gameId: config.CLASH_ROYALE_ID
-    }
-    .then (player) ->
-      if player?.verifiedUser?.id is user.id
-        Player.setAutoRefreshByPlayerIdAndGameId player.id, config.CLASH_ROYALE_ID
 
   getById: ({id}) ->
     User.getById id

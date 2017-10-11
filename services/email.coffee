@@ -4,7 +4,7 @@ log = require 'loga'
 
 config = require '../config'
 
-FROM_EMAIL = 'Starfire <noreply@starfi.re>'
+FROM_EMAIL = 'Starfire <noreply@starfire.games>'
 
 server = email.server.connect
   user: config.GMAIL.USER
@@ -35,7 +35,7 @@ class EmailService
     new Promise (resolve, reject) ->
       server.send {
         text: text
-        from: 'Starfire <noreply@starfi.re>'
+        from: 'Starfire <noreply@starfire.games>'
         to: to
         subject: subject
       }, (err, message) ->

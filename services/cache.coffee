@@ -33,6 +33,7 @@ PREFIXES =
   CLASH_ROYALE_CARD: 'clash_royale_card2'
   CLASH_ROYALE_CARD_ALL: 'clash_royale_card:all1'
   CLASH_ROYALE_CARD_KEY: 'clash_royale_card_key3'
+  CLASH_ROYALE_CARD_TOP: 'clash_royal_card:top'
   CLASH_ROYALE_CARD_RANK: 'clash_royal_card:rank'
   CLASH_ROYALE_DECK_RANK: 'clash_royal_deck:rank'
   CLASH_ROYALE_DECK_CARD_KEYS: 'clash_royal_deck:card_keys12'
@@ -52,7 +53,7 @@ PREFIXES =
   RATE_LIMIT_CHAT_MESSAGES_TEXT: 'rate_limit:chat_messages:text'
   RATE_LIMIT_CHAT_MESSAGES_MEDIA: 'rate_limit:chat_messages:media'
   PLAYER_SEARCH: 'player:search8'
-  PLAYER_VERIFIED_USER: 'player:verified_user4'
+  PLAYER_VERIFIED_USER: 'player:verified_user5'
   PLAYER_USER_ID_GAME_ID: 'player:user_id_game_id1'
   PLAYER_USER_IDS: 'player:user_ids2'
   CLAN_CLASH_ROYALE_ID: 'clan:clash_royale_id3'
@@ -94,6 +95,7 @@ class CacheService
   LOCK_PREFIXES:
     KUE_PROCESS: 'kue:process'
     BROADCAST: 'broadcast'
+    SET_AUTO_REFRESH: 'set_auto_refresh4'
   LOCKS:
     AUTO_REFRESH: 'auto_refresh'
   PREFIXES: PREFIXES

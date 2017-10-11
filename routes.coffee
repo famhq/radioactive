@@ -153,6 +153,8 @@ module.exports = router
 # .on 'players.verifyMe', authed PlayerCtrl.verifyMe
 .on 'players.getIsAutoRefreshByPlayerIdAndGameId',
   authed PlayerCtrl.getIsAutoRefreshByPlayerIdAndGameId
+.on 'players.setAutoRefreshByGameId',
+  authed PlayerCtrl.setAutoRefreshByGameId
 
 .on 'clan.getById', authed ClanCtrl.getById
 .on 'clan.claimById', authed ClanCtrl.claimById
