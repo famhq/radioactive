@@ -61,7 +61,7 @@ class ClanModel
     #   key = CacheService.PREFIXES.CLAN_PLAYERS + ':' + clanId
     #   CacheService.deleteByKey key
 
-  createGroup: ({userId, creatorId, name, clanId, password}) ->
+  createGroup: ({userId, creatorId, name, clanId}) ->
     Group.create {
       name: name
       creatorId: creatorId
@@ -70,8 +70,9 @@ class ClanModel
       clanIds: [clanId]
     }
     .tap (group) ->
-      Promise.all [
-        GroupUser.create {groupId: group.id, userId: userId}
+      Promise.all _.filter [
+        if userId
+          GroupUser.create {groupId: group.id, userId: userId}
         Conversation.create {
           groupId: group.id
           name: 'general'
@@ -80,7 +81,7 @@ class ClanModel
       ]
     .tap (group) ->
       GroupClan.updateByClanIdAndGameId clanId, config.CLASH_ROYALE_ID, {
-        password: password, groupId: group.id
+        groupId: group.id
       }
 
   sanitizePublic: _.curry (requesterId, clan) ->

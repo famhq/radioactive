@@ -5,7 +5,6 @@ moment = require 'moment'
 
 KueCreateService = require './kue_create'
 TagConverterService = require './tag_converter'
-ClashRoyaleClanService = require './clash_royale_clan'
 CacheService = require './cache'
 Clan = require '../models/clan'
 config = require '../config'
@@ -126,16 +125,7 @@ class ClashRoyaleAPIService
     .catch (err) ->
       console.log 'err clanByTag', err
 
-  refreshByClanId: (clanId, {userId, priority} = {}) =>
-    @getClanByTag clanId, {priority}
-    .then (clan) ->
-      ClashRoyaleClanService.updateClan {userId: userId, tag: clanId, clan}
-    .then ->
-      Clan.getByClanIdAndGameId clanId, config.CLASH_ROYALE_ID, {
-        preferCache: true
-      }
-      .then (clan) ->
-        if clan
-          {id: clan?.id}
+  getTopPlayers: (locationId) =>
+    @request '/locations/global/rankings/players'
 
 module.exports = new ClashRoyaleAPIService()

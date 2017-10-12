@@ -11,6 +11,7 @@ ClashRoyalePlayerRecord = require '../models/clash_royale_player_record'
 UserPlayer = require '../models/user_player'
 # ClashRoyaleTopClan = require '../models/clash_royale_top_clan'
 CacheService = require './cache'
+ClashRoyaleAPIService = require './clash_royale_api'
 PushNotificationService = require './push_notification'
 config = require '../config'
 
@@ -107,36 +108,17 @@ class ClashRoyaleClan
         console.log 'clan err', err
 
 
-  # getTopClans: ->
-  #   request "#{config.CR_API_URL}/clans/top", {json: true}
-  #
-  # updateTopClans: =>
-  #   if config.ENV is config.ENVS.DEV
-  #     return
-  #   @getTopClans().then (topClans) =>
-  #     Promise.map topClans, (clan, index) =>
-  #       rank = index + 1
-  #       clanId = clan.clanTag
-  #       Clan.getByClanIdAndGameId clanId, GAME_ID
-  #       .then (player) =>
-  #         if player?.verifiedUserId
-  #           Clan.updateById player.id, {
-  #             data:
-  #               trophies: clan.trophies
-  #               name: clan.name
-  #           }
-  #         else
-  #           User.create {}
-  #           .then ({id}) =>
-  #             userId = id
-  #             @updateByClanId clanId, {
-  #               userId: userId, priority: 'normal'
-  #             }
-  #
-  #       .then ->
-  #         ClashRoyaleTopClan.upsertByRank rank, {
-  #           clanId: clanId
-  #         }
+  updateByClanId: (clanId, {userId, priority} = {}) =>
+    ClashRoyaleAPIService.getClanByTag clanId, {priority}
+    .then (clan) =>
+      @updateClan {userId: userId, tag: clanId, clan}
+    .then ->
+      Clan.getByClanIdAndGameId clanId, config.CLASH_ROYALE_ID, {
+        preferCache: true
+      }
+      .then (clan) ->
+        if clan
+          {id: clan?.id}
 
 
 module.exports = new ClashRoyaleClan()

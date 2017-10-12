@@ -158,7 +158,6 @@ module.exports = router
 
 .on 'clan.getById', authed ClanCtrl.getById
 .on 'clan.claimById', authed ClanCtrl.claimById
-.on 'clan.createGroupById', authed ClanCtrl.createGroupById
 .on 'clan.joinById', authed ClanCtrl.joinById
 .on 'clan.updateById', authed ClanCtrl.updateById
 # .on 'clan.search', authed ClanCtrl.search

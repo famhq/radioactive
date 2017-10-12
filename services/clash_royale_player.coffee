@@ -11,6 +11,7 @@ ClashRoyalePlayer = require '../models/clash_royale_player'
 ClashRoyaleDeck = require '../models/clash_royale_deck'
 ClashRoyaleCard = require '../models/clash_royale_card'
 ClashRoyaleTopPlayer = require '../models/clash_royale_top_player'
+ClashRoyaleClanService = require './clash_royale_clan'
 CacheService = require './cache'
 KueCreateService = require './kue_create'
 ClashRoyalePlayerRecord = require '../models/clash_royale_player_record'
@@ -339,7 +340,7 @@ class ClashRoyalePlayerService
       if clan?.groupId
         Group.addUser clan.groupId, userId
       if not clan?.data and clanId
-        ClashRoyaleAPIService.refreshByClanId clanId, {userId}
+        ClashRoyaleClanService.updateByClanId clanId, {userId}
         .timeout CLAN_TIMEOUT_MS
         .catch (err) ->
           console.log 'clan refresh err', err
@@ -448,13 +449,14 @@ class ClashRoyalePlayerService
         null
 
   getTopPlayers: ->
-    request "#{config.CR_API_URL}/players/top", {json: true}
+    ClashRoyaleAPIService.getTopPlayers()
 
   updateTopPlayers: =>
-    @getTopPlayers().then (topPlayers) =>
+    @getTopPlayers().then (response) =>
+      topPlayers = response?.items
       Promise.map topPlayers, (player, index) =>
         rank = index + 1
-        playerId = player.playerTag
+        playerId = ClashRoyaleAPIService.formatHashtag player.tag
         Player.getByPlayerIdAndGameId playerId, GAME_ID
         .then EmbedService.embed {
           embed: [EmbedService.TYPES.PLAYER.USER_IDS]

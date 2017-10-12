@@ -31,6 +31,15 @@ ONE_MINUTE_SECONDS = 60
 class ClanCtrl
   getById: ({id}, {user}) ->
     Clan.getByClanIdAndGameId id, GAME_ID
+    .then (clan) ->
+      if clan
+        return clan
+      else
+        ClashRoyaleClanService.updateByClanId id, {
+          priority: 'normal'
+        }
+        .then ->
+          Clan.getByClanIdAndGameId id, GAME_ID
     .then EmbedService.embed {embed: defaultEmbed}
     .then (clan) ->
       if clan?.creatorId is user.id

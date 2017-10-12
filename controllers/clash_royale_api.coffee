@@ -83,37 +83,37 @@ class ClashRoyaleAPICtrl
         lastQueuedTime: new Date()
       }
     .then ->
-      ClashRoyaleAPIService.refreshByClanId clanId
+      ClashRoyaleClanService.updateByClanId clanId
 
-  updatePlayerData: ({body, params, headers}) ->
-    radioactiveHost = config.RADIOACTIVE_API_URL.replace /https?:\/\//i, ''
-    isPrivate = headers.host is radioactiveHost
-    if isPrivate and body.secret is config.CR_API_SECRET
-      {tag, playerData} = body
-      unless tag
-        return
-      ClashRoyalePlayerService.updatePlayerData {id: tag, playerData}
-
-  updateClan: ({body, params, headers}) ->
-    radioactiveHost = config.RADIOACTIVE_API_URL.replace /https?:\/\//i, ''
-    isPrivate = headers.host is radioactiveHost
-    if isPrivate and body.secret is config.CR_API_SECRET
-      {tag, clan} = body
-      unless tag
-        return
-      ClashRoyaleClanService.updateClan {tag, clan}
-
-  updatePlayerMatches: ({body, params, headers}) ->
-    radioactiveHost = config.RADIOACTIVE_API_URL.replace /https?:\/\//i, ''
-    isPrivate = headers.host is radioactiveHost
-    if isPrivate and body.secret is config.CR_API_SECRET
-      {matches} = body
-      unless matches
-        return
-      ClashRoyalePlayerService.filterMatches {matches, isBatched: true}
-      .then (filteredMatches) ->
-        # this doesn't set lastMatchTime for players...
-        ClashRoyalePlayerService.updatePlayerMatches filteredMatches
+  # updatePlayerData: ({body, params, headers}) ->
+  #   radioactiveHost = config.RADIOACTIVE_API_URL.replace /https?:\/\//i, ''
+  #   isPrivate = headers.host is radioactiveHost
+  #   if isPrivate and body.secret is config.CR_API_SECRET
+  #     {tag, playerData} = body
+  #     unless tag
+  #       return
+  #     ClashRoyalePlayerService.updatePlayerData {id: tag, playerData}
+  #
+  # updateClan: ({body, params, headers}) ->
+  #   radioactiveHost = config.RADIOACTIVE_API_URL.replace /https?:\/\//i, ''
+  #   isPrivate = headers.host is radioactiveHost
+  #   if isPrivate and body.secret is config.CR_API_SECRET
+  #     {tag, clan} = body
+  #     unless tag
+  #       return
+  #     ClashRoyaleClanService.updateClan {tag, clan}
+  #
+  # updatePlayerMatches: ({body, params, headers}) ->
+  #   radioactiveHost = config.RADIOACTIVE_API_URL.replace /https?:\/\//i, ''
+  #   isPrivate = headers.host is radioactiveHost
+  #   if isPrivate and body.secret is config.CR_API_SECRET
+  #     {matches} = body
+  #     unless matches
+  #       return
+  #     ClashRoyalePlayerService.filterMatches {matches, isBatched: true}
+  #     .then (filteredMatches) ->
+  #       # this doesn't set lastMatchTime for players...
+  #       ClashRoyalePlayerService.updatePlayerMatches filteredMatches
 
   queueTop200: ({params}) ->
     ClashRoyaleTopPlayer.getAll()

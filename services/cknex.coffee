@@ -69,12 +69,17 @@ cknex.getTime = (time) ->
   else
     new Date()
 
+# cknex.chunkForBatchByPartition = (rows, partitionKey) ->
+#
+
+# FIXME FIXME: chunk all by partition. batching with mult partitions is slow/bad
+# change maxChunkSize to 5kb (recommended. 30kb is probably fine though)?
 cknex.chunkForBatch = (rows) ->
   # batch accepts max 50kb
   chunks = []
   chunkSize = 0
   chunkIndex = 0
-  maxChunkSize = 30 * 1024 # 30kb. for some reason need a big buffer from 50
+  maxChunkSize = 30 * 1024 # 30kb. for some reason need big buffer from 50kb max
   _.forEach rows, (row) ->
     prevChunkSize = chunkSize
     chunkSize += JSON.stringify(row).length

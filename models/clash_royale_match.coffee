@@ -68,6 +68,7 @@ class ClashRoyaleMatchModel
           data: JSON.stringify match.data
           time: match.time
         }, (val) -> val?
+    # partitionChunks = cknex.chunkForBatchByPartition matches, 'playerId'
     chunks = cknex.chunkForBatch matches
     Promise.all _.map chunks, (chunk) ->
       cknex.batchRun _.map chunk, (match) ->
