@@ -57,7 +57,7 @@ class GroupModel
 
     Promise.all [
       @getById id
-      User.getById userId
+      User.getById userId, {preferCache: true}
     ]
     .then ([group, user]) =>
       @hasPermission group, user, {level}
@@ -76,6 +76,10 @@ class GroupModel
 
     level ?= 'member'
 
+    if level isnt 'admin' and group.type is 'public'
+      return Promise.resolve true
+
+    console.log 'groupuser hasPermission'
     GroupUser.getAllByGroupId group.id
     .map ({userId}) -> userId
     .then (userIds) ->
@@ -83,7 +87,7 @@ class GroupModel
         when 'admin'
         then group.creatorId is user.id
         # member
-        else group.type is 'public' or userIds?.indexOf(user.id) isnt -1
+        else userIds?.indexOf(user.id) isnt -1
 
   getById: (id, {preferCache} = {}) ->
     get = ->

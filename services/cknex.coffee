@@ -1,3 +1,8 @@
+###
+communicating bad alloc errors may be due to batching, but the 1 time it has
+happened so far was due to being oom (based on max memory set for node)
+###
+
 cassanknex = require 'cassanknex'
 cassandra = require 'cassandra-driver'
 Promise = require 'bluebird'

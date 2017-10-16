@@ -7,6 +7,7 @@ User = require '../models/user'
 EmbedService = require '../services/embed'
 PushNotificationService = require '../services/push_notification'
 schemas = require '../schemas'
+config = require '../config'
 
 defaultEmbed = []
 
@@ -43,7 +44,10 @@ class UserFollowerCtrl
           type: PushNotificationService.TYPES.NEW_FRIEND
           url: "https://#{config.SUPERNOVA_HOST}"
           text: "#{User.getDisplayName(user)} added you as a friend"
-          data: {path: '/friends'}
+          data:
+            path:
+              key: 'friends'
+              params: {gameKey: config.DEFAULT_GAME_KEY}
         }
       .catch -> null
       # key = "#{CacheService.PREFIXES.USER_DATA_FOLLOWING_PLAYERS}:#{user.id}"

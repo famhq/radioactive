@@ -244,7 +244,7 @@ app.get '/di/crForumSig/:userId.png', (req, res) ->
   .then (buffer) ->
     res.status(200).send buffer
 
-app.get '/di/crChestCycle/:userId.png', (req, res) ->
+app.get '/di/crChestCycle/:playerId.png', (req, res) ->
   $page = new ChestCyclePage {req, res}
 
   res.setHeader 'Content-Type', 'image/png'

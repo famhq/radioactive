@@ -178,7 +178,7 @@ embedFn = _.curry (props, object) ->
         embedded.following = CacheService.preferCache key, ->
           Promise.map(
             _.takeRight(embedded.followingIds, MAX_FRIENDS), (userId) ->
-              User.getById userId
+              User.getById userId, {preferCache: true}
           )
           .filter (user) -> Boolean user
           .map (user) ->
@@ -191,7 +191,7 @@ embedFn = _.curry (props, object) ->
         embedded.followers = CacheService.preferCache key, ->
           Promise.map(
             _.takeRight(embedded.followerIds, MAX_FRIENDS), (userId) ->
-              User.getById userId
+              User.getById userId, {preferCache: true}
           )
           .filter (user) -> Boolean user
           .map (user) ->
@@ -203,7 +203,7 @@ embedFn = _.curry (props, object) ->
         embedded.blockedUsers = CacheService.preferCache key, ->
           Promise.map(
             _.takeRight(embedded.blockedUserIds, MAX_FRIENDS), (userId) ->
-              User.getById userId
+              User.getById userId, {preferCache: true}
           )
           .filter (user) -> Boolean user
           .map (user) ->
@@ -298,7 +298,7 @@ embedFn = _.curry (props, object) ->
                             .then Group.sanitizePublic null
 
       when TYPES.STAR.USER
-        embedded.user = User.getById embedded.userId
+        embedded.user = User.getById embedded.userId, {preferCache: true}
         .then embedFn {
           embed: profileDialogUserEmbed.concat [TYPES.USER.FOLLOWER_COUNT]
           gameId: config.CLASH_ROYALE_ID
@@ -310,7 +310,7 @@ embedFn = _.curry (props, object) ->
         .then Group.sanitizePublic null
 
       when TYPES.BAN.USER
-        embedded.user = User.getById embedded.userId
+        embedded.user = User.getById embedded.userId, {preferCache: true}
         .then embedFn {
           embed: profileDialogUserEmbed, gameId: config.CLASH_ROYALE_ID
         }
@@ -318,16 +318,16 @@ embedFn = _.curry (props, object) ->
 
       when TYPES.CONVERSATION.USERS
         embedded.users = Promise.map embedded.userIds, (userId) ->
-          User.getById userId
+          User.getById userId, {preferCache: true}
         .map User.sanitizePublic null
 
       when TYPES.EVENT.USERS
         embedded.users = Promise.map embedded.userIds, (userId) ->
-          User.getById userId
+          User.getById userId, {preferCache: true}
         .map User.sanitizePublic null
 
       when TYPES.EVENT.CREATOR
-        embedded.creator = User.getById embedded.creatorId
+        embedded.creator = User.getById embedded.creatorId, {preferCache: true}
         .then User.sanitizePublic null
 
       when TYPES.GROUP.STAR
@@ -346,7 +346,7 @@ embedFn = _.curry (props, object) ->
 
       when TYPES.GROUP.USERS
         embedded.users = Promise.map embedded.userIds, (userId) ->
-          User.getById userId
+          User.getById userId, {preferCache: true}
         .map embedFn {embed: [TYPES.USER.IS_ONLINE]}
         .map User.sanitizePublic null
 
@@ -398,7 +398,7 @@ embedFn = _.curry (props, object) ->
           key = CacheService.PREFIXES.THREAD_CREATOR + ':' + embedded.creatorId
           embedded.creator =
             CacheService.preferCache key, ->
-              User.getById embedded.creatorId
+              User.getById embedded.creatorId, {preferCache: true}
               .then User.sanitizePublic(null)
             , {expireSeconds: FIVE_MINUTES_SECONDS}
         else
@@ -409,7 +409,7 @@ embedFn = _.curry (props, object) ->
           key = CacheService.PREFIXES.THREAD_CREATOR + ':' + embedded.creatorId
           embedded.creator =
             CacheService.preferCache key, ->
-              User.getById embedded.creatorId
+              User.getById embedded.creatorId, {preferCache: true}
               .then User.sanitizePublic(null)
             , {expireSeconds: FIVE_MINUTES_SECONDS}
         else
@@ -421,7 +421,7 @@ embedFn = _.curry (props, object) ->
           embedded.user =
             CacheService.preferCache key, ->
               console.log 'get chat user / player data'
-              User.getById embedded.userId
+              User.getById embedded.userId, {preferCache: true}
               .then embedFn {
                 embed: profileDialogUserEmbed, gameId: config.CLASH_ROYALE_ID
               }
@@ -450,7 +450,7 @@ embedFn = _.curry (props, object) ->
             UserPlayer.getVerifiedByPlayerIdAndGameId embedded.id, gameId
             .then (userPlayer) ->
               if userPlayer?.userId
-                User.getById userPlayer.userId
+                User.getById userPlayer.userId, {preferCache: true}
                 .then User.sanitizePublic(null)
               else
                 null

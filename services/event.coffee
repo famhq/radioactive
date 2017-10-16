@@ -15,7 +15,10 @@ class EventService
           type: PushNotificationService.TYPES.EVENT
           text: "#{event.name} starts in 5 minutes"
           data:
-            path: "/event/#{event.id}"
+            path:
+              key: 'event'
+              id: event.id
+              gameKey: config.DEFAULT_GAME_KEY
         }
 
 module.exports = new EventService()

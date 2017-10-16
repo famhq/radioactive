@@ -176,6 +176,30 @@ class PushNotificationService
     ).then ({group, event, userIds}) =>
       if event
         return # FIXME FIXME: re-enable
+
+      if group
+        path = {
+          key: 'groupChatConversation'
+          params:
+            id: group.id
+            conversationId: conversation.id
+            gameKey: config.DEFAULT_GAME_KEY
+        }
+      else if event
+        path = {
+          key: 'event'
+          params:
+            id: event.id
+            gameKey: config.DEFAULT_GAME_KEY
+        }
+      else
+        path = {
+          key: 'conversation'
+          params:
+            id: conversation.id
+            gameKey: config.DEFAULT_GAME_KEY
+        }
+
       message =
         title: event?.name or group?.name or User.getDisplayName meUser
         type: if group or event \
@@ -191,11 +215,7 @@ class PushNotificationService
         data:
           conversationId: conversation.id
           contextId: conversation.id
-          path: if group \
-                then "/group/#{group.id}/chat/#{conversation.id}"
-                else if event
-                then "/event/#{event.id}"
-                else "/conversation/#{conversation.id}"
+          path: path
 
       @sendToUserIds userIds, message, {
         skipMe, meUserId: meUser.id, groupId: conversation.groupId
@@ -210,7 +230,7 @@ class PushNotificationService
   sendToUserIds: (userIds, message, {skipMe, meUserId, groupId} = {}) ->
     Promise.each userIds, (userId) =>
       unless userId is meUserId
-        user = User.getById userId
+        user = User.getById userId, {preferCache: true}
         if groupId
           user = user
                 .then EmbedService.embed {embed: defaultUserEmbed, groupId}

@@ -16,14 +16,14 @@ IMAGE_KEY = 'crChestCycle'
 module.exports = class ChestCyclePage extends Page
   constructor: ({req, res} = {}) ->
     @query = req.query
-    @userId = req.params.userId
+    @playerId = req.params.playerId
 
     @$component = new ChestCycle()
 
   renderHead: -> ''
 
   setup: =>
-    Player.getByUserIdAndGameId @userId, config.CLASH_ROYALE_ID
+    Player.getByPlayerIdAndGameId @playerId, config.CLASH_ROYALE_ID
     .then (player) =>
       unless player
         return {}

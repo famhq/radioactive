@@ -49,7 +49,7 @@ class UserCtrl
     User.updateById user.id, diff
 
   getById: ({id}) ->
-    User.getById id
+    User.getById id, {preferCache: true}
     .then User.sanitize(null)
 
   getByUsername: ({username}) ->
@@ -119,8 +119,8 @@ class UserCtrl
       userIds = _.map userPlayers, 'userId'
       verifiedUserPlayer = _.find userPlayers, {isVerified: true}
       verifiedUser = if verifiedUserPlayer \
-                      then User.getById verifiedUserPlayer.userId
-                      else Promise.resolve null
+              then User.getById(verifiedUserPlayer.userId, {preferCache: true})
+              else Promise.resolve null
 
       Promise.all [
         verifiedUser

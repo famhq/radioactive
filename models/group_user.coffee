@@ -2,9 +2,12 @@ _ = require 'lodash'
 uuid = require 'node-uuid'
 
 r = require '../services/rethinkdb'
+CacheService = require '../services/cache'
 
 GROUP_ID_INDEX = 'groupId'
 USER_ID_INDEX = 'userId'
+
+ONE_DAY_SECONDS = 3600 * 24
 
 defaultGroupUser = (groupUser) ->
   unless groupUser?
@@ -53,6 +56,13 @@ class GroupUserModel
     r.table GROUP_USERS_TABLE
     .insert groupUser
     .run()
+    .tap ->
+      prefix = CacheService.PREFIXES.GROUP_USER_USER_ID
+      cacheKey = "#{prefix}:#{groupUser.userId}"
+      CacheService.deleteByKey cacheKey
+      categoryPrefix = CacheService.PREFIXES.GROUP_GET_ALL_CATEGORY
+      categoryCacheKey = "#{categoryPrefix}:#{groupUser.userId}"
+      CacheService.deleteByCategory categoryCacheKey
     .then ->
       groupUser
 
@@ -61,21 +71,26 @@ class GroupUserModel
     .getAll groupId, {index: GROUP_ID_INDEX}
     .run()
 
-  getAllByUserId: (userId) ->
-    r.table GROUP_USERS_TABLE
-    .getAll userId, {index: USER_ID_INDEX}
-    .run()
+  getAllByUserId: (userId, {preferCache} = {}) ->
+    get = ->
+      r.table GROUP_USERS_TABLE
+      .getAll userId, {index: USER_ID_INDEX}
+      .run()
+
+    if preferCache
+      cacheKey = "#{CacheService.PREFIXES.GROUP_USER_USER_ID}:#{userId}"
+      CacheService.preferCache cacheKey, get, {expireSeconds: ONE_DAY_SECONDS}
+    else
+      get()
 
   deleteByGroupIdAndUserId: (groupId, userId) ->
     r.table GROUP_USERS_TABLE
     .get "#{groupId}:#{userId}"
     .delete()
     .run()
-
-  updateById: (id, diff) ->
-    r.table GROUP_USERS_TABLE
-    .get id
-    .update diff
-    .run()
+    .tap ->
+      prefix = CacheService.PREFIXES.GROUP_USER_USER_ID
+      cacheKey = "#{prefix}:#{userId}"
+      CacheService.deleteByKey cacheKey
 
 module.exports = new GroupUserModel()

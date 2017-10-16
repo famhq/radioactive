@@ -16,7 +16,6 @@ PushNotificationService = require '../services/push_notification'
 config = require '../config'
 
 defaultEmbed = [
-  EmbedService.TYPES.GROUP.USERS
   EmbedService.TYPES.GROUP.CONVERSATIONS
   EmbedService.TYPES.GROUP.STAR
 ]
@@ -28,7 +27,7 @@ defaultGroupRecordTypes = [
   {name: 'Crowns', timeScale: 'week'}
 ]
 
-FIVE_MINUTES_SECONDS = 60 * 5
+THIRTY_MINUTES_SECONDS = 60 * 5
 
 class GroupCtrl
   create: ({name, description, badgeId, background, mode, clanId}, {user}) ->
@@ -105,7 +104,10 @@ class GroupCtrl
   #         type: PushNotificationService.TYPES.GROUP
   #         url: "https://#{config.CLIENT_HOST}"
   #         data:
-  #           path: "/group/#{group.id}"
+            # path: {
+            #   key: 'groupById'
+            #   params: {id: group.id, gameKey: 'clash-royale'}
+            # }
   #       }
   #
   #     Group.updateById groupId,
@@ -159,7 +161,11 @@ class GroupCtrl
           text: "#{name} joined your group."
           type: PushNotificationService.TYPES.CREW
           url: "https://#{config.CLIENT_HOST}"
-          path: "/group/#{group.id}/chat"
+          path:
+            key: 'groupChat'
+            params:
+              id: group.id
+              gameKey: config.DEFAULT_GAME_KEY
         }, {skipMe: true, meUserId: user.id}).catch -> null
 
       groupIds = user.data.groupIds or []
@@ -182,7 +188,7 @@ class GroupCtrl
 
     CacheService.preferCache key, ->
       (if filter is 'mine'
-        GroupUser.getAllByUserId user.id
+        GroupUser.getAllByUserId user.id, {preferCache: true}
         .map ({groupId}) -> groupId
         .then (groupIds) ->
           Group.getAllByIds groupIds
@@ -205,7 +211,7 @@ class GroupCtrl
 
       .map Group.sanitize null
     , {
-      expireSeconds: FIVE_MINUTES_SECONDS
+      expireSeconds: THIRTY_MINUTES_SECONDS
       category: category
     }
 

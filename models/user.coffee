@@ -3,6 +3,7 @@ uuid = require 'node-uuid'
 PcgRandom = require 'pcg-random'
 
 r = require '../services/rethinkdb'
+CacheService = require '../services/cache'
 UserData = require './user_data'
 schemas = require '../schemas'
 config = require '../config'
@@ -10,6 +11,7 @@ config = require '../config'
 USERS_TABLE = 'users'
 USERNAME_INDEX = 'username'
 PUSH_TOKEN_INDEX = 'pushToken'
+SIX_HOURS_S = 3600 * 6
 
 # TODO: migrate to scylla/cassandra
 # users_by_id
@@ -47,11 +49,18 @@ class UserModel
     }
   ]
 
-  getById: (id) ->
-    r.table USERS_TABLE
-    .get id
-    .run()
-    .then defaultUser
+  getById: (id, {preferCache} = {}) ->
+    get = ->
+      r.table USERS_TABLE
+      .get id
+      .run()
+      .then defaultUser
+
+    if preferCache
+      cacheKey = "#{CacheService.PREFIXES.USER_ID}:#{id}"
+      CacheService.preferCache cacheKey, get, {expireSeconds: SIX_HOURS_S}
+    else
+      get()
 
   getLastActiveByIds: (ids) ->
     r.table USERS_TABLE
@@ -81,23 +90,27 @@ class UserModel
     .run()
     .map defaultUser
 
-  getOrCreateVerifiedByPlayerTag: (playerTag) ->
-    null
-    # TODO
-
   updateById: (id, diff) ->
     r.table USERS_TABLE
     .get id
     .update diff
     .run()
-    .then -> null
+    .tap ->
+      cacheKey = "#{CacheService.PREFIXES.USER_ID}:#{id}"
+      CacheService.deleteByKey cacheKey
+    .then ->
+      null
 
   updateSelf: (id, diff) ->
     r.table USERS_TABLE
     .get id
     .update diff
     .run()
-    .then -> null
+    .tap ->
+      cacheKey = "#{CacheService.PREFIXES.USER_ID}:#{id}"
+      CacheService.deleteByKey cacheKey
+    .then ->
+      null
 
   create: (user) ->
     user = defaultUser user

@@ -437,14 +437,18 @@ class ClashRoyalePlayerService
             #{_.startCase(nextGoodChest?.name)}."
 
         unless _.isEmpty player.userIds
-          Promise.map player.userIds, User.getById
+          Promise.map player.userIds, (userId) ->
+            User.getById userId, {preferCache: true}
           .map (user) ->
             PushNotificationService.send user, {
               title: 'Daily recap'
               type: PushNotificationService.TYPES.DAILY_RECAP
               url: "https://#{config.SUPERNOVA_HOST}"
               text: text
-              data: {path: '/'}
+              data:
+                path:
+                  key: 'home'
+                  gameKey: config.DEFAULT_GAME_KEY
             }
         null
 
