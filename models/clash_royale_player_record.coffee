@@ -2,7 +2,6 @@ _ = require 'lodash'
 uuid = require 'node-uuid'
 moment = require 'moment'
 
-knex = require '../services/knex'
 cknex = require '../services/cknex'
 config = require '../config'
 
@@ -107,42 +106,5 @@ class PlayerRecordModel
       q
     else
       q.run()
-
-  migrate: (playerId) ->
-    # console.log 'migratepr'
-    knex.select().table 'player_records'
-    .where {playerId}
-    .map (record) ->
-      delete record.id
-      record
-    .then (playerRecords) ->
-      # console.log 'migrate pr', playerRecords?.length
-      if _.isEmpty playerRecords
-        return Promise.resolve null
-
-      chunks = cknex.chunkForBatch playerRecords
-      Promise.all _.map chunks, (chunk) ->
-        cknex.batchRun _.map chunk, (playerRecord) ->
-          playerRecord = defaultPlayerRecord playerRecord
-          cknex().update 'player_records_by_playerId'
-          .set _.omit playerRecord, [
-            'playerId', 'gameRecordTypeId', 'scaledTime'
-          ]
-          .where 'playerId', '=', playerRecord.playerId
-          .andWhere 'gameRecordTypeId', '=', playerRecord.gameRecordTypeId
-          .andWhere 'scaledTime', '=', playerRecord.scaledTime
-        .catch (err) ->
-          console.log err
-          null
-        # console.log 'migrate records err', playerId
-    # .then ->
-    # don't need to delete these since they just overwrite if called twice
-    #   knex 'player_records'
-    #   .where {playerId}
-    #   .delete()
-    #   .then ->
-    #     console.log 'deleted'
-    #   .catch (err) ->
-    #     console.log 'delete err', err
 
 module.exports = new PlayerRecordModel()

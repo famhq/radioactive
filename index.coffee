@@ -39,7 +39,6 @@ Joi = require 'joi'
 config = require './config'
 routes = require './routes'
 r = require './services/rethinkdb'
-knex = require './services/knex'
 cknex = require './services/cknex'
 RethinkSetupService = require './services/rethink_setup'
 PostgresSetupService = require './services/postgres_setup'
@@ -222,11 +221,6 @@ app.get '/updateAutoRefreshDebug', (req, res) ->
 app.get '/videoDiscovery', (req, res) ->
   VideoDiscoveryService.discover()
   res.status(200).send()
-
-# app.get '/migrate', (req, res) ->
-#   ClashRoyalePlayer = require './models/clash_royale_player'
-#   ClashRoyalePlayer.migrateAll()
-#   res.status(200).send()
 
 app.get '/cleanKueFailed', (req, res) ->
   KueCreateService = require './services/kue_create'

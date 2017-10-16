@@ -4,7 +4,6 @@ Promise = require 'bluebird'
 moment = require 'moment'
 
 r = require '../services/rethinkdb'
-knex = require '../services/knex'
 cknex = require '../services/cknex'
 CacheService = require '../services/cache'
 config = require '../config'
@@ -220,79 +219,5 @@ class ClashRoyalePlayerModel
       return q
 
     q.run()
-
-  migrate: (playerId) ->
-    # console.log 'migrate player'
-    createGameType = (player, gameType) ->
-      splits = player?.data?.splits?[gameType]
-      if splits
-        cknex().update 'counter_by_playerId'
-        .increment 'wins', splits?.wins or 0
-        .increment 'losses', splits?.losses or 0
-        .increment 'draws', splits?.draws or 0
-        .increment 'crownsEarned', splits?.crownsEarned or 0
-        .increment 'crownsLost', splits?.crownsLost or 0
-        .where 'playerId', '=', playerId
-        .andWhere 'scaledTime', '=', 'all'
-        .andWhere 'gameType', '=', gameType
-
-    knex.table 'players'
-    .first '*'
-    .where {id: playerId}
-    .then (player) ->
-      if player and not player.data?.hasMigrated
-        cknex.batchRun _.filter [
-          createGameType player, 'PvP'
-          createGameType player, '2v2'
-          createGameType player, 'classicChallenge'
-          createGameType player, 'grandChallenge'
-        ]
-        .then ->
-          knex.table 'players'
-          .where {id: playerId}
-          .update {
-            data: _.defaults {hasMigrated: true}, player.data
-          }
-
-
-  # migrateAll: (order) =>
-  #   start = Date.now()
-  #   Promise.all [
-  #     CacheService.get 'migrate_players_min_id5'
-  #     .then (minId) =>
-  #       minId ?= '0'
-  #       knex('players').select '*'
-  #       .where {updateFrequency: 'default'}
-  #       .andWhere 'id', '>', minId
-  #       .orderBy 'id', 'asc'
-  #       .limit 125
-  #       .then (players) =>
-  #         # console.log 'players', players.length
-  #         @batchUpsert players
-  #         .catch (err) ->
-  #           console.log err
-  #         .then ->
-  #           console.log 'time', Date.now() - start, minId
-  #           CacheService.set 'migrate_players_min_id5', _.last(players).id
-  #
-  #     CacheService.get 'migrate_players_max_id6'
-  #     .then (maxId) =>
-  #       maxId ?= 'ZZZZZZZZZZZZZZZZZZZZZ'
-  #       knex('players').select '*'
-  #       .where {updateFrequency: 'default'}
-  #       .andWhere 'id', '<', maxId
-  #       .orderBy 'id', 'desc'
-  #       .limit 125
-  #       .then (players) =>
-  #         # console.log 'playersrev', players.length
-  #         @batchUpsert players
-  #         .catch (err) ->
-  #           console.log err
-  #         .then ->
-  #           console.log 'timerev', Date.now() - start, maxId
-  #           CacheService.set 'migrate_players_max_id6', _.last(players).id
-  #   ]
-  #   .then =>
-  #     @migrateAll()
 
 module.exports = new ClashRoyalePlayerModel()

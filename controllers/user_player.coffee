@@ -23,12 +23,6 @@ class GameRecordTypeCtrl
     embed = _.map embed, (item) ->
       EmbedService.TYPES.GAME_RECORD_TYPE[_.snakeCase(item).toUpperCase()]
 
-    # TODO: rm ~mid sept
-    # key = "#{CacheService.PREFIXES.USER_RECORDS_MIGRATE}:#{playerId}"
-    # CacheService.runOnce key, ->
-    #   if user.joinTime?.getTime() < 1504620997117 # sept 5
-    #     ClashRoyalePlayerRecord.migrateUserRecords playerId
-    # .then ->
     GameRecordType.getAllByGameId gameId
     Promise.resolve([
       {

@@ -29,23 +29,12 @@ class ClashRoyalePlayerDeckCtrl
           playerId is player.id
         router.throw {status: 403, info: 'profile is private'}
 
-      # TODO: rm ~early nov
-      key = "pdmigrate16:#{player.id}"
-      CacheService.runOnce key, ->
-        if user.joinTime?.getTime() < 1507108006320 # oct 3
-          ClashRoyalePlayerDeck.migrate player.id
-      .then ->
-        ClashRoyalePlayerDeck.getAllByPlayerId playerId, {sort, type}
+      ClashRoyalePlayerDeck.getAllByPlayerId playerId, {sort, type}
       .map EmbedService.embed {embed: defaultEmbed}
       .map ClashRoyalePlayerDeck.sanitize null
 
   getByDeckIdAndPlayerId: ({deckId, playerId}, {user}) ->
-    # TODO: rm ~early nov
-    key = "pdmigrate16:#{playerId}"
-    CacheService.runOnce key, ->
-      ClashRoyalePlayerDeck.migrate playerId
-    .then ->
-      ClashRoyalePlayerDeck.getByDeckIdAndPlayerId deckId, playerId
+    ClashRoyalePlayerDeck.getByDeckIdAndPlayerId deckId, playerId
     .then EmbedService.embed {embed: defaultEmbed}
     .then ClashRoyalePlayerDeck.sanitize null
 

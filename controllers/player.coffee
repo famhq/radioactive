@@ -38,17 +38,6 @@ class PlayerCtrl
 
     # TODO: cache, but need to clear the cache whenever player is updated...
     Player.getByUserIdAndGameId userId, gameId #, {preferCache: true}
-    .tap (player) ->
-      # TODO: rm ~early nov
-      if player
-        key = "playermigrate7:#{player.id}"
-        CacheService.runOnce key, ->
-          if user.joinTime?.getTime() < 1507106200492 # oct 3
-            ClashRoyalePlayer.migrate player.id
-            .then ->
-              Player.getByPlayerIdAndGameId player.id, gameId
-
-
     .then EmbedService.embed {embed: defaultEmbed}
 
   getIsAutoRefreshByPlayerIdAndGameId: ({playerId, gameId}) ->

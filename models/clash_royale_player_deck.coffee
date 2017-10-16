@@ -2,7 +2,6 @@ _ = require 'lodash'
 Promise = require 'bluebird'
 uuid = require 'node-uuid'
 
-knex = require '../services/knex'
 cknex = require '../services/cknex'
 CacheService = require '../services/cache'
 config = require '../config'
@@ -150,70 +149,6 @@ class ClashRoyalePlayerDeckModel
       return Promise.resolve null
 
     @getAll {limit, sort, type, playerId}
-
-  migrate: (playerId) ->
-    knex.table 'players'
-    .first '*'
-    .where {id: playerId}
-    .then (player) ->
-      (if not player?.data?.hasMigratedDecks
-        knex 'player_decks'
-        .select()
-        .where {playerId}
-        .map (playerDeck) ->
-          delete playerDeck.id
-          delete playerDeck.isFavorited
-          delete playerDeck.deckIdPlayerId
-          _.defaults {
-            type: 'all'
-          }, playerDeck
-        .then (playerDecks) ->
-          playerDecks = _.filter playerDecks, ({deckId}) ->
-            deckId.indexOf('|') isnt -1
-          chunks = cknex.chunkForBatch playerDecks
-          Promise.all _.map chunks, (chunk) ->
-            cknex.batchRun _.map chunk, ({playerId, deckId, type, lastUpdateTime} = {}) ->
-              cknex().update 'player_decks_by_playerId'
-              .set {lastUpdateTime}
-              .where 'playerId', '=', playerId
-              .andWhere 'gameType', '=', type
-              .andWhere 'deckId', '=', deckId
-              .usingTTL ONE_MONTH_SECONDS
-            cknex.batchRun _.map chunk, ({playerId, deckId, type, wins, losses, draws} = {}) ->
-              cknex().update 'counter_by_playerId_deckId'
-              .increment 'wins', wins
-              .increment 'losses', losses
-              .increment 'draws', draws
-              .where 'playerId', '=', playerId
-              .andWhere 'gameType', '=', type
-              .andWhere 'deckId', '=', deckId
-            cknex.batchRun _.map chunk, ({playerId, deckId, type, wins, losses, draws} = {}) ->
-              cknex().update 'counter_by_deckId'
-              .increment 'wins', wins
-              .increment 'losses', losses
-              .increment 'draws', draws
-              .andWhere 'gameType', '=', type
-              .andWhere 'arena', '=', 0
-              .andWhere 'deckId', '=', deckId
-      else
-        Promise.resolve null)
-      # .catch (err) ->
-      #   console.log 'migrate deck err', err
-      .then ->
-        knex.table 'players'
-        .where {id: playerId}
-        .update {
-          data: _.defaults {hasMigratedDecks: true}, player.data
-        }
-        # knex 'player_decks'
-        # .where {playerId}
-        # .delete()
-        # .then ->
-        #   console.log 'deleted'
-        # .catch (err) ->
-        #   console.log 'delete err', err
-    .catch (err) ->
-      console.log 'caughtmig', err
 
   sanitize: _.curry (requesterId, clashRoyalePlayerDeck) ->
     _.pick clashRoyalePlayerDeck, [
