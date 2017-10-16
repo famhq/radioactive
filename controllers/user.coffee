@@ -179,20 +179,20 @@ class UserCtrl
 
     Promise.all [
       ImageService.uploadImage
-        key: "#{keyPrefix}.original.png"
+        key: "#{keyPrefix}.original.jpg"
         stream: ImageService.toStream
           buffer: file.buffer
           quality: 100
 
       ImageService.uploadImage
-        key: "#{keyPrefix}.small.png"
+        key: "#{keyPrefix}.small.jpg"
         stream: ImageService.toStream
           buffer: file.buffer
           width: AVATAR_SMALL_IMAGE_WIDTH
           height: AVATAR_SMALL_IMAGE_HEIGHT
 
       ImageService.uploadImage
-        key: "#{keyPrefix}.large.png"
+        key: "#{keyPrefix}.large.jpg"
         stream: ImageService.toStream
           buffer: file.buffer
           width: AVATAR_LARGE_IMAGE_WIDTH

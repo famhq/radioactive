@@ -26,7 +26,7 @@ class ImageService
 
   toStream: ({buffer, path, width, height, quality, type, useMin}) ->
     quality ?= DEFAULT_IMAGE_QUALITY
-    type ?= 'png'
+    type ?= 'jpg'
 
     image = gm(buffer or path)
 
@@ -50,7 +50,7 @@ class ImageService
 
   # Note: images are never removed from s3
   uploadImage: ({key, stream, contentType}) ->
-    contentType ?= 'image/png'
+    contentType ?= 'image/jpg'
 
     bucket = new AWSService.S3()
 

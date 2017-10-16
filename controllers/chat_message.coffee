@@ -218,7 +218,7 @@ class ChatMessageCtrl
 
       Promise.all [
         ImageService.uploadImage
-          key: "#{keyPrefix}.small.png"
+          key: "#{keyPrefix}.small.jpg"
           stream: ImageService.toStream
             buffer: file.buffer
             width: smallWidth
@@ -226,7 +226,7 @@ class ChatMessageCtrl
             useMin: true
 
         ImageService.uploadImage
-          key: "#{keyPrefix}.large.png"
+          key: "#{keyPrefix}.large.jpg"
           stream: ImageService.toStream
             buffer: file.buffer
             width: smallWidth * 5
