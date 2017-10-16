@@ -164,9 +164,11 @@ class ClashRoyaleCardModel
 
       r.table CLASH_ROYALE_CARD_TABLE
       .orderBy sortQ
-      .filter r.row('key').ne('blank')
       .run()
       .map defaultClashRoyaleCard
+      .then (cards) ->
+        _.filter cards, ({key}) ->
+          not (key in ['blank', 'golemite', 'lava_pup'])
 
     if preferCache
       prefix = CacheService.PREFIXES.CLASH_ROYALE_CARD_ALL

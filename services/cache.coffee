@@ -32,7 +32,7 @@ PREFIXES =
   CLASH_ROYALE_MATCHES_ID_EXISTS: 'clash_royale_matches:id:exists2'
   CLASH_ROYALE_INVALID_TAG: 'clash_royale:invalid_tag'
   CLASH_ROYALE_CARD: 'clash_royale_card2'
-  CLASH_ROYALE_CARD_ALL: 'clash_royale_card:all1'
+  CLASH_ROYALE_CARD_ALL: 'clash_royale_card:all2'
   CLASH_ROYALE_CARD_KEY: 'clash_royale_card_key3'
   CLASH_ROYALE_CARD_TOP: 'clash_royal_card:top'
   CLASH_ROYALE_CARD_RANK: 'clash_royal_card:rank'
