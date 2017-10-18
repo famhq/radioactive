@@ -52,7 +52,7 @@ class UserModel
   getById: (id, {preferCache} = {}) ->
     get = ->
       r.table USERS_TABLE
-      .get id
+      .get "#{id}"
       .run()
       .then defaultUser
 

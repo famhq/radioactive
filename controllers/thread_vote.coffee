@@ -1,0 +1,48 @@
+_ = require 'lodash'
+router = require 'exoid-router'
+Promise = require 'bluebird'
+
+r = require '../services/rethinkdb'
+Thread = require '../models/thread'
+ThreadComment = require '../models/thread_comment'
+ThreadVote = require '../models/thread_vote'
+config = require '../config'
+
+class ThreadVoteCtrl
+  upsertByParent: ({parent, vote}, {user}) ->
+    ThreadVote.getByCreatorIdAndParent user.id, parent
+    .then (existingVote) ->
+      voteNumber = if vote is 'up' then 1 else -1
+
+      hasVotedUp = existingVote?.vote is 1
+      hasVotedDown = existingVote?.vote is -1
+      if existingVote and voteNumber is existingVote.vote
+        router.throw status: 400, info: 'already voted'
+
+      if vote is 'up'
+        diff = {upvotes: r.row('upvotes').add(1)}
+        values = {upvotes: 1}
+        if hasVotedDown
+          diff.downvotes = r.row('downvotes').sub(1)
+          values.downvotes = -1
+      else if vote is 'down'
+        diff = {downvotes: r.row('downvotes').add(1)}
+        values = {downvotes: 1}
+        if hasVotedUp
+          diff.upvotes = r.row('upvotes').sub(1)
+          values.upvotes = -1
+
+      voteTime = existingVote?.time or new Date()
+
+      Promise.all [
+        ThreadVote.upsertByCreatorIdAndParent(
+          user.id, parent, {vote: voteNumber}
+        )
+
+        if parent.type is 'thread'
+          Thread.updateById parent.id, diff
+        else
+          ThreadComment.voteByThreadComment parent, values
+      ]
+
+module.exports = new ThreadVoteCtrl()

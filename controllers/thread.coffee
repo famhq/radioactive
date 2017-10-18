@@ -163,42 +163,6 @@ class ThreadCtrl
         router.throw status: 400, info: 'no permission'
       diff
 
-  voteById: ({id, vote}, {user}) ->
-    Promise.all [
-      Thread.getById id
-      ThreadVote.getByCreatorIdAndParent user.id, id, 'thread'
-    ]
-    .then ([thread, existingVote]) ->
-      voteNumber = if vote is 'up' then 1 else -1
-
-      hasVotedUp = existingVote?.vote is 1
-      hasVotedDown = existingVote?.vote is -1
-      if existingVote and voteNumber is existingVote.vote
-        router.throw status: 400, info: 'already voted'
-
-      if vote is 'up'
-        diff = {upvotes: r.row('upvotes').add(1)}
-        if hasVotedDown
-          diff.downvotes = r.row('downvotes').sub(1)
-      else if vote is 'down'
-        diff = {downvotes: r.row('downvotes').add(1)}
-        if hasVotedUp
-          diff.upvotes = r.row('upvotes').sub(1)
-
-      Promise.all [
-        if existingVote
-          ThreadVote.updateById existingVote.id, {vote: voteNumber}
-        else
-          ThreadVote.create {
-            creatorId: user.id
-            parentId: id
-            parentType: 'thread'
-            vote: voteNumber
-          }
-
-        Thread.updateById id, diff
-      ]
-
   getAll: ({categories, language, sort, skip, limit, gameId}, {user}) ->
     gameId ?= config.CLASH_ROYALE_ID
     if not language in config.COMMUNITY_LANGUAGES and
@@ -245,14 +209,14 @@ class ThreadCtrl
       category: CacheService.PREFIXES.THREADS
     }
     .then (threads) ->
-      ThreadVote.getAllByCreatorIdAndParents(
-        _.map threads, ({id}) ->
-          [user.id, id, 'thread']
-      )
+      if _.isEmpty threads
+        return threads
+      parents = _.map threads, ({id}) -> {type: 'thread', id}
+      ThreadVote.getAllByCreatorIdAndParents user.id, parents
       .then (threadVotes) ->
         threads = _.map threads, (thread) ->
-          if myVote = _.find threadVotes, {parentId: thread.id}
-            thread.myVote = myVote
+          thread.myVote = _.find threadVotes, ({parentId}) ->
+            "#{parentId}" is thread.id
           thread
         threads
 
@@ -270,11 +234,7 @@ class ThreadCtrl
       .then Thread.sanitize null
     , {expireSeconds: ONE_MINUTE_SECONDS}
     .then (thread) ->
-      ThreadVote.getByCreatorIdAndParent(
-        user.id
-        id
-        'thread'
-      )
+      ThreadVote.getByCreatorIdAndParent user.id, {id, type: 'thread'}
       .then (myVote) ->
         thread.myVote = myVote
         thread

@@ -33,6 +33,7 @@ class ClashRoyalePlayerModel
     @SCYLLA_TABLES = [
       {
         name: 'players_by_id'
+        keyspace: 'clash_royale'
         fields:
           id: 'text'
           data: 'text'
@@ -44,6 +45,7 @@ class ClashRoyalePlayerModel
       }
       {
         name: 'counter_by_playerId'
+        keyspace: 'clash_royale'
         fields:
           playerId: 'text'
           scaledTime: 'text'
@@ -59,6 +61,7 @@ class ClashRoyalePlayerModel
       }
       {
         name: 'auto_refresh_playerIds'
+        keyspace: 'clash_royale'
         fields:
           bucket: 'text'
           # playerIds overwhelmingly start with '2', but the last character is
@@ -129,7 +132,7 @@ class ClashRoyalePlayerModel
 
     countQueries = _.map playerIdCnt, (diff, key) ->
       [playerId, scaledTime, gameType] = key.split ','
-      q = cknex().update 'counter_by_playerId'
+      q = cknex('clash_royale').update 'counter_by_playerId'
       _.forEach diff, (amount, key) ->
         q = q.increment key, amount
       q.where 'playerId', '=', playerId
@@ -147,7 +150,7 @@ class ClashRoyalePlayerModel
 
   setAutoRefreshById: (id) ->
     reversedPlayerId = id.split('').reverse().join('')
-    cknex().update 'auto_refresh_playerIds'
+    cknex('clash_royale').update 'auto_refresh_playerIds'
     .set 'playerId', id # refreshes ttl if it exists
     .where 'bucket', '=', reversedPlayerId.substr(0, 1)
     .where 'reversedPlayerId', '=', reversedPlayerId
@@ -158,14 +161,14 @@ class ClashRoyalePlayerModel
     unless id
       return Promise.resolve null
     reversedPlayerId = id.split('').reverse().join('')
-    cknex().select '*'
+    cknex('clash_royale').select '*'
     .where 'bucket', '=', reversedPlayerId.substr(0, 1)
     .andWhere 'reversedPlayerId', '=', reversedPlayerId
     .from 'auto_refresh_playerIds'
     .run {isSingle: true}
 
   getAutoRefresh: (minReversedPlayerId) ->
-    cknex().select '*'
+    cknex('clash_royale').select '*'
     .where 'bucket', '=', minReversedPlayerId.substr(0, 1)
     .andWhere 'reversedPlayerId', '>', minReversedPlayerId
     .limit 1000 # TODO: var
@@ -173,7 +176,7 @@ class ClashRoyalePlayerModel
     .run()
 
   getCountersByPlayerIdAndScaledTime: (playerId, scaledTime) ->
-    cknex().select '*'
+    cknex('clash_royale').select '*'
     .where 'playerId', '=', playerId
     .andWhere 'scaledTime', '=', scaledTime
     .from 'counter_by_playerId'
@@ -182,7 +185,7 @@ class ClashRoyalePlayerModel
 
   getById: (id, {preferCache} = {}) ->
     get = ->
-      cknex().select '*'
+      cknex('clash_royale').select '*'
       .where 'id', '=', id
       .from 'players_by_id'
       .run {isSingle: true}
@@ -196,7 +199,7 @@ class ClashRoyalePlayerModel
       get()
 
   getAllByIds: (ids, {preferCache} = {}) ->
-    cknex().select '*'
+    cknex('clash_royale').select '*'
     .where 'id', 'in', ids
     .from 'players_by_id'
     .run()
@@ -211,7 +214,7 @@ class ClashRoyalePlayerModel
     if typeof diff.data is 'object'
       diff.data = JSON.stringify diff.data
 
-    q = cknex().update 'players_by_id'
+    q = cknex('clash_royale').update 'players_by_id'
     .set diff
     .where 'id', '=', id
 

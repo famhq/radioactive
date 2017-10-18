@@ -11,10 +11,6 @@ config = require '../config'
 SIX_HOURS_S = 3600 * 6
 
 ###
-CREATE KEYSPACE clash_royale WITH replication = {
-  'class': 'NetworkTopologyStrategy', 'datacenter1': '3'
-} AND durable_writes = true;
-
 - may need to change pk to (playerId, bucket) where bucket is some amount
  of time that keeps partition size to < 100mb.
 - 1 match = ~10kb. 10,000 matches = 100mb.
@@ -25,6 +21,7 @@ CREATE KEYSPACE clash_royale WITH replication = {
 tables = [
   {
     name: 'matches_by_playerId'
+    keyspace: 'clash_royale'
     fields:
       playerId: 'text'
       time: 'timestamp'
@@ -72,7 +69,7 @@ class ClashRoyaleMatchModel
     chunks = cknex.chunkForBatch matches
     Promise.all _.map chunks, (chunk) ->
       cknex.batchRun _.map chunk, (match) ->
-        cknex().insert match
+        cknex('clash_royale').insert match
         .usingTTL 3600 * 24 * 30 # 1 month
         .into 'matches_by_playerId'
 
@@ -84,7 +81,7 @@ class ClashRoyaleMatchModel
     else
       Promise.resolve null)
     .then (cursorValue) ->
-      cknex().select '*'
+      cknex('clash_royale').select '*'
       .where 'playerId', '=', playerId
       # .limit limit
       .from 'matches_by_playerId'
@@ -105,7 +102,7 @@ class ClashRoyaleMatchModel
 
   existsByPlayerIdAndTime: (playerId, time, {preferCache} = {}) ->
     get = ->
-      cknex().select '*'
+      cknex('clash_royale').select '*'
       .where 'playerId', '=', playerId
       .andWhere 'time', '=', time
       .from 'matches_by_playerId'

@@ -10,17 +10,28 @@ config = require '../config'
 class ScyllaSetupService
   setup: (tables) =>
     CacheService.runOnce 'scylla_setup', =>
-      @createKeyspaceIfNotExists config.SCYLLA.KEYSPACE
+      Promise.all [
+        @createKeyspaceIfNotExists 'starfire'
+        @createKeyspaceIfNotExists 'clash_royale'
+      ]
       .then =>
         Promise.each tables, @createTableIfNotExist
     , {expireSeconds: 300}
 
   createKeyspaceIfNotExists: (keyspaceName) ->
     # TODO
+    ###
+    CREATE KEYSPACE clash_royale WITH replication = {
+      'class': 'NetworkTopologyStrategy', 'datacenter1': '3'
+    } AND durable_writes = true;
+    CREATE KEYSPACE starfire WITH replication = {
+      'class': 'NetworkTopologyStrategy', 'datacenter1': '3'
+    } AND durable_writes = true;
+    ###
     Promise.resolve null
 
   createTableIfNotExist: (table) ->
-    q = cknex().createColumnFamilyIfNotExists table.name
+    q = cknex(table.keyspace).createColumnFamilyIfNotExists table.name
     _.map table.fields, (type, key) ->
       q[type] key
 

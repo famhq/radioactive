@@ -14,6 +14,7 @@ ONE_MONTH_SECONDS = 3600 * 24 * 30
 tables = [
   {
     name: 'counter_by_playerId_deckId'
+    keyspace: 'clash_royale'
     fields:
       playerId: 'text'
       deckId: 'text'
@@ -28,6 +29,7 @@ tables = [
   {
     # ttl 30 days so we only sort through decks used in last 30 days
     name: 'player_decks_by_playerId'
+    keyspace: 'clash_royale'
     fields:
       playerId: 'text'
       gameType: 'text'
@@ -83,7 +85,7 @@ class ClashRoyalePlayerDeckModel
 
     deckIdQueries = _.map playerIdDeckIdCnt, (diff, key) ->
       [playerId, deckId, gameType] = key.split ','
-      cknex().update 'player_decks_by_playerId'
+      cknex('clash_royale').update 'player_decks_by_playerId'
       .set {lastUpdateTime: now}
       .where 'playerId', '=', playerId
       .andWhere 'gameType', '=', gameType
@@ -92,7 +94,7 @@ class ClashRoyalePlayerDeckModel
 
     countQueries = _.map playerIdDeckIdCnt, (diff, key) ->
       [playerId, deckId, gameType] = key.split ','
-      q = cknex().update 'counter_by_playerId_deckId'
+      q = cknex('clash_royale').update 'counter_by_playerId_deckId'
       _.forEach diff, (amount, key) ->
         q = q.increment key, amount
       q.where 'playerId', '=', playerId
@@ -108,7 +110,7 @@ class ClashRoyalePlayerDeckModel
   getByDeckIdAndPlayerId: (deckId, playerId) ->
     unless playerId and deckId
       return Promise.resolve null
-    cknex().select '*'
+    cknex('clash_royale').select '*'
     .where 'gameType', '=', 'all'
     .andWhere 'deckId', '=', deckId
     .andWhere 'playerId', '=', playerId
@@ -121,13 +123,13 @@ class ClashRoyalePlayerDeckModel
     limit ?= 10
 
     Promise.all [
-      cknex().select '*'
+      cknex('clash_royale').select '*'
       .where 'playerId', '=', playerId
       .andWhere 'gameType', '=', type
       .from 'player_decks_by_playerId'
       .run()
 
-      q = cknex().select '*'
+      q = cknex('clash_royale').select '*'
       .where 'playerId', '=', playerId
       .andWhere 'gameType', '=', type
       .from 'counter_by_playerId_deckId'

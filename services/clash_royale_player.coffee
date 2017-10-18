@@ -340,7 +340,7 @@ class ClashRoyalePlayerService
       if clan?.groupId
         Group.addUser clan.groupId, userId
       if not clan?.data and clanId
-        ClashRoyaleClanService.updateByClanId clanId, {userId}
+        ClashRoyaleClanService.updateClanById clanId, {userId}
         .timeout CLAN_TIMEOUT_MS
         .catch (err) ->
           console.log 'clan refresh err', err

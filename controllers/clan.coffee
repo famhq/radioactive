@@ -27,19 +27,32 @@ groupEmbed = [
 GAME_ID = config.CLASH_ROYALE_ID
 TWELVE_HOURS_SECONDS = 12 * 3600
 ONE_MINUTE_SECONDS = 60
+MAX_CLAN_STALE_TIME_MS = 60 * 60 * 1000 # 1hr
+GET_UPDATED_CLAN_TIMEOUT_MS = 15000 # 15s
 
 class ClanCtrl
-  getById: ({id}, {user}) ->
-    Clan.getByClanIdAndGameId id, GAME_ID
+  # legacy
+  getById: ({id}, {user}) =>
+    @getByClanIdAndGameId {clanId: id, gameId: GAME_ID}, {user}
+  # end legacy
+
+  getByClanIdAndGameId: ({clanId, gameId, refreshIfStale}, {user}) ->
+    getUpdatedClan = ->
+      ClashRoyaleClanService.updateClanById clanId, {priority: 'normal'}
+      .then -> Clan.getByClanIdAndGameId clanId, gameId
+
+    Clan.getByClanIdAndGameId clanId, gameId
     .then (clan) ->
       if clan
-        return clan
+        staleMs = Date.now() - clan.lastUpdateTime?.getTime()
+        if not refreshIfStale or staleMs < MAX_CLAN_STALE_TIME_MS
+          return clan
+        else
+          getUpdatedClan().timeout GET_UPDATED_CLAN_TIMEOUT_MS
+          .catch (err) ->
+            clan
       else
-        ClashRoyaleClanService.updateByClanId id, {
-          priority: 'normal'
-        }
-        .then ->
-          Clan.getByClanIdAndGameId id, GAME_ID
+        getUpdatedClan()
     .then EmbedService.embed {embed: defaultEmbed}
     .then (clan) ->
       if clan?.creatorId is user.id

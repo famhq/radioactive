@@ -42,6 +42,7 @@ class ClashRoyaleCardModel
   SCYLLA_TABLES: [
     {
       name: 'counter_by_cardId'
+      keyspace: 'clash_royale'
       fields:
         cardId: 'text'
         gameType: 'text'
@@ -88,7 +89,7 @@ class ClashRoyaleCardModel
 
     cardIdQueries = _.map cardIdCnt, (diff, key) ->
       [cardId, gameType, arena] = key.split ','
-      q = cknex().update 'counter_by_cardId'
+      q = cknex('clash_royale').update 'counter_by_cardId'
       _.forEach diff, (amount, key) ->
         q = q.increment key, amount
       q.where 'cardId', '=', cardId
@@ -117,7 +118,7 @@ class ClashRoyaleCardModel
 
   getTop: ({gameType, preferCache} = {}) ->
     get = ->
-      cknex().select '*'
+      cknex('clash_royale').select '*'
       .from 'counter_by_cardId'
       .run()
       .then (allCards) ->

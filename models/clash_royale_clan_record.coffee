@@ -8,6 +8,7 @@ config = require '../config'
 tables = [
   {
     name: 'clan_records_by_clanId'
+    keyspace: 'clash_royale'
     fields:
       clanId: 'text'
       clanRecordTypeId: 'uuid'
@@ -37,7 +38,7 @@ class ClanRecordModel
       return Promise.resolve null
     cknex.batchRun _.map clanRecords, (clanRecord) ->
       clanRecord = defaultClanRecord clanRecord
-      cknex().update 'clan_records_by_clanId'
+      cknex('clash_royale').update 'clan_records_by_clanId'
       .set _.omit clanRecord, ['clanId', 'clanRecordTypeId', 'scaledTime']
       .where 'clanId', '=', clanRecord.clanId
       .andWhere 'clanRecordTypeId', '=', clanRecord.clanRecordTypeId
@@ -55,7 +56,7 @@ class ClanRecordModel
       time.format time.format 'YYYY-MM-DD HH:mm'
 
   getRecord: ({clanRecordTypeId, clanId, scaledTime}) ->
-    cknex().select '*'
+    cknex('clash_royale').select '*'
     .from 'clan_records_by_clanId'
     .where 'clanId', '=', clanId
     .andWhere 'clanRecordTypeId', '=', clanRecordTypeId
@@ -66,7 +67,7 @@ class ClanRecordModel
     {clanRecordTypeId, clanId, minScaledTime, maxScaledTime, limit} = options
     limit ?= 30
 
-    cknex().select '*'
+    cknex('clash_royale').select '*'
     .from 'clan_records_by_clanId'
     .where 'clanId', '=', clanId
     .where 'clanRecordTypeId', '=', clanRecordTypeId
@@ -75,13 +76,13 @@ class ClanRecordModel
     .limit limit
     .run()
 
-  upsert: ({clanId, clanRecordTypeId, scaledTime, diff}) ->
+  upsert: (clanRecord) ->
     clanRecord = defaultClanRecord clanRecord
-    cknex().update 'clan_records_by_clanId'
-    .set _.omit diff, ['clanId', 'clanRecordTypeId', 'scaledTime']
-    .where 'clanId', '=', clanId
-    .andWhere 'clanRecordTypeId', '=', clanRecordTypeId
-    .andWhere 'scaledTime', '=', scaledTime
+    cknex('clash_royale').update 'clan_records_by_clanId'
+    .set _.omit clanRecord, ['clanId', 'clanRecordTypeId', 'scaledTime']
+    .where 'clanId', '=', clanRecord.clanId
+    .andWhere 'clanRecordTypeId', '=', clanRecord.clanRecordTypeId
+    .andWhere 'scaledTime', '=', clanRecord.scaledTime
     .run()
 
 module.exports = new ClanRecordModel()

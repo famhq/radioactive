@@ -2,77 +2,81 @@ _ = require 'lodash'
 
 uuid = require 'node-uuid'
 
-r = require '../services/rethinkdb'
+cknex = require '../services/cknex'
 User = require './user'
 CacheService = require '../services/cache'
+
+DEFAULT_UUID = '00000000-0000-0000-0000-000000000000'
 
 defaultThreadVote = (threadVote) ->
   unless threadVote?
     return null
 
-  id = "#{threadVote.parentId}:#{threadVote.creatorId}"
-
   _.defaults threadVote, {
-    id: id
-    creatorId: null
-    parentId: null
-    parentType: 'thread'
     vote: 0 # -1 or 1
     time: new Date()
   }
 
-THREAD_VOTES_TABLE = 'thread_votes'
-CREATOR_ID_PARENT_ID_PARENT_TYPE_INDEX = 'creatorIdParentIdParentType'
-MAX_MESSAGES = 30
+# with this structure we'd need another table to get votes by parentId
+tables = [
+  {
+    name: 'thread_votes_by_creatorId'
+    keyspace: 'starfire'
+    fields:
+      creatorId: 'uuid'
+      parentTopId: 'uuid' # eg threadId for threadComments
+      parentType: 'text'
+      parentId: 'uuid'
+      vote: 'int'
+      time: 'timestamp'
+    primaryKey:
+      # a little uneven since some users will vote a lot, but small data overall
+      partitionKey: ['creatorId', 'parentTopId', 'parentType']
+      clusteringColumns: ['parentId']
+  }
+]
 
 class ThreadVoteModel
-  RETHINK_TABLES: [
-    {
-      name: THREAD_VOTES_TABLE
-      indexes: [
-        {name: CREATOR_ID_PARENT_ID_PARENT_TYPE_INDEX, fn: (row) ->
-          [row('creatorId'), row('parentId'), row('parentType')]}
-      ]
-    }
-  ]
+  SCYLLA_TABLES: tables
 
-  create: (threadVote) ->
+  upsertByCreatorIdAndParent: (creatorId, parent, threadVote) ->
     threadVote = defaultThreadVote threadVote
 
-    r.table THREAD_VOTES_TABLE
-    .insert threadVote
+    cknex().update 'thread_votes_by_creatorId'
+    .set threadVote
+    .where 'creatorId', '=', creatorId
+    .andWhere 'parentTopId', '=', parent.topId or DEFAULT_UUID
+    .andWhere 'parentType', '=', parent.type
+    .andWhere 'parentId', '=', parent.id
     .run()
     .then ->
       threadVote
 
-  updateById: (id, diff) ->
-    r.table THREAD_VOTES_TABLE
-    .get id
-    .update diff
+  getByCreatorIdAndParent: (creatorId, parent) ->
+    cknex().select '*'
+    .from 'thread_votes_by_creatorId'
+    .where 'creatorId', '=', creatorId
+    .andWhere 'parentType', '=', parent.type
+    .andWhere 'parentTopId', '=', parent.topId or DEFAULT_UUID
+    .andWhere 'parentId', '=', parent.id
+    .run {isSingle: true}
+
+  getAllByCreatorIdAndParentTopId: (creatorId, parentTopId) ->
+    cknex().select '*'
+    .from 'thread_votes_by_creatorId'
+    .where 'creatorId', '=', creatorId
+    .where 'parentTopId', '=', parentTopId
+    .where 'parentType', '=', 'threadComment'
     .run()
 
-  getByCreatorIdAndParent: (creatorId, parentId, parentType) ->
-    r.table THREAD_VOTES_TABLE
-    .getAll [creatorId, parentId, parentType], {
-      index: CREATOR_ID_PARENT_ID_PARENT_TYPE_INDEX
-    }
-    .nth 0
-    .default null
+  getAllByCreatorIdAndParents: (creatorId, parents) ->
+    cknex().select '*'
+    .from 'thread_votes_by_creatorId'
+    .where 'creatorId', '=', creatorId
+    .andWhere 'parentTopId', '=', parents[0].topId or DEFAULT_UUID
+    .andWhere 'parentType', '=', parents[0].type
+    .andWhere 'parentId', 'in', _.map(parents, 'id')
     .run()
-    .then defaultThreadVote
 
-  getAllByCreatorIdAndParents: (creatorIdAndParents) ->
-    r.table THREAD_VOTES_TABLE
-    .getAll r.args(creatorIdAndParents), {
-      index: CREATOR_ID_PARENT_ID_PARENT_TYPE_INDEX
-    }
-    .run()
-    .map defaultThreadVote
-
-  getById: (id) ->
-    r.table THREAD_VOTES_TABLE
-    .get id
-    .run()
-    .then defaultThreadVote
 
 module.exports = new ThreadVoteModel()

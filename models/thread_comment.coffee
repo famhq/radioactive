@@ -1,9 +1,83 @@
 _ = require 'lodash'
+Promise = require 'bluebird'
 
 uuid = require 'node-uuid'
 
-r = require '../services/rethinkdb'
+cknex = require '../services/cknex'
+CacheService = require '../services/cache'
 User = require './user'
+
+tables = [
+  # sorting done in node
+
+  # needs to have at least the keys that are partition keys from
+  # other by_x tables (for updating all counters)
+  {
+    name: 'thread_comments_by_threadId'
+    keyspace: 'starfire'
+    fields:
+      id: 'uuid'
+      threadId: 'uuid'
+      parentType: 'text'
+      parentId: 'uuid'
+      creatorId: 'uuid'
+      body: 'text'
+      timeBucket: 'int'
+      timeUuid: 'timeuuid'
+    primaryKey:
+      partitionKey: ['threadId']
+      clusteringColumns: [ 'parentType', 'parentId', 'timeUuid']
+  }
+  {
+    name: 'thread_comments_counter_by_threadId'
+    keyspace: 'starfire'
+    fields:
+      threadId: 'uuid'
+      parentType: 'text'
+      parentId: 'uuid'
+      timeUuid: 'timeuuid'
+      upvotes: 'counter'
+      downvotes: 'counter'
+    primaryKey:
+      partitionKey: ['threadId']
+      clusteringColumns: [ 'parentType', 'parentId', 'timeUuid']
+  }
+
+
+  {
+    name: 'thread_comments_by_creatorId'
+    keyspace: 'starfire'
+    fields:
+      id: 'uuid'
+      threadId: 'uuid'
+      parentType: 'text'
+      parentId: 'uuid'
+      creatorId: 'uuid'
+      body: 'text'
+      timeBucket: 'int'
+      timeUuid: 'timeuuid'
+    primaryKey:
+      partitionKey: ['creatorId', 'timeBucket']
+      clusteringColumns: ['timeUuid']
+    withClusteringOrderBy: ['timeUuid', 'desc']
+  }
+  {
+    name: 'thread_comments_counter_by_creatorId'
+    keyspace: 'starfire'
+    fields:
+      creatorId: 'uuid'
+      timeBucket: 'int'
+      timeUuid: 'timeuuid'
+      upvotes: 'counter'
+      downvotes: 'counter'
+    primaryKey:
+      partitionKey: ['creatorId', 'timeBucket']
+      clusteringColumns: ['timeUuid']
+    withClusteringOrderBy: ['timeUuid', 'desc']
+  }
+]
+
+ONE_MONTH_MS = 3600 * 24 * 30 * 1000
 
 defaultThreadComment = (threadComment) ->
   unless threadComment?
@@ -11,93 +85,98 @@ defaultThreadComment = (threadComment) ->
 
   _.defaults threadComment, {
     id: uuid.v4()
-    creatorId: null
-    parentId: null
-    parentType: 'thread'
-    body: ''
-    upvotes: 0
-    downvotes: 0
-    time: new Date()
-
+    timeUuid: cknex.getTimeUuid()
+    # 10-17-2017
+    timeBucket: (Date.now() - 1508282095081) % ONE_MONTH_MS
   }
 
-THREAD_COMMENTS_TABLE = 'thread_comments'
-TIME_INDEX = 'time'
-CREATOR_ID_INDEX = 'creatorId'
-PARENT_ID_PARENT_TYPE_TIME_INDEX = 'parentIdParentTypeTime'
-MAX_MESSAGES = 30
-
 class ThreadCommentModel
-  RETHINK_TABLES: [
-    {
-      name: THREAD_COMMENTS_TABLE
-      indexes: [
-        {name: TIME_INDEX}
-        {name: CREATOR_ID_INDEX}
-        {name: PARENT_ID_PARENT_TYPE_TIME_INDEX, fn: (row) ->
-          [row('parentId'), row('parentType'), row('time')]}
-      ]
-    }
-  ]
+  SCYLLA_TABLES: tables
 
-  create: (threadComment) ->
+  upsert: (threadComment) ->
     threadComment = defaultThreadComment threadComment
 
-    r.table THREAD_COMMENTS_TABLE
-    .insert threadComment
-    .run()
+    Promise.all [
+      cknex().update 'thread_comments_by_creatorId'
+      .set _.omit threadComment, [
+        'creatorId', 'timeBucket', 'timeUuid'
+      ]
+      .where 'creatorId', '=', threadComment.creatorId
+      .andWhere 'timeBucket', '=', threadComment.timeBucket
+      .andWhere 'timeUuid', '=', threadComment.timeUuid
+      .run()
+
+
+      cknex().update 'thread_comments_by_threadId'
+      .set _.omit threadComment, [
+        'threadId', 'parentType', 'parentId', 'timeUuid'
+      ]
+      .where 'threadId', '=', threadComment.threadId
+      .andWhere 'parentType', '=', threadComment.parentType
+      .andWhere 'parentId', '=', threadComment.parentId
+      .andWhere 'timeUuid', '=', threadComment.timeUuid
+      .run()
+    ]
+    .then ->
+      threadId = threadComment.threadId
+      key = "#{CacheService.PREFIXES.THREAD_COMMENTS_THREAD_ID}:#{threadId}"
+      CacheService.deleteByKey key
     .then ->
       threadComment
 
-  updateById: (id, diff) ->
-    r.table THREAD_COMMENTS_TABLE
-    .get id
-    .update diff
+  voteByThreadComment: (threadComment, values) ->
+    qByCreatorId = cknex().update 'thread_comments_counter_by_creatorId'
+    _.forEach values, (value, key) ->
+      qByCreatorId = qByCreatorId.increment key, value
+    qByCreatorId = qByCreatorId.where 'creatorId', '=', threadComment.creatorId
+    .andWhere 'timeBucket', '=', threadComment.timeBucket
+    .andWhere 'timeUuid', '=', threadComment.timeUuid
     .run()
 
-  getAll: ->
-    r.table THREAD_COMMENTS_TABLE
-    .orderBy {index: r.desc(TIME_INDEX)}
-    .limit MAX_MESSAGES
-    .filter r.row('toId').default(null).eq(null)
-    .run()
-    .map defaultThreadComment
-
-  getAllByParentIdAndParentType: (parentId, parentType) ->
-    r.table THREAD_COMMENTS_TABLE
-    .between(
-      [parentId, parentType]
-      [parentId + 'Z', parentType + 'Z']
-      {index: PARENT_ID_PARENT_TYPE_TIME_INDEX}
-    )
-    .orderBy {index: r.desc(PARENT_ID_PARENT_TYPE_TIME_INDEX)}
-    .limit 30
-    .run()
-    .map defaultThreadComment
-
-  getCountByParentIdAndParentType: (parentId, parentType) ->
-    r.table THREAD_COMMENTS_TABLE
-    .between(
-      [parentId, parentType]
-      [parentId + 'Z', parentType + 'Z']
-      {index: PARENT_ID_PARENT_TYPE_TIME_INDEX}
-    )
-    .count()
+    qByThreadId = cknex().update 'thread_comments_counter_by_threadId'
+    _.forEach values, (value, key) ->
+      qByThreadId = qByThreadId.increment key, value
+    qByThreadId = qByThreadId.where 'threadId', '=', threadComment.threadId
+    .andWhere 'parentType', '=', threadComment.parentType
+    .andWhere 'parentId', '=', threadComment.parentId
+    .andWhere 'timeUuid', '=', threadComment.timeUuid
     .run()
 
-  getFirstByThreadId: (threadId) ->
-    r.table THREAD_COMMENTS_TABLE
-    .getAll threadId, {index: THREAD_ID_INDEX}
-    .orderBy r.asc(TIME_INDEX)
-    .nth 0
-    .default null
-    .run()
-    .then defaultThreadComment
+    Promise.all [
+      qByCreatorId
+      qByThreadId
+    ]
 
-  getById: (id) ->
-    r.table THREAD_COMMENTS_TABLE
-    .get id
+  getAllByThreadId: (threadId) ->
+    Promise.all [
+      cknex().select '*'
+      .from 'thread_comments_by_threadId'
+      .where 'threadId', '=', threadId
+      .run()
+
+      cknex().select '*'
+      .from 'thread_comments_counter_by_threadId'
+      .where 'threadId', '=', threadId
+      .run()
+    ]
+    .then ([allComments, voteCounts]) ->
+      allComments = _.map allComments, (comment) ->
+        voteCount = _.find voteCounts, {timeUuid: comment.timeUuid}
+        voteCount ?= {upvotes: 0, downvotes: 0}
+        _.merge comment, voteCount
+
+  getCountByThreadId: (threadId) ->
+    cknex().select '*'
+    .from 'thread_comments_by_threadId'
+    .where 'threadId', '=', threadId
     .run()
-    .then defaultThreadComment
+    .then (threads) -> threads.length
+
+  # would need another table to grab by id
+  # getById: (id) ->
+  #   cknex().select '*'
+  #   .from 'thread_comments_by_threadId'
+  #   .where 'id', '=', id
+  #   .run {isSingle: true}
 
 module.exports = new ThreadCommentModel()

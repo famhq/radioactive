@@ -34,20 +34,22 @@ class ClashRoyaleClan
       # players: players
     }
 
+    console.log clan
+
     Clan.getByClanIdAndGameId tag, GAME_ID
     .then (existingClan) ->
       ClashRoyaleClanRecord.upsert {
         clanId: tag
         clanRecordTypeId: config.CLASH_ROYALE_CLAN_DONATIONS_RECORD_ID
         scaledTime: ClashRoyaleClanRecord.getScaledTimeByTimeScale 'week'
-        diff: {value: clan.donations}
+        value: clan.donationsPerWeek
       }
 
       ClashRoyaleClanRecord.upsert {
         clanId: tag
         clanRecordTypeId: config.CLASH_ROYALE_CLAN_TROPHIES_RECORD_ID
         scaledTime: ClashRoyaleClanRecord.getScaledTimeByTimeScale 'week'
-        diff: {value: clan.trophies}
+        value: clan.clanScore
       }
 
       playerIds = _.map clan.memberList, ({tag}) -> tag.replace '#', ''
@@ -108,7 +110,7 @@ class ClashRoyaleClan
         console.log 'clan err', err
 
 
-  updateByClanId: (clanId, {userId, priority} = {}) =>
+  updateClanById: (clanId, {userId, priority} = {}) =>
     ClashRoyaleAPIService.getClanByTag clanId, {priority}
     .then (clan) =>
       @updateClan {userId: userId, tag: clanId, clan}

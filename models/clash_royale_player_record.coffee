@@ -8,6 +8,7 @@ config = require '../config'
 tables = [
   {
     name: 'player_records_by_playerId'
+    keyspace: 'clash_royale'
     fields:
       playerId: 'text'
       gameRecordTypeId: 'uuid'
@@ -71,7 +72,7 @@ class PlayerRecordModel
       time.format time.format 'YYYY-MM-DD HH:mm'
 
   getRecord: ({gameRecordTypeId, playerId, scaledTime}) ->
-    cknex().select '*'
+    cknex('clash_royale').select '*'
     .from 'player_records_by_playerId'
     .where 'playerId', '=', playerId
     .andWhere 'gameRecordTypeId', '=', gameRecordTypeId
@@ -82,7 +83,7 @@ class PlayerRecordModel
     {gameRecordTypeId, playerId, minScaledTime, maxScaledTime, limit} = options
     limit ?= 30
 
-    cknex().select '*'
+    cknex('clash_royale').select '*'
     .from 'player_records_by_playerId'
     .where 'playerId', '=', playerId
     .where 'gameRecordTypeId', '=', gameRecordTypeId
@@ -93,7 +94,7 @@ class PlayerRecordModel
 
   upsert: (playerRecord, {skipRun} = {}) ->
     playerRecord = defaultPlayerRecord playerRecord
-    q = cknex().update 'player_records_by_playerId'
+    q = cknex('clash_royale').update 'player_records_by_playerId'
     .set {
       value: playerRecord.value
       time: playerRecord.time

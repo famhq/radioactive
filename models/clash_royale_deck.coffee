@@ -40,6 +40,7 @@ MAX_RANDOM_NAME_ATTEMPTS = 30
 tables = [
   {
     name: 'counter_by_deckId'
+    keyspace: 'clash_royale'
     fields:
       deckId: 'text'
       gameType: 'text'
@@ -53,6 +54,7 @@ tables = [
   }
   {
     name: 'counter_by_deckId_opponentCardId'
+    keyspace: 'clash_royale'
     fields:
       deckId: 'text'
       opponentCardId: 'text'
@@ -119,7 +121,7 @@ class ClashRoyaleDeckModel
 
     deckIdQueries = _.map deckIdCnt, (diff, key) ->
       [deckId, gameType, arena] = key.split ','
-      q = cknex().update 'counter_by_deckId'
+      q = cknex('clash_royale').update 'counter_by_deckId'
       _.forEach diff, (amount, key) ->
         q = q.increment key, amount
       q.where 'deckId', '=', deckId
@@ -129,7 +131,7 @@ class ClashRoyaleDeckModel
     # deckIdCardIdQueries = _.map deckIdCardIdCnt, (diff, key) ->
     #   [deckId, gameType, arena, cardId] = key.split ','
     #   diff = _.pickBy diff
-    #   q = cknex().update 'counter_by_deckId_opponentCardId'
+    #   q = cknex('clash_royale').update 'counter_by_deckId_opponentCardId'
     #   _.forEach diff, (amount, key) ->
     #     q = q.increment key, amount
     #   q.where 'deckId', '=', deckId
@@ -166,7 +168,7 @@ class ClashRoyaleDeckModel
   #       name
 
   getById: (id) ->
-    cknex().select '*'
+    cknex('clash_royale').select '*'
     .where 'deckId', '=', id
     .andWhere 'gameType', '=', 'all'
     .from 'counter_by_deckId'
@@ -174,7 +176,7 @@ class ClashRoyaleDeckModel
     .then defaultClashRoyaleDeck
 
   getAllByIds: (ids) ->
-    cknex().select '*'
+    cknex('clash_royale').select '*'
     .where 'deckId', 'in', id
     .andWhere 'gameType', '=', 'all'
     .from 'counter_by_deckId'

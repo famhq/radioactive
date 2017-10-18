@@ -11,6 +11,7 @@ SIX_HOURS_S = 3600 * 6
 tables = [
   {
     name: 'clans_by_id'
+    keyspace: 'clash_royale'
     fields:
       id: 'text'
       data: 'text'
@@ -46,7 +47,7 @@ class ClashRoyaleClan
 
   getById: (id, {preferCache} = {}) ->
     get = ->
-      cknex().select '*'
+      cknex('clash_royale').select '*'
       .where 'id', '=', id
       .from 'clans_by_id'
       .run {isSingle: true}
@@ -60,7 +61,7 @@ class ClashRoyaleClan
       get()
 
   getAllByIds: (ids, {preferCache} = {}) ->
-    cknex().select '*'
+    cknex('clash_royale').select '*'
     .where 'id', 'in', ids
     .from 'clans_by_id'
     .run()
@@ -70,7 +71,7 @@ class ClashRoyaleClan
     if typeof diff.data is 'object'
       diff.data = JSON.stringify diff.data
 
-    cknex().update 'clans_by_id'
+    cknex('clash_royale').update 'clans_by_id'
     .set _.omit(diff, ['clanId'])
     .where 'id', '=', id
     .run()

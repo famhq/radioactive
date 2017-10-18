@@ -18,13 +18,14 @@ NpsCtrl = require './controllers/nps'
 PaymentCtrl = require './controllers/payment'
 PushTokenCtrl = require './controllers/push_token'
 PlayerCtrl = require './controllers/player'
-TheadCtrl = require './controllers/thread'
 GroupCtrl = require './controllers/group'
 GroupRecordCtrl = require './controllers/group_record'
 GroupRecordTypeCtrl = require './controllers/group_record_type'
 GameRecordTypeCtrl = require './controllers/game_record_type'
 StarCtrl = require './controllers/star'
+TheadCtrl = require './controllers/thread'
 ThreadCommentCtrl = require './controllers/thread_comment'
+ThreadVoteCtrl = require './controllers/thread_vote'
 UserCtrl = require './controllers/user'
 UserFollowerCtrl = require './controllers/user_follower'
 UserDataCtrl = require './controllers/user_data'
@@ -111,6 +112,14 @@ module.exports = router
 .on 'threads.updateById', authed TheadCtrl.createOrUpdateById
 .on 'threads.deleteById', authed TheadCtrl.deleteById
 
+.on 'threadVotes.upsertByParent',
+  authed ThreadVoteCtrl.upsertByParent
+
+.on 'threadComments.create', authed ThreadCommentCtrl.create
+.on 'threadComments.flag', authed ThreadCommentCtrl.flag
+.on 'threadComments.getAllByThreadId',
+  authed ThreadCommentCtrl.getAllByThreadId
+
 .on 'events.create', authed EventCtrl.create
 .on 'events.updateById', authed EventCtrl.updateById
 .on 'events.getById', authed EventCtrl.getById
@@ -157,15 +166,11 @@ module.exports = router
   authed PlayerCtrl.setAutoRefreshByGameId
 
 .on 'clan.getById', authed ClanCtrl.getById
+.on 'clan.getByClanIdAndGameId', authed ClanCtrl.getByClanIdAndGameId
 .on 'clan.claimById', authed ClanCtrl.claimById
 .on 'clan.joinById', authed ClanCtrl.joinById
 .on 'clan.updateById', authed ClanCtrl.updateById
 # .on 'clan.search', authed ClanCtrl.search
-
-.on 'threadComments.create', authed ThreadCommentCtrl.create
-.on 'threadComments.flag', authed ThreadCommentCtrl.flag
-.on 'threadComments.getAllByParentIdAndParentType',
-  authed ThreadCommentCtrl.getAllByParentIdAndParentType
 
 .on 'payments.verify', authed PaymentCtrl.verify
 .on 'payments.purchase', authed PaymentCtrl.purchase

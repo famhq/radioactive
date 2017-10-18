@@ -28,6 +28,8 @@ GAME_ID = config.CLASH_ROYALE_ID
 TWELVE_HOURS_SECONDS = 12 * 3600
 TEN_MINUTES_SECONDS = 10 * 60
 ONE_MINUTE_SECONDS = 60
+MAX_PLAYER_STALE_TIME_MS = 60 * 60 * 1000 # 1hr
+GET_UPDATED_PLAYER_TIMEOUT_MS = 15000 # 15s
 
 class PlayerCtrl
   getByUserIdAndGameId: ({userId, gameId}, {user}) ->
@@ -43,23 +45,30 @@ class PlayerCtrl
   getIsAutoRefreshByPlayerIdAndGameId: ({playerId, gameId}) ->
     Player.getIsAutoRefreshByPlayerIdAndGameId playerId, gameId
 
-  getByPlayerIdAndGameId: ({playerId, gameId}, {user}) ->
+  getByPlayerIdAndGameId: ({playerId, gameId, refreshIfStale}, {user}) ->
     unless playerId
       return
 
     playerId = ClashRoyaleAPIService.formatHashtag playerId
 
+    getUpdatedPlayer = ->
+      ClashRoyalePlayerService.updatePlayerById playerId, {priority: 'normal'}
+      .then -> Player.getByPlayerIdAndGameId playerId, gameId
+
     # TODO: cache, but need to clear the cache whenever player is updated...
     Player.getByPlayerIdAndGameId playerId, gameId #, {preferCache: true}
     .then (player) ->
       if player
-        return player
+        staleMs = Date.now() - player.lastUpdateTime?.getTime()
+        if not refreshIfStale or staleMs < MAX_PLAYER_STALE_TIME_MS
+          return player
+        else
+          getUpdatedPlayer().timeout GET_UPDATED_PLAYER_TIMEOUT_MS
+          .catch (err) ->
+            player
       else
-        ClashRoyalePlayerService.updatePlayerById playerId, {
-          priority: 'normal'
-        }
-        .then ->
-          Player.getByPlayerIdAndGameId playerId, gameId
+        ClashRoyalePlayerService.updatePlayerById playerId, {priority: 'normal'}
+        .then -> Player.getByPlayerIdAndGameId playerId, gameId
     .then EmbedService.embed {embed: defaultEmbed}
 
   setAutoRefreshByGameId: ({gameId}, {user}) ->

@@ -40,8 +40,8 @@ ready = new Promise (resolve, reject) ->
 
       resolve res
 
-cknex = ->
-  instance = cassanknexInstance('clash_royale')
+cknex = (keyspace = 'starfire') ->
+  instance = cassanknexInstance keyspace
   instance.run = (options = {}) -> # skinny arrow on purpose
     self = this
     ready.then ->

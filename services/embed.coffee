@@ -3,6 +3,7 @@ Promise = require 'bluebird'
 moment = require 'moment'
 
 config = require '../config'
+cknex = require '../services/cknex'
 User = require '../models/user'
 UserData = require '../models/user_data'
 AddonVote = require '../models/addon_vote'
@@ -71,6 +72,7 @@ TYPES =
     USER_IDS: 'player:user_ids'
   THREAD_COMMENT:
     CREATOR: 'threadComment:creator'
+    TIME: 'threadComment:time'
   THREAD:
     CREATOR: 'thread:creator'
     COMMENT_COUNT: 'thread:commentCount'
@@ -360,17 +362,14 @@ embedFn = _.curry (props, object) ->
       when TYPES.THREAD.COMMENTS
         key = CacheService.PREFIXES.THREAD_COMMENTS + ':' + embedded.id
         embedded.comments = CacheService.preferCache key, ->
-          ThreadComment.getAllByParentIdAndParentType(
-            embedded.id, 'thread'
-          ).map embedFn {embed: [TYPES.THREAD_COMMENT.USER]}
+          ThreadComment.getAllByThreadId embedded.id
+          .map embedFn {embed: [TYPES.THREAD_COMMENT.USER]}
         , {expireSeconds: FIVE_MINUTES_SECONDS}
 
       when TYPES.THREAD.COMMENT_COUNT
         key = CacheService.PREFIXES.THREAD_COMMENT_COUNT + ':' + embedded.id
         embedded.commentCount = CacheService.preferCache key, ->
-          ThreadComment.getCountByParentIdAndParentType(
-            embedded.id, 'thread'
-          )
+          ThreadComment.getCountByThreadId embedded.id
         , {expireSeconds: FIVE_MINUTES_SECONDS}
 
       when TYPES.THREAD.PLAYER_DECK
@@ -414,6 +413,9 @@ embedFn = _.curry (props, object) ->
             , {expireSeconds: FIVE_MINUTES_SECONDS}
         else
           embedded.creator = null
+
+      when TYPES.THREAD_COMMENT.TIME
+        embedded.time = embedded.timeUuid.getDate()
 
       when TYPES.CHAT_MESSAGE.USER
         if embedded.userId
