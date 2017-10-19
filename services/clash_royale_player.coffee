@@ -267,7 +267,6 @@ class ClashRoyalePlayerService
             priority, isLegacy
           }
         else
-          console.log 'skip player'
           Promise.resolve null)
         .then (playerData) =>
           if DEBUG
@@ -339,6 +338,9 @@ class ClashRoyalePlayerService
     .then (clan) ->
       if clan?.groupId
         Group.addUser clan.groupId, userId
+        # TODO: notify rest of clan
+        
+
       if not clan?.data and clanId
         ClashRoyaleClanService.updateClanById clanId, {userId}
         .timeout CLAN_TIMEOUT_MS

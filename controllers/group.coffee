@@ -17,6 +17,7 @@ config = require '../config'
 
 defaultEmbed = [
   EmbedService.TYPES.GROUP.CONVERSATIONS
+  EmbedService.TYPES.GROUP.USER_IDS
   EmbedService.TYPES.GROUP.STAR
 ]
 userDataEmbed = [

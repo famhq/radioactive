@@ -12,6 +12,7 @@ Thread = require '../models/thread'
 ClashRoyaleDeck = require '../models/clash_royale_deck'
 ClashRoyaleCard = require '../models/clash_royale_card'
 ClashRoyalePlayerDeck = require '../models/clash_royale_player_deck'
+GroupUser = require '../models/group_user'
 Ban = require '../models/ban'
 r = require './rethinkdb'
 config = require '../config'
@@ -25,7 +26,7 @@ class CronService
     # minute
     @addCron 'minute', '0 * * * * *', ->
       EventService.notifyForStart()
-      if config.ENV is config.ENVS.PROD
+      if config.ENV is config.ENVS.PROD and not config.IS_STAGING
         CacheService.get CacheService.KEYS.AUTO_REFRESH_SUCCESS_COUNT
         .then (successCount) ->
           unless successCount

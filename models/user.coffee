@@ -18,6 +18,8 @@ SIX_HOURS_S = 3600 * 6
 # users_by_username
 # probably means dropping push_token index
 
+# store fire on user object
+
 defaultUser = (user) ->
   unless user?
     return null
@@ -28,6 +30,7 @@ defaultUser = (user) ->
     username: null
     name: null
     isMember: 0 # 1 if yes
+    fire: 0
     hasPushToken: false
     lastActiveIp: null
     lastActiveTime: new Date()

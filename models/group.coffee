@@ -79,9 +79,8 @@ class GroupModel
     if level isnt 'admin' and group.type is 'public'
       return Promise.resolve true
 
-    console.log 'groupuser hasPermission'
     GroupUser.getAllByGroupId group.id
-    .map ({userId}) -> userId
+    .map ({userId}) -> "#{userId}"
     .then (userIds) ->
       return switch level
         when 'admin'
@@ -93,11 +92,11 @@ class GroupModel
     get = ->
       r.table GROUPS_TABLE
       .get id
-      .merge (group) ->
-        userIds = r.table('group_users').getAll(group('id'), {index: 'groupId'})
-                  .map (groupUser) -> groupUser('userId')
-                  .coerceTo('array')
-        {userIds}
+      # .merge (group) ->
+      #   userIds = r.table('group_users').getAll(group('id'), {index: 'groupId'})
+      #             .map (groupUser) -> groupUser('userId')
+      #             .coerceTo('array')
+      #   {userIds}
       .run()
       .then defaultGroup
 
@@ -111,13 +110,14 @@ class GroupModel
     limit ?= 10
 
     r.table GROUPS_TABLE
-    .getAll r.args _.filter(ids)
+    # convert from scylla uuid type
+    .getAll r.args _.map(_.filter(ids), (id) -> "#{id}")
     .limit limit
-    .merge (group) ->
-      userIds = r.table('group_users').getAll(group('id'), {index: 'groupId'})
-                .map (groupUser) -> groupUser('userId')
-                .coerceTo('array')
-      {userIds}
+    # .merge (group) ->
+    #   userIds = r.table('group_users').getAll(group('id'), {index: 'groupId'})
+    #             .map (groupUser) -> groupUser('userId')
+    #             .coerceTo('array')
+    #   {userIds}
     .run()
 
   getAll: ({filter, language, limit} = {}) ->
@@ -132,11 +132,11 @@ class GroupModel
 
     # q.orderBy r.desc r.row('userIds').count()
     q.limit limit
-    .merge (group) ->
-      userIds = r.table('group_users').getAll(group('id'), {index: 'groupId'})
-                .map (groupUser) -> groupUser('userId')
-                .coerceTo('array')
-      {userIds}
+    # .merge (group) ->
+    #   userIds = r.table('group_users').getAll(group('id'), {index: 'groupId'})
+    #             .map (groupUser) -> groupUser('userId')
+    #             .coerceTo('array')
+    #   {userIds}
     .run()
     .map defaultGroup
 
@@ -151,7 +151,7 @@ class GroupModel
       null
 
   addUser: (groupId, userId) ->
-    GroupUser.create {groupId, userId}
+    GroupUser.upsert {groupId, userId}
     .tap ->
       key = "#{CacheService.PREFIXES.GROUP_ID}:#{groupId}"
       CacheService.deleteByKey key

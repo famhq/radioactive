@@ -26,7 +26,7 @@ TYPES =
           priority: 'normal'
           isAuto: true
         }
-      concurrencyPerCpu: 6
+      concurrencyPerCpu: 3 # TODO: 6
     }
   # ideally we'd throttle this at 300 per second, but we can't do that
   # sort of throttling with kue (or any redis-backed lib from what I can tell).
@@ -39,7 +39,7 @@ TYPES =
   # 300 / 2 = 150 concurrent jobs. currently have 36 cpus. 150/36 = 4
 
   "#{KueCreateService.JOB_TYPES.API_REQUEST}":
-    {fn: ClashRoyaleAPIService.processRequest, concurrencyPerCpu: 4}
+    {fn: ClashRoyaleAPIService.processRequest, concurrencyPerCpu: 2} # TODO: 4
 
 class KueRunnerService
   listen: ->

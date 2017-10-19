@@ -17,6 +17,7 @@ ClashRoyaleDeck = require '../models/clash_royale_deck'
 ClashRoyaleMatch = require '../models/clash_royale_match'
 Deck = require '../models/clash_royale_deck'
 Group = require '../models/group'
+GroupUser = require '../models/group_user'
 Star = require '../models/star'
 ClashRoyaleClanRecord = require '../models/clash_royale_clan_record'
 GroupRecord = require '../models/group_record'
@@ -341,10 +342,9 @@ embedFn = _.curry (props, object) ->
           , {expireSeconds: ONE_HOUR_SECONDS}
 
       when TYPES.GROUP.USER_IDS
-        # TODO: cache
-        embedded.userIds =
-          GroupUser.getAllByGroupId embedded.id
-          .map ({userId}) -> userId
+        if embedded.type isnt 'public'
+          embedded.userIds = GroupUser.getAllByGroupId embedded.id
+                             .map ({userId}) -> userId
 
       when TYPES.GROUP.USERS
         embedded.users = Promise.map embedded.userIds, (userId) ->

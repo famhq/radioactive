@@ -22,6 +22,7 @@ GroupCtrl = require './controllers/group'
 GroupRecordCtrl = require './controllers/group_record'
 GroupRecordTypeCtrl = require './controllers/group_record_type'
 GameRecordTypeCtrl = require './controllers/game_record_type'
+RewardCtrl = require './controllers/reward'
 StarCtrl = require './controllers/star'
 TheadCtrl = require './controllers/thread'
 ThreadCommentCtrl = require './controllers/thread_comment'
@@ -213,6 +214,9 @@ module.exports = router
 .on 'mods.banByUserId', authed ModCtrl.banByUserId
 .on 'mods.unbanByUserId', authed ModCtrl.unbanByUserId
 .on 'mods.unflagByChatMessageId', authed ModCtrl.unflagByChatMessageId
+
+.on 'reward.init', authed StarCtrl.init
+.on 'reward.get', authed StarCtrl.get
 
 .on 'stars.getByUsername', authed StarCtrl.getByUsername
 .on 'stars.getAll', authed StarCtrl.getAll

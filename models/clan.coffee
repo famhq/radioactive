@@ -72,7 +72,7 @@ class ClanModel
     .tap (group) ->
       Promise.all _.filter [
         if userId
-          GroupUser.create {groupId: group.id, userId: userId}
+          GroupUser.upsert {groupId: group.id, userId: userId}
         Conversation.create {
           groupId: group.id
           name: 'general'

@@ -229,6 +229,11 @@ app.get '/cleanKueFailed', (req, res) ->
     console.log 'kue clean route fail'
   res.sendStatus 200
 
+# FIXME: rm
+# app.get '/migrateAll', (req, res) ->
+#   GroupUser = require './models/group_user'
+#   GroupUser.migrateAll()
+#   res.sendStatus 200
 
 app.get '/di/crForumSig/:userId.png', (req, res) ->
   $page = new ForumSigPage {req, res}

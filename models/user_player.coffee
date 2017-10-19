@@ -23,6 +23,8 @@ defaultUserPlayer = (userPlayer) ->
     isVerified: false
   }
 
+# scylla: user_players_by_userId, user_players_by_playerId
+
 class UserPlayer
   RETHINK_TABLES: [
     {
@@ -37,6 +39,7 @@ class UserPlayer
           fn: (row) -> [row('playerId'), row('gameId')]
         }
         {
+          # not actually used
           name: PLAYER_ID_GAME_ID_IS_VERIFIED_INDEX
           fn: (row) -> [row('playerId'), row('gameId'), row('isVerified')]
         }
