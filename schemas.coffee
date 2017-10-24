@@ -17,6 +17,7 @@ user =
   isChatBanned: Joi.boolean()
   data: Joi.object()
   gameData: Joi.object().optional()
+  fire: Joi.number().optional()
   avatarImage: Joi.object()
   embedded: Joi.array().allow(null).optional()
   joinTime: Joi.date().allow(null)

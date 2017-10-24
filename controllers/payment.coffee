@@ -77,7 +77,7 @@ class PaymentCtrl
         }
       })
       .then ->
-        User.updateSelf user.id, {
+        User.updateById user.id, {
           flags:
             hasStripeId: true
           privateData:

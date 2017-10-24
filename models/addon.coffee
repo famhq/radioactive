@@ -41,6 +41,7 @@ defaultAddon = (addon) ->
     downvotes: 0
     score: 0
     data: {}
+    supportedLanguages: null # leave null for all
     lastUpdateTime: new Date()
     addTime: new Date()
   }
@@ -116,6 +117,7 @@ class AddonModel
       'downvotes'
       'myVote'
       'addTime'
+      'supportedLanguages'
       'lastUpdateTime'
       'embedded'
     ]

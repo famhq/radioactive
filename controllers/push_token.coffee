@@ -32,7 +32,7 @@ class PushTokensCtrl
           ignoreLog: true
 
       Promise.all [
-        User.updateSelf userId, {
+        User.updateById userId, {
           hasPushToken: true
         }
         PushToken.create {
@@ -57,7 +57,7 @@ class PushTokensCtrl
       router.throw status: 400, info: updateValid.error.message
 
     Promise.all [
-      User.updateSelf userId, {
+      User.updateById userId, {
         hasPushToken: true
       }
       PushToken.updateByToken token, diff

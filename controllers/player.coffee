@@ -59,7 +59,7 @@ class PlayerCtrl
     Player.getByPlayerIdAndGameId playerId, gameId #, {preferCache: true}
     .then (player) ->
       if player
-        staleMs = Date.now() - player.lastUpdateTime?.getTime()
+        staleMs = Date.now() - (player.lastUpdateTime?.getTime() or 0)
         if not refreshIfStale or staleMs < MAX_PLAYER_STALE_TIME_MS
           return player
         else

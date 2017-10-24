@@ -90,7 +90,7 @@ class ClashRoyaleAPIService
       .then (responses) ->
         responses?[0]
 
-  getPlayerMatchesByTag: (tag, {priority} = {}) =>
+  getPlayerMatchesByTag: (tag, {priority, skipThrow} = {}) =>
     tag = @formatHashtag tag
 
     unless @isValidTag tag
@@ -98,7 +98,7 @@ class ClashRoyaleAPIService
 
     @request "/players/%23#{tag}/battlelog", {type: 'player', tag, priority}
     .then (matches) ->
-      if _.isEmpty matches
+      if not skipThrow and _.isEmpty matches
         throw new Error '404' # api should do this, but just does empty arr
       _.map matches, (match) ->
         match.id = "#{match.battleTime}:" +

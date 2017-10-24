@@ -248,13 +248,17 @@ class ClashRoyalePlayerService
       if tag
         Player.getByPlayerIdAndGameId tag, GAME_ID
 
-  updatePlayerById: (playerId, {userId, isLegacy, priority, isAuto} = {}) =>
+  updatePlayerById: (playerId, options = {}) =>
+    {userId, isLegacy, priority, isAuto} = options
     start = Date.now()
     ClashRoyaleAPIService.isInvalidTagInCache 'player', playerId
     .then (isInvalid) =>
       if isInvalid
         throw new Error 'invalid tag'
-      ClashRoyaleAPIService.getPlayerMatchesByTag playerId, {priority}
+      ClashRoyaleAPIService.getPlayerMatchesByTag playerId, {
+        priority
+        skipThrow: not isAuto # don't throw 404 if matches are empty
+      }
       .then (matches) =>
         if DEBUG
           console.log 'all', matches.length
@@ -339,7 +343,7 @@ class ClashRoyalePlayerService
       if clan?.groupId
         Group.addUser clan.groupId, userId
         # TODO: notify rest of clan
-        
+
 
       if not clan?.data and clanId
         ClashRoyaleClanService.updateClanById clanId, {userId}

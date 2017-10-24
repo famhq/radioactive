@@ -104,16 +104,26 @@ class UserModel
     .then ->
       null
 
-  updateSelf: (id, diff) ->
+  addFireById: (id, amount) ->
     r.table USERS_TABLE
     .get id
-    .update diff
+    .update fire: r.row('fire').default(0).add(amount)
     .run()
     .tap ->
       cacheKey = "#{CacheService.PREFIXES.USER_ID}:#{id}"
       CacheService.deleteByKey cacheKey
     .then ->
       null
+
+  subtractFireById: (id, amount) ->
+    r.table USERS_TABLE
+    .getAll id
+    .filter r.row('fire').default(0).ge amount
+    .update fire: r.row('fire').default(0).sub(amount)
+    .run()
+    .tap ->
+      cacheKey = "#{CacheService.PREFIXES.USER_ID}:#{id}"
+      CacheService.deleteByKey cacheKey
 
   create: (user) ->
     user = defaultUser user

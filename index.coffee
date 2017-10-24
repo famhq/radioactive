@@ -48,6 +48,7 @@ CronService = require './services/cron'
 KueRunnerService = require './services/kue_runner'
 ChatMessageCtrl = require './controllers/chat_message'
 ClashRoyaleAPICtrl = require './controllers/clash_royale_api'
+RewardCtrl = require './controllers/reward'
 HealthCtrl = require './controllers/health'
 VideoDiscoveryService = require './services/video_discovery'
 StreamService = require './services/stream'
@@ -161,6 +162,7 @@ app.post '/upload', (req, res, next) ->
 app.use bodyParser.json({limit: '1mb'})
 # Avoid CORS preflight
 app.use bodyParser.json({type: 'text/plain', limit: '1mb'})
+app.use bodyParser.urlencoded {extended: true} # Kiip uses
 
 app.get '/', (req, res) -> res.status(200).send 'ok'
 
@@ -169,6 +171,11 @@ app.get '/ping', (req, res) -> res.send 'pong'
 app.get '/healthcheck', HealthCtrl.check
 
 app.get '/healthcheck/throw', HealthCtrl.checkThrow
+
+app.post '/reward/kiip', RewardCtrl.processKiip
+app.get '/reward/fyber', RewardCtrl.processFyber
+app.get '/reward/adscend', RewardCtrl.processAdscend
+app.get '/reward/ironsource', RewardCtrl.processIronsource
 
 app.post '/log', (req, res) ->
   unless req.body?.event is 'client_error'

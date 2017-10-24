@@ -53,6 +53,7 @@ class ClashRoyaleMatchModel
 
   batchCreate: (clashRoyaleMatches) ->
     matches = _.flatten _.map clashRoyaleMatches, (match) ->
+      matchDataStr = JSON.stringify match.data
       playerIds = match.winningPlayerIds.concat(
         match.losingPlayerIds, match.drawPlayerIds
       )
@@ -62,7 +63,7 @@ class ClashRoyaleMatchModel
           gameType: match.type
           arena: match.arena
           league: match.league
-          data: JSON.stringify match.data
+          data: matchDataStr
           time: match.time
         }, (val) -> val?
     # partitionChunks = cknex.chunkForBatchByPartition matches, 'playerId'
