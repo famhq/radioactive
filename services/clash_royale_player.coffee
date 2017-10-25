@@ -454,7 +454,8 @@ class ClashRoyalePlayerService
               data:
                 path:
                   key: 'home'
-                  gameKey: config.DEFAULT_GAME_KEY
+                  params:
+                    gameKey: config.DEFAULT_GAME_KEY
             }
         null
 

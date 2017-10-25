@@ -1,34 +1,68 @@
 _ = require 'lodash'
 uuid = require 'node-uuid'
 Promise = require 'bluebird'
+moment = require 'moment'
 
 cknex = require '../services/cknex'
-
-ONE_DAY_SECONDS = 3600 * 24
 
 defaultRewardTransaction = (rewardTransaction) ->
   unless rewardTransaction?
     return null
 
   _.defaults rewardTransaction, {
-    time: new Date()
+    # 10-17-2017
+    timeBucket: 'DAY-' + moment().format 'YYYY-MM-DD'
+    timeUuid: cknex.getTimeUuid()
   }
 
 
 tables = [
   {
-    name: 'reward_transactions_by_id'
+    name: 'reward_transactions'
     keyspace: 'starfire'
     fields:
-      id: 'uuid'
-      userId: 'uuid'
-      transactionId: 'text'
       network: 'text'
-      amountCents: 'int'
-      time: 'timestamp'
+      txnId: 'text'
+      userId: 'uuid'
+      fireAmount: 'int'
+      offerId: 'text'
+      timeBucket: 'text'
+      timeUuid: 'timeuuid'
     primaryKey:
-      partitionKey: ['id']
+      partitionKey: ['network', 'txnId']
       clusteringColumns: null
+  }
+  {
+    name: 'reward_transactions_by_timeUuid'
+    keyspace: 'starfire'
+    fields:
+      network: 'text'
+      txnId: 'text'
+      userId: 'uuid'
+      fireAmount: 'int'
+      offerId: 'text'
+      timeBucket: 'text'
+      timeUuid: 'timeuuid'
+    primaryKey:
+      partitionKey: ['timeBucket']
+      clusteringColumns: ['timeUuid']
+    withClusteringOrderBy: ['timeUuid', 'desc']
+  }
+  {
+    name: 'reward_transactions_by_userId'
+    keyspace: 'starfire'
+    fields:
+      network: 'text'
+      txnId: 'text'
+      userId: 'uuid'
+      fireAmount: 'int'
+      offerId: 'text'
+      timeBucket: 'text'
+      timeUuid: 'timeuuid'
+    primaryKey:
+      partitionKey: ['userId', 'timeBucket']
+      clusteringColumns: ['timeUuid']
+    withClusteringOrderBy: ['timeUuid', 'desc']
   }
 ]
 
@@ -38,11 +72,42 @@ class RewardTransactionModel
   upsert: (rewardTransaction) ->
     rewardTransaction = defaultRewardTransaction rewardTransaction
 
-    cknex().update 'reward_transactions_by_id'
-    .set _.omit rewardTransaction, ['id']
-    .where 'id', '=', rewardTransaction.id
-    .run()
+    Promise.all [
+      cknex().update 'reward_transactions'
+      .set _.omit rewardTransaction, ['network', 'txnId']
+      .where 'network', '=', rewardTransaction.network
+      .andWhere 'txnId', '=', rewardTransaction.txnId
+      .run()
+
+      cknex().update 'reward_transactions_by_timeUuid'
+      .set _.omit rewardTransaction, ['timeBucket', 'timeUuid']
+      .where 'timeBucket', '=', rewardTransaction.timeBucket
+      .andWhere 'timeUuid', '=', rewardTransaction.timeUuid
+      .run()
+
+      cknex().update 'reward_transactions_by_userId'
+      .set _.omit rewardTransaction, ['userId', 'timeBucket', 'timeUuid']
+      .where 'userId', '=', rewardTransaction.userId
+      .andWhere 'timeBucket', '=', rewardTransaction.timeBucket
+      .andWhere 'timeUuid', '=', rewardTransaction.timeUuid
+      .run()
+    ]
     .then ->
       rewardTransaction
+
+  getByNetworkAndTxnId: (network, txnId) ->
+    cknex().select '*'
+    .from 'reward_transactions'
+    .where 'network', '=', network
+    .andWhere 'txnId', '=', txnId
+    .run {isSingle: true}
+
+  getByUserIdAndTimeBucketAndMinTime: (userId, timeBucket, minTime) ->
+    cknex().select '*'
+    .from 'reward_transactions_by_userId'
+    .where 'userId', '=', userId
+    .andWhere 'timeBucket', '=', timeBucket
+    .andWhere 'timeUuid', '>', cknex.getTimeUuid minTime
+    .run()
 
 module.exports = new RewardTransactionModel()

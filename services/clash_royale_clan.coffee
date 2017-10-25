@@ -34,8 +34,6 @@ class ClashRoyaleClan
       # players: players
     }
 
-    console.log clan
-
     Clan.getByClanIdAndGameId tag, GAME_ID
     .then (existingClan) ->
       ClashRoyaleClanRecord.upsert {

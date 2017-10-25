@@ -220,6 +220,9 @@ module.exports = router
 
 .on 'rewards.setup', authed RewardCtrl.setup
 .on 'rewards.getAll', authed RewardCtrl.getAll
+.on 'rewards.videoReward', authed RewardCtrl.videoReward
+.on 'rewards.incrementAttemptsByNetworkAndOfferId',
+  authed RewardCtrl.incrementAttemptsByNetworkAndOfferId
 
 .on 'stars.getByUsername', authed StarCtrl.getByUsername
 .on 'stars.getAll', authed StarCtrl.getAll

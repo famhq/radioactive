@@ -25,7 +25,7 @@ class ProductCtrl
   buy: ({id, email}, {user}) ->
     unless id in ['noAdsForDay', 'googlePlay10', 'visa10']
       router.throw {status: 400, info: 'item not found'}
-    cost = if id is 'noAdsForDay' then 15 else 1500
+    cost = if id is 'noAdsForDay' then 150 else 15000
 
     if user.fire < cost
       router.throw {status: 400, info: 'not enough fire'}

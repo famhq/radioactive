@@ -172,10 +172,8 @@ app.get '/healthcheck', HealthCtrl.check
 
 app.get '/healthcheck/throw', HealthCtrl.checkThrow
 
-app.post '/reward/kiip', RewardCtrl.processKiip
-app.get '/reward/fyber', RewardCtrl.processFyber
-app.get '/reward/adscend', RewardCtrl.processAdscend
-app.get '/reward/ironsource', RewardCtrl.processIronsource
+app.post '/reward/:network', RewardCtrl.process
+app.get '/reward/:network', RewardCtrl.process
 
 app.post '/log', (req, res) ->
   unless req.body?.event is 'client_error'

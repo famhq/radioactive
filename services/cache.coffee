@@ -73,6 +73,8 @@ PREFIXES =
   BAN_IP: 'ban:ip'
   BAN_USER_ID: 'ban:user_id1'
   HONEY_POT_BAN_IP: 'honey_pot:ban_ip5'
+  REWARD_INCREMENT: 'reward:increment'
+  REWARD_ATTEMPT_TIME: 'reward_attempt:time'
 
 class CacheService
   KEYS:
