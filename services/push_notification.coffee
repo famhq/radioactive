@@ -39,21 +39,6 @@ cdnUrl = "https://#{config.CDN_HOST}/d/images/starfire"
 
 class PushNotificationService
   constructor: ->
-    @apnConnection = new apn.Provider {
-      cert: config.APN_CERT
-      key: config.APN_KEY
-      passphrase: config.APN_PASSPHRASE
-      production: config.ENV is config.ENVS.PROD and not config.IS_STAGING
-    }
-    @isApnConnected = false
-    @apnConnection.on 'connected', =>
-      @isApnConnected = true
-    @apnConnection.on 'error', (err) -> console.log err
-    @apnConnection.on 'socketError', (err) -> console.log err
-    @apnConnection.on 'transmissionError', -> null
-    @apnConnection.on 'disconnect', =>
-      @isApnConnected = false
-
     @gcmConn = new gcm.Sender(config.GOOGLE_API_KEY)
 
     webpush.setVapidDetails(
@@ -64,33 +49,11 @@ class PushNotificationService
 
   TYPES: TYPES
 
-  isApnHealthy: =>
-    Promise.resolve @isApnConnected
-
   isGcmHealthy: ->
     Promise.resolve true # TODO
 
   sendWeb: (token, message) ->
     webpush.sendNotification JSON.parse(token), JSON.stringify message
-
-  # sendIos: (token, {title, text, type, data}) =>
-  #   data ?= {}
-  #
-  #   notification = new apn.Notification {
-  #     expiry: Math.floor(Date.now() / 1000) + ONE_DAY_SECONDS
-  #     badge: 1
-  #     sound: 'ping.aiff'
-  #     alert: "#{title}: #{text}"
-  #     topic: config.IOS_BUNDLE_ID
-  #     category: type
-  #     mutableContent: type is 'privateMessage'
-  #     payload: {data, type, title, message: text}
-  #     contentAvailable: 1
-  #   }
-  #   @apnConnection.send notification, token
-  #   .then (response) ->
-  #     if _.isEmpty response?.sent
-  #       throw new Error 'message not sent'
 
   sendIos: (token, {title, text, type, data, icon}) ->
     request 'https://iid.googleapis.com/iid/v1:batchImport', {
@@ -112,13 +75,27 @@ class PushNotificationService
           token: newToken
         }
     .then =>
-      @sendFcm token, {title, text, type, data, icon}
+      @sendFcm token, {title, text, type, data, icon}, {isiOS: true}
 
-  sendFcm: (to, {title, text, type, data, icon, toType}) =>
+  sendFcm: (to, {title, text, type, data, icon, toType}, {isiOS} = {}) =>
     toType ?= 'token'
     new Promise (resolve, reject) =>
-      notification = new gcm.Message {
-        data:
+      messageOptions = {
+        priority: 'high'
+        contentAvailable: true
+      }
+      # ios and android take different formats for whatever reason...
+      # if you pass notification to android, it uses that and doesn't use data
+      # https://github.com/phonegap/phonegap-plugin-push/issues/387
+      if isiOS
+        messageOptions.notification =
+          title: title
+          body: text
+          # icon: 'notification_icon'
+          color: config.NOTIFICATION_COLOR
+        messageOptions.data = data
+      else
+        messageOptions.data =
           title: title
           message: text
           ledColor: [0, 255, 0, 0]
@@ -142,7 +119,8 @@ class PushNotificationService
           icon: 'notification_icon'
           color: config.NOTIFICATION_COLOR
           notId: uuid.v4()
-      }
+
+      notification = new gcm.Message messageOptions
 
       if toType is 'token'
         toObj = {registrationTokens: [to]}
@@ -278,7 +256,7 @@ class PushNotificationService
            then @sendFcm
            else @sendIos
 
-      fn token, message
+      fn token, message, {isiOS: sourceType is 'ios-fcm'}
       .then ->
         successfullyPushedToNative = true
         if errorCount

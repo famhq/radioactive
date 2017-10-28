@@ -21,7 +21,7 @@ class AddonCtrl
     .map Addon.sanitize null
 
   getById: ({id}, {user}) ->
-    Addon.getById id
+    Addon.getById id, {preferCache: true}
     .then EmbedService.embed {embed: defaultEmbed, user}
     .then Addon.sanitize null
 

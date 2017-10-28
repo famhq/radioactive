@@ -56,8 +56,7 @@ class RewardAttemptModel
       cknex().select '*'
       .from 'reward_attempts_counter_by_offerId'
       .where 'timeBucket', '=', timeBucket
-      .run {isSingle: true}
-
+      .run()
 
     if preferCache
       prefix = CacheService.PREFIXES.REWARD_ATTEMPT_TIME

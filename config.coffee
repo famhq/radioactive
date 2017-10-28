@@ -20,7 +20,8 @@ config =
   COMMUNITY_LANGUAGES: ['es', 'pt']
   DECK_TRACKED_GAME_TYPES: [
     'PvP', 'classicChallenge', 'grandChallenge', 'tournament', '2v2'
-]
+  ]
+  NOTIFICATION_COLOR: '#fc373e'
 
   IS_POSTGRES: env.IS_POSTGRES or false
 

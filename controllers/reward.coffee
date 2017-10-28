@@ -6,6 +6,7 @@ router = require 'exoid-router'
 qs = require 'qs'
 uuid = require 'uuid'
 semver = require 'semver'
+deck = require 'deck'
 
 config = require '../config'
 User = require '../models/user'
@@ -44,6 +45,43 @@ kiipRequest = (path, body) ->
     method: 'POST'
     body: body
   }
+
+# fyber doesn't accept ipv6 as of 10-2017
+# https://stackoverflow.com/a/23147817
+parseIp6 = (str) ->
+  #init
+  ar = new Array()
+  i = 0
+  while i < 8
+    ar[i] = 0
+    i += 1
+  #check for trivial IPs
+  if str is '::'
+    return ar
+  #parse
+  sar = str.split(':')
+  slen = sar.length
+  if slen > 8
+    slen = 8
+  j = 0
+  i = 0
+  while i < slen
+    #this is a "::", switch to end-run mode
+    if i and sar[i] is ''
+      j = 9 - slen + i
+      i += 1
+      continue
+    ar[j] = parseInt('0x0' + sar[i])
+    j += 1
+    i += 1
+  ar
+
+ip4from6 = (ip6) ->
+  ip6 = parseIp6(ip6)
+  ip4 = (ip6[6] >> 8) + '.' + (ip6[6] & 0xff) + '.' + (ip6[7] >> 8) +
+          '.' + (ip6[7] & 0xff)
+  ip4
+
 
 class RewardCtrl
   setup: (options, {user, headers, connection}) ->
@@ -126,10 +164,13 @@ class RewardCtrl
 
   _getFyber: (options, {user, headers, connection}) ->
     # TODO: different key, etc... for android/ios/web? or not necessary?
+    isIpV6 = options.ip.match /^([0-9a-f]){1,4}(:([0-9a-f]){1,4}){7}$/i
+    ip = if isIpV6 then ip4from6 options.ip else options.ip
+
     params =
       appid: config.FYBER_APP_ID
       device_id: options.deviceId
-      ip: options.ip
+      ip: ip
       locale: options.language
       # offer_types: '101,112' # has key breaks with this....
       page: 1
@@ -183,7 +224,7 @@ class RewardCtrl
         per_page: 10
         page: 1
     .then (response) ->
-      _.map response.offers, (offer) ->
+      _.map response?.offers, (offer) ->
         description = offer.adwall_description
         if offer.name.indexOf('EngageMe.TV') isnt -1
           description += ' (Videos can be skipped)'
@@ -243,26 +284,40 @@ class RewardCtrl
           network: offer.network, offerId: offer.offerId
         }
         if attempt
-          attempts = attempt?.attempts
-          conversationRate = if attempt.successes \
-                             then attempt.successes / attemp.attempts
-                             else 0
+          attemptCount = parseInt attempt?.attempts
+          conversionRate = if attempt.successes \
+                   then parseInt(attempt.successes) / attemptCount
+                   else 0
         else
-          conversationRate = null
-          attempts = 0
-        _.defaults {conversationRate, attempts}, offer
+          conversionRate = null
+          attemptCount = 0
+        _.defaults {conversionRate, attemptCount}, offer
+
       offers = _.filter offers, (offer) ->
         unless offer
           return false
-        {conversationRate, attempts} = offer
-        attempts < 100 or conversationRate > 0.01
-      offers = _.shuffle offers
+        {conversionRate, attemptCount} = offer
+        attemptCount < 100 or conversionRate > 0.01
+
+      indexWeights = _.reduce offers, (obj, offer, i) ->
+        if offer.conversionRate
+          # 5 cent offer with 5% converation rate has weight of 25
+          # 10 cent offer with 1% conversation rate has weight of 10
+          # 5 cent offer with 20% conversation rate has weight of 200
+          weight = Math.round(offer.amount * offer.conversionRate * 100)
+        else
+          weight = 10
+        obj[i] = weight
+        obj
+      , {}
+      indexes = deck.shuffle indexWeights
+      pickedOffers = _.map _.take(indexes, 10), (index) ->
+        offers[parseInt(index)]
 
       if rewardedVideosLeft > 0
-        offers = [{id: 'rewardedVideo', rewardedVideosLeft}].concat offers
+        pickedOffers = [{id: 'rewardedVideo', rewardedVideosLeft}].concat offers
 
-      offers = _.take offers, 10
-
+      pickedOffers
     .catch (err) ->
       console.log err
 

@@ -28,6 +28,7 @@ PREFIXES =
   USER_DATA_BLOCKED_USERS: 'user_data:blocked_users'
   USER_DATA_CLASH_ROYALE_DECK_IDS: 'user_data:clash_royale_deck_ids6'
   USER_DAILY_DATA_PUSH: 'user_daily_data:push5'
+  ADDON: 'addon'
   CLASH_ROYALE_MATCHES_ID: 'clash_royale_matches:id52'
   CLASH_ROYALE_MATCHES_ID_EXISTS: 'clash_royale_matches:id:exists2'
   CLASH_ROYALE_INVALID_TAG: 'clash_royale:invalid_tag'
@@ -74,7 +75,7 @@ PREFIXES =
   BAN_USER_ID: 'ban:user_id1'
   HONEY_POT_BAN_IP: 'honey_pot:ban_ip5'
   REWARD_INCREMENT: 'reward:increment'
-  REWARD_ATTEMPT_TIME: 'reward_attempt:time'
+  REWARD_ATTEMPT_TIME: 'reward_attempt:time1'
 
 class CacheService
   KEYS:
