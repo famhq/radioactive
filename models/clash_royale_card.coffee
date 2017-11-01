@@ -199,6 +199,8 @@ class ClashRoyaleCardModel
     .run()
 
   getKeyByName: (name) ->
+    unless name
+      return 'skeletonBarrel' # TODO: rm when api is fixed
     _.snakeCase name.replace /\./g, ''
 
   sanitize: _.curry (requesterId, clashRoyaleCard) ->
@@ -206,14 +208,18 @@ class ClashRoyaleCardModel
       'id'
       'name'
       'key'
-      'cardIds'
       'data'
-      'thisWeekPopularity'
-      'timeRanges'
       'wins'
       'losses'
       'draws'
       'time'
+    ]
+
+  sanitizeLite: _.curry (requesterId, clashRoyaleCard) ->
+    _.pick clashRoyaleCard, [
+      'id'
+      'name'
+      'key'
     ]
 
 module.exports = new ClashRoyaleCardModel()

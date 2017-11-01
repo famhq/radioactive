@@ -17,6 +17,7 @@ ClashRoyaleDeck = require '../models/clash_royale_deck'
 ClashRoyaleMatch = require '../models/clash_royale_match'
 Deck = require '../models/clash_royale_deck'
 Group = require '../models/group'
+GroupRole = require '../models/group_role'
 GroupUser = require '../models/group_user'
 Star = require '../models/star'
 ClashRoyaleClanRecord = require '../models/clash_royale_clan_record'
@@ -58,8 +59,11 @@ TYPES =
   GROUP:
     USER_IDS: 'group:userIds'
     USERS: 'group:users'
+    USER: 'group:user'
     CONVERSATIONS: 'group:conversations'
     STAR: 'group:star'
+  GROUP_USER:
+    ROLES: 'groupUser:roles'
   CLAN_RECORD_TYPE:
     CLAN_VALUES: 'clanRecordType:clanValues'
   GROUP_RECORD_TYPE:
@@ -344,7 +348,7 @@ embedFn = _.curry (props, object) ->
       when TYPES.GROUP.USER_IDS
         if embedded.type isnt 'public'
           embedded.userIds = GroupUser.getAllByGroupId embedded.id
-                             .map ({userId}) -> userId
+                              .map ({userId}) -> userId
 
       when TYPES.GROUP.USERS
         embedded.users = Promise.map embedded.userIds, (userId) ->
@@ -354,6 +358,13 @@ embedFn = _.curry (props, object) ->
 
       when TYPES.GROUP.CONVERSATIONS
         embedded.conversations = Conversation.getAllByGroupId embedded.id
+
+      when TYPES.GROUP_USER.ROLES
+        if embedded.roleIds
+          embedded.roles = Promise.map embedded.roleIds, (roleId) ->
+            embedded.role = GroupRole.getByGroupIdAndRoleId(
+              embedded.groupId, roleId
+            )
 
       when TYPES.CONVERSATION.LAST_MESSAGE
         embedded.lastMessage = \
@@ -477,7 +488,7 @@ embedFn = _.curry (props, object) ->
             else
               console.log 'missing cardKey', embedded
               Promise.resolve {})
-            .then ClashRoyaleCard.sanitize(null)
+            .then ClashRoyaleCard.sanitizeLite(null)
           , {expireSeconds: FIVE_MINUTES_SECONDS}
 
         embedded.averageElixirCost = embedded.cards.then (cards) ->

@@ -19,6 +19,7 @@ PaymentCtrl = require './controllers/payment'
 PushTokenCtrl = require './controllers/push_token'
 PlayerCtrl = require './controllers/player'
 GroupCtrl = require './controllers/group'
+GroupUserCtrl = require './controllers/group_user'
 GroupRecordCtrl = require './controllers/group_record'
 GroupRecordTypeCtrl = require './controllers/group_record_type'
 GameRecordTypeCtrl = require './controllers/game_record_type'
@@ -137,6 +138,11 @@ module.exports = router
 .on 'groups.getAll', authed GroupCtrl.getAll
 .on 'groups.getById', authed GroupCtrl.getById
 .on 'groups.inviteById', authed GroupCtrl.inviteById
+
+.on 'groupUsers.createModeratorByUsername',
+  authed GroupUserCtrl.createModeratorByUsername
+.on 'groupUsers.getByGroupIdAndUserId',
+  authed GroupUserCtrl.getByGroupIdAndUserId
 
 .on 'groupRecords.getAllByUserIdAndGroupId',
   authed GroupRecordCtrl.getAllByUserIdAndGroupId

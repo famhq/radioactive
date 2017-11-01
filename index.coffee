@@ -9,7 +9,7 @@ bodyParser = require 'body-parser'
 cluster = require 'cluster'
 http = require 'http'
 socketIO = require 'socket.io'
-socketIORedis = require 'socket.io-redis'
+# socketIORedis = require 'socket.io-redis'
 Redis = require 'ioredis'
 # memwatch = require 'memwatch-next'
 #

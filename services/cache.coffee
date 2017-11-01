@@ -51,6 +51,7 @@ PREFIXES =
   GROUP_GET_ALL: 'group:getAll1'
   GROUP_GET_ALL_CATEGORY: 'group:getAll:category4'
   GROUP_STAR: 'group:star2'
+  GROUP_ROLE_GROUP_ID_USER_ID: 'group_role:groupId:userId'
   GROUP_USER_USER_ID: 'group_user:user_id4'
   USERNAME_SEARCH: 'username:search1'
   RATE_LIMIT_CHAT_MESSAGES_TEXT: 'rate_limit:chat_messages:text'

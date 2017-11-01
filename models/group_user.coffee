@@ -16,7 +16,6 @@ defaultGroupUser = (groupUser) ->
     time: new Date()
   }
 
-
 tables = [
   {
     name: 'group_users_by_groupId'
@@ -24,7 +23,8 @@ tables = [
     fields:
       groupId: 'uuid'
       userId: 'uuid'
-      roleId: 'uuid'
+      roleIds: {type: 'set', subType: 'uuid'}
+      data: 'text'
       time: 'timestamp'
     primaryKey:
       # a little uneven since some groups will have a lot of users, but each
@@ -38,7 +38,8 @@ tables = [
     fields:
       groupId: 'uuid'
       userId: 'uuid'
-      roleId: 'uuid'
+      roleIds: {type: 'set', subType: 'uuid'}
+      data: 'text'
       time: 'timestamp'
     primaryKey:
       partitionKey: ['userId']
@@ -87,6 +88,13 @@ class GroupUserModel
     .where 'userId', '=', userId
     .run()
 
+  getByGroupIdAndUserId: (groupId, userId) ->
+    cknex().select '*'
+    .from 'group_users_by_groupId'
+    .where 'groupId', '=', groupId
+    .andWhere 'userId', '=', userId
+    .run {isSingle: true}
+
   deleteByGroupIdAndUserId: (groupId, userId) ->
     Promise.all [
       cknex().delete()
@@ -102,60 +110,11 @@ class GroupUserModel
       .run()
     ]
 
-  # migrateAll: (order) =>
-  #   start = Date.now()
-  #   Promise.all [
-  #     CacheService.get 'migrate_user_groups_min_id5'
-  #     .then (minId) =>
-  #       minId ?= '0'
-  #       r.table 'group_users'
-  #       .between minId, 'ZZZZ', {index: 'userId'}
-  #       .orderBy {index: r.asc('userId')}
-  #       .limit 500
-  #       .then (userGroups) =>
-  #         Promise.map userGroups, ({groupId, userId, time}) =>
-  #           if groupId and userId
-  #             @upsert {
-  #               groupId: groupId
-  #               userId: userId
-  #               time: time
-  #             }
-  #           else
-  #             # console.log 'skip', groupId, userId
-  #             Promise.resolve null
-  #         .catch (err) ->
-  #           console.log err
-  #         .then ->
-  #           console.log 'time', Date.now() - start, minId, _.last(userGroups).userId
-  #           CacheService.set 'migrate_user_groups_min_id5', _.last(userGroups).userId
-  #
-  #
-  #     CacheService.get 'migrate_user_groups_max_id5'
-  #     .then (maxId) =>
-  #       maxId ?= 'ZZZZ'
-  #       r.table 'group_users'
-  #       .between '0000', maxId, {index: 'userId'}
-  #       .orderBy {index: r.desc('userId')}
-  #       .limit 500
-  #       .then (userGroups) =>
-  #         Promise.map userGroups, ({groupId, userId, time}) =>
-  #           if groupId and userId
-  #             @upsert {
-  #               groupId: groupId
-  #               userId: userId
-  #               time: time
-  #             }
-  #           else
-  #             # console.log 'skip', groupId, userId
-  #             Promise.resolve null
-  #         .catch (err) ->
-  #           console.log err
-  #         .then ->
-  #           console.log 'time', Date.now() - start, maxId, _.last(userGroups).userId
-  #           CacheService.set 'migrate_user_groups_max_id5', _.last(userGroups).userId
-  #       ]
-  #   .then =>
-  #     @migrateAll()
+  hasPermission: ({meGroupUser, me, permissions}) ->
+    isGlobalModerator = false # FIXME me?.flags?.isModerator
+    isGlobalModerator or _.every permissions, (permission) ->
+      _.find meGroupUser?.roles, (role) ->
+        role.globalPermissions.indexOf(permission) isnt -1
 
 
 module.exports = new GroupUserModel()

@@ -6,6 +6,7 @@ User = require '../models/user'
 UserData = require '../models/user_data'
 Group = require '../models/group'
 GroupUser = require '../models/group_user'
+GroupRole = require '../models/group_role'
 Clan = require '../models/clan'
 Game = require '../models/game'
 Conversation = require '../models/conversation'
@@ -121,20 +122,12 @@ class GroupCtrl
     unless groupId
       router.throw {status: 404, info: 'Group not found'}
 
-    Promise.all [
-      EmbedService.embed {embed: userDataEmbed}, user
-      Group.getById groupId
-    ]
-    .then ([user, group]) ->
+    Group.getById groupId
+    .then (group) ->
       unless group
         router.throw {status: 404, info: 'Group not found'}
 
-      Promise.all [
-        UserData.upsertByUserId user.id, {
-          groupIds: _.filter user.data.groupIds, (id) -> groupId isnt id
-        }
-        Group.removeUser groupId, userId
-      ]
+      Group.removeUser groupId, userId
 
   joinById: ({id}, {user}) ->
     groupId = id
@@ -143,11 +136,8 @@ class GroupCtrl
     unless groupId
       router.throw {status: 404, info: 'Group not found'}
 
-    Promise.all [
-      EmbedService.embed {embed: userDataEmbed}, user
-      Group.getById groupId
-    ]
-    .then ([user, group]) ->
+    Group.getById groupId
+    .then (group) ->
       unless group
         router.throw {status: 404, info: 'Group not found'}
 
@@ -169,17 +159,7 @@ class GroupCtrl
               gameKey: config.DEFAULT_GAME_KEY
         }, {skipMe: true, meUserId: user.id}).catch -> null
 
-      groupIds = user.data.groupIds or []
-      Promise.all [
-        UserData.upsertByUserId user.id, {
-          groupIds: _.uniq groupIds.concat [groupId]
-          invitedIds: _.filter user.data.invitedIds, (id) -> id isnt groupId
-        }
-        Group.addUser groupId, userId
-        # Group.updateById groupId,
-        #   userIds: _.uniq group.userIds.concat([userId])
-        #   invitedIds: _.filter group.invitedIds, (id) -> id isnt userId
-      ]
+      Group.addUser groupId, userId
 
   getAll: ({filter, language}, {user}) ->
     key = CacheService.PREFIXES.GROUP_GET_ALL + ':' + [
@@ -201,7 +181,7 @@ class GroupCtrl
           Group.getAll {filter}
         else
           groups
-      .map EmbedService.embed {embed: defaultEmbed}
+      .map EmbedService.embed {embed: defaultEmbed, user}
       .map (group) ->
         if not _.isEmpty group.clanIds
           group.clan = Clan.getByClanIdAndGameId(

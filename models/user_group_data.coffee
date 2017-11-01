@@ -8,6 +8,8 @@ schemas = require '../schemas'
 USER_GROUP_DATA_TABLE = 'user_group_data'
 USER_ID_GROUP_ID_INDEX = 'userIdGroupId'
 
+# FIXME FIXME: delete, replace with group_user
+
 defaultUserGroupData = (userGroupData) ->
   # unless userGroupData?
   #   return {}

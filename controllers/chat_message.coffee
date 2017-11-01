@@ -10,6 +10,7 @@ Ban = require '../models/ban'
 Group = require '../models/group'
 ChatMessage = require '../models/chat_message'
 Conversation = require '../models/conversation'
+GroupUser = require '../models/group_user'
 CacheService = require '../services/cache'
 PushNotificationService = require '../services/push_notification'
 ProfanityService = require '../services/profanity'
@@ -158,9 +159,25 @@ class ChatMessageCtrl
                 }).catch -> null
 
   deleteById: ({id}, {user}) ->
-    unless user.flags.isModerator
-      router.throw status: 400, info: 'no permission'
-    ChatMessage.deleteById id
+    ChatMessage.getById id
+    .then (chatMessage) ->
+      Conversation.getById chatMessage.conversationId
+      .then (conversation) ->
+        GroupUser.getByGroupIdAndUserId conversation.groupId, user.id
+        .then EmbedService.embed {embed: [EmbedService.TYPES.GROUP_USER.ROLES]}
+        .then (groupUser) ->
+          permission = 'deleteMessage'
+          hasPermission = GroupUser.hasPermission {
+            meGroupUser: groupUser
+            me: user
+            permissions: [permission]
+          }
+
+          unless hasPermission
+            router.throw
+              status: 400, info: 'You don\'t have permission to do that'
+    .then ->
+      ChatMessage.deleteById id
 
   updateCard: ({body, params, headers}) ->
     radioactiveHost = config.RADIOACTIVE_API_URL.replace /https?:\/\//i, ''

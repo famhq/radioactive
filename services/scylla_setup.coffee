@@ -9,7 +9,7 @@ config = require '../config'
 
 class ScyllaSetupService
   setup: (tables) =>
-    CacheService.runOnce 'scylla_setup', =>
+    CacheService.runOnce 'scylla_setup4', =>
       Promise.all [
         @createKeyspaceIfNotExists 'starfire'
         @createKeyspaceIfNotExists 'clash_royale'
@@ -33,7 +33,10 @@ class ScyllaSetupService
   createTableIfNotExist: (table) ->
     q = cknex(table.keyspace).createColumnFamilyIfNotExists table.name
     _.map table.fields, (type, key) ->
-      q[type] key
+      if typeof type is 'object'
+        q[type.type] key, type.subType
+      else
+        q[type] key
 
     if table.primaryKey.clusteringColumns
       q.primary(

@@ -266,7 +266,8 @@ class RewardCtrl
       @_getAdscend options, {user, headers, connection}
       # @_getIronSource options, {user, headers, connection}
 
-      if options.isApp and semver.gte options.appVersion, '1.4.5'
+      # FIXME: admob doesn't allow this: https://support.google.com/admob/answer/7313578?hl=en
+      if options.isApp and false and semver.gte options.appVersion, '1.4.5'
         @_rewardedVideosLeft user.id
       else
         Promise.resolve 0

@@ -2,6 +2,7 @@ _ = require 'lodash'
 router = require 'exoid-router'
 
 User = require '../models/user'
+GroupUser = require '../models/group_user'
 ChatMessage = require '../models/chat_message'
 Ban = require '../models/ban'
 EmbedService = require '../services/embed'
@@ -9,6 +10,8 @@ config = require '../config'
 
 BANNED_LIMIT = 15
 
+# TODO: this probably should be deleted and the methods moved to
+# each respective controller (chat_message, user, etc...)
 class ModCtrl
   getAllBanned: ({groupId, duration, scope} = {}, {user}) ->
     unless user.flags.isModerator
@@ -31,10 +34,19 @@ class ModCtrl
     .map ChatMessage.embed ['user']
 
   banByUserId: ({userId, groupId, duration, type}, {user}) ->
-    unless user.flags.isModerator
-      router.throw status: 400, info: 'You don\'t have permission to do that'
+    GroupUser.getByGroupIdAndUserId groupId, userId
+    .then (groupUser) ->
+      permission = if duration is 'permanent' \
+                   then 'permaBanUser'
+                   else 'tempBanUser'
+      hasPermission = GroupUser.hasPermission {
+        groupId, meGroupUser: groupUser, me: user, permissions: [permission]
+      }
 
-    ban = {userId, groupId, duration, bannedById: user.id, scope: 'chat'}
+      unless hasPermission
+        router.throw status: 400, info: 'You don\'t have permission to do that'
+
+      ban = {userId, groupId, duration, bannedById: user.id, scope: 'chat'}
 
     User.getById userId
     .then (user) ->
@@ -51,13 +63,25 @@ class ModCtrl
         ChatMessage.deleteAllByUserIdAndGroupId userId, groupId
 
   unbanByUserId: ({userId, groupId}, {user}) ->
-    unless user.flags.isModerator
+    GroupUser.getByGroupIdAndUserId groupId, userId
+    .then (groupUser) ->
+      permission = 'tempBanUser'
+      hasPermission = GroupUser.hasPermission {
+        groupId, meGroupUser: groupUser, me: user, permissions: [permission]
+      }
+    unless hasPermission
       router.throw status: 400, info: 'You don\'t have permission to do that'
 
     Ban.deleteAllByUserId userId
 
   unflagByChatMessageId: ({id}, {user}) ->
-    unless user.flags.isModerator
+    GroupUser.getByGroupIdAndUserId groupId, userId
+    .then (groupUser) ->
+      permission = 'tempBan'
+      hasPermission = GroupUser.hasPermission {
+        groupId, meGroupUser: groupUser, me: user, permissions: [permission]
+      }
+    unless hasPermission
       router.throw status: 400, info: 'You don\'t have permission to do that'
 
     ChatMessage.updateById id, {hasModActed: true}
