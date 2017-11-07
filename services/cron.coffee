@@ -9,11 +9,15 @@ CleanupService = require './cleanup'
 ClashRoyalePlayerService = require './clash_royale_player'
 ClashRoyaleClanService = require './clash_royale_clan'
 Thread = require '../models/thread'
+Item = require '../models/item'
+Product = require '../models/product'
 ClashRoyaleDeck = require '../models/clash_royale_deck'
 ClashRoyaleCard = require '../models/clash_royale_card'
 ClashRoyalePlayerDeck = require '../models/clash_royale_player_deck'
 GroupUser = require '../models/group_user'
 Ban = require '../models/ban'
+allItems = require '../resources/data/items'
+allProducts = require '../resources/data/products'
 r = require './rethinkdb'
 config = require '../config'
 
@@ -39,6 +43,9 @@ class CronService
 
     # minute on 3/4 minute
     @addCron 'threeQuarterMinute', '45 * * * * *', ->
+      Item.batchUpsert allItems
+      Product.batchUpsert allProducts
+      Product.batchUpsert allProducts # FIXME: rm
       if config.ENV is config.ENVS.PROD
         ClashRoyalePlayerService.updateTopPlayers()
 

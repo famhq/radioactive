@@ -48,16 +48,16 @@ class ModCtrl
 
       ban = {userId, groupId, duration, bannedById: user.id, scope: 'chat'}
 
-    User.getById userId
-    .then (user) ->
-      unless user
-        router.throw status: 404, info: 'User not found'
-      if type is 'ip'
-        ban.ip = user.lastActiveIp or user.ip
-      if ban.ip?.indexOf('::ffff:10.') isnt -1
-        delete ban.ip # TODO: remove. ignores local ips (which shouldn't happen)
+      User.getById userId
+      .then (user) ->
+        unless user
+          router.throw status: 404, info: 'User not found'
+        if type is 'ip'
+          ban.ip = user.lastActiveIp or user.ip
+        if ban.ip?.indexOf('::ffff:10.') isnt -1
+          delete ban.ip # TODO: remove. ignores local ips (which shouldn't happen)
 
-      Ban.create ban
+        Ban.create ban
     .then ->
       if groupId
         ChatMessage.deleteAllByUserIdAndGroupId userId, groupId

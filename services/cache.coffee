@@ -48,6 +48,7 @@ PREFIXES =
     'clash_royale_player_deck:player_id2'
   CLASH_ROYALE_API_GET_PLAYER_ID: 'clash_royale_api:get_tag'
   GROUP_ID: 'group:id2'
+  GROUP_KEY: 'group:key1'
   GROUP_GET_ALL: 'group:getAll1'
   GROUP_GET_ALL_CATEGORY: 'group:getAll:category4'
   GROUP_STAR: 'group:star2'
@@ -101,6 +102,7 @@ class CacheService
     KUE_WATCH_STUCK: 'kue:watch_stuck'
   LOCK_PREFIXES:
     KUE_PROCESS: 'kue:process'
+    OPEN_PACK: 'open_pack1'
     BROADCAST: 'broadcast'
     SET_AUTO_REFRESH: 'set_auto_refresh4'
   LOCKS:

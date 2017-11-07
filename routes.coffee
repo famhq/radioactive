@@ -13,6 +13,7 @@ ClashRoyalePlayerDeckCtrl = require './controllers/clash_royale_player_deck'
 ClashRoyaleCardCtrl = require './controllers/clash_royale_card'
 DynamicImageCtrl = require './controllers/dynamic_image'
 EventCtrl = require './controllers/event'
+ItemCtrl = require './controllers/item'
 ModCtrl = require './controllers/mod'
 NpsCtrl = require './controllers/nps'
 PaymentCtrl = require './controllers/payment'
@@ -32,7 +33,8 @@ ThreadVoteCtrl = require './controllers/thread_vote'
 UserCtrl = require './controllers/user'
 UserFollowerCtrl = require './controllers/user_follower'
 UserDataCtrl = require './controllers/user_data'
-UserGroupData = require './controllers/user_group_data'
+UserItemCtrl = require './controllers/user_item'
+UserGroupDataCtrl = require './controllers/user_group_data'
 VideoCtrl = require './controllers/video'
 StreamService = require './services/stream'
 
@@ -137,6 +139,7 @@ module.exports = router
 .on 'groups.leaveById', authed GroupCtrl.leaveById
 .on 'groups.getAll', authed GroupCtrl.getAll
 .on 'groups.getById', authed GroupCtrl.getById
+.on 'groups.getByKey', authed GroupCtrl.getByKey
 .on 'groups.inviteById', authed GroupCtrl.inviteById
 
 .on 'groupUsers.createModeratorByUsername',
@@ -157,8 +160,11 @@ module.exports = router
 .on 'gameRecordTypes.getAllByPlayerIdAndGameId',
   authed GameRecordTypeCtrl.getAllByPlayerIdAndGameId
 
-.on 'userGroupData.updateMeByGroupId', authed UserGroupData.updateMeByGroupId
-.on 'userGroupData.getMeByGroupId', authed UserGroupData.getMeByGroupId
+.on 'userGroupData.updateMeByGroupId',
+  authed UserGroupDataCtrl.updateMeByGroupId
+.on 'userGroupData.getMeByGroupId', authed UserGroupDataCtrl.getMeByGroupId
+
+.on 'userItems.getAll', authed UserItemCtrl.getAll
 
 .on 'players.getByUserIdAndGameId',
   authed PlayerCtrl.getByUserIdAndGameId
@@ -215,6 +221,9 @@ module.exports = router
 
 .on 'nps.create', authed NpsCtrl.create
 
+.on 'items.getAllByGroupId', authed ItemCtrl.getAllByGroupId
+.on 'items.getAll', authed ItemCtrl.getAll
+
 .on 'mods.getAllBanned', authed ModCtrl.getAllBanned
 .on 'mods.getAllReportedMessages', authed ModCtrl.getAllReportedMessages
 .on 'mods.banByIp', authed ModCtrl.banByIp
@@ -222,6 +231,7 @@ module.exports = router
 .on 'mods.unbanByUserId', authed ModCtrl.unbanByUserId
 .on 'mods.unflagByChatMessageId', authed ModCtrl.unflagByChatMessageId
 
+.on 'products.getAllByGroupId', authed ProductCtrl.getAllByGroupId
 .on 'products.buy', authed ProductCtrl.buy
 
 .on 'rewards.setup', authed RewardCtrl.setup

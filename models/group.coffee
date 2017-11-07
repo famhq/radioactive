@@ -8,6 +8,7 @@ GroupUser = require './group_user'
 
 GROUPS_TABLE = 'groups'
 TYPE_LANGUAGE_INDEX = 'typeLanguage'
+KEY_INDEX = 'key'
 
 ONE_DAY_SECONDS = 3600 * 24
 
@@ -20,6 +21,7 @@ defaultGroup = (group) ->
     creatorId: null
     name: null
     description: null
+    key: null
     badgeId: null
     background: null
     language: 'en'
@@ -36,6 +38,7 @@ class GroupModel
       name: GROUPS_TABLE
       options: {}
       indexes: [
+        {name: KEY_INDEX}
         {name: TYPE_LANGUAGE_INDEX, fn: (row) ->
           [row('type'), row('language')]}
       ]
@@ -92,16 +95,26 @@ class GroupModel
     get = ->
       r.table GROUPS_TABLE
       .get id
-      # .merge (group) ->
-      #   userIds = r.table('group_users').getAll(group('id'), {index: 'groupId'})
-      #             .map (groupUser) -> groupUser('userId')
-      #             .coerceTo('array')
-      #   {userIds}
       .run()
       .then defaultGroup
 
     if preferCache
       key = "#{CacheService.PREFIXES.GROUP_ID}:#{id}"
+      CacheService.preferCache key, get, {expireSeconds: ONE_DAY_SECONDS}
+    else
+      get()
+
+  getByKey: (key, {preferCache} = {}) ->
+    get = ->
+      r.table GROUPS_TABLE
+      .getAll key, {index: KEY_INDEX}
+      .nth 0
+      .default null
+      .run()
+      .then defaultGroup
+
+    if preferCache
+      key = "#{CacheService.PREFIXES.GROUP_KEY}:#{key}"
       CacheService.preferCache key, get, {expireSeconds: ONE_DAY_SECONDS}
     else
       get()
@@ -178,6 +191,7 @@ class GroupModel
   sanitizePublic: _.curry (requesterId, group) ->
     sanitizedGroup = _.pick group, [
       'id'
+      'key'
       'creatorId'
       'name'
       'description'
@@ -197,6 +211,7 @@ class GroupModel
   sanitize: _.curry (requesterId, group) ->
     sanitizedGroup = _.pick group, [
       'id'
+      'key'
       'creatorId'
       'name'
       'description'

@@ -45,6 +45,18 @@ tables = [
       partitionKey: ['userId']
       clusteringColumns: ['groupId']
   }
+  {
+    name: 'group_users_xp_counter_by_userId'
+    keyspace: 'starfire'
+    fields:
+      groupId: 'uuid'
+      userId: 'uuid'
+      xp: 'counter'
+      level: 'counter'
+    primaryKey:
+      partitionKey: ['userId']
+      clusteringColumns: ['groupId']
+  }
 ]
 
 class GroupUserModel
@@ -95,6 +107,13 @@ class GroupUserModel
     .andWhere 'userId', '=', userId
     .run {isSingle: true}
 
+  incrementXpByGroupIdAndUserId: (groupId, userId, amount) ->
+    cknex().update 'group_users_xp_counter_by_userId'
+    .increment 'xp', amount
+    .where 'groupId', '=', groupId
+    .andWhere 'userId', '=', userId
+    .run()
+
   deleteByGroupIdAndUserId: (groupId, userId) ->
     Promise.all [
       cknex().delete()
@@ -111,7 +130,7 @@ class GroupUserModel
     ]
 
   hasPermission: ({meGroupUser, me, permissions}) ->
-    isGlobalModerator = false # FIXME me?.flags?.isModerator
+    isGlobalModerator = me?.flags?.isModerator
     isGlobalModerator or _.every permissions, (permission) ->
       _.find meGroupUser?.roles, (role) ->
         role.globalPermissions.indexOf(permission) isnt -1

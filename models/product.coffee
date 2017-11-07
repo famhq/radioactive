@@ -1,33 +1,92 @@
 _ = require 'lodash'
+uuid = require 'node-uuid'
 Promise = require 'bluebird'
 
-products = require '../resources/data/products'
+cknex = require '../services/cknex'
+config = require '../config'
+
+tables = [
+  {
+    name: 'products_by_groupId'
+    keyspace: 'starfire'
+    fields:
+      groupId: 'uuid'
+      key: 'text'
+      type: 'text' # pack | general
+      data: 'text'
+      cost: 'int'
+    primaryKey:
+      partitionKey: ['groupId']
+      clusteringColumns: ['key']
+  }
+  {
+    name: 'products_by_key'
+    keyspace: 'starfire'
+    fields:
+      groupId: 'uuid'
+      key: 'text'
+      type: 'text' # pack | general
+      data: 'text'
+      cost: 'int'
+    primaryKey:
+      partitionKey: ['key']
+  }
+]
+
+defaultProduct = (product) ->
+  unless product?
+    return null
+
+  product = _.cloneDeep product
+  product.data = JSON.stringify product.data
+  product
+
+defaultProductOutput = (product) ->
+  unless product?
+    return null
+
+  product.data = try
+    JSON.parse product.data
+  catch
+    {}
+
+  product
 
 class ProductModel
-  RETHINK_TABLES: []
+  SCYLLA_TABLES: tables
 
-  getAll: ->
-    Promise.resolve products
+  batchUpsert: (products) =>
+    Promise.map products, (product) =>
+      @upsert product, {skipRun: true}
 
-  getByProductId: (productId) ->
-    Promise.resolve _.find products, {productId}
+  getAllByGroupId: (groupId) ->
+    cknex().select '*'
+    .from 'products_by_groupId'
+    .where 'groupId', '=', groupId
+    .run()
+    .map defaultProductOutput
 
-  getSale: (product, user) ->
-    userSale = _.first _.filter user.sales, ({productIds, expireTime}) ->
-      productIds.indexOf(product.productId) isnt -1 and
-        expireTime.getTime() > Date.now()
-    productSaleMultiplier = product.saleMultiplier or 1
+  getByKey: (key) ->
+    cknex().select '*'
+    .from 'products_by_key'
+    .where 'key', '=', key
+    .run {isSingle: true}
+    .then defaultProductOutput
 
-    if userSale and userSale?.multiplier > productSaleMultiplier
-      return {
-        saleMultiplier: userSale?.multiplier
-        saleExpireTime: userSale?.expireTime
-      }
-    else
-      return {
-        saleMultiplier: product.saleMultiplier
-        saleExpireTime: product.saleExpireTime
-      }
+  upsert: (product, {skipRun} = {}) ->
+    product = defaultProduct product
 
+    Promise.all [
+      cknex().update 'products_by_groupId'
+      .set _.omit product, ['groupId', 'key']
+      .where 'groupId', '=', product.groupId
+      .andWhere 'key', '=', product.key
+      .run()
+
+      cknex().update 'products_by_key'
+      .set _.omit product, ['key']
+      .where 'key', '=', product.key
+      .run()
+    ]
 
 module.exports = new ProductModel()

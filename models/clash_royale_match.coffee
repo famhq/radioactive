@@ -71,7 +71,7 @@ class ClashRoyaleMatchModel
     Promise.all _.map chunks, (chunk) ->
       cknex.batchRun _.map chunk, (match) ->
         cknex('clash_royale').insert match
-        .usingTTL 3600 * 24 * 30 # 1 month
+        .usingTTL 3600 * 24 * 14 # 2 weeks
         .into 'matches_by_playerId'
 
   getAllByPlayerId: (playerId, {limit, cursor} = {}) ->

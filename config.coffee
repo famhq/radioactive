@@ -22,6 +22,11 @@ config =
     'PvP', 'classicChallenge', 'grandChallenge', 'tournament', '2v2'
   ]
   NOTIFICATION_COLOR: '#fc373e'
+  RARITY_XP:
+    common: 10
+    rare: 50
+    epic: 150
+    legendary: 400
 
   IS_POSTGRES: env.IS_POSTGRES or false
 

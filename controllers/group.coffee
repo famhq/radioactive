@@ -201,4 +201,9 @@ class GroupCtrl
     .then EmbedService.embed {embed: defaultEmbed, user}
     .then Group.sanitize null
 
+  getByKey: ({key}, {user}) ->
+    Group.getByKey key
+    .then EmbedService.embed {embed: defaultEmbed, user}
+    .then Group.sanitize null
+
 module.exports = new GroupCtrl()

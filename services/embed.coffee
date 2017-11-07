@@ -19,6 +19,7 @@ Deck = require '../models/clash_royale_deck'
 Group = require '../models/group'
 GroupRole = require '../models/group_role'
 GroupUser = require '../models/group_user'
+Item = require '../models/item'
 Star = require '../models/star'
 ClashRoyaleClanRecord = require '../models/clash_royale_clan_record'
 GroupRecord = require '../models/group_record'
@@ -89,6 +90,8 @@ TYPES =
     GROUP_DATA: 'user:groupData'
     GAME_DATA: 'user:gameData'
     IS_BANNED: 'user:isBanned'
+  USER_ITEM:
+    ITEM: 'userItem:item'
   USER_DATA:
     CONVERSATION_USERS: 'userData:conversationUsers'
     FOLLOWERS: 'userData:followers'
@@ -105,23 +108,6 @@ NEWBIE_CHEST_COUNT = 0
 CHEST_COUNT = 300
 
 profileDialogUserEmbed = [TYPES.USER.GAME_DATA, TYPES.USER.IS_BANNED]
-
-# separate service so models don't have to depend on
-# each other (circular). eg user data needing user for
-# embedding followers, and user needing user data
-
-getUserDataItems = (userData) ->
-  key = CacheService.PREFIXES.USER_ITEMS + ':' + userData.userId
-  CacheService.preferCache key, ->
-    if _.isEmpty userData.itemIds
-      Promise.resolve []
-    else
-      Promise.map userData.itemIds, (itemId) ->
-        Promise.props _.defaults {
-          item: Item.getById(itemId.id).then Item.sanitize null
-        }, itemId
-      .filter ({item}) -> Boolean item
-  , {expireSeconds: ONE_HOUR_SECONDS}
 
 embedFn = _.curry (props, object) ->
   {embed, user, clanId, groupId, gameId, userId, playerId} = props
@@ -311,6 +297,9 @@ embedFn = _.curry (props, object) ->
           gameId: config.CLASH_ROYALE_ID
         }
         .then User.sanitizePublic null
+
+      when TYPES.USER_ITEM.ITEM
+        embedded.item = Item.getByKey embedded.itemKey, {preferCache: true}
 
       when TYPES.STAR.GROUP
         embedded.group = Group.getById embedded.groupId

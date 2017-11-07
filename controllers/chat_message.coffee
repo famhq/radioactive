@@ -6,6 +6,7 @@ Promise = require 'bluebird'
 Joi = require 'joi'
 
 User = require '../models/user'
+UserItem = require '../models/user_item'
 Ban = require '../models/ban'
 Group = require '../models/group'
 ChatMessage = require '../models/chat_message'
@@ -25,7 +26,7 @@ defaultEmbed = [EmbedService.TYPES.CHAT_MESSAGE.USER]
 
 MAX_CONVERSATION_USER_IDS = 20
 URL_REGEX = /\b(https?):\/\/[-A-Z0-9+&@#/%?=~_|!:,.;]*[A-Z0-9+&@#/%=~_|]/gi
-STICKER_REGEX = /(:[a-z_]+:)/gi
+STICKER_REGEX = /(:[a-z_\^0-9]+:)/gi
 IMAGE_REGEX = /\!\[(.*?)\]\((.*?)\)/gi
 CARD_BUILDER_TIMEOUT_MS = 1000
 SMALL_IMAGE_SIZE = 200
@@ -74,6 +75,7 @@ class ChatMessageCtrl
       if bannedIp?.ip or bannedUserId?.userId or isHoneypotBanned
         router.throw status: 403, 'unable to post'
 
+  # TODO: break down into multiple fns
   create: ({body, conversationId, clientId}, {user, headers, connection}) =>
     userAgent = headers['user-agent']
     ip = headers['x-forwarded-for'] or
@@ -89,8 +91,8 @@ class ChatMessageCtrl
       router.throw status: 400, info: 'message is too long...'
 
     isImage = body.match(IMAGE_REGEX)
-    isSticker = body.match(STICKER_REGEX)
-    isMedia = isImage or isSticker
+    stickers = body.match(STICKER_REGEX)
+    isMedia = isImage or stickers
 
     @checkIfBanned ip, user.id, router
     .then =>
@@ -100,10 +102,40 @@ class ChatMessageCtrl
     .then EmbedService.embed {embed: defaultConversationEmbed}
     .then (conversation) =>
       Conversation.hasPermission conversation, user.id
-      .then (hasPermission) =>
+      .then (hasPermission) ->
         unless hasPermission
           router.throw status: 401, info: 'unauthorized'
 
+        # TODO: allow images for certain group_user roles
+        # disable images unless it's a pm or giphy
+        if conversation.type isnt 'pm' and conversation.groupId
+          matches = _.uniq body.match IMAGE_REGEX
+          body = _.reduce matches, (text, match) ->
+            # allow giphy gifs
+            if match.indexOf('giphy.com') is -1
+              text.replace match, ''
+            else
+              text
+          , body
+
+        if stickers
+          UserItem.getAllByUserId user.id
+          .then (userItems) ->
+            _.forEach stickers, (sticker) ->
+              stickerText = sticker.replace /:/g, ''
+              parts = stickerText.split '^'
+              sticker = parts[0]
+              level = parts[1] or 1
+              ownedSticker = _.find userItems, {
+                itemKey: sticker
+              }
+              ownedSticker?.itemLevel = 1
+              hasSticker = ownedSticker and ownedSticker.itemLevel >= level
+              unless hasSticker
+                router.throw status: 401, info: 'sticker not found'
+        else
+          Promise.resolve null
+      .then =>
         chatMessageId = uuid.v4()
 
         urls = not isImage and body.match(URL_REGEX)
