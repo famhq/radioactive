@@ -53,7 +53,22 @@ class PushNotificationService
     Promise.resolve true # TODO
 
   sendWeb: (token, message) ->
+    # doesn't seem to work with old VAPID tokens
+    # tokenObj = JSON.parse token
+    # request 'https://iid.googleapis.com/v1/web/iid', {
+    #   json: true
+    #   method: 'POST'
+    #   headers:
+    #     'Authorization': "key=#{config.GOOGLE_API_KEY}"
+    #   body:
+    #     endpoint: tokenObj.endpoint
+    #     keys: tokenObj.keys
+    # }
     webpush.sendNotification JSON.parse(token), JSON.stringify message
+    .then (a) ->
+      console.log a
+    .catch (a) ->
+      console.log a
 
   sendIos: (token, {title, text, type, data, icon}) ->
     request 'https://iid.googleapis.com/iid/v1:batchImport', {
@@ -78,6 +93,7 @@ class PushNotificationService
       @sendFcm token, {title, text, type, data, icon}, {isiOS: true}
 
   sendFcm: (to, {title, text, type, data, icon, toType}, {isiOS} = {}) =>
+    console.log 'sendfcm'
     toType ?= 'token'
     new Promise (resolve, reject) =>
       messageOptions = {
@@ -128,6 +144,7 @@ class PushNotificationService
         toObj = {condition: "'#{to}' in topics || '#{to}2' in topics"}
 
       @gcmConn.send notification, toObj, RETRY_COUNT, (err, result) ->
+        console.log err, result
         successes = result?.success or result?.message_id
         if err or not successes
           reject err
@@ -252,7 +269,7 @@ class PushNotificationService
     .map ({id, sourceType, token, errorCount}) =>
       fn = if sourceType is 'web' \
            then @sendWeb
-           else if sourceType is 'android' or sourceType is 'ios-fcm'
+           else if sourceType in ['android', 'ios-fcm', 'web-fcm']
            then @sendFcm
            else @sendIos
 

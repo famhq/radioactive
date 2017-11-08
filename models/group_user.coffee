@@ -107,6 +107,15 @@ class GroupUserModel
     .andWhere 'userId', '=', userId
     .run {isSingle: true}
 
+  getXpByGroupIdAndUserId: (groupId, userId) ->
+    cknex().select '*'
+    .from 'group_users_xp_counter_by_userId'
+    .where 'groupId', '=', groupId
+    .andWhere 'userId', '=', userId
+    .run {isSingle: true}
+    .then (groupUser) ->
+      groupUser?.xp or 0
+
   incrementXpByGroupIdAndUserId: (groupId, userId, amount) ->
     cknex().update 'group_users_xp_counter_by_userId'
     .increment 'xp', amount

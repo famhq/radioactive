@@ -39,6 +39,7 @@ TYPES =
     USER: 'ban:user'
   CHAT_MESSAGE:
     USER: 'chatMessage:user'
+    GROUP_USER: 'chatMessage:groupUser'
   CONVERSATION:
     USERS: 'conversation:users'
     LAST_MESSAGE: 'conversation:lastMessage'
@@ -65,6 +66,7 @@ TYPES =
     STAR: 'group:star'
   GROUP_USER:
     ROLES: 'groupUser:roles'
+    XP: 'groupUser:xp'
   CLAN_RECORD_TYPE:
     CLAN_VALUES: 'clanRecordType:clanValues'
   GROUP_RECORD_TYPE:
@@ -355,6 +357,11 @@ embedFn = _.curry (props, object) ->
               embedded.groupId, roleId
             )
 
+      when TYPES.GROUP_USER.XP
+        embedded.xp = GroupUser.getXpByGroupIdAndUserId(
+          embedded.groupId, embedded.userId
+        )
+
       when TYPES.CONVERSATION.LAST_MESSAGE
         embedded.lastMessage = \
           ChatMessage.getLastByConversationId embedded.id
@@ -422,7 +429,6 @@ embedFn = _.curry (props, object) ->
           key = CacheService.PREFIXES.CHAT_USER + ':' + embedded.userId
           embedded.user =
             CacheService.preferCache key, ->
-              console.log 'get chat user / player data'
               User.getById embedded.userId, {preferCache: true}
               .then embedFn {
                 embed: profileDialogUserEmbed, gameId: config.CLASH_ROYALE_ID
@@ -431,6 +437,22 @@ embedFn = _.curry (props, object) ->
             , {expireSeconds: FIVE_MINUTES_SECONDS}
         else
           embedded.user = null
+
+      when TYPES.CHAT_MESSAGE.GROUP_USER
+        if embedded.groupId and embedded.userId
+          prefix = CacheService.PREFIXES.CHAT_GROUP_USER
+          key = "#{prefix}:#{embedded.groupId}:#{embedded.userId}"
+          embedded.groupUser =
+            CacheService.preferCache key, ->
+              GroupUser.getByGroupIdAndUserId(
+                embedded.groupId, embedded.userId, {preferCache: true}
+              )
+              .then embedFn {
+                embed: [TYPES.GROUP_USER.XP]
+              }
+            , {expireSeconds: FIVE_MINUTES_SECONDS}
+        else
+          embedded.groupUser = null
 
       when TYPES.PLAYER.HI
         embedded.hi = Promise.resolve(

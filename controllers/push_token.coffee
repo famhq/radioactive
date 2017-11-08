@@ -14,7 +14,7 @@ class PushTokensCtrl
       userId: schemas.user.id.optional()
       token: schemas.pushToken.token
       sourceType: Joi.string().optional().valid [
-        'android', 'ios', 'ios-fcm', 'web'
+        'android', 'ios', 'ios-fcm', 'web', 'web-fcm'
       ]
     , {presence: 'required'}
 

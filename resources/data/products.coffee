@@ -45,7 +45,7 @@ products = [].concat(
         {rarity: 'legendary', odds: 0.02}
       ]
   }
-  {key: 'no_ads_for_day', type: 'general', groupId: GROUPS.STARFIRE, cost: 50}
+  # {key: 'no_ads_for_day', type: 'general', groupId: GROUPS.STARFIRE, cost: 50}
   {key: 'google_play_10', type: 'general', groupId: GROUPS.STARFIRE, cost: 15000}
   {key: 'visa_10', type: 'general', groupId: GROUPS.STARFIRE, cost: 15000}
 )

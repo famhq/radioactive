@@ -57,7 +57,9 @@ class ProductCtrl
 
         xpEarned = _.sumBy packItems, ({rarity}) ->
           config.RARITY_XP[rarity]
-        GroupUser.incrementXpByGroupIdAndUserId product.groupId, user.id, xpEarned
+        GroupUser.incrementXpByGroupIdAndUserId(
+          product.groupId, user.id, xpEarned
+        )
 
         UserItem.batchIncrementByItemKeysAndUserId itemKeys, user.id
         .then ->
@@ -82,12 +84,10 @@ class ProductCtrl
       unless product
         router.throw {status: 400, info: 'item not found'}
 
-      cost = if key is 'no_ads_for_day' then 50 else 15000
-
-      if user.fire < cost
+      if user.fire < product.cost
         router.throw {status: 400, info: 'not enough fire'}
 
-      User.subtractFireById user.id, cost
+      User.subtractFireById user.id, product.cost
       .then (response) =>
         # double-check that they had the fire to buy
         # (for simulatenous purchases)
@@ -106,7 +106,7 @@ class ProductCtrl
 
           Email: #{email}
 
-          Cost: #{cost}
+          Cost: #{product.cost}
           """
         }
 

@@ -22,7 +22,10 @@ StatsService = require '../services/stats'
 schemas = require '../schemas'
 config = require '../config'
 
-defaultEmbed = [EmbedService.TYPES.CHAT_MESSAGE.USER]
+defaultEmbed = [
+  EmbedService.TYPES.CHAT_MESSAGE.USER
+  EmbedService.TYPES.CHAT_MESSAGE.GROUP_USER
+]
 
 MAX_CONVERSATION_USER_IDS = 20
 URL_REGEX = /\b(https?):\/\/[-A-Z0-9+&@#/%?=~_|!:,.;]*[A-Z0-9+&@#/%=~_|]/gi

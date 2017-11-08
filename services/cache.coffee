@@ -11,6 +11,7 @@ ONE_HOUR_SECONDS = 3600
 
 PREFIXES =
   CHAT_USER: 'chat:user3'
+  CHAT_GROUP_USER: 'chat:user'
   THREAD_USER: 'thread:user1'
   THREAD: 'thread:id'
   THREAD_DECK: 'thread:deck11'
