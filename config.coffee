@@ -21,6 +21,12 @@ config =
   DECK_TRACKED_GAME_TYPES: [
     'PvP', 'classicChallenge', 'grandChallenge', 'tournament', '2v2'
   ]
+  # also in starfire
+  LEVEL_REQUIREMENTS: [
+    {level: 1, countRequired: 0}
+    {level: 2, countRequired: 10}
+    {level: 3, countRequired: 100}
+  ]
   NOTIFICATION_COLOR: '#fc373e'
   RARITY_XP:
     common: 10

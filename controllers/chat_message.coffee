@@ -128,11 +128,11 @@ class ChatMessageCtrl
               stickerText = sticker.replace /:/g, ''
               parts = stickerText.split '^'
               sticker = parts[0]
-              level = parts[1] or 1
+              level = parseInt(parts[1] or 1)
               ownedSticker = _.find userItems, {
                 itemKey: sticker
               }
-              ownedSticker?.itemLevel = 1
+              ownedSticker?.itemLevel ?= 1
               hasSticker = ownedSticker and ownedSticker.itemLevel >= level
               unless hasSticker
                 router.throw status: 401, info: 'sticker not found'

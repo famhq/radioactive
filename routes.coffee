@@ -104,6 +104,7 @@ module.exports = router
 
 .on 'pushTokens.create', authed PushTokenCtrl.create
 .on 'pushTokens.updateByToken', authed PushTokenCtrl.updateByToken
+.on 'pushTokens.subscribeToTopic', authed PushTokenCtrl.subscribeToTopic
 
 .on 'dynamicImage.getMeByImageKey',
   authed DynamicImageCtrl.getMeByImageKey
@@ -165,6 +166,7 @@ module.exports = router
 .on 'userGroupData.getMeByGroupId', authed UserGroupDataCtrl.getMeByGroupId
 
 .on 'userItems.getAll', authed UserItemCtrl.getAll
+.on 'userItems.upgradeByItemKey', authed UserItemCtrl.upgradeByItemKey
 
 .on 'players.getByUserIdAndGameId',
   authed PlayerCtrl.getByUserIdAndGameId

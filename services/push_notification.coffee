@@ -65,10 +65,6 @@ class PushNotificationService
     #     keys: tokenObj.keys
     # }
     webpush.sendNotification JSON.parse(token), JSON.stringify message
-    .then (a) ->
-      console.log a
-    .catch (a) ->
-      console.log a
 
   sendIos: (token, {title, text, type, data, icon}) ->
     request 'https://iid.googleapis.com/iid/v1:batchImport', {
@@ -93,7 +89,6 @@ class PushNotificationService
       @sendFcm token, {title, text, type, data, icon}, {isiOS: true}
 
   sendFcm: (to, {title, text, type, data, icon, toType}, {isiOS} = {}) =>
-    console.log 'sendfcm'
     toType ?= 'token'
     new Promise (resolve, reject) =>
       messageOptions = {
@@ -141,7 +136,10 @@ class PushNotificationService
       if toType is 'token'
         toObj = {registrationTokens: [to]}
       else if toType is 'topic' and to
-        toObj = {condition: "'#{to}' in topics || '#{to}2' in topics"}
+        toObj = {topic: "/topics/#{to}"}
+        # toObj = {condition: "'#{to}' in topics || '#{to}2' in topics"}
+
+      # return console.log toObj
 
       @gcmConn.send notification, toObj, RETRY_COUNT, (err, result) ->
         console.log err, result

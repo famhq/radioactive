@@ -68,7 +68,7 @@
     "moment": "^2.15.1",
     "money": "^0.2.0",
     "multer": "^1.2.0",
-    "node-gcm": "^0.14.6",
+    "node-gcm": "git://github.com/ToothlessGear/node-gcm.git",
     "node-uuid": "^1.4.7",
     "pcg-random": "^1.0.0",
     "pg": "^6.1.5",

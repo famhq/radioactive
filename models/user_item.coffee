@@ -31,7 +31,7 @@ defaultUserItemOutput = (item) ->
     return null
 
   item.count = parseInt item.count
-  item.itemLevel = parseInt item.itemLevel
+  item.itemLevel = parseInt item.itemLevel or 1
 
   item
 
@@ -59,9 +59,22 @@ class UserItemModel
     .run()
     .map (item) -> item.itemKey
 
-  incrementByItemKeyAndUserId: (itemKey, userId, count, {skipRun} = {}) ->
-    userItem = defaultUserItem userItem
+  getByUserIdAndItemKey: (userId, itemKey) ->
+    cknex().select '*'
+    .from 'user_items_counter_by_userId'
+    .where 'userId', '=', userId
+    .andWhere 'itemKey', '=', itemKey
+    .run {isSingle: true}
+    .then defaultUserItemOutput
 
+  incrementLevelByItemKeyAndUserId: (itemKey, userId, count, {skipRun} = {}) ->
+    cknex().update 'user_items_counter_by_userId'
+    .increment 'itemLevel', count
+    .where 'userId', '=', userId
+    .andWhere 'itemKey', '=', itemKey
+    .run()
+
+  incrementByItemKeyAndUserId: (itemKey, userId, count, {skipRun} = {}) ->
     q = cknex().update 'user_items_counter_by_userId'
     .increment 'count', count
     .where 'userId', '=', userId

@@ -2,10 +2,12 @@ _ = require 'lodash'
 Joi = require 'joi'
 Promise = require 'bluebird'
 router = require 'exoid-router'
+request = require 'request-promise'
 
 PushToken = require '../models/push_token'
 User = require '../models/user'
 schemas = require '../schemas'
+config = require '../config'
 
 class PushTokensCtrl
   create: ({token, sourceType}, {user}) ->
@@ -64,6 +66,16 @@ class PushTokensCtrl
     ]
     .then ->
       null
+
+  subscribeToTopic: ({token, topic}, {user}) ->
+    base = 'https://iid.googleapis.com/iid/v1'
+    request "#{base}/#{token}/rel/topics/#{topic}", {
+      json: true
+      method: 'POST'
+      headers:
+        'Authorization': "key=#{config.GOOGLE_API_KEY}"
+      body: {}
+    }
 
 
 module.exports = new PushTokensCtrl()

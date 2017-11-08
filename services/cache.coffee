@@ -105,6 +105,7 @@ class CacheService
     KUE_PROCESS: 'kue:process'
     OPEN_PACK: 'open_pack1'
     BROADCAST: 'broadcast'
+    UPGRADE_STICKER: 'upgrade_sticker2'
     SET_AUTO_REFRESH: 'set_auto_refresh4'
   LOCKS:
     AUTO_REFRESH: 'auto_refresh'
@@ -168,12 +169,16 @@ class CacheService
     expireSeconds ?= DEFAULT_REDLOCK_EXPIRE_SECONDS
     @redlock.lock key, expireSeconds * 1000
     .then (lock) ->
-      fn(lock)?.tap? ->
+      fn(lock)?.tap?(->
         if unlockWhenCompleted
           lock.unlock()
+      ).catch? (err) ->
+        lock.unlock()
+        throw {fnError: err}
     .catch (err) ->
-      # console.log 'redlock err', err
-      null
+      if err.fnError
+        throw err.fnError
+      # don't pass back other (redlock) errors
 
   preferCache: (key, fn, {expireSeconds, ignoreNull, category} = {}) =>
     rawKey = key
