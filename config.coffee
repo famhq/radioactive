@@ -22,6 +22,7 @@ config =
     'PvP', 'classicChallenge', 'grandChallenge', 'tournament', '2v2'
   ]
   # also in starfire
+  LANGUAGES: ['en', 'es', 'it', 'fr', 'zh', 'ja', 'ko', 'de', 'pt', 'pl']
   LEVEL_REQUIREMENTS: [
     {level: 1, countRequired: 0}
     {level: 2, countRequired: 10}

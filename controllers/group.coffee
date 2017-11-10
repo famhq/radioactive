@@ -102,6 +102,7 @@ class GroupCtrl
   #       }
   #       PushNotificationService.send toUser, {
   #         title: 'New group invite'
+            # TODO: if re-enabling, use titleObj, textObj
   #         text: "#{senderName} invited you to the group, #{group.name}"
   #         type: PushNotificationService.TYPES.GROUP
   #         url: "https://#{config.CLIENT_HOST}"
@@ -148,9 +149,12 @@ class GroupCtrl
 
       if group.type isnt 'public'
         PushNotificationService.sendToGroup(group, {
-          title: 'New group member'
-          text: "#{name} joined your group."
-          type: PushNotificationService.TYPES.CREW
+          titleObj:
+            key: 'newGroupMember.title'
+          textObj:
+            key: 'newGroupMember.text'
+            replacements: {name}
+          type: PushNotificationService.TYPES.GROUP
           url: "https://#{config.CLIENT_HOST}"
           path:
             key: 'groupChat'

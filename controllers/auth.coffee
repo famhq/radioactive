@@ -12,7 +12,7 @@ schemas = require '../schemas'
 BCRYPT_ROUNDS = 10
 
 class AuthCtrl
-  login: ({}, {headers, connection}) ->
+  login: ({language}, {headers, connection}) ->
     ip = headers['x-forwarded-for'] or
           connection.remoteAddress
     isServerSide = ip?.indexOf('::ffff:10.') isnt -1
@@ -21,7 +21,7 @@ class AuthCtrl
       country = null
     else
       country = geoip.lookup(ip)?.country
-    User.create {ip, country}
+    User.create {ip, country, language: language?.toLowerCase?()}
     .then (user) ->
       Auth.fromUserId user.id
 

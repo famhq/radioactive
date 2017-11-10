@@ -11,7 +11,7 @@ class EventService
       Promise.each events, (event) ->
         Event.updateById event.id, {hasStarted: true}
         PushNotificationService.sendToEvent event, {
-          title: 'Event starting'
+          title: 'Event starting' # TODO: change to titleObj
           type: PushNotificationService.TYPES.EVENT
           text: "#{event.name} starts in 5 minutes"
           data:

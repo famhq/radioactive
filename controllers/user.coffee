@@ -150,6 +150,10 @@ class UserCtrl
       .map User.sanitizePublic null
     , {expireSeconds: TWELVE_HOURS_SECONDS}
 
+  setLanguage: ({language}, {user}) ->
+    language = language.toLowerCase().replace /[^a-z]+/g, ''
+    User.updateById user.id, {language}
+
   setUsername: ({username}, {user}) ->
     username = username?.toLowerCase()
     router.assert {username}, {

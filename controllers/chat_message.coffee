@@ -111,15 +111,15 @@ class ChatMessageCtrl
 
         # TODO: allow images for certain group_user roles
         # disable images unless it's a pm or giphy
-        if conversation.type isnt 'pm' and conversation.groupId
-          matches = _.uniq body.match IMAGE_REGEX
-          body = _.reduce matches, (text, match) ->
-            # allow giphy gifs
-            if match.indexOf('giphy.com') is -1
-              text.replace match, ''
-            else
-              text
-          , body
+        # if conversation.type isnt 'pm' and conversation.groupId
+        #   matches = _.uniq body.match IMAGE_REGEX
+        #   body = _.reduce matches, (text, match) ->
+        #     # allow giphy gifs
+        #     if match.indexOf('giphy.com') is -1
+        #       text.replace match, ''
+        #     else
+        #       text
+        #   , body
 
         if stickers
           UserItem.getAllByUserId user.id

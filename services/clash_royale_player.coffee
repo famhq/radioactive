@@ -6,6 +6,9 @@ moment = require 'moment'
 Player = require '../models/player'
 Clan = require '../models/clan'
 Group = require '../models/group'
+ChatMessage = require '../models/chat_message'
+Conversation = require '../models/conversation'
+Language = require '../models/language'
 ClashRoyalePlayerDeck = require '../models/clash_royale_player_deck'
 ClashRoyalePlayer = require '../models/clash_royale_player'
 ClashRoyaleDeck = require '../models/clash_royale_deck'
@@ -321,7 +324,7 @@ class ClashRoyalePlayerService
       Player.upsertByPlayerIdAndGameId id, GAME_ID, diff, {userId}
       .then =>
         if clanId and userId
-          @_setClan {clanId, userId}
+          @_setClan {clanId, userId, name: playerData.name}
       .catch (err) ->
         console.log 'upsert err', err
         null
@@ -335,14 +338,47 @@ class ClashRoyalePlayerService
         , {expireSeconds: ONE_DAY_S}
         null # don't need to block
 
-  _setClan: ({clanId, userId}) ->
+  _setClan: ({clanId, userId, name}) ->
     Clan.getByClanIdAndGameId clanId, GAME_ID, {
       preferCache: true
     }
     .then (clan) ->
       if clan?.groupId
-        Group.addUser clan.groupId, userId
-        # TODO: notify rest of clan
+        Group.getById clan.groupId
+        .then EmbedService.embed {embed: [EmbedService.TYPES.GROUP.USER_IDS]}
+        .then (group) ->
+          Group.addUser clan.groupId, userId
+          .then ->
+            Conversation.getAllByGroupId clan.groupId
+            .then (conversations) ->
+              ChatMessage.create
+                userId: userId
+                body: '*' + Language.get('backend.userJoinedChatMessage', {
+                  language: group.language or 'en'
+                  replacements: {name}
+                }) + '*'
+                conversationId: conversations[0].id
+                groupId: clan?.groupId
+          .then ->
+            message =
+              titleObj:
+                key: 'newClanMember.title'
+              type: PushNotificationService.TYPES.GROUP
+              textObj:
+                key: 'newClanMember.text'
+                replacements: {name}
+              data:
+                path:
+                  key: 'groupChat'
+                  params:
+                    gameKey: config.DEFAULT_GAME_KEY
+                    id: group.id
+
+            PushNotificationService.sendToGroup group, message, {
+              skipMe: true, userId
+            }
+        .catch (err) ->
+          console.log err
 
 
       if not clan?.data and clanId
@@ -433,24 +469,25 @@ class ClashRoyalePlayerService
           return
         countUntilNextGoodChest = nextGoodChest.index + 1
 
-        if playerCounter = _.find playerCounters, {gameType: 'all'}
-          text = "#{countUntilNextGoodChest} chests until a
-            #{_.startCase(nextGoodChest?.name)}.
-            You had #{playerCounter.wins} wins and
-            #{playerCounter.losses} losses today."
-        else
-          text = "#{countUntilNextGoodChest} chests until a
-            #{_.startCase(nextGoodChest?.name)}."
+        playerCounter = _.find playerCounters, {gameType: 'all'}
 
         unless _.isEmpty player.userIds
           Promise.map player.userIds, (userId) ->
             User.getById userId, {preferCache: true}
           .map (user) ->
             PushNotificationService.send user, {
-              title: 'Daily recap'
+              titleObj:
+                key: 'dailyRecap.title'
+              textObj:
+                key: if playerCounter \
+                     then 'dailyRecap.textWithWins'
+                     else 'dailyRecap.text'
+                replacements:
+                  countUntilNextGoodChest: countUntilNextGoodChest
+                  nextGoodChest: _.startCase nextGoodChest?.name
+                  wins: playerCounter?.wins
+                  losses: playerCounter?.losses
               type: PushNotificationService.TYPES.DAILY_RECAP
-              url: "https://#{config.SUPERNOVA_HOST}"
-              text: text
               data:
                 path:
                   key: 'home'

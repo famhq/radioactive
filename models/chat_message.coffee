@@ -11,6 +11,7 @@ defaultChatMessage = (chatMessage) ->
 
   _.defaults chatMessage, {
     id: uuid.v4()
+    clientId: uuid.v4()
     userId: null
     conversationId: null
     groupId: null

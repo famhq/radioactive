@@ -50,7 +50,7 @@ PREFIXES =
   CLASH_ROYALE_API_GET_PLAYER_ID: 'clash_royale_api:get_tag'
   GROUP_ID: 'group:id2'
   GROUP_KEY: 'group:key1'
-  GROUP_GET_ALL: 'group:getAll1'
+  GROUP_GET_ALL: 'group:getAll2'
   GROUP_GET_ALL_CATEGORY: 'group:getAll:category4'
   GROUP_STAR: 'group:star2'
   GROUP_ROLE_GROUP_ID_USER_ID: 'group_role:groupId:userId'

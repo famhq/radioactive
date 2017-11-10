@@ -40,10 +40,14 @@ class UserFollowerCtrl
       User.getById followingId
       .then (otherUser) ->
         PushNotificationService.send otherUser, {
-          title: 'New follower'
+          titleObj:
+            key: 'newFollower.title'
           type: PushNotificationService.TYPES.NEW_FRIEND
           url: "https://#{config.SUPERNOVA_HOST}"
-          text: "#{User.getDisplayName(user)} added you as a friend"
+          textObj:
+            key: 'newFollower.text'
+            replacements:
+              name: User.getDisplayName(user)
           data:
             path:
               key: 'friends'

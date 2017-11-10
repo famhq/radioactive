@@ -14,6 +14,7 @@ PushToken = require '../models/push_token'
 Event = require '../models/event'
 Group = require '../models/group'
 GroupUser = require '../models/group_user'
+Language = require '../models/language'
 StatsService = require './stats'
 
 ONE_DAY_SECONDS = 3600 * 24
@@ -225,25 +226,42 @@ class PushNotificationService
       unless userId is meUserId
         user = User.getById userId, {preferCache: true}
         if groupId
-          user = user
-                .then EmbedService.embed {embed: defaultUserEmbed, groupId}
+          user = user.then EmbedService.embed {embed: defaultUserEmbed, groupId}
         user
         .then (user) =>
-          if user?.data and user.data.blockedUserIds.indexOf(meUserId) isnt -1
+          if not user or (
+            user.data and user.data.blockedUserIds.indexOf(meUserId) isnt -1
+          )
             return
           @send user, message
 
   send: (user, message) =>
-    if config.ENV is config.ENVS.DEV and not message.forceDevSend
-      console.log 'send notification', user.id, message
-      # return
-
-    unless message and (message.title or message.text)
+    unless message and (
+      message.title or message.text or message.titleObj or message.textObj
+    )
       return Promise.reject new Error 'missing message'
 
     StatsService.sendEvent user.id, 'push_notification', message.type, 'send'
 
+    language = user.language or Language.getLanguageByCountry user.country
+
     message.data ?= {}
+    if message.titleObj
+      message.title = Language.get message.titleObj.key, {
+        file: 'pushNotifications'
+        language: language
+        replacements: message.titleObj.replacements
+      }
+    if message.textObj
+      message.text = Language.get message.textObj.key, {
+        file: 'pushNotifications'
+        language: language
+        replacements: message.textObj.replacements
+      }
+
+    if config.ENV is config.ENVS.DEV and not message.forceDevSend
+      console.log 'send notification', user.id, message
+      # return
 
     # if [@TYPES.NEWS, @TYPES.NEW_PROMOTION].indexOf(message.type) is -1
     #   Notification.create {

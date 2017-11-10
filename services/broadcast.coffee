@@ -3,6 +3,7 @@ Promise = require 'bluebird'
 
 r = require './rethinkdb'
 User = require '../models/user'
+Language = require '../models/language'
 CacheService = require './cache'
 KueCreateService = require './kue_create'
 PushNotificationService = require './push_notification'
@@ -64,26 +65,17 @@ class BroadcastService
       if userIds.length >= AMOUNT_PER_GET
         @batch message, {isTestRun, minId: _.last userIds}
 
-  getLangCode: (country) ->
-    if country in [
-      'AR', 'BO', 'CR', 'CU', 'DM', 'EC',
-      'SV', 'GQ', 'GT', 'HN', 'MX'
-      'NI', 'PA', 'PE', 'ES', 'UY', 'VE'
-    ]
-    then 'es'
-    else 'en'
-
-  batchNotify: ({userIds, message, percentage}) =>
+  batchNotify: ({userIds, message, percentage}) ->
     console.log 'batch', userIds.length, percentage
     CacheService.get CacheService.KEYS.BROADCAST_FAILSAFE
-    .then (failSafe) =>
+    .then (failSafe) ->
       if failSafe
         console.log 'skipping (failsafe)'
       else
-        Promise.map userIds, (userId) =>
+        Promise.map userIds, (userId) ->
           User.getById userId
-          .then (user) =>
-            langCode = @getLangCode user.country
+          .then (user) ->
+            langCode = Language.getLanguageByCountry user.country
             lang = message.lang[langCode] or message.lang['en']
             message = _.defaults {
               title: lang.title
