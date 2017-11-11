@@ -246,5 +246,5 @@ module.exports = router
 .on 'stars.getByUsername', authed StarCtrl.getByUsername
 .on 'stars.getAll', authed StarCtrl.getAll
 
-.on 'videos.getAll', authed VideoCtrl.getAll
+.on 'videos.getAllByGroupId', authed VideoCtrl.getAllByGroupId
 .on 'videos.getById', authed VideoCtrl.getById

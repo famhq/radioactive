@@ -31,6 +31,7 @@ TYPES =
   NEW_FRIEND: 'newFriend'
   GROUP: 'group'
   STATUS: 'status'
+  VIDEO: 'video'
 
 defaultUserEmbed = [
   EmbedService.TYPES.USER.DATA
@@ -217,6 +218,15 @@ class PushNotificationService
 
   sendToGroup: (group, message, {skipMe, meUserId, groupId} = {}) =>
     @sendToUserIds group.userIds, message, {skipMe, meUserId, groupId}
+
+  sendToGroupTopic: (groupId, message) =>
+    @sendFcm "group-#{groupId}", {
+      toType: 'topic'
+      type: TYPES.VIDEO
+      title: message.title
+      text: message.text
+      data: message.data
+    }
 
   sendToEvent: (event, message, {skipMe, meUserId, eventId} = {}) =>
     @sendToUserIds event.userIds, message, {skipMe, meUserId, eventId}

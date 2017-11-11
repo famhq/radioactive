@@ -9,8 +9,8 @@ schemas = require '../schemas'
 defaultEmbed = []
 
 class VideoCtrl
-  getAll: ({sort}) ->
-    Video.getAll({sort})
+  getAllByGroupId: ({groupId, sort}) ->
+    Video.getAllByGroupId(groupId, {sort})
     .map EmbedService.embed {embed: defaultEmbed}
     .map Video.sanitize null
 

@@ -50,6 +50,7 @@ class CronService
         ClashRoyalePlayerService.updateTopPlayers()
 
     @addCron 'ten min', '0 */10 * * * *', ->
+      VideoDiscoveryService.updateGroupVideos()
       Thread.updateScores 'time'
 
     @addCron 'hourly', '0 0 * * * *', ->

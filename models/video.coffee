@@ -2,19 +2,15 @@ _ = require 'lodash'
 Promise = require 'bluebird'
 uuid = require 'node-uuid'
 
-r = require '../services/rethinkdb'
+cknex = require '../services/cknex'
 config = require '../config'
-
-VIDEOS_TABLE = 'videos'
-AUTHOR_ID_INDEX = 'authorId'
-SOURCE_ID_INDEX = 'sourceId'
-TIME_INDEX = 'time'
 
 defaultVideo = (video) ->
   unless video?
     return null
 
   _.defaults video, {
+    id: uuid.v4()
     source: null
     sourceId: null
     title: null
@@ -25,54 +21,104 @@ defaultVideo = (video) ->
     time: new Date()
   }
 
+defaultVideoOutput = (video) ->
+  unless video?
+    return null
+
+  video.thumbnailImage = try
+    JSON.parse video.thumbnailImage
+  catch error
+    null
+
+  video
+
+tables = [
+  {
+    name: 'videos_by_groupId'
+    keyspace: 'starfire'
+    fields:
+      id: 'uuid'
+      groupId: 'uuid'
+      source: 'text'
+      sourceId: 'text'
+      title: 'text'
+      description: 'text'
+      duration: 'text'
+      authorName: 'text'
+      authorId: 'text'
+      thumbnailImage: 'text'
+      time: 'timestamp'
+    primaryKey:
+      partitionKey: ['groupId']
+      clusteringColumns: ['time']
+    withClusteringOrderBy: ['time', 'desc']
+  }
+  {
+    name: 'videos_by_id'
+    keyspace: 'starfire'
+    fields:
+      id: 'uuid'
+      groupId: 'uuid'
+      source: 'text'
+      sourceId: 'text'
+      title: 'text'
+      description: 'text'
+      duration: 'text'
+      authorName: 'text'
+      authorId: 'text'
+      thumbnailImage: 'text'
+      time: 'timestamp'
+    primaryKey:
+      partitionKey: ['id']
+  }
+]
+
 class VideoModel
-  RETHINK_TABLES: [
-    {
-      name: VIDEOS_TABLE
-      options: {}
-      indexes: [
-        {name: SOURCE_ID_INDEX}
-        {name: AUTHOR_ID_INDEX}
-        {name: TIME_INDEX}
-      ]
-    }
-  ]
+  SCYLLA_TABLES: tables
 
-  create: (video) ->
+  upsert: (video) ->
     video = defaultVideo video
-    video.id = video.source + '-' + video.sourceId
 
-    r.table VIDEOS_TABLE
-    .get video.id
-    .replace video
-    .run()
+    Promise.all [
+      cknex().update 'videos_by_groupId'
+      .set _.omit video, [
+        'groupId', 'time'
+      ]
+      .where 'groupId', '=', video.groupId
+      .andWhere 'time', '=', video.time
+      .run()
+
+      cknex().update 'videos_by_id'
+      .set _.omit video, [
+        'id'
+      ]
+      .where 'id', '=', video.id
+      .run()
+    ]
     .then ->
       video
 
   getById: (id) ->
-    r.table VIDEOS_TABLE
-    .get id
-    .run()
-    .then defaultVideo
+    cknex().select '*'
+    .from 'videos_by_id'
+    .where 'id', '=', id
+    .run {isSingle: true}
+    .then defaultVideoOutput
 
-  getAll: ({sort} = {}) ->
-    r.table VIDEOS_TABLE
-    .orderBy {index: r.desc(TIME_INDEX)}
-    .limit 20
+  getAllByGroupId: (groupId) ->
+    cknex().select '*'
+    .from 'videos_by_groupId'
+    .where 'groupId', '=', groupId
     .run()
-    .map defaultVideo
+    .map defaultVideoOutput
 
-  updateById: (id, diff) ->
-    r.table VIDEOS_TABLE
-    .get id
-    .update diff
+  getAllByGroupIdAndMinTime: (groupId, minTime) ->
+    cknex().select '*'
+    .from 'videos_by_groupId'
+    .where 'groupId', '=', groupId
+    .andWhere 'time', '>=', minTime
     .run()
-
-  deleteById: (id) ->
-    r.table VIDEOS_TABLE
-    .get id
-    .delete()
-    .run()
+    .map defaultVideoOutput
 
   sanitize: _.curry (requesterId, video) ->
     _.pick video, [

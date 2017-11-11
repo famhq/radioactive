@@ -164,6 +164,10 @@ class GroupCtrl
         }, {skipMe: true, meUserId: user.id}).catch -> null
 
       Group.addUser groupId, userId
+      .then ->
+        prefix = CacheService.PREFIXES.GROUP_GET_ALL_CATEGORY
+        category = "#{prefix}:#{userId}"
+        CacheService.deleteByCategory category
 
   getAll: ({filter, language}, {user}) ->
     key = CacheService.PREFIXES.GROUP_GET_ALL + ':' + [

@@ -10,6 +10,9 @@ DEV_USE_HTTPS = process.env.DEV_USE_HTTPS and process.env.DEV_USE_HTTPS isnt '0'
 config =
   # hardcoded while we just have one game
   CLASH_ROYALE_ID: '319a9065-e3dc-4d02-ad30-62047716a88f'
+  GROUPS:
+    PLAY_HARD: 'ad25e866-c187-44fc-bdb5-df9fcc4c6a42'
+    STARFIRE: '319a9065-e3dc-4d02-ad30-62047716a88f'
   DEFAULT_GAME_KEY: 'clash-royale'
   CLASH_ROYALE_TROPHIES_RECORD_ID: 'ed3b3643-039b-4a3f-9d44-0742b86e0a2c'
   CLASH_ROYALE_DONATIONS_RECORD_ID: '3b87da6c-7a2b-42c1-a59d-7354acaf80b0'
