@@ -16,7 +16,6 @@ CacheService = require '../services/cache'
 PushNotificationService = require '../services/push_notification'
 ProfanityService = require '../services/profanity'
 EmbedService = require '../services/embed'
-StreamService = require '../services/stream'
 ImageService = require '../services/image'
 StatsService = require '../services/stats'
 schemas = require '../schemas'
@@ -211,8 +210,8 @@ class ChatMessageCtrl
           unless hasPermission
             router.throw
               status: 400, info: 'You don\'t have permission to do that'
-    .then ->
-      ChatMessage.deleteById id
+        .then ->
+          ChatMessage.deleteById id, conversation.id
 
   updateCard: ({body, params, headers}) ->
     radioactiveHost = config.RADIOACTIVE_API_URL.replace /https?:\/\//i, ''
@@ -233,22 +232,18 @@ class ChatMessageCtrl
 
         limit = 40
 
-        StreamService.stream {
-          emit
-          socket
-          route
+        ChatMessage.getAllByConversationId conversationId, {
           limit: limit
-          promise: ChatMessage.getAllByConversationId conversationId, {
-            limit, isStreamed: true
-          }
+          isStreamed: true
+          emit: emit
+          socket: socket
+          route: route
           postFn: (item) ->
             EmbedService.embed {embed: defaultEmbed}, ChatMessage.default(item)
             .then (item) ->
               if item?.user?.flags?.isChatBanned isnt true
                 item
         }
-        .tap ->
-          start = Date.now()
 
   uploadImage: ({}, {user, file}) ->
     router.assert {file}, {

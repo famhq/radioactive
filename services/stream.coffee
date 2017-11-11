@@ -1,65 +1,54 @@
 Promise = require 'bluebird'
 _ = require 'lodash'
 
-TIME_FOR_INITIAL_GET_MS = 100
+PubSubService = require './pub_sub'
 
 class StreamService
   constructor: ->
-    @openCursors = {}
+    @openSubscriptions = {}
     setInterval =>
-      cursorsOpen = _.reduce @openCursors, (count, socket) ->
+      subscriptionsOpen = _.reduce @openSubscriptions, (count, socket) ->
         count += _.keys(socket).length
         count
       , 0
-      if cursorsOpen > 10
-        console.log 'cursors open: ', cursorsOpen
+      if subscriptionsOpen > 10
+        console.log 'subscriptions open: ', subscriptionsOpen
     , 100000
 
   exoidDisconnect: (socket) =>
-    _.map @openCursors[socket.id], (cursor) ->
-      cursor.close()
-    delete @openCursors[socket.id]
+    _.map @openSubscriptions[socket.id], (subscription) ->
+      subscription.unsubscribe()
+    delete @openSubscriptions[socket.id]
 
-  stream: ({emit, socket, limit, route, promise, postFn}) =>
-    limit ?= 30
-    isInitial = true
-    start = Date.now()
-    promise
-    .then (cursor) =>
-      start = Date.now()
-      # TODO: release cursors when switching to tab/page
-      # where obs isn't required?
-      if @openCursors[socket.id]?[route]
-        @openCursors[socket.id][route].close()
+  create: (obj, channels) ->
+    PubSubService.publish channels, {action: 'create', obj}
 
-      @openCursors[socket.id] ?= {}
-      @openCursors[socket.id][route] = cursor
+  updateById: (id, obj, channels) ->
+    PubSubService.publish channels, {id, action: 'update', obj}
 
-      items = []
-      new Promise (resolve, reject) ->
-        cursor.eachAsync (item) ->
-          if item.state is 'ready'
-            isInitial = false
-            resolve items
-          if item.type is 'uninitial' or item.type is 'state'
-            return false
-          postFn item.new_val
-          .then (newItem) ->
-            if isInitial
-              items = _.filter items.concat([newItem])
-            else
-              # https://github.com/rethinkdb/rethinkdb/issues/6101
-              # when using a changefeed with an ordered limit, new inserts
-              # are considered changes since it's a change in the list of 30
-              # items (even if it's a new item).
-              # this is a workaround to determine if it's new
-              isInsert = item.old_val?.id isnt newItem?.id
-              emit {
-                initial: null
-                changes: [{
-                  oldId: if isInsert then null else item.old_val?.id
-                  newVal: newItem
-                }]
-              }
+  deleteById: (id, channels) ->
+    PubSubService.publish channels, {id, action: 'delete'}
+
+  stream: ({emit, socket, route, channel, initial, postFn}) =>
+    initial
+    .map postFn
+    .tap =>
+      subscription = PubSubService.subscribe channel, ({id, action, obj}) ->
+        isInsert = true
+        postFn obj
+        .then (newItem) ->
+          emit {
+            initial: null
+            changes: [{
+              oldId: if action is 'create' then null else id
+              newVal: if action is 'delete' then null else newItem
+            }]
+          }
+
+      if @openSubscriptions[socket.id]?[route]
+        @openSubscriptions[socket.id][route].unsubscribe()
+
+      @openSubscriptions[socket.id] ?= {}
+      @openSubscriptions[socket.id][route] = subscription
 
 module.exports = new StreamService()

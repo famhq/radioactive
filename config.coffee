@@ -100,6 +100,7 @@ config =
     DB: env.POSTGRES_DB or 'clash_royale'
   REDIS:
     PREFIX: 'radioactive'
+    PUB_SUB_PREFIX: 'radioactive_pub_sub'
     PORT: REDIS_PORT
     KUE_HOST: env.REDIS_KUE_HOST
     RADIOACTIVE_HOST: env.REDIS_RADIOACTIVE_HOST

@@ -3,6 +3,8 @@ Promise = require 'bluebird'
 moment = require 'moment'
 uuid = require 'node-uuid'
 
+StreamService = require '../services/stream'
+Stream = require './stream'
 r = require '../services/rethinkdb'
 
 defaultChatMessage = (chatMessage) ->
@@ -29,7 +31,11 @@ TWELVE_HOURS_SECONDS = 3600 * 12
 SEVEN_DAYS_SECONDS = 3600 * 24 * 7
 TWO_SECONDS = 2
 
-class ChatMessageModel
+class ChatMessageModel extends Stream
+  constructor: ->
+    @streamChannelKey = 'chat_message'
+    @streamChannelsBy = ['conversationId']
+
   RETHINK_TABLES: [
     {
       name: CHAT_MESSAGES_TABLE
@@ -46,62 +52,39 @@ class ChatMessageModel
 
   default: defaultChatMessage
 
-  create: (chatMessage) ->
+  create: (chatMessage) =>
     chatMessage = defaultChatMessage chatMessage
 
     r.table CHAT_MESSAGES_TABLE
     .insert chatMessage
     .run()
-    .then ->
+    .then =>
+      @streamCreate chatMessage
       chatMessage
 
-  getAllByConversationId: (conversationId, {limit, isStreamed}) ->
-    q = r.table CHAT_MESSAGES_TABLE
+  getAllByConversationId: (conversationId, options) =>
+    {limit, isStreamed, emit, socket, route, postFn} = options
+
+    initial = r.table CHAT_MESSAGES_TABLE
     .between [conversationId], [conversationId + 'z'], {
       index: CONVERSATION_ID_TIME_INDEX
     }
     .orderBy {index: r.desc(CONVERSATION_ID_TIME_INDEX)}
     .limit limit
+    .run()
 
     if isStreamed
-      q = q.changes {
-        includeInitial: true
-        includeTypes: true
-        includeStates: true
-        squash: true
+      @stream {
+        emit
+        socket
+        route
+        initial
+        postFn
+        channelBy: 'conversationId'
+        channelById: conversationId
       }
-
-    q.run()
-
-    # q = r.table CHAT_MESSAGES_TABLE
-    # .between [conversationId], [conversationId + 'z'], {
-    #   index: CONVERSATION_ID_TIME_INDEX
-    # }
-    # .orderBy {index: r.desc(CONVERSATION_ID_TIME_INDEX)}
-    # # NOTE: a limit on the actual query we subscribe to causes
-    # # all inserts to show as 'change's since it's change the top 30 (limit)
-    # .limit limit
-    # .pluck ['time']
-    # .run()
-    # .then (messages) ->
-    #   startTime = _.last(messages)?.time or new Date()
-    #   endTime = moment(startTime).add(1, 'year').toDate()
-    #   q = r.table CHAT_MESSAGES_TABLE
-    #   .between(
-    #     [conversationId, startTime]
-    #     [conversationId, endTime]
-    #     {index: CONVERSATION_ID_TIME_INDEX}
-    #   )
-    #
-    #   if isStreamed
-    #     q = q.changes {
-    #       includeInitial: true
-    #       includeTypes: true
-    #       includeStates: true
-    #       squash: true
-    #     }
-    #
-    #   q.run()
+    else
+      initial
 
   getById: (id) ->
     r.table CHAT_MESSAGES_TABLE
@@ -109,11 +92,13 @@ class ChatMessageModel
     .run()
     .then defaultChatMessage
 
-  deleteById: (id) ->
+  deleteById: (id, conversationId) =>
     r.table CHAT_MESSAGES_TABLE
     .get id
     .delete()
     .run()
+    .tap =>
+      @streamDeleteById id, {conversationId}
 
   getLastByConversationId: (conversationId) ->
     r.table CHAT_MESSAGES_TABLE
@@ -126,19 +111,19 @@ class ChatMessageModel
     .run()
     .then defaultChatMessage
 
-  updateById: (id, diff) ->
+  updateById: (id, diff) =>
     r.table CHAT_MESSAGES_TABLE
     .get id
     .update diff
     .run()
+    .tap =>
+      @streamUpdateById id, diff
 
   deleteAllByUserIdAndGroupId: (userId, groupId) ->
-    console.log 'delete', userId, groupId
     r.table CHAT_MESSAGES_TABLE
     .getAll [userId, groupId], {index: USER_ID_GROUP_ID_INDEX}
     .delete()
     .run()
-
 
   deleteOld: ->
     Promise.all [
