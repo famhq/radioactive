@@ -106,7 +106,6 @@ class ThreadCommentModel
       .andWhere 'timeUuid', '=', threadComment.timeUuid
       .run()
 
-
       cknex().update 'thread_comments_by_threadId'
       .set _.omit threadComment, [
         'threadId', 'parentType', 'parentId', 'timeUuid'

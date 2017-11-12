@@ -66,6 +66,9 @@ cknex.getTimeUuid = (time) ->
   else
     cassandra.types.TimeUuid.now()
 
+cknex.getTimeUuidFromString = (timeUuidStr) ->
+  cassandra.types.TimeUuid.fromString(timeUuidStr)
+
 cknex.getTime = (time) ->
   if time
     unless time instanceof Date

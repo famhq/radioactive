@@ -236,8 +236,8 @@ app.get '/cleanKueFailed', (req, res) ->
 
 # FIXME: rm
 # app.get '/migrateAll', (req, res) ->
-#   GroupUser = require './models/group_user'
-#   GroupUser.migrateAll()
+#   ChatMessage = require './models/chat_message'
+#   ChatMessage.migrateAll()
 #   res.sendStatus 200
 
 app.get '/di/crForumSig/:userId.png', (req, res) ->

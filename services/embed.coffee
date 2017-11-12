@@ -40,6 +40,7 @@ TYPES =
   CHAT_MESSAGE:
     USER: 'chatMessage:user'
     GROUP_USER: 'chatMessage:groupUser'
+    TIME: 'chatMessage:time'
   CONVERSATION:
     USERS: 'conversation:users'
     LAST_MESSAGE: 'conversation:lastMessage'
@@ -422,7 +423,17 @@ embedFn = _.curry (props, object) ->
           embedded.creator = null
 
       when TYPES.THREAD_COMMENT.TIME
-        embedded.time = embedded.timeUuid.getDate()
+        timeUuid = if typeof embedded.timeUuid is 'string' \
+                   then cknex.getTimeUuidFromString embedded.timeUuid
+                   else embedded.timeUuid
+        console.log timeUuid
+        embedded.time = timeUuid.getDate()
+
+      when TYPES.CHAT_MESSAGE.TIME
+        timeUuid = if typeof embedded.timeUuid is 'string' \
+                   then cknex.getTimeUuidFromString embedded.timeUuid
+                   else embedded.timeUuid
+        embedded.time = timeUuid.getDate()
 
       when TYPES.CHAT_MESSAGE.USER
         if embedded.userId

@@ -37,6 +37,7 @@ config =
     rare: 50
     epic: 150
     legendary: 400
+  EMPTY_UUID: '00000000-0000-0000-0000-000000000000'
 
   IS_POSTGRES: env.IS_POSTGRES or false
 

@@ -14,4 +14,19 @@ class TimeService
     else
       time.format time.format 'YYYY-MM-DD HH:mm'
 
+  getPreviousTimeByTimeScale: (timeScale, time) ->
+    time ?= moment()
+    if timeScale is 'day'
+      time.subtract 1, 'days'
+      'DAY-' + time.format 'YYYY-MM-DD'
+    else if timeScale is 'biweek'
+      time.subtract 2, 'weeks'
+      'BIWEEK-' + time.format('YYYY') + (parseInt(time.format 'YYYY-WW') / 2)
+    else if timeScale is 'week'
+      time.subtract 1, 'weeks'
+      'WEEK-' + time.format 'YYYY-WW'
+    else
+      time.subtract 1, 'minutes'
+      time.format time.format 'YYYY-MM-DD HH:mm'
+
 module.exports = new TimeService()

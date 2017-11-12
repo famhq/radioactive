@@ -4,74 +4,163 @@ moment = require 'moment'
 uuid = require 'node-uuid'
 
 StreamService = require '../services/stream'
-Stream = require './stream'
+TimeService = require '../services/time'
+CacheService = require '../services/cache'
 r = require '../services/rethinkdb'
+cknex = require '../services/cknex'
+Stream = require './stream'
+config = require '../config'
 
 defaultChatMessage = (chatMessage) ->
   unless chatMessage?
     return null
 
-  _.defaults chatMessage, {
+  _.defaults _.pickBy(chatMessage), {
     id: uuid.v4()
     clientId: uuid.v4()
-    userId: null
-    conversationId: null
-    groupId: null
-    time: new Date()
+    groupId: config.EMPTY_UUID
+    timeBucket: TimeService.getScaledTimeByTimeScale 'week'
+    timeUuid: cknex.getTimeUuid()
     body: ''
   }
 
-CHAT_MESSAGES_TABLE = 'chat_messages'
-TIME_INDEX = 'time'
-CONVERSATION_ID_INDEX = 'conversationId'
-CONVERSATION_ID_TIME_INDEX = 'conversationIdTime'
-USER_ID_GROUP_ID_INDEX = 'userIdGroupId'
-FIVE_MINUTES_SECONDS = 60 * 5
-TWELVE_HOURS_SECONDS = 3600 * 12
-SEVEN_DAYS_SECONDS = 3600 * 24 * 7
-TWO_SECONDS = 2
+defaultChatMessageOutput = (chatMessage) ->
+  unless chatMessage?
+    return null
+
+  if chatMessage.groupId is config.EMPTY_UUID
+    chatMessage.groupId = null
+
+  chatMessage
+
+tables = [
+  {
+    name: 'chat_messages_by_conversationId'
+    keyspace: 'starfire'
+    fields:
+      id: 'uuid'
+      conversationId: 'uuid'
+      clientId: 'uuid'
+      userId: 'uuid'
+      groupId: 'uuid'
+      body: 'text'
+      card: 'text'
+      timeBucket: 'text'
+      timeUuid: 'timeuuid'
+    primaryKey:
+      partitionKey: ['conversationId', 'timeBucket']
+      clusteringColumns: ['timeUuid']
+    withClusteringOrderBy: ['timeUuid', 'desc']
+  }
+  # for showing all of a user's messages, and potentially deleting all
+  {
+    name: 'chat_messages_by_groupId_and_userId'
+    keyspace: 'starfire'
+    fields:
+      id: 'uuid'
+      conversationId: 'uuid'
+      clientId: 'uuid'
+      userId: 'uuid'
+      groupId: 'uuid'
+      body: 'text'
+      card: 'text'
+      timeBucket: 'text'
+      timeUuid: 'timeuuid'
+    primaryKey:
+      partitionKey: ['groupId', 'userId', 'timeBucket']
+      clusteringColumns: ['timeUuid']
+    withClusteringOrderBy: ['timeUuid', 'desc']
+  }
+  # for deleting by id
+  {
+    name: 'chat_messages_by_id'
+    keyspace: 'starfire'
+    fields:
+      id: 'uuid'
+      conversationId: 'uuid'
+      clientId: 'uuid'
+      userId: 'uuid'
+      groupId: 'uuid'
+      body: 'text'
+      card: 'text'
+      timeBucket: 'text'
+      timeUuid: 'timeuuid'
+    primaryKey:
+      partitionKey: ['id']
+  }
+]
 
 class ChatMessageModel extends Stream
+  SCYLLA_TABLES: tables
+
   constructor: ->
     @streamChannelKey = 'chat_message'
     @streamChannelsBy = ['conversationId']
 
-  RETHINK_TABLES: [
-    {
-      name: CHAT_MESSAGES_TABLE
-      indexes: [
-        {name: TIME_INDEX}
-        {name: CONVERSATION_ID_INDEX}
-        {name: CONVERSATION_ID_TIME_INDEX, fn: (row) ->
-          [row('conversationId'), row('time')]}
-        {name: USER_ID_GROUP_ID_INDEX, fn: (row) ->
-          [row('userId'), row('groupId')]}
-      ]
-    }
-  ]
+  default: defaultChatMessageOutput
 
-  default: defaultChatMessage
-
-  create: (chatMessage) =>
+  upsert: (chatMessage) =>
     chatMessage = defaultChatMessage chatMessage
 
-    r.table CHAT_MESSAGES_TABLE
-    .insert chatMessage
-    .run()
+    Promise.all [
+      cknex().update 'chat_messages_by_conversationId'
+      .set _.omit chatMessage, [
+        'conversationId', 'timeBucket', 'timeUuid'
+      ]
+      .where 'conversationId', '=', chatMessage.conversationId
+      .andWhere 'timeBucket', '=', chatMessage.timeBucket
+      .andWhere 'timeUuid', '=', chatMessage.timeUuid
+      .run()
+
+      cknex().update 'chat_messages_by_groupId_and_userId'
+      .set _.omit chatMessage, [
+        'groupId', 'userId', 'timeBucket', 'timeUuid'
+      ]
+      .where 'groupId', '=', chatMessage.groupId
+      .andWhere 'userId', '=', chatMessage.userId
+      .andWhere 'timeBucket', '=', chatMessage.timeBucket
+      .andWhere 'timeUuid', '=', chatMessage.timeUuid
+      .run()
+
+      cknex().update 'chat_messages_by_id'
+      .set _.omit chatMessage, [
+        'id'
+      ]
+      .where 'id', '=', chatMessage.id
+      .run()
+    ]
     .then =>
       @streamCreate chatMessage
       chatMessage
 
-  getAllByConversationId: (conversationId, options) =>
-    {limit, isStreamed, emit, socket, route, postFn} = options
+  getAllByConversationId: (conversationId, options = {}) =>
+    {limit, isStreamed, emit, socket, route, postFn,
+      minTime, maxTime, reverse} = options
 
-    initial = r.table CHAT_MESSAGES_TABLE
-    .between [conversationId], [conversationId + 'z'], {
-      index: CONVERSATION_ID_TIME_INDEX
-    }
-    .orderBy {index: r.desc(CONVERSATION_ID_TIME_INDEX)}
-    .limit limit
-    .run()
+    timeBucket = TimeService.getScaledTimeByTimeScale 'week', moment(minTime)
+
+    get = (timeBucket) ->
+      cknex().select '*'
+      .from 'chat_messages_by_conversationId'
+      .where 'conversationId', '=', conversationId
+      .andWhere 'timeBucket', '=', timeBucket
+      .limit limit
+      .run()
+
+    initial = get timeBucket
+    .then (results) ->
+      # if not enough results, check preivous time bucket. could do this more
+      #  than once, but last 2 weeks of messages seems fine
+      if limit and results.length < limit
+        get TimeService.getPreviousTimeByTimeScale 'week', moment(minTime)
+        .then (olderMessages) ->
+          _.filter (results or []).concat olderMessages
+      else
+        results
+    .then (results) ->
+      if reverse
+        results.reverse()
+      results
 
     if isStreamed
       @stream {
@@ -86,58 +175,106 @@ class ChatMessageModel extends Stream
     else
       initial
 
+  getAllByGroupIdAndUserId: (groupId, userId) ->
+    cknex().select '*'
+    .from 'chat_messages_by_groupId_and_userId'
+    .where 'groupId', '=', groupId
+    .andWhere 'userId', '=', userId
+    .run()
+    .map defaultChatMessageOutput
+
   getById: (id) ->
-    r.table CHAT_MESSAGES_TABLE
-    .get id
-    .run()
-    .then defaultChatMessage
+    cknex().select '*'
+    .from 'chat_messages_by_id'
+    .where 'id', '=', id
+    .run {isSingle: true}
+    .then defaultChatMessageOutput
 
-  deleteById: (id, conversationId) =>
-    r.table CHAT_MESSAGES_TABLE
-    .get id
-    .delete()
-    .run()
+  deleteByChatMessage: (chatMessage) =>
+    Promise.all [
+      cknex().delete()
+      .from 'chat_messages_by_conversationId'
+      .where 'conversationId', '=', chatMessage.conversationId
+      .andWhere 'timeBucket', '=', chatMessage.timeBucket
+      .andWhere 'timeUuid', '=', chatMessage.timeUuid
+      .run()
+
+      cknex().delete()
+      .from 'chat_messages_by_groupId_and_userId'
+      .where 'groupId', '=', chatMessage.groupId
+      .andWhere 'userId', '=', chatMessage.userId
+      .andWhere 'timeBucket', '=', chatMessage.timeBucket
+      .andWhere 'timeUuid', '=', chatMessage.timeUuid
+      .run()
+
+      cknex().delete()
+      .from 'chat_messages_by_id'
+      .where 'id', '=', chatMessage.id
+      .run()
+    ]
     .tap =>
-      @streamDeleteById id, {conversationId}
+      @streamDeleteById chatMessage.id, chatMessage
 
-  getLastByConversationId: (conversationId) ->
-    r.table CHAT_MESSAGES_TABLE
-    .between [conversationId], [conversationId + 'z'], {
-      index: CONVERSATION_ID_TIME_INDEX
-    }
-    .orderBy {index: r.desc(CONVERSATION_ID_TIME_INDEX)}
-    .nth 0
-    .default null
-    .run()
-    .then defaultChatMessage
+  getLastByConversationId: (conversationId) =>
+    @getAllByConversationId conversationId, {limit: 1}
+    .then (messages) ->
+      messages?[0]
+    .then defaultChatMessageOutput
 
   updateById: (id, diff) =>
-    r.table CHAT_MESSAGES_TABLE
-    .get id
-    .update diff
-    .run()
+    @getById id
+    .then (chatMessage) =>
+      @upsert chatMessage
     .tap =>
       @streamUpdateById id, diff
 
-  deleteAllByUserIdAndGroupId: (userId, groupId) ->
-    r.table CHAT_MESSAGES_TABLE
-    .getAll [userId, groupId], {index: USER_ID_GROUP_ID_INDEX}
-    .delete()
-    .run()
+  deleteAllByGroupIdAndUserId: (groupId, userId) =>
+    @getAllByGroupIdAndUserId groupId, userId
+    .map @deleteByChatMessage
 
-  deleteOld: ->
-    Promise.all [
-      r.table CHAT_MESSAGES_TABLE
-      .between 0, r.now().sub(TWELVE_HOURS_SECONDS), {index: TIME_INDEX}
-      .filter(
-        r.row('channelId').default(null).eq(null)
-      )
-      .delete()
-
-      r.table CHAT_MESSAGES_TABLE
-      .between 0, r.now().sub(SEVEN_DAYS_SECONDS), {index: TIME_INDEX}
-      .delete()
-    ]
-
+  # migrateAll: (order) =>
+  #   start = Date.now()
+  #   Promise.all [
+  #     CacheService.get 'migrate_chat_messages_min_id7'
+  #     .then (minId) =>
+  #       minId ?= '0'
+  #       r.table 'chat_messages'
+  #       .between minId, 'ZZZZ'
+  #       .orderBy {index: r.asc('id')}
+  #       .limit 500
+  #       .then (chatMessages) =>
+  #         Promise.map chatMessages, (chatMessage) =>
+  #           chatMessage.timeUuid = cknex.getTimeUuid chatMessage.time
+  #           chatMessage.timeBucket = TimeService.getScaledTimeByTimeScale 'week', moment(chatMessage.time)
+  #           delete chatMessage.time
+  #           @upsert chatMessage
+  #         .catch (err) ->
+  #           console.log err
+  #         .then ->
+  #           console.log 'migrate time', Date.now() - start, minId, _.last(chatMessages).id
+  #           CacheService.set 'migrate_chat_messages_min_id7', _.last(chatMessages).id
+  #
+  #     CacheService.get 'migrate_chat_messages_max_id7'
+  #     .then (maxId) =>
+  #       maxId ?= 'ZZZZ'
+  #       r.table 'chat_messages'
+  #       .between '0000', maxId
+  #       .orderBy {index: r.desc('id')}
+  #       .limit 500
+  #       .then (chatMessages) =>
+  #         Promise.map chatMessages, (chatMessage) =>
+  #           chatMessage.timeUuid = cknex.getTimeUuid chatMessage.time
+  #           chatMessage.timeBucket = TimeService.getScaledTimeByTimeScale 'week', moment(chatMessage.time)
+  #           delete chatMessage.time
+  #           @upsert chatMessage
+  #         .catch (err) ->
+  #           console.log err
+  #         .then ->
+  #           console.log 'migrate time', Date.now() - start, maxId, _.last(chatMessages).id
+  #           CacheService.set 'migrate_chat_messages_max_id7', _.last(chatMessages).id
+  #       ]
+  #
+  #   .then =>
+  #     @migrateAll()
 
 module.exports = new ChatMessageModel()

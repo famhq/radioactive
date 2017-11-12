@@ -60,7 +60,7 @@ class ModCtrl
         Ban.create ban
     .then ->
       if groupId
-        ChatMessage.deleteAllByUserIdAndGroupId userId, groupId
+        ChatMessage.deleteAllByGroupIdAndUserId groupId, userId
 
   unbanByUserId: ({userId, groupId}, {user}) ->
     GroupUser.getByGroupIdAndUserId groupId, userId
@@ -74,16 +74,16 @@ class ModCtrl
 
     Ban.deleteAllByUserId userId
 
-  unflagByChatMessageId: ({id}, {user}) ->
-    GroupUser.getByGroupIdAndUserId groupId, userId
-    .then (groupUser) ->
-      permission = 'tempBan'
-      hasPermission = GroupUser.hasPermission {
-        groupId, meGroupUser: groupUser, me: user, permissions: [permission]
-      }
-    unless hasPermission
-      router.throw status: 400, info: 'You don\'t have permission to do that'
-
-    ChatMessage.updateById id, {hasModActed: true}
+  # unflagByChatMessageId: ({id}, {user}) ->
+  #   GroupUser.getByGroupIdAndUserId groupId, userId
+  #   .then (groupUser) ->
+  #     permission = 'tempBan'
+  #     hasPermission = GroupUser.hasPermission {
+  #       groupId, meGroupUser: groupUser, me: user, permissions: [permission]
+  #     }
+  #   unless hasPermission
+  #     router.throw status: 400, info: 'You don\'t have permission to do that'
+  #
+  #   ChatMessage.updateById id, {hasModActed: true}
 
 module.exports = new ModCtrl()

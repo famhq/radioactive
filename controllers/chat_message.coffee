@@ -23,6 +23,7 @@ config = require '../config'
 
 defaultEmbed = [
   EmbedService.TYPES.CHAT_MESSAGE.USER
+  EmbedService.TYPES.CHAT_MESSAGE.TIME
   EmbedService.TYPES.CHAT_MESSAGE.GROUP_USER
 ]
 
@@ -158,7 +159,7 @@ class ChatMessageCtrl
           StatsService.sendEvent(
             user.id, 'chat_message', groupId, conversationId
           )
-          ChatMessage.create
+          ChatMessage.upsert
             id: chatMessageId
             userId: user.id
             body: body
@@ -211,7 +212,7 @@ class ChatMessageCtrl
             router.throw
               status: 400, info: 'You don\'t have permission to do that'
         .then ->
-          ChatMessage.deleteById id, conversation.id
+          ChatMessage.deleteByChatMessage chatMessage
 
   updateCard: ({body, params, headers}) ->
     radioactiveHost = config.RADIOACTIVE_API_URL.replace /https?:\/\//i, ''
@@ -238,6 +239,7 @@ class ChatMessageCtrl
           emit: emit
           socket: socket
           route: route
+          reverse: true
           postFn: (item) ->
             EmbedService.embed {embed: defaultEmbed}, ChatMessage.default(item)
             .then (item) ->

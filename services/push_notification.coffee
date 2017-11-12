@@ -144,7 +144,6 @@ class PushNotificationService
       # return console.log toObj
 
       @gcmConn.send notification, toObj, RETRY_COUNT, (err, result) ->
-        console.log err, result
         successes = result?.success or result?.message_id
         if err or not successes
           reject err

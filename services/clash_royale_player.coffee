@@ -351,7 +351,7 @@ class ClashRoyalePlayerService
           .then ->
             Conversation.getAllByGroupId clan.groupId
             .then (conversations) ->
-              ChatMessage.create
+              ChatMessage.upsert
                 userId: userId
                 body: '*' + Language.get('backend.userJoinedChatMessage', {
                   language: group.language or 'en'
