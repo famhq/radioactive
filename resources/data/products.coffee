@@ -14,6 +14,20 @@ products = [].concat(
     cost: 100 # 10c
     data:
       count: 1
+      backKey: 'ph'
+      odds: [
+        {rarity: 'common', odds: 0.8}
+        {rarity: 'rare', odds: 0.13}
+        {rarity: 'epic', odds: 0.05}
+        {rarity: 'legendary', odds: 0.02}
+      ]
+  }
+  {
+    key: 'ph_pack3', type: 'pack', groupId: GROUPS.PLAY_HARD
+    cost: 250 # 25c
+    data:
+      count: 3
+      backKey: 'ph'
       odds: [
         {rarity: 'common', odds: 0.8}
         {rarity: 'rare', odds: 0.13}

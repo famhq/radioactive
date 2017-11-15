@@ -104,6 +104,7 @@ config =
     PUB_SUB_PREFIX: 'radioactive_pub_sub'
     PORT: REDIS_PORT
     KUE_HOST: env.REDIS_KUE_HOST
+    PUB_SUB_HOST: env.REDIS_PUB_SUB_HOST
     RADIOACTIVE_HOST: env.REDIS_RADIOACTIVE_HOST
     # NODES: if env.REDIS_CLUSTER_HOSTS \
     #        then _.map env.REDIS_CLUSTER_HOSTS.split(','), (host) ->

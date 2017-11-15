@@ -5,6 +5,7 @@ uuid = require 'node-uuid'
 
 cknex = require '../services/cknex'
 CacheService = require '../services/cache'
+TimeService = require '../services/time'
 User = require './user'
 
 tables = [
@@ -22,7 +23,7 @@ tables = [
       parentId: 'uuid'
       creatorId: 'uuid'
       body: 'text'
-      timeBucket: 'int'
+      timeBucket: 'text'
       timeUuid: 'timeuuid'
     primaryKey:
       partitionKey: ['threadId']
@@ -54,7 +55,7 @@ tables = [
       parentId: 'uuid'
       creatorId: 'uuid'
       body: 'text'
-      timeBucket: 'int'
+      timeBucket: 'text'
       timeUuid: 'timeuuid'
     primaryKey:
       partitionKey: ['creatorId', 'timeBucket']
@@ -66,7 +67,7 @@ tables = [
     keyspace: 'starfire'
     fields:
       creatorId: 'uuid'
-      timeBucket: 'int'
+      timeBucket: 'text'
       timeUuid: 'timeuuid'
       upvotes: 'counter'
       downvotes: 'counter'
@@ -86,8 +87,7 @@ defaultThreadComment = (threadComment) ->
   _.defaults threadComment, {
     id: uuid.v4()
     timeUuid: cknex.getTimeUuid()
-    # 10-17-2017
-    timeBucket: (Date.now() - 1508282095081) % ONE_MONTH_MS
+    timeBucket: TimeService.getScaledTimeByTimeScale 'month'
   }
 
 class ThreadCommentModel

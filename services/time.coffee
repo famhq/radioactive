@@ -11,6 +11,8 @@ class TimeService
       'BIWEEK-' + time.format('YYYY') + (parseInt(time.format 'YYYY-WW') / 2)
     else if timeScale is 'week'
       'WEEK-' + time.format 'YYYY-WW'
+    else if timeScale is 'month'
+      'MONTH-' + time.format 'YYYY-MM'
     else
       time.format time.format 'YYYY-MM-DD HH:mm'
 
@@ -25,6 +27,9 @@ class TimeService
     else if timeScale is 'week'
       time.subtract 1, 'weeks'
       'WEEK-' + time.format 'YYYY-WW'
+    else if timeScale is 'month'
+      time.subtract 1, 'months'
+      'MONTH-' + time.format 'YYYY-MM'
     else
       time.subtract 1, 'minutes'
       time.format time.format 'YYYY-MM-DD HH:mm'

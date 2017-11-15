@@ -135,16 +135,26 @@ class ChatMessageModel extends Stream
 
   getAllByConversationId: (conversationId, options = {}) =>
     {limit, isStreamed, emit, socket, route, postFn,
-      minTime, maxTime, reverse} = options
+      minTime, maxTimeUuid, reverse} = options
 
-    timeBucket = TimeService.getScaledTimeByTimeScale 'week', moment(minTime)
+    maxTime = if maxTimeUuid \
+              then cknex.getTimeUuidFromString(maxTimeUuid).getDate()
+              else undefined
+
+    timeBucket = TimeService.getScaledTimeByTimeScale(
+      'week', moment(minTime or maxTime)
+    )
 
     get = (timeBucket) ->
-      cknex().select '*'
+      q = cknex().select '*'
       .from 'chat_messages_by_conversationId'
       .where 'conversationId', '=', conversationId
       .andWhere 'timeBucket', '=', timeBucket
-      .limit limit
+
+      if maxTimeUuid
+        q.andWhere 'timeUuid', '<', maxTimeUuid
+
+      q.limit limit
       .run()
 
     initial = get timeBucket
@@ -161,6 +171,10 @@ class ChatMessageModel extends Stream
       if reverse
         results.reverse()
       results
+      # FIXME FIXME: in early 2018 delete all messages from
+      # timeBucket=WEEK-2017-46 (mid-nov) back. bunch of duplicates from bad
+      # rethinkdb import
+      _.uniqBy results, (chatMessage) -> "#{chatMessage.id}"
 
     if isStreamed
       @stream {

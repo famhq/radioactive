@@ -10,11 +10,11 @@ class PubSubService
     @subscriptions = {}
     @redisPub = new Redis {
       port: config.REDIS.PORT
-      host: config.REDIS.RADIOACTIVE_HOST
+      host: config.REDIS.PUB_SUB_HOST
     }
     @redisSub = new Redis {
       port: config.REDIS.PORT
-      host: config.REDIS.RADIOACTIVE_HOST
+      host: config.REDIS.PUB_SUB_HOST
     }
 
     @redisSub.on 'message', (channelWithPrefix, message) =>

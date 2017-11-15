@@ -34,6 +34,7 @@ class UserFollowerModel
       ]
     }
   ]
+  # 07e8ada2-359b-4d42-99d1-f8fa4043b8f0 -> 613e4fce-8ec5-4e75-b134-6bdab30f217f
 
   create: (userFollower) ->
     userFollower = defaultUserFollower userFollower

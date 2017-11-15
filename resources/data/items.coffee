@@ -11,8 +11,23 @@ user_items
 ###
 
 items = [].concat(
-  # {name: 'PlayHard', key: 'ph', groupId: config.GROUPS.PLAY_HARD, rarity: 'common'}
-  # {name: 'Bruno', key: 'bruno', groupId: config.GROUPS.PLAY_HARD, rarity: 'common'}
+  {name: 'PlayHard', key: 'ph', groupId: config.GROUPS.PLAY_HARD, rarity: 'common'}
+  {name: 'Bruno', key: 'ph_bruno', groupId: config.GROUPS.PLAY_HARD, rarity: 'common'}
+  {name: 'Huum', key: 'ph_huum', groupId: config.GROUPS.PLAY_HARD, rarity: 'common'}
+  {name: 'Surpreso', key: 'ph_surpreso', groupId: config.GROUPS.PLAY_HARD, rarity: 'common'}
+  {name: 'Feliz', key: 'ph_feliz', groupId: config.GROUPS.PLAY_HARD, rarity: 'common'}
+  {name: 'Bora', key: 'ph_bora', groupId: config.GROUPS.PLAY_HARD, rarity: 'common'}
+  {name: 'Assustadao', key: 'ph_assustadao', groupId: config.GROUPS.PLAY_HARD, rarity: 'common'}
+  {name: 'Aleluia', key: 'ph_aleluia', groupId: config.GROUPS.PLAY_HARD, rarity: 'common'}
+  {name: 'Tenso', key: 'ph_tenso', groupId: config.GROUPS.PLAY_HARD, rarity: 'common'}
+  {name: 'Hmm', key: 'ph_hmm', groupId: config.GROUPS.PLAY_HARD, rarity: 'rare'}
+  {name: 'Uau', key: 'ph_uau', groupId: config.GROUPS.PLAY_HARD, rarity: 'rare'}
+  {name: 'Love', key: 'ph_love', groupId: config.GROUPS.PLAY_HARD, rarity: 'rare'}
+  {name: 'Voa', key: 'ph_voa', groupId: config.GROUPS.PLAY_HARD, rarity: 'epic'}
+  {name: 'God', key: 'ph_god', groupId: config.GROUPS.PLAY_HARD, rarity: 'legendary'}
+
+
+
   {name: 'Starfire Logo', key: 'sf_logo', groupId: config.GROUPS.STARFIRE, rarity: 'common'}
   {name: 'CR Angry', key: 'cr_angry', groupId: config.GROUPS.STARFIRE, rarity: 'common'}
   # {name: 'CR Barbarian', key: 'cr_barbarian', groupId: config.GROUPS.STARFIRE, rarity: 'epic'}

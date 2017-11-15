@@ -220,21 +220,20 @@ class ChatMessageCtrl
     if isPrivate and body.secret is config.DEALER_SECRET
       ChatMessage.updateById params.id, {card: body.card}
 
-  getAllByConversationId: ({conversationId}, {user}, {emit, socket, route}) ->
-    start = Date.now()
+  getAllByConversationId: ({conversationId, maxTimeUuid}, {user}, socketInfo) ->
+    {emit, socket, route} = socketInfo
     Conversation.getById conversationId, {preferCache: true}
     .then (conversation) ->
-      start = Date.now()
       Conversation.hasPermission conversation, user.id
       .then (hasPermission) ->
-        start = Date.now()
         unless hasPermission
           router.throw status: 401, info: 'unauthorized'
 
-        limit = 40
+        limit = 25
 
         ChatMessage.getAllByConversationId conversationId, {
           limit: limit
+          maxTimeUuid: maxTimeUuid
           isStreamed: true
           emit: emit
           socket: socket

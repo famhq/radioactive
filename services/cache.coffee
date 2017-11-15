@@ -11,7 +11,7 @@ ONE_HOUR_SECONDS = 3600
 
 PREFIXES =
   CHAT_USER: 'chat:user3'
-  CHAT_GROUP_USER: 'chat:user'
+  CHAT_GROUP_USER: 'chat:group_user'
   THREAD_USER: 'thread:user1'
   THREAD: 'thread:id'
   THREAD_DECK: 'thread:deck11'
@@ -125,6 +125,19 @@ class CacheService
   arrayGet: (key, value) ->
     key = config.REDIS.PREFIX + ':' + key
     RedisService.lrange key, 0, -1
+
+  # TODO
+  leaderboardUpdate: (setKey, member, score) ->
+    key = config.REDIS.PREFIX + ':' + setKey
+    RedisService.zadd key, score, member
+
+  leaderboardIncrement: (setKey, member, increment) ->
+    key = config.REDIS.PREFIX + ':' + setKey
+    RedisService.zincrby key, increment, member
+
+  leaderboardGet: (key) ->
+    key = config.REDIS.PREFIX + ':' + key
+    RedisService.zrange key, 0, -1, 'WITHSCORES'
 
   set: (key, value, {expireSeconds} = {}) ->
     key = config.REDIS.PREFIX + ':' + key
