@@ -159,7 +159,7 @@ class ChatMessageCtrl
           StatsService.sendEvent(
             user.id, 'chat_message', groupId, conversationId
           )
-          ChatMessage.upsert
+          ChatMessage.upsert {
             id: chatMessageId
             userId: user.id
             body: body
@@ -167,6 +167,15 @@ class ChatMessageCtrl
             conversationId: conversationId
             groupId: conversation?.groupId
             card: card
+          }, {
+            prepareFn: (item) ->
+              EmbedService.embed {
+                embed: defaultEmbed
+              }, ChatMessage.default(item)
+              .then (item) ->
+                if item?.user?.flags?.isChatBanned isnt true
+                  item
+          }
         .then ->
           userIds = conversation.userIds
           Conversation.updateById conversation.id, {
@@ -239,7 +248,7 @@ class ChatMessageCtrl
           socket: socket
           route: route
           reverse: true
-          postFn: (item) ->
+          initialPostFn: (item) ->
             EmbedService.embed {embed: defaultEmbed}, ChatMessage.default(item)
             .then (item) ->
               if item?.user?.flags?.isChatBanned isnt true

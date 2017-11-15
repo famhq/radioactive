@@ -99,7 +99,7 @@ class ChatMessageModel extends Stream
 
   default: defaultChatMessageOutput
 
-  upsert: (chatMessage) =>
+  upsert: (chatMessage, {prepareFn} = {}) =>
     chatMessage = defaultChatMessage chatMessage
 
     Promise.all [
@@ -129,12 +129,14 @@ class ChatMessageModel extends Stream
       .where 'id', '=', chatMessage.id
       .run()
     ]
-    .then =>
+    .then ->
+      prepareFn?(chatMessage) or chatMessage
+    .then (chatMessage) =>
       @streamCreate chatMessage
       chatMessage
 
   getAllByConversationId: (conversationId, options = {}) =>
-    {limit, isStreamed, emit, socket, route, postFn,
+    {limit, isStreamed, emit, socket, route, initialPostFn, postFn,
       minTime, maxTimeUuid, reverse} = options
 
     maxTime = if maxTimeUuid \
@@ -182,6 +184,7 @@ class ChatMessageModel extends Stream
         socket
         route
         initial
+        initialPostFn
         postFn
         channelBy: 'conversationId'
         channelById: conversationId

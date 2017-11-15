@@ -29,13 +29,16 @@ class StreamService
   deleteById: (id, channels) ->
     PubSubService.publish channels, {id, action: 'delete'}
 
+  # postFn called whene received (many times)
+  # best to put in the create method if possible
   stream: ({emit, socket, route, channel, initial, postFn}) =>
     initial
-    .map postFn
+    .map postFn or _.identity
     .tap =>
       subscription = PubSubService.subscribe channel, ({id, action, obj}) ->
         isInsert = true
-        postFn obj
+        Promise.resolve obj
+        .then postFn or _.identity
         .then (newItem) ->
           emit {
             initial: null

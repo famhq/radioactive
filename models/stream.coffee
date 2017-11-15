@@ -22,13 +22,15 @@ class Stream
       "#{@streamChannelKey}:#{channelBy}:#{channelById}"
     StreamService.deleteById id, channels
 
-  stream: ({emit, socket, route, channelBy, channelById, initial, postFn}) =>
+  stream: (options) =>
+    {emit, socket, route, channelBy, channelById,
+      initial, initialPostFn, postFn} = options
     StreamService.stream {
       channel: "#{@streamChannelKey}:#{channelBy}:#{channelById}"
       emit
       socket
       route
-      initial
+      initial: initial.map (initialPostFn or _.identity)
       postFn
     }
 
