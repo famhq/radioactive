@@ -68,6 +68,7 @@ TYPES =
   GROUP_USER:
     ROLES: 'groupUser:roles'
     XP: 'groupUser:xp'
+    USER: 'groupUser:user'
   CLAN_RECORD_TYPE:
     CLAN_VALUES: 'clanRecordType:clanValues'
   GROUP_RECORD_TYPE:
@@ -362,6 +363,10 @@ embedFn = _.curry (props, object) ->
         embedded.xp = GroupUser.getXpByGroupIdAndUserId(
           embedded.groupId, embedded.userId
         )
+
+      when TYPES.GROUP_USER.USER
+        embedded.user = User.getById embedded.userId
+        .then User.sanitizePublic(null)
 
       when TYPES.CONVERSATION.LAST_MESSAGE
         embedded.lastMessage = \

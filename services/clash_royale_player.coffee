@@ -338,48 +338,19 @@ class ClashRoyalePlayerService
         , {expireSeconds: ONE_DAY_S}
         null # don't need to block
 
-  _setClan: ({clanId, userId, name}) ->
+  _setClan: ({clanId, userId, name}) =>
     Clan.getByClanIdAndGameId clanId, GAME_ID, {
       preferCache: true
     }
-    .then (clan) ->
+    .then (clan) =>
       if clan?.groupId
         Group.getById clan.groupId
         .then EmbedService.embed {embed: [EmbedService.TYPES.GROUP.USER_IDS]}
-        .then (group) ->
-          Group.addUser clan.groupId, userId
-          .then ->
-            Conversation.getAllByGroupId clan.groupId
-            .then (conversations) ->
-              ChatMessage.upsert
-                userId: userId
-                body: '*' + Language.get('backend.userJoinedChatMessage', {
-                  language: group.language or 'en'
-                  replacements: {name}
-                }) + '*'
-                conversationId: conversations[0].id
-                groupId: clan?.groupId
-          .then ->
-            message =
-              titleObj:
-                key: 'newClanMember.title'
-              type: PushNotificationService.TYPES.GROUP
-              textObj:
-                key: 'newClanMember.text'
-                replacements: {name}
-              data:
-                path:
-                  key: 'groupChat'
-                  params:
-                    gameKey: config.DEFAULT_GAME_KEY
-                    id: group.id
-
-            PushNotificationService.sendToGroup group, message, {
-              skipMe: true, userId
-            }
+        .then (group) =>
+          if group?.userIds and group.userIds.indexOf(userId) is -1
+            @_addGroupUser {clan, group, userId, name}
         .catch (err) ->
           console.log err
-
 
       if not clan?.data and clanId
         ClashRoyaleClanService.updateClanById clanId, {userId}
@@ -387,6 +358,38 @@ class ClashRoyalePlayerService
         .catch (err) ->
           console.log 'clan refresh err', err
           null
+
+  _addGroupUser: ({clan, group, userId, name}) ->
+    Group.addUser clan.groupId, userId
+    .then ->
+      Conversation.getAllByGroupId clan.groupId
+      .then (conversations) ->
+        ChatMessage.upsert
+          userId: userId
+          body: '*' + Language.get('backend.userJoinedChatMessage', {
+            language: group.language or 'en'
+            replacements: {name}
+          }) + '*'
+          conversationId: conversations[0].id
+          groupId: clan?.groupId
+    .then ->
+      message =
+        titleObj:
+          key: 'newClanMember.title'
+        type: PushNotificationService.TYPES.GROUP
+        textObj:
+          key: 'newClanMember.text'
+          replacements: {name}
+        data:
+          path:
+            key: 'groupChat'
+            params:
+              gameKey: config.DEFAULT_GAME_KEY
+              id: group.id
+
+      PushNotificationService.sendToGroup group, message, {
+        skipMe: true, userId
+      }
 
   updateAutoRefreshPlayers: =>
     start = Date.now()

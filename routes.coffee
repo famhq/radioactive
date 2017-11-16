@@ -148,6 +148,7 @@ module.exports = router
   authed GroupUserCtrl.createModeratorByUsername
 .on 'groupUsers.getByGroupIdAndUserId',
   authed GroupUserCtrl.getByGroupIdAndUserId
+.on 'groupUsers.getTopByGroupId', authed GroupUserCtrl.getTopByGroupId
 
 .on 'groupRecords.getAllByUserIdAndGroupId',
   authed GroupRecordCtrl.getAllByUserIdAndGroupId

@@ -34,6 +34,7 @@ IMAGE_REGEX = /\!\[(.*?)\]\((.*?)\)/gi
 CARD_BUILDER_TIMEOUT_MS = 1000
 SMALL_IMAGE_SIZE = 200
 MAX_LENGTH = 5000
+ONE_DAY_SECONDS = 3600 * 24
 
 RATE_LIMIT_CHAT_MESSAGES_TEXT = 6
 RATE_LIMIT_CHAT_MESSAGES_TEXT_EXPIRE_S = 5
@@ -177,6 +178,18 @@ class ChatMessageCtrl
                   item
           }
         .then ->
+          if conversation.groupId
+            # daily chat message. may want to switch this up to be X number of
+            # chat messages per day
+            key = "#{CacheService.PREFIXES.CHAT_MESSAGE_DAILY_XP}:#{user.id}"
+            CacheService.runOnce key, ->
+              GroupUser.incrementXpByGroupIdAndUserId(
+                conversation.groupId
+                user.id
+                config.XP_AMOUNTS.DAILY_CHAT_MESSAGE
+              )
+            , {expireSeconds: ONE_DAY_SECONDS}
+
           userIds = conversation.userIds
           Conversation.updateById conversation.id, {
             lastUpdateTime: new Date()

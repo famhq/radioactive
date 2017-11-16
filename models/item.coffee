@@ -36,9 +36,11 @@ tables = [
     keyspace: 'starfire'
     fields:
       key: 'text'
+      level: 'int'
       circulating: 'counter'
     primaryKey:
       partitionKey: ['key']
+      clusteringColumns: ['level']
   }
 ]
 
@@ -74,14 +76,16 @@ class ItemModel
   batchIncrementCirculatingByItemKeys: (itemKeys) =>
     counts = _.countBy itemKeys
     queries = _.map counts, (count, itemKey) =>
-      @incrementCirculatingByKey itemKey, count, {skipRun: true}
+      level = 1
+      @incrementCirculatingByKeyAndLevel itemKey, level, count, {skipRun: true}
 
     cknex.batchRun queries
 
-  incrementCirculatingByKey: (key, amount, {skipRun} = {}) ->
+  incrementCirculatingByKeyAndLevel: (key, level, amount, {skipRun} = {}) ->
     q = cknex().update 'items_counter_by_key'
     .increment 'circulating', amount
     .where 'key', '=', key
+    .andWhere 'level', '=', level
 
     if skipRun
       q

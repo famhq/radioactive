@@ -18,6 +18,7 @@ PREFIXES =
   THREAD_COMMENTS: 'thread:comments3'
   THREAD_COMMENT_COUNT: 'thread:comment_count'
   THREADS: 'threads2'
+  CHAT_MESSAGE_DAILY_XP: 'chat_message:daily_xp'
   CONVERSATION_ID: 'conversation:id'
   USER_ID: 'user:id'
   USER_FOLLOWER_COUNT: 'user:follower_count'
@@ -55,6 +56,7 @@ PREFIXES =
   GROUP_STAR: 'group:star2'
   GROUP_ROLE_GROUP_ID_USER_ID: 'group_role:groupId:userId'
   GROUP_USER_USER_ID: 'group_user:user_id5'
+  GROUP_USER_TOP: 'group_user:top3'
   USERNAME_SEARCH: 'username:search1'
   RATE_LIMIT_CHAT_MESSAGES_TEXT: 'rate_limit:chat_messages:text'
   RATE_LIMIT_CHAT_MESSAGES_MEDIA: 'rate_limit:chat_messages:media'
@@ -70,8 +72,8 @@ PREFIXES =
   USER_DECKS_MIGRATE: 'user_decks:migrate16'
   USER_RECORDS_MIGRATE: 'user_records:migrate11'
   USER_PLAYER_USER_ID_GAME_ID: 'user_player:user_id_game_id5'
-  GROUP_CLAN_CLAN_ID_GAME_ID: 'group_clan:clan_id_game_id8'
-  CLAN_CLAN_ID_GAME_ID: 'clan:clan_id_game_id10'
+  GROUP_CLAN_CLAN_ID_GAME_ID: 'group_clan:clan_id_game_id9'
+  CLAN_CLAN_ID_GAME_ID: 'clan:clan_id_game_id11'
   CLAN_MIGRATE: 'clan:migrate9'
   CLAN_PLAYERS: 'clan:players1'
   BAN_IP: 'ban:ip'
@@ -110,6 +112,8 @@ class CacheService
   LOCKS:
     AUTO_REFRESH: 'auto_refresh'
   PREFIXES: PREFIXES
+  STATIC_PREFIXES: # these should stay, don't add a number to end to clear
+    GROUP_LEADERBOARD: 'group:leaderboard'
 
   constructor: ->
     @redlock = new Redlock [RedisService], {
@@ -137,7 +141,7 @@ class CacheService
 
   leaderboardGet: (key) ->
     key = config.REDIS.PREFIX + ':' + key
-    RedisService.zrange key, 0, -1, 'WITHSCORES'
+    RedisService.zrevrange key, 0, 50, 'WITHSCORES'
 
   set: (key, value, {expireSeconds} = {}) ->
     key = config.REDIS.PREFIX + ':' + key

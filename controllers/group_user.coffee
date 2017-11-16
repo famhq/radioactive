@@ -6,10 +6,16 @@ User = require '../models/user'
 GroupUser = require '../models/group_user'
 GroupRole = require '../models/group_role'
 EmbedService = require '../services/embed'
+CacheService = require '../services/cache'
 config = require '../config'
+
+FIVE_MINUTES_SECONDS = 60 * 5
 
 defaultEmbed = [
   EmbedService.TYPES.GROUP_USER.ROLES
+]
+userEmbed = [
+  EmbedService.TYPES.GROUP_USER.USER
 ]
 class GroupCtrl
   createModeratorByUsername: ({groupId, username, roleId}, {user}) ->
@@ -38,5 +44,12 @@ class GroupCtrl
   getByGroupIdAndUserId: ({groupId, userId}, {user}) ->
     GroupUser.getByGroupIdAndUserId groupId, userId
     .then EmbedService.embed {embed: defaultEmbed}
+
+  getTopByGroupId: ({groupId}, {user}) ->
+    key = "#{CacheService.PREFIXES.GROUP_USER_TOP}:#{groupId}"
+    CacheService.preferCache key, ->
+      GroupUser.getTopByGroupId groupId
+      .map EmbedService.embed {embed: userEmbed}
+    , {expireSeconds: FIVE_MINUTES_SECONDS}
 
 module.exports = new GroupCtrl()

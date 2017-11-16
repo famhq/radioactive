@@ -116,12 +116,32 @@ class GroupUserModel
     .then (groupUser) ->
       groupUser?.xp or 0
 
+  getTopByGroupId: (groupId) ->
+    prefix = CacheService.STATIC_PREFIXES.GROUP_LEADERBOARD
+    key = "#{prefix}:#{groupId}"
+    CacheService.leaderboardGet key
+    .then (results) ->
+      _.map _.chunk(results, 2), ([userId, xp], i) ->
+        {
+          rank: i + 1
+          groupId
+          userId
+          xp: parseInt xp
+        }
+
+
   incrementXpByGroupIdAndUserId: (groupId, userId, amount) ->
-    cknex().update 'group_users_xp_counter_by_userId'
-    .increment 'xp', amount
-    .where 'groupId', '=', groupId
-    .andWhere 'userId', '=', userId
-    .run()
+    Promise.all [
+      cknex().update 'group_users_xp_counter_by_userId'
+      .increment 'xp', amount
+      .where 'groupId', '=', groupId
+      .andWhere 'userId', '=', userId
+      .run()
+
+      prefix = CacheService.STATIC_PREFIXES.GROUP_LEADERBOARD
+      key = "#{prefix}:#{groupId}"
+      CacheService.leaderboardIncrement key, userId, amount
+    ]
 
   deleteByGroupIdAndUserId: (groupId, userId) ->
     Promise.all [
@@ -134,7 +154,7 @@ class GroupUserModel
       cknex().delete()
       .from 'group_users_by_userId'
       .where 'groupId', '=', groupId
-      .andWhere 'userIdId', '=', userIdId
+      .andWhere 'userId', '=', userId
       .run()
     ]
 

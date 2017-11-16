@@ -26,17 +26,35 @@ config =
   ]
   # also in starfire
   LANGUAGES: ['en', 'es', 'it', 'fr', 'zh', 'ja', 'ko', 'de', 'pt', 'pl']
-  LEVEL_REQUIREMENTS: [
+  # also in starfire
+  ITEM_LEVEL_REQUIREMENTS: [
     {level: 1, countRequired: 0}
     {level: 2, countRequired: 10}
     {level: 3, countRequired: 100}
   ]
+  # also in starfire TODO: shared config file
+  XP_LEVEL_REQUIREMENTS: [
+    {level: 1, xpRequired: 0}
+    {level: 2, xpRequired: 20}
+    {level: 3, xpRequired: 50}
+    {level: 4, xpRequired: 100}
+    {level: 5, xpRequired: 200}
+    {level: 6, xpRequired: 500}
+    {level: 7, xpRequired: 1000}
+    {level: 8, xpRequired: 2000}
+    {level: 9, xpRequired: 5000}
+    {level: 10, xpRequired: 10000}
+    {level: 11, xpRequired: 30000}
+    {level: 12, xpRequired: 60000}
+  ]
   NOTIFICATION_COLOR: '#fc373e'
   RARITY_XP:
-    common: 10
-    rare: 50
-    epic: 150
-    legendary: 400
+    common: 2
+    rare: 10
+    epic: 30
+    legendary: 80
+  XP_AMOUNTS:
+    DAILY_CHAT_MESSAGE: 5
   EMPTY_UUID: '00000000-0000-0000-0000-000000000000'
 
   IS_POSTGRES: env.IS_POSTGRES or false

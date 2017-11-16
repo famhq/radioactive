@@ -29,7 +29,9 @@ class ClanModel
         GroupClan.getByClanIdAndGameId clanId, gameId
       Promise.all [
         if preferCache
-          CacheService.preferCache cacheKey, getGroupClan, {ignoreNull: true}
+          CacheService.preferCache cacheKey, getGroupClan, {
+            ignoreNull: true, expireSeconds: ONE_DAY_S
+          }
         else
           getGroupClan()
 
@@ -49,11 +51,11 @@ class ClanModel
       get()
 
   upsertByClanIdAndGameId: (clanId, gameId, diff) =>
-    prefix = CacheService.PREFIXES.CLAN_CLAN_ID_GAME_ID
+    prefix = CacheService.PREFIXES.GROUP_CLAN_CLAN_ID_GAME_ID
     cacheKey = "#{prefix}:#{clanId}:#{gameId}"
     CacheService.preferCache cacheKey, ->
       GroupClan.create {clanId, gameId}
-    , {ignoreNull: true}
+    , {ignoreNull: true, expireSeconds: ONE_DAY_S}
     .then =>
       @GameClans[gameId].upsertById clanId, diff
 

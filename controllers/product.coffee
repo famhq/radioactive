@@ -24,7 +24,6 @@ class ProductCtrl
   getByKey: ({key}) ->
     Product.getByKey key
 
-
   getPackItems: (product) ->
     Item.getAllByGroupId product.groupId
     .then (items) ->
