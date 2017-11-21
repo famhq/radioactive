@@ -129,7 +129,6 @@ class GroupUserModel
           xp: parseInt xp
         }
 
-
   incrementXpByGroupIdAndUserId: (groupId, userId, amount) ->
     Promise.all [
       cknex().update 'group_users_xp_counter_by_userId'

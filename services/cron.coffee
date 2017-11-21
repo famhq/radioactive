@@ -54,7 +54,6 @@ class CronService
       Thread.updateScores 'time'
 
     @addCron 'hourly', '0 0 * * * *', ->
-      # VideoDiscoveryService.discover()
       Ban.unbanTemp()
 
   addCron: (key, time, fn) =>

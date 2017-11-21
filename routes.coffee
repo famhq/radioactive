@@ -249,3 +249,4 @@ module.exports = router
 
 .on 'videos.getAllByGroupId', authed VideoCtrl.getAllByGroupId
 .on 'videos.getById', authed VideoCtrl.getById
+.on 'videos.logViewById', authed VideoCtrl.logViewById

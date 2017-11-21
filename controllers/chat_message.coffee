@@ -181,15 +181,22 @@ class ChatMessageCtrl
           if conversation.groupId
             # daily chat message. may want to switch this up to be X number of
             # chat messages per day
-            key = "#{CacheService.PREFIXES.CHAT_MESSAGE_DAILY_XP}:#{user.id}"
+            prefix = CacheService.PREFIXES.CHAT_MESSAGE_DAILY_XP
+            key = "#{prefix}:#{user.id}:#{conversation.groupId}"
             CacheService.runOnce key, ->
               GroupUser.incrementXpByGroupIdAndUserId(
                 conversation.groupId
                 user.id
                 config.XP_AMOUNTS.DAILY_CHAT_MESSAGE
               )
+              .then ->
+                config.XP_AMOUNTS.DAILY_CHAT_MESSAGE
             , {expireSeconds: ONE_DAY_SECONDS}
-
+          else
+            Promise.resolve null
+        .then (xpGained) ->
+          {xpGained}
+        .tap ->
           userIds = conversation.userIds
           Conversation.updateById conversation.id, {
             lastUpdateTime: new Date()

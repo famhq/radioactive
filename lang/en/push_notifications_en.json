@@ -7,5 +7,7 @@
   "newGroupMember.title": "New group member",
   "newGroupMember.text": "{name} joined your group in Starfire",
   "newFollower.title": "New follower",
-  "newFollower.text": "{name} followed you"
+  "newFollower.text": "{name} followed you",
+  "newVideo.title": "New video",
+  "newVideo.text": "New video posted in {groupName}"
 }

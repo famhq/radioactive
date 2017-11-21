@@ -218,14 +218,35 @@ class PushNotificationService
   sendToGroup: (group, message, {skipMe, meUserId, groupId} = {}) =>
     @sendToUserIds group.userIds, message, {skipMe, meUserId, groupId}
 
-  sendToGroupTopic: (groupId, message) =>
-    @sendFcm "group-#{groupId}", {
+  sendToGroupTopic: (group, message) =>
+    topic = "group-#{group.id}"
+    language = group.language
+    if message.titleObj
+      message.title = Language.get message.titleObj.key, {
+        file: 'pushNotifications'
+        language: language
+        replacements: message.titleObj.replacements
+      }
+    if message.textObj
+      message.text = Language.get message.textObj.key, {
+        file: 'pushNotifications'
+        language: language
+        replacements: message.textObj.replacements
+      }
+
+    message = {
       toType: 'topic'
       type: TYPES.VIDEO
       title: message.title
       text: message.text
       data: message.data
     }
+
+    if config.ENV isnt config.ENVS.PROD or config.IS_STAGING
+      console.log 'send notification', group.id, JSON.stringify message
+      return
+
+    @sendFcm topic, message
 
   sendToEvent: (event, message, {skipMe, meUserId, eventId} = {}) =>
     @sendToUserIds event.userIds, message, {skipMe, meUserId, eventId}
@@ -270,7 +291,7 @@ class PushNotificationService
 
     if config.ENV is config.ENVS.DEV and not message.forceDevSend
       console.log 'send notification', user.id, message
-      # return
+      return
 
     # if [@TYPES.NEWS, @TYPES.NEW_PROMOTION].indexOf(message.type) is -1
     #   Notification.create {

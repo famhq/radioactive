@@ -20,6 +20,7 @@ PREFIXES =
   THREADS: 'threads2'
   CHAT_MESSAGE_DAILY_XP: 'chat_message:daily_xp'
   CONVERSATION_ID: 'conversation:id'
+  VIDEO_DAILY_XP: 'video:daily_xp'
   USER_ID: 'user:id'
   USER_FOLLOWER_COUNT: 'user:follower_count'
   USER_DATA: 'user_data:id'
@@ -141,7 +142,7 @@ class CacheService
 
   leaderboardGet: (key) ->
     key = config.REDIS.PREFIX + ':' + key
-    RedisService.zrevrange key, 0, 50, 'WITHSCORES'
+    RedisService.zrevrange key, 0, 49, 'WITHSCORES'
 
   set: (key, value, {expireSeconds} = {}) ->
     key = config.REDIS.PREFIX + ':' + key

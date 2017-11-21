@@ -6,6 +6,7 @@ _ = require 'lodash'
 cld = require 'cld'
 
 Video = require '../models/video'
+Group = require '../models/group'
 ImageService = require './image'
 PushNotificationService = require './push_notification'
 config = require '../config'
@@ -42,6 +43,7 @@ PLAY_HARD_CHANNEL_ID = 'UC4IMfO_--bwBaNgWeoLxAgg'
 
 class VideoDisoveryService
   updateGroupVideos: ->
+    hasSentPushNotification = false
     Promise.promisify(youtube.search.list) {
       part: 'snippet'
       channelId: PLAY_HARD_CHANNEL_ID
@@ -59,16 +61,32 @@ class VideoDisoveryService
       Promise.all [
         Video.getAllByGroupIdAndMinTime config.GROUPS.PLAY_HARD, minTime
         Promise.resolve videos
+        Group.getById config.GROUPS.PLAY_HARD
       ]
-    .then ([existingVideos, videos]) ->
+    .then ([existingVideos, videos, group]) ->
       Promise.map videos, (video) ->
         exists = Boolean _.find existingVideos, {
           source: 'youtube'
           sourceId: video.id
         }
-        unless exists
-          # TODO: notify group of new video
-          # PushNotificationService.sendToGroupTopic 
+        if not exists and not hasSentPushNotification
+          hasSentPushNotification = true
+          PushNotificationService.sendToGroupTopic(
+            group, {
+              titleObj:
+                key: 'newVideo.title'
+              textObj:
+                key: 'newVideo.text'
+                replacements:
+                  groupName: group.name
+              data:
+                path:
+                  key: 'groupVideos'
+                  params:
+                    gameKey: 'clash-royale'
+                    id: config.GROUPS.PLAY_HARD
+            }
+          )
 
           Video.upsert {
             groupId: config.GROUPS.PLAY_HARD
