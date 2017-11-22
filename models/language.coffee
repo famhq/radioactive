@@ -10,7 +10,6 @@ class Language
       addons: null
       paths: null
       languages: null
-      products: null
       pushNotifications: null
     }
 

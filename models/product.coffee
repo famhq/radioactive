@@ -12,6 +12,7 @@ tables = [
     fields:
       groupId: 'uuid'
       key: 'text'
+      name: 'text'
       type: 'text' # pack | general
       data: 'text'
       cost: 'int'
@@ -25,6 +26,7 @@ tables = [
     fields:
       groupId: 'uuid'
       key: 'text'
+      name: 'text'
       type: 'text' # pack | general
       data: 'text'
       cost: 'int'
