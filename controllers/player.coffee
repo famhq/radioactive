@@ -1,18 +1,28 @@
 _ = require 'lodash'
 router = require 'exoid-router'
 Joi = require 'joi'
+randomSeed = require 'random-seed'
 
 User = require '../models/user'
 UserFollower = require '../models/user_follower'
 Player = require '../models/player'
 ClashRoyalePlayer = require '../models/clash_royale_player'
 ClashRoyaleTopPlayer = require '../models/clash_royale_top_player'
+ClashRoyaleDeck = require '../models/clash_royale_deck'
+ClashRoyaleCard = require '../models/clash_royale_card'
 UserPlayer = require '../models/user_player'
+Clan = require '../models/clan'
+Group = require '../models/group'
+ChatMessage = require '../models/chat_message'
+Conversation = require '../models/conversation'
+Language = require '../models/language'
 ClashRoyaleAPIService = require '../services/clash_royale_api'
 ClashRoyalePlayerService = require '../services/clash_royale_player'
 CacheService = require '../services/cache'
 TagConverterService = require '../services/tag_converter'
+PushNotificationService = require '../services/push_notification'
 EmbedService = require '../services/embed'
+cardIds = require '../resources/data/card_ids'
 config = require '../config'
 
 defaultEmbed = [
@@ -86,36 +96,99 @@ class PlayerCtrl
           )
     , {expireSeconds: TEN_MINUTES_SECONDS}
 
-  # verifyMe: ({gold, lo}, {user}) ->
-  #   Player.getByUserIdAndGameId user.id, GAME_ID
-  #   .then (player) ->
-  #     hiLo = TagConverterService.getHiLoFromTag player.id
-  #     unless "#{lo}" is "#{hiLo.lo}"
-  #       router.throw {status: 400, info: 'invalid player id', ignoreLog: true}
-  #
-  #     ClashRoyaleAPIService.getPlayerDataByTag player.id, {
-  #       priority: 'high', skipCache: true, isLegacy: true
-  #     }
-  #     .then (playerData) ->
-  #       unless "#{gold}" is "#{playerData?.gold}"
-  #         router.throw {status: 400, info: 'invalid gold', ignoreLog: true}
-  #
-  #       # mark others unverified
-  #       UserPlayer.updateByPlayerIdAndGameId player.id, GAME_ID, {
-  #         isVerified: false
-  #       }
-  #     .then ->
-  #       UserPlayer.updateByUserIdAndPlayerIdAndGameId(
-  #         user.id
-  #         player.id
-  #         GAME_ID
-  #         {isVerified: true}
-  #       )
-  #       .tap ->
-  #         Player.setAutoRefreshByPlayerIdAndGameId player.id, GAME_ID
-  #
-  #         key = "#{CacheService.PREFIXES.PLAYER_VERIFIED_USER}:#{player.id}"
-  #         CacheService.deleteByKey key
+
+  getVerifyDeckId: ({}, {user}) ->
+    Player.getByUserIdAndGameId user.id, GAME_ID
+    .then (player) ->
+      seed = user.id + ':' + player.id
+      rand = randomSeed.create seed
+      cardCount = player.data.cards.length
+      cards = _.map _.range(8), ->
+        card = player.data.cards[rand(cardCount)]
+        {
+          key: ClashRoyaleCard.getKeyByName card.name
+          id: _.find(cardIds, {
+            name: ClashRoyaleCard.getKeyByName(card.name)
+          })?.globalId
+        }
+
+      {
+        deckId: ClashRoyaleDeck.getDeckId _.map(cards, 'key')
+        copyIds: _.map cards, 'id'
+      }
+
+  verifyMe: ({}, {user}) =>
+    Promise.all [
+      Player.getByUserIdAndGameId user.id, GAME_ID
+      @getVerifyDeckId {}, {user}
+    ]
+    .then ([player, verifyDeckId]) =>
+      ClashRoyaleAPIService.getPlayerDataByTag player.id, {
+        priority: 'high', skipCache: true
+      }
+      .then (playerData) =>
+        currentDeckKeys = _.map playerData.currentDeck, (card) ->
+          ClashRoyaleCard.getKeyByName card.name
+        currentDeckId = ClashRoyaleDeck.getDeckId currentDeckKeys
+
+        if not currentDeckId or "#{currentDeckId}" isnt "#{verifyDeckId.deckId}"
+          router.throw {status: 400, info: 'invalid deck', ignoreLog: true}
+
+        UserPlayer.setVerifiedByUserIdAndPlayerIdAndGameId(
+          user.id
+          player.id
+          GAME_ID
+        )
+        .then =>
+          clanId = playerData?.clan?.tag?.replace '#', ''
+          @_addToClanGroup {clanId, userId: user.id, name: playerData.name}
+
+  _addToClanGroup: ({clanId, userId, name}) =>
+    Clan.getByClanIdAndGameId clanId, GAME_ID, {
+      preferCache: true
+    }
+    .then (clan) =>
+      if clan?.groupId
+        Group.getById clan.groupId
+        .then EmbedService.embed {embed: [EmbedService.TYPES.GROUP.USER_IDS]}
+        .then (group) =>
+          if group?.userIds and group.userIds.indexOf(userId) is -1
+            @_addGroupUser {clan, group, userId, name}
+        .catch (err) ->
+          console.log err
+
+  _addGroupUser: ({clan, group, userId, name}) ->
+    Group.addUser clan.groupId, userId
+    .then ->
+      Conversation.getAllByGroupId clan.groupId
+      .then (conversations) ->
+        ChatMessage.upsert
+          userId: userId
+          body: '*' + Language.get('backend.userJoinedChatMessage', {
+            language: group.language or 'en'
+            replacements: {name}
+          }) + '*'
+          conversationId: conversations[0].id
+          groupId: clan?.groupId
+    .then ->
+      message =
+        titleObj:
+          key: 'newClanMember.title'
+        type: PushNotificationService.TYPES.GROUP
+        textObj:
+          key: 'newClanMember.text'
+          replacements: {name}
+        data:
+          path:
+            key: 'groupChat'
+            params:
+              gameKey: config.DEFAULT_GAME_KEY
+              id: group.id
+
+      PushNotificationService.sendToGroup group, message, {
+        skipMe: true, userId
+      }
+
 
   search: ({playerId}, {user, headers, connection}) ->
     ip = headers['x-forwarded-for'] or

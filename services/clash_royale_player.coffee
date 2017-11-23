@@ -5,9 +5,6 @@ moment = require 'moment'
 
 Player = require '../models/player'
 Clan = require '../models/clan'
-Group = require '../models/group'
-ChatMessage = require '../models/chat_message'
-Conversation = require '../models/conversation'
 Language = require '../models/language'
 ClashRoyalePlayerDeck = require '../models/clash_royale_player_deck'
 ClashRoyalePlayer = require '../models/clash_royale_player'
@@ -324,7 +321,7 @@ class ClashRoyalePlayerService
       Player.upsertByPlayerIdAndGameId id, GAME_ID, diff, {userId}
       .then =>
         if clanId and userId
-          @_setClan {clanId, userId, name: playerData.name}
+          @_setClan {clanId, userId}
       .catch (err) ->
         console.log 'upsert err', err
         null
@@ -338,58 +335,17 @@ class ClashRoyalePlayerService
         , {expireSeconds: ONE_DAY_S}
         null # don't need to block
 
-  _setClan: ({clanId, userId, name}) =>
+  _setClan: ({clanId, userId}) ->
     Clan.getByClanIdAndGameId clanId, GAME_ID, {
       preferCache: true
     }
-    .then (clan) =>
-      if clan?.groupId
-        Group.getById clan.groupId
-        .then EmbedService.embed {embed: [EmbedService.TYPES.GROUP.USER_IDS]}
-        .then (group) =>
-          if group?.userIds and group.userIds.indexOf(userId) is -1
-            @_addGroupUser {clan, group, userId, name}
-        .catch (err) ->
-          console.log err
-
+    .then (clan) ->
       if not clan?.data and clanId
         ClashRoyaleClanService.updateClanById clanId, {userId}
         .timeout CLAN_TIMEOUT_MS
         .catch (err) ->
           console.log 'clan refresh err', err
           null
-
-  _addGroupUser: ({clan, group, userId, name}) ->
-    Group.addUser clan.groupId, userId
-    .then ->
-      Conversation.getAllByGroupId clan.groupId
-      .then (conversations) ->
-        ChatMessage.upsert
-          userId: userId
-          body: '*' + Language.get('backend.userJoinedChatMessage', {
-            language: group.language or 'en'
-            replacements: {name}
-          }) + '*'
-          conversationId: conversations[0].id
-          groupId: clan?.groupId
-    .then ->
-      message =
-        titleObj:
-          key: 'newClanMember.title'
-        type: PushNotificationService.TYPES.GROUP
-        textObj:
-          key: 'newClanMember.text'
-          replacements: {name}
-        data:
-          path:
-            key: 'groupChat'
-            params:
-              gameKey: config.DEFAULT_GAME_KEY
-              id: group.id
-
-      PushNotificationService.sendToGroup group, message, {
-        skipMe: true, userId
-      }
 
   updateAutoRefreshPlayers: =>
     start = Date.now()

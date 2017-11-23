@@ -155,10 +155,11 @@ class RewardCtrl
         "deviceIds[#{type}]": options.deviceId
         isLimitAdTrackingEnabled: true
         deviceOSVersion: options.osVersion or 22 # TODO
-        # ip: options.ip #  TODO need secreteKey to specifcy
-        # secretKey: config.IRONSOURCE_SECRET_KEY
-    .tap (e) ->
+        ip: options.ip #  TODO need secreteKey to specifcy
+        secretKey: config.IRONSOURCE_SECRET_KEY
+    .then (e) ->
       console.log e
+      e
     .catch (e) ->
       console.log e
 
@@ -256,15 +257,25 @@ class RewardCtrl
   _getTapJoy: -> null
 
   getAll: (options, {user, headers, connection}) =>
+    # other to try:
+    # http://superrewards.com/offer-wall
+    # https://adgatemedia.com/
+    # https://www.offertoro.com/
+    # http://persona.ly/
+    # https://www.rhythmone.com/
     options.ip = if config.ENV is config.ENVS.DEV \
                  then '213.143.60.43'
                  else headers['x-forwarded-for'] or connection.remoteAddress
-    # options.deviceId ?= uuid.v4() # TODO: this shouldn't need to happen
     Promise.all [
-      @_getKiip options, {user, headers, connection}
+      # @_getKiip options, {user, headers, connection}
       @_getFyber options, {user, headers, connection}
+      .catch -> null
+      # Promise.resolve null
       @_getAdscend options, {user, headers, connection}
+      .catch -> null
+      Promise.resolve null
       # @_getIronSource options, {user, headers, connection}
+      # .catch -> null
 
       # FIXME: admob doesn't allow this: https://support.google.com/admob/answer/7313578?hl=en
       if options.isApp and false and semver.gte options.appVersion, '1.4.5'
@@ -277,8 +288,8 @@ class RewardCtrl
         {preferCache: true}
       )
     ]
-    .then ([kiip, fyber, adscend, rewardedVideosLeft, attempts]) ->
-      offers = _.map [].concat(kiip, fyber, adscend), (offer) ->
+    .then ([fyber, adscend, ironSource, rewardedVideosLeft, attempts]) ->
+      offers = _.map [].concat(fyber, adscend, ironSource), (offer) ->
         unless offer
           return false
         attempt = _.find attempts, {
@@ -383,6 +394,20 @@ class RewardCtrl
     console.log 'adscend add', userId, amount
     {userId, txnId, offerId, fireAmount: amount}
 
+  _processTrialpay: ({offerId, amount, userId, txnId, hash}) ->
+    return Promise.resolve true
+    # shasum = crypto.createHmac 'md5', config.ADSCEND_SECRET_KEY
+    # shasum.update qs.stringify {offerId, amount, userId, txnId}
+    # isValid = shasum.digest('hex') is hash
+    #
+    # amount = amount * 1000
+    #
+    # unless isValid
+    #   throw router.throw {status: 400, info: 'invalid ascend'}
+    #
+    # console.log 'trialpay add', userId, amount
+    # {userId, txnId, offerId, fireAmount: amount}
+
   process: (req, res) =>
     network = req.params.network
     {txnId, userId, fireAmount, offerId} = switch network
@@ -390,6 +415,7 @@ class RewardCtrl
       when 'fyber' then @_processFyber req.query
       when 'adscend' then @_processAdscend req.query
       when 'ironsource' then @_processIronsource req.query
+      when 'trialpay' then @_processTrialpay req.query
 
     RewardTransaction.getByNetworkAndTxnId network, txnId
     .then (transaction) ->

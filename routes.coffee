@@ -177,7 +177,8 @@ module.exports = router
 .on 'players.getTop', authed PlayerCtrl.getTop
 .on 'players.search', authed PlayerCtrl.search
 .on 'players.getMeFollowing', authed PlayerCtrl.getMeFollowing
-# .on 'players.verifyMe', authed PlayerCtrl.verifyMe
+.on 'players.verifyMe', authed PlayerCtrl.verifyMe
+.on 'players.getVerifyDeckId', authed PlayerCtrl.getVerifyDeckId
 .on 'players.getIsAutoRefreshByPlayerIdAndGameId',
   authed PlayerCtrl.getIsAutoRefreshByPlayerIdAndGameId
 .on 'players.setAutoRefreshByGameId',
