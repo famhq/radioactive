@@ -69,7 +69,8 @@ class VideoDisoveryService
           source: 'youtube'
           sourceId: video.id
         }
-        if not exists and not hasSentPushNotification
+        isLive = video.snippet.liveBroadcastContent in ['live', 'upcoming']
+        if not exists and not hasSentPushNotification and not isLive
           hasSentPushNotification = true
           PushNotificationService.sendToGroupTopic(
             group, {

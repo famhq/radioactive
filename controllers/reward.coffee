@@ -173,7 +173,7 @@ class RewardCtrl
       device_id: options.deviceId
       ip: ip
       locale: options.language
-      # offer_types: '101,112' # has key breaks with this....
+      # offer_types: '101,112' # hash key breaks with this....
       page: 1
       ps_time: Math.round user.joinTime.getTime() / 1000
       timestamp: Math.round Date.now() / 1000
@@ -371,9 +371,9 @@ class RewardCtrl
     shasum.update config.FYBER_SECURITY_TOKEN + uid + amount + _trans_id_
     isValid = shasum.digest('hex') is sid
 
-    # unless isValid
-    #   throw router.throw {status: 400, info: 'invalid fyber'}
-    console.log 'fyber', uid, amount, _trans_id_, pub0
+    unless isValid
+      throw router.throw {status: 400, info: 'invalid fyber'}
+    console.log 'fyber', uid, amount, _trans_id_, pub0, isValid
     {
       userId: uid
       fireAmount: parseInt(amount)

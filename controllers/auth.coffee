@@ -7,7 +7,9 @@ geoip = require 'geoip-lite'
 
 Auth = require '../models/auth'
 User = require '../models/user'
+GroupCtrl = require './group'
 schemas = require '../schemas'
+config = require '../config'
 
 BCRYPT_ROUNDS = 10
 
@@ -22,6 +24,10 @@ class AuthCtrl
     else
       country = geoip.lookup(ip)?.country
     User.create {ip, country, language: language?.toLowerCase?()}
+    .tap (user) ->
+      if language is 'pt'
+        # put all portuguese users in bruno's group
+        GroupCtrl.joinById {id: config.GROUPS.PLAY_HARD}, {user}
     .then (user) ->
       Auth.fromUserId user.id
 

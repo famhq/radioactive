@@ -6,6 +6,7 @@ request = require 'request-promise'
 
 PushToken = require '../models/push_token'
 User = require '../models/user'
+PushNotificationService = require '../services/push_notification'
 schemas = require '../schemas'
 config = require '../config'
 
@@ -37,12 +38,15 @@ class PushTokensCtrl
         User.updateById userId, {
           hasPushToken: true
         }
+
         PushToken.create {
           userId: userId
           token: token
           sourceType: sourceType
         }
         .then PushToken.sanitizePublic
+
+        PushNotificationService.subscribeToAllTopicsByUser user
       ]
 
 
@@ -67,15 +71,8 @@ class PushTokensCtrl
     .then ->
       null
 
-  subscribeToTopic: ({token, topic}, {user}) ->
-    base = 'https://iid.googleapis.com/iid/v1'
-    request "#{base}/#{token}/rel/topics/#{topic}", {
-      json: true
-      method: 'POST'
-      headers:
-        'Authorization': "key=#{config.GOOGLE_API_KEY}"
-      body: {}
-    }
+  subscribeToTopic: ({topic}, {user}) ->
+    PushNotificationService.subscribeToTopicByUserId user.id, topic
 
 
 module.exports = new PushTokensCtrl()

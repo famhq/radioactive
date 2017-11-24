@@ -25,7 +25,7 @@ class BroadcastService
     @batch message, {isTestRun}
 
   batch: (message, {isTestRun, minId}) =>
-    console.log minId
+    console.log 'minId', minId
     minId ?= '0000'
     (if isTestRun
       r.table 'users'
@@ -39,7 +39,7 @@ class BroadcastService
       .pluck(['id', 'country', 'language'])
     )
     .then (users) =>
-      if message.filterLang
+      if message.filterLang and not isTestRun
         console.log 'filtering', message.filterLang, users.length
         users = _.filter users, ({language, country}) =>
           language or= @getLangCode(country)

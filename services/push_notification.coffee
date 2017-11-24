@@ -5,6 +5,7 @@ Promise = require 'bluebird'
 uuid = require 'node-uuid'
 webpush = require 'web-push'
 request = require 'request-promise'
+randomSeed = require 'random-seed'
 
 config = require '../config'
 EmbedService = require './embed'
@@ -90,7 +91,7 @@ class PushNotificationService
     .then =>
       @sendFcm token, {title, text, type, data, icon}, {isiOS: true}
 
-  sendFcm: (to, {title, text, type, data, icon, toType}, {isiOS} = {}) =>
+  sendFcm: (to, {title, text, type, data, icon, toType, notId}, {isiOS} = {}) =>
     toType ?= 'token'
     new Promise (resolve, reject) =>
       messageOptions = {
@@ -115,6 +116,7 @@ class PushNotificationService
           image: if icon then icon else null
           payload: data
           data: data
+          # 'content-available': true
           priority: 1
           actions: _.filter [
             if type in [
@@ -131,7 +133,8 @@ class PushNotificationService
           type: type
           icon: 'notification_icon'
           color: config.NOTIFICATION_COLOR
-          notId: uuid.v4()
+          notId: notId or (Date.now() % 100000) # should be int, not uuid.v4()
+          # android_channel_id: 'test'
 
       notification = new gcm.Message messageOptions
 
@@ -140,8 +143,6 @@ class PushNotificationService
       else if toType is 'topic' and to
         toObj = {topic: "/topics/#{to}"}
         # toObj = {condition: "'#{to}' in topics || '#{to}2' in topics"}
-
-      # return console.log toObj
 
       @gcmConn.send notification, toObj, RETRY_COUNT, (err, result) ->
         successes = result?.success or result?.message_id
@@ -210,6 +211,7 @@ class PushNotificationService
           conversationId: conversation.id
           contextId: conversation.id
           path: path
+        notId: randomSeed.create(conversation.id)(Number.MAX_SAFE_INTEGER)
 
       @sendToUserIds userIds, message, {
         skipMe, meUserId: meUser.id, groupId: conversation.groupId
@@ -311,6 +313,7 @@ class PushNotificationService
 
     successfullyPushedToNative = false
 
+
     PushToken.getAllByUserId user.id
     .map ({id, sourceType, token, errorCount}) =>
       fn = if sourceType is 'web' \
@@ -339,6 +342,33 @@ class PushNotificationService
               User.updateById user.id, {
                 hasPushToken: false
               }
+
+  subscribeToTopicByUserId: (userId, topic) ->
+    console.log 'subscribeTopic', topic
+    PushToken.getAllByUserId userId
+    .map ({sourceType, token}) ->
+      unless sourceType in ['android', 'ios-fcm', 'web-fcm']
+        return
+      base = 'https://iid.googleapis.com/iid/v1'
+      request "#{base}/#{token}/rel/topics/#{topic}", {
+        json: true
+        method: 'POST'
+        headers:
+          'Authorization': "key=#{config.GOOGLE_API_KEY}"
+        body: {}
+      }
+      .catch (err) ->
+        console.log 'sub topic err'
+
+  subscribeToAllTopicsByUser: (user) =>
+    Promise.all [
+      @subscribeToTopicByUserId user.id, 'all'
+      @subscribeToTopicByUserId user.id, user.language
+
+      GroupUser.getAllByUserId user.id
+      .map ({groupId}) =>
+        @subscribeToTopicByUserId user.id, "group-#{groupId}"
+    ]
 
 
 module.exports = new PushNotificationService()

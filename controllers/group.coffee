@@ -134,6 +134,8 @@ class GroupCtrl
     groupId = id
     userId = user.id
 
+    console.log 'join', groupId, userId
+
     unless groupId
       router.throw {status: 404, info: 'Group not found'}
 
@@ -165,6 +167,9 @@ class GroupCtrl
 
       Group.addUser groupId, userId
       .then ->
+        topic = "group-#{groupId}"
+        PushNotificationService.subscribeToTopicByUserId user.id, topic
+
         prefix = CacheService.PREFIXES.GROUP_GET_ALL_CATEGORY
         category = "#{prefix}:#{userId}"
         CacheService.deleteByCategory category
