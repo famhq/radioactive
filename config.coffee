@@ -53,9 +53,6 @@ config =
     rare: 10
     epic: 30
     legendary: 80
-  XP_AMOUNTS:
-    DAILY_CHAT_MESSAGE: 5
-    DAILY_VIDEO_VIEW: 5
   EMPTY_UUID: '00000000-0000-0000-0000-000000000000'
 
   IS_POSTGRES: env.IS_POSTGRES or false

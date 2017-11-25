@@ -24,6 +24,7 @@ GroupUserCtrl = require './controllers/group_user'
 GroupRecordCtrl = require './controllers/group_record'
 GroupRecordTypeCtrl = require './controllers/group_record_type'
 GameRecordTypeCtrl = require './controllers/game_record_type'
+GroupUserXpTransactionCtrl = require './controllers/group_user_xp_transaction'
 ProductCtrl = require './controllers/product'
 RewardCtrl = require './controllers/reward'
 StarCtrl = require './controllers/star'
@@ -150,6 +151,11 @@ module.exports = router
   authed GroupUserCtrl.getByGroupIdAndUserId
 .on 'groupUsers.getTopByGroupId', authed GroupUserCtrl.getTopByGroupId
 
+.on 'groupUserXpTransactions.getAllByGroupId',
+  authed GroupUserXpTransactionCtrl.getAllByGroupId
+.on 'groupUserXpTransactions.incrementByGroupIdAndActionKey',
+  authed GroupUserXpTransactionCtrl.incrementByGroupIdAndActionKey
+
 .on 'groupRecords.getAllByUserIdAndGroupId',
   authed GroupRecordCtrl.getAllByUserIdAndGroupId
 .on 'groupRecords.save', authed GroupRecordCtrl.save
@@ -241,7 +247,6 @@ module.exports = router
 
 .on 'rewards.setup', authed RewardCtrl.setup
 .on 'rewards.getAll', authed RewardCtrl.getAll
-.on 'rewards.videoReward', authed RewardCtrl.videoReward
 .on 'rewards.incrementAttemptsByNetworkAndOfferId',
   authed RewardCtrl.incrementAttemptsByNetworkAndOfferId
 

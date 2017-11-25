@@ -22,8 +22,6 @@ FYBER_API_URL = 'http://api.fyber.com/feed/v1/offers.json'
 ADSCEND_API_URL = 'https://api.adscendmedia.com/v1/publisher'
 THIRTY_MINUTES_SECONDS = 30 * 60
 THREE_HOURS_S = 3600 * 3
-VIDEO_ADS_PER_COOLDOWN = 3
-VIDEO_AD_COOLDOWN_MS = 3600 * 3 * 1000
 
 kiipRequest = (path, body) ->
   ip =
@@ -241,18 +239,6 @@ class RewardCtrl
           offerId: "#{offer.offer_id}"
         }
 
-  _rewardedVideosLeft: (userId) ->
-    RewardTransaction.getByUserIdAndTimeBucketAndMinTime(
-      userId
-      TimeService.getScaledTimeByTimeScale('day')
-      new Date(Date.now() - VIDEO_AD_COOLDOWN_MS)
-    )
-    .then (transactions) ->
-      rewardedVideoTransactions = _.filter(transactions, {
-        network: 'rewardedVideo'
-      })?.length or 0
-      VIDEO_ADS_PER_COOLDOWN - rewardedVideoTransactions
-
   _getNativeX: -> null
   _getTapJoy: -> null
 
@@ -277,18 +263,12 @@ class RewardCtrl
       # @_getIronSource options, {user, headers, connection}
       # .catch -> null
 
-      # FIXME: admob doesn't allow this: https://support.google.com/admob/answer/7313578?hl=en
-      if options.isApp and false and semver.gte options.appVersion, '1.4.5'
-        @_rewardedVideosLeft user.id
-      else
-        Promise.resolve 0
-
       RewardAttempt.getAllByTimeBucket(
         TimeService.getScaledTimeByTimeScale('week')
         {preferCache: true}
       )
     ]
-    .then ([fyber, adscend, ironSource, rewardedVideosLeft, attempts]) ->
+    .then ([fyber, adscend, ironSource, attempts]) ->
       offers = _.map [].concat(fyber, adscend, ironSource), (offer) ->
         unless offer
           return false
@@ -323,13 +303,8 @@ class RewardCtrl
         obj
       , {}
       indexes = deck.shuffle indexWeights
-      pickedOffers = _.map _.take(indexes, 10), (index) ->
+      _.map _.take(indexes, 10), (index) ->
         offers[parseInt(index)]
-
-      if rewardedVideosLeft > 0
-        pickedOffers = [{id: 'rewardedVideo', rewardedVideosLeft}].concat offers
-
-      pickedOffers
     .catch (err) ->
       console.log err
 
@@ -432,34 +407,6 @@ class RewardCtrl
       User.addFireById userId, fireAmount
 
     res.sendStatus 200
-
-  videoReward: ({timestamp, successKey}, {user}) =>
-    fireAmount = 1
-
-    shasum = crypto.createHmac 'md5', config.NATIVE_SORT_OF_SECRET
-    shasum.update "#{timestamp}"
-    compareKey = shasum.digest('hex')
-    if compareKey and compareKey is successKey
-      @_rewardedVideosLeft user.id
-      .then (rewardedVideosLeft) ->
-        unless rewardedVideosLeft > 0
-          router.throw {status: 400, info: 'none left'}
-      .then ->
-        RewardTransaction.getByNetworkAndTxnId 'rewardedVideo', "#{timestamp}"
-      .then (transaction) ->
-        if transaction
-          router.throw {status: 400, info: 'duplicate'}
-
-        Promise.all [
-          RewardTransaction.upsert {
-            network: 'rewardedVideo'
-            txnId: "#{timestamp}"
-            userId: user.id
-            fireAmount: fireAmount
-            offerId: "#{timestamp}"
-          }
-          User.addFireById user.id, fireAmount
-        ]
 
   incrementAttemptsByNetworkAndOfferId: ({network, offerId}, {user}) ->
     prefix = CacheService.PREFIXES.REWARD_INCREMENT

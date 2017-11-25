@@ -16,7 +16,7 @@ defaultEmbed = [
 
 class ClashRoyalePlayerDeckCtrl
   getAllByPlayerId: ({playerId, sort, type}, {user}) ->
-    Player.getByUserIdAndGameId user.id, config.CLASH_ROYALE_ID
+    Player.getByPlayerIdAndGameId playerId, config.CLASH_ROYALE_ID
     .then EmbedService.embed {
       embed: [EmbedService.TYPES.PLAYER.VERIFIED_USER]
       gameId: config.CLASH_ROYALE_ID

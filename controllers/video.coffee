@@ -2,7 +2,7 @@ _ = require 'lodash'
 router = require 'exoid-router'
 
 Video = require '../models/video'
-GroupUser = require '../models/group_user'
+GroupUserXpTransaction = require '../models/group_user_xp_transaction'
 EmbedService = require '../services/embed'
 CacheService = require '../services/cache'
 
@@ -31,17 +31,12 @@ class VideoCtrl
   logViewById: ({id}, {user}) ->
     Video.getById id
     .then (video) ->
-      prefix = CacheService.PREFIXES.VIDEO_DAILY_XP
-      key = "#{prefix}:#{user.id}:#{video.groupId}"
-      CacheService.runOnce key, ->
-        GroupUser.incrementXpByGroupIdAndUserId(
-          video.groupId
-          user.id
-          config.XP_AMOUNTS.DAILY_VIDEO_VIEW
-        )
-        .then ->
-          config.XP_AMOUNTS.DAILY_VIDEO_VIEW
-      , {expireSeconds: ONE_DAY_SECONDS}
+      GroupUserXpTransaction.completeActionByGroupIdAndUserId(
+        video.groupId
+        user.id
+        'dailyVideoView'
+      )
+      .catch -> null
     .then (xpGained) ->
       {xpGained}
 

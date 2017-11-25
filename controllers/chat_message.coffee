@@ -12,6 +12,7 @@ Group = require '../models/group'
 ChatMessage = require '../models/chat_message'
 Conversation = require '../models/conversation'
 GroupUser = require '../models/group_user'
+GroupUserXpTransaction = require '../models/group_user_xp_transaction'
 CacheService = require '../services/cache'
 PushNotificationService = require '../services/push_notification'
 ProfanityService = require '../services/profanity'
@@ -179,19 +180,12 @@ class ChatMessageCtrl
           }
         .then ->
           if conversation.groupId
-            # daily chat message. may want to switch this up to be X number of
-            # chat messages per day
-            prefix = CacheService.PREFIXES.CHAT_MESSAGE_DAILY_XP
-            key = "#{prefix}:#{user.id}:#{conversation.groupId}"
-            CacheService.runOnce key, ->
-              GroupUser.incrementXpByGroupIdAndUserId(
-                conversation.groupId
-                user.id
-                config.XP_AMOUNTS.DAILY_CHAT_MESSAGE
-              )
-              .then ->
-                config.XP_AMOUNTS.DAILY_CHAT_MESSAGE
-            , {expireSeconds: ONE_DAY_SECONDS}
+            GroupUserXpTransaction.completeActionByGroupIdAndUserId(
+              conversation.groupId
+              user.id
+              'dailyChatMessage'
+            )
+            .catch -> null
           else
             Promise.resolve null
         .then (xpGained) ->
