@@ -4,6 +4,7 @@ kue = require 'kue'
 KueService = require './kue'
 KueCreateService = require './kue_create'
 BroadcastService = require './broadcast'
+ProductService = require './product'
 ClashRoyaleAPIService = require './clash_royale_api'
 ClashRoyalePlayerService = require './clash_royale_player'
 config = require '../config'
@@ -19,6 +20,8 @@ config = require '../config'
 TYPES =
   "#{KueCreateService.JOB_TYPES.BATCH_NOTIFICATION}":
     {fn: BroadcastService.batchNotify, concurrencyPerCpu: 1}
+  "#{KueCreateService.JOB_TYPES.PRODUCT_UNLOCKED}":
+    {fn: ProductService.productUnlocked, concurrencyPerCpu: 10}
   "#{KueCreateService.JOB_TYPES.AUTO_REFRESH_PLAYER}":
     {
       fn: ({playerId}) ->

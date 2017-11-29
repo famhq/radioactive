@@ -8,6 +8,7 @@ Item = require '../models/item'
 UserItem = require '../models/user_item'
 User = require '../models/user'
 GroupUser = require '../models/group_user'
+KueCreateService = require '../services/kue_create'
 EmailService = require '../services/email'
 CacheService = require '../services/cache'
 config = require '../config'
@@ -101,6 +102,16 @@ class ProductCtrl
         .then (lock) ->
           if lock
             router.throw {status: 400, info: 'locked'}
+          else
+            KueCreateService.createJob {
+              job:
+                userId: user.id
+                groupId: product.groupId
+                productKey: product.key
+                productName: product.name
+              type: KueCreateService.JOB_TYPES.PRODUCT_UNLOCKED
+              delayMs: product.data.lockTime * 1000
+            }
           Product.setLockByProductAndUserId product, user.id
       else
         Promise.resolve null)

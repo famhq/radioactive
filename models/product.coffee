@@ -105,13 +105,11 @@ class ProductModel
     .run()
 
   setLockByProductAndUserId: (product, userId) ->
-    cknex().insert {
-      userId
-      groupId: product.groupId
-      productKey: product.key
-      time: new Date()
-    }
-    .into 'product_locks'
+    cknex().update 'product_locks'
+    .set {time: new Date()}
+    .where 'userId', '=', userId
+    .andWhere 'groupId', '=', product.groupId
+    .andWhere 'productKey', '=', product.key
     .usingTTL product.data.lockTime
     .run()
 

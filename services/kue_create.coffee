@@ -18,6 +18,7 @@ JOB_TYPES =
   BATCH_NOTIFICATION: 'radioactive:batch_notification'
   API_REQUEST: 'radioactive:api_request'
   AUTO_REFRESH_PLAYER: 'radioactive:auto_refresh_player'
+  PRODUCT_UNLOCKED: 'radioactive:product_unlocked'
 
 CacheService.runOnce CacheService.KEYS.KUE_WATCH_STUCK, ->
   console.log 'watching stuck jobs'

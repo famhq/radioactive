@@ -30,6 +30,7 @@ TYPES =
   CHAT_MESSAGE: 'chatMessage'
   PRIVATE_MESSAGE: 'privateMessage'
   NEW_FRIEND: 'newFriend'
+  PRODUCT: 'product'
   GROUP: 'group'
   STATUS: 'status'
   VIDEO: 'video'

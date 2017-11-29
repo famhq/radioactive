@@ -132,7 +132,7 @@ class ChatMessageCtrl
 
     (if _.isEmpty urls
       Promise.resolve null
-    else if match = urls[0].match CLASH_ROYALE_FRIEND_REGEX
+    else if match = CLASH_ROYALE_FRIEND_REGEX.exec urls[0]
       language = match[1]
       tag = match[2]
       Promise.resolve {
@@ -146,7 +146,7 @@ class ChatMessageCtrl
           }
           url: urls[0]
       }
-    else if match = urls[0].match CLASH_ROYALE_CLAN_REGEX
+    else if match = CLASH_ROYALE_CLAN_REGEX.exec urls[0]
       language = match[1]
       tag = match[2]
       Promise.resolve {

@@ -9,5 +9,7 @@
   "newFollower.title": "New follower",
   "newFollower.text": "{name} followed you",
   "newVideo.title": "New video",
-  "newVideo.text": "New video posted in {groupName}"
+  "newVideo.text": "New video posted in {groupName}",
+  "packUnlocked.title": "Pack unlocked",
+  "packUnlocked.text": "{packName} is available"
 }
