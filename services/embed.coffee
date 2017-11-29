@@ -61,6 +61,7 @@ TYPES =
     GROUP: 'star:group'
   GROUP:
     USER_IDS: 'group:userIds'
+    USER_COUNT: 'group:userCount'
     USERS: 'group:users'
     USER: 'group:user'
     CONVERSATIONS: 'group:conversations'
@@ -342,6 +343,15 @@ embedFn = _.curry (props, object) ->
         if embedded.type isnt 'public'
           embedded.userIds = GroupUser.getAllByGroupId embedded.id
                               .map ({userId}) -> userId
+
+      when TYPES.GROUP.USER_COUNT
+        if embedded.type isnt 'public' and embedded.userIds
+          embedded.userCount = embedded.userIds.then (userIds) ->
+            userIds.length
+        else
+          embedded.userCount = GroupUser.getCountByGroupId embedded.id, {
+            preferCache: true
+          }
 
       when TYPES.GROUP.USERS
         embedded.users = Promise.map embedded.userIds, (userId) ->

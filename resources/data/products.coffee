@@ -3,12 +3,22 @@ _ = require 'lodash'
 
 config = require '../../config'
 
+ONE_DAY_SECONDS = 3600 * 24
 GROUPS =
   PLAY_HARD: 'ad25e866-c187-44fc-bdb5-df9fcc4c6a42'
   CLASH_ROYALE_EN: '73ed4af0-a2f2-4371-a893-1360d3989708'
   CLASH_ROYALE_ES: '4f26e51e-7f35-41dd-9f21-590c7bb9ce34'
   CLASH_ROYALE_PT: '68acb51a-3e5a-466a-9e31-c93aacd5919e'
 
+DEFAULT_FREE_PACK_DATA =
+  lockTime: ONE_DAY_SECONDS
+  count: 1
+  odds: [
+    {rarity: 'common', odds: 0.8}
+    {rarity: 'rare', odds: 0.13}
+    {rarity: 'epic', odds: 0.05}
+    {rarity: 'legendary', odds: 0.02}
+  ]
 DEFAULT_1_PACK_DATA =
   count: 1
   odds: [
@@ -56,6 +66,13 @@ products =
   }
 
   # CLASH ROYALE ENGLISH
+  cr_en_pack_free: {
+    type: 'pack'
+    groupId: GROUPS.CLASH_ROYALE_EN
+    name: 'Free Clash Royale Sticker Pack (1)'
+    cost: 0
+    data: DEFAULT_FREE_PACK_DATA
+  }
   cr_en_pack1: {
     type: 'pack'
     groupId: GROUPS.CLASH_ROYALE_EN
@@ -84,6 +101,13 @@ products =
   }
 
   # CLASH ROYALE SPANISH
+  cr_es_pack_free: {
+    type: 'pack'
+    groupId: GROUPS.CLASH_ROYALE_ES
+    name: 'Gratis Pack de Stickers Clash Royale (1)'
+    cost: 0
+    data: DEFAULT_FREE_PACK_DATA
+  }
   cr_es_pack1: {
     type: 'pack'
     groupId: GROUPS.CLASH_ROYALE_ES

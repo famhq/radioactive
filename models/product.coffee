@@ -33,6 +33,19 @@ tables = [
     primaryKey:
       partitionKey: ['key']
   }
+  {
+    # stored with ttl
+    name: 'product_locks'
+    keyspace: 'starfire'
+    fields:
+      userId: 'uuid'
+      groupId: 'uuid'
+      productKey: 'text'
+      time: 'timestamp'
+    primaryKey:
+      partitionKey: ['userId']
+      clusteringColumns: ['groupId', 'productKey']
+  }
 ]
 
 defaultProduct = (product) ->
@@ -74,6 +87,33 @@ class ProductModel
     .where 'key', '=', key
     .run {isSingle: true}
     .then defaultProductOutput
+
+  getLockByProductAndUserId: (product, userId) ->
+    cknex().select '*'
+    .from 'product_locks'
+    .where 'userId', '=', userId
+    .andWhere 'groupId', '=', product.groupId
+    .andWhere 'productKey', '=', product.key
+    .run {isSingle: true}
+
+  getLocksByUserIdAndGroupId: (userId, groupId) ->
+    cknex().select 'productKey'
+    .ttl 'time'
+    .from 'product_locks'
+    .where 'userId', '=', userId
+    .andWhere 'groupId', '=', groupId
+    .run()
+
+  setLockByProductAndUserId: (product, userId) ->
+    cknex().insert {
+      userId
+      groupId: product.groupId
+      productKey: product.key
+      time: new Date()
+    }
+    .into 'product_locks'
+    .usingTTL product.data.lockTime
+    .run()
 
   upsert: (product, {skipRun} = {}) ->
     product = defaultProduct product

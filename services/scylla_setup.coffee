@@ -9,7 +9,7 @@ config = require '../config'
 
 class ScyllaSetupService
   setup: (tables) =>
-    CacheService.runOnce 'scylla_setup', =>
+    CacheService.runOnce 'scylla_setup5', =>
       Promise.all [
         @createKeyspaceIfNotExists 'starfire'
         @createKeyspaceIfNotExists 'clash_royale'

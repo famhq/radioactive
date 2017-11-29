@@ -15,14 +15,21 @@ defaultChatMessage = (chatMessage) ->
   unless chatMessage?
     return null
 
-  _.defaults _.pickBy(chatMessage), {
+  chatMessage = _.defaults _.pickBy(chatMessage), {
     id: uuid.v4()
     clientId: uuid.v4()
     groupId: config.EMPTY_UUID
     timeBucket: TimeService.getScaledTimeByTimeScale 'week'
     timeUuid: cknex.getTimeUuid()
+    lastUpdateTime: new Date()
     body: ''
   }
+  if chatMessage.card
+    chatMessage.card = try
+      JSON.stringify chatMessage.card
+    catch err
+      ''
+  chatMessage
 
 defaultChatMessageOutput = (chatMessage) ->
   unless chatMessage?
@@ -30,6 +37,12 @@ defaultChatMessageOutput = (chatMessage) ->
 
   if chatMessage.groupId is config.EMPTY_UUID
     chatMessage.groupId = null
+
+  if chatMessage.card
+    chatMessage.card = try
+      JSON.parse chatMessage.card
+    catch err
+      null
 
   chatMessage
 
@@ -47,6 +60,7 @@ tables = [
       card: 'text'
       timeBucket: 'text'
       timeUuid: 'timeuuid'
+      lastUpdateTime: 'timestamp'
     primaryKey:
       partitionKey: ['conversationId', 'timeBucket']
       clusteringColumns: ['timeUuid']
@@ -66,6 +80,7 @@ tables = [
       card: 'text'
       timeBucket: 'text'
       timeUuid: 'timeuuid'
+      lastUpdateTime: 'timestamp'
     primaryKey:
       partitionKey: ['groupId', 'userId', 'timeBucket']
       clusteringColumns: ['timeUuid']
@@ -85,6 +100,7 @@ tables = [
       card: 'text'
       timeBucket: 'text'
       timeUuid: 'timeuuid'
+      lastUpdateTime: 'timestamp'
     primaryKey:
       partitionKey: ['id']
   }
@@ -99,7 +115,7 @@ class ChatMessageModel extends Stream
 
   default: defaultChatMessageOutput
 
-  upsert: (chatMessage, {prepareFn} = {}) =>
+  upsert: (chatMessage, {prepareFn, isUpdate} = {}) =>
     chatMessage = defaultChatMessage chatMessage
 
     Promise.all [
@@ -132,7 +148,8 @@ class ChatMessageModel extends Stream
     .then ->
       prepareFn?(chatMessage) or chatMessage
     .then (chatMessage) =>
-      @streamCreate chatMessage
+      unless isUpdate
+        @streamCreate chatMessage
       chatMessage
 
   getAllByConversationId: (conversationId, options = {}) =>
@@ -238,12 +255,22 @@ class ChatMessageModel extends Stream
       messages?[0]
     .then defaultChatMessageOutput
 
-  updateById: (id, diff) =>
+  updateById: (id, diff, {prepareFn}) =>
     @getById id
+    .then defaultChatMessageOutput
     .then (chatMessage) =>
-      @upsert chatMessage
-    .tap =>
-      @streamUpdateById id, diff
+      updatedMessage = _.defaults(diff, chatMessage)
+      updatedMessage.lastUpdateTime = new Date()
+
+      # hacky https://github.com/datastax/nodejs-driver/pull/243
+      delete updatedMessage.get
+      delete updatedMessage.values
+      delete updatedMessage.keys
+      delete updatedMessage.forEach
+
+      @upsert updatedMessage, {isUpdate: true, prepareFn}
+    .tap (chatMessage) =>
+      @streamUpdateById id, chatMessage
 
   deleteAllByGroupIdAndUserId: (groupId, userId) =>
     @getAllByGroupIdAndUserId groupId, userId

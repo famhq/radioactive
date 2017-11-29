@@ -7,6 +7,7 @@ cknex = require '../services/cknex'
 CacheService = require '../services/cache'
 
 ONE_DAY_SECONDS = 3600 * 24
+TEN_MINUTES_SECONDS = 60 * 10
 
 defaultGroupUser = (groupUser) ->
   unless groupUser?
@@ -93,6 +94,28 @@ class GroupUserModel
     .from 'group_users_by_groupId'
     .where 'groupId', '=', groupId
     .run()
+
+  # TODO: should keep track of this in separate counter table since this can be
+  # slow
+  getCountByGroupId: (groupId, {preferCache} = {}) ->
+    get = ->
+      cknex().select()
+      .count '*'
+      .from 'group_users_by_groupId'
+      .where 'groupId', '=', groupId
+      .run {isSingle: true}
+      .then (response) ->
+        response?.count or 0
+
+
+    if preferCache
+      cacheKey = "#{CacheService.PREFIXES.GROUP_USER_COUNT}:#{groupId}"
+      CacheService.preferCache cacheKey, get, {
+        expireSeconds: TEN_MINUTES_SECONDS
+      }
+    else
+      get()
+
 
   getAllByUserId: (userId) ->
     cknex().select '*'

@@ -261,6 +261,8 @@ class PlayerCtrl
           players = _.map players, (player) ->
             player.userId = player.verifiedUser?.id or player.userIds?[0]
             delete player.userIds
+            player.data = _.pick player.data, ['clan', 'name', 'trophies']
+            player.data.clan = _.pick player.data.clan, ['name']
             topPlayer = _.find topPlayers, {playerId: player.id}
             {rank: topPlayer?.rank, player}
           _.orderBy players, 'rank'

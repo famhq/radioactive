@@ -63,16 +63,17 @@ class ModCtrl
         ChatMessage.deleteAllByGroupIdAndUserId groupId, userId
 
   unbanByUserId: ({userId, groupId}, {user}) ->
+    groupId ?= '4f26e51e-7f35-41dd-9f21-590c7bb9ce34'
     GroupUser.getByGroupIdAndUserId groupId, userId
     .then (groupUser) ->
       permission = 'tempBanUser'
       hasPermission = GroupUser.hasPermission {
         groupId, meGroupUser: groupUser, me: user, permissions: [permission]
       }
-    unless hasPermission
-      router.throw status: 400, info: 'You don\'t have permission to do that'
+      unless hasPermission
+        router.throw status: 400, info: 'You don\'t have permission to do that'
 
-    Ban.deleteAllByUserId userId
+      Ban.deleteAllByUserId userId
 
   # unflagByChatMessageId: ({id}, {user}) ->
   #   GroupUser.getByGroupIdAndUserId groupId, userId

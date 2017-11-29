@@ -13,11 +13,12 @@ FIVE_MINUTES_SECONDS = 60 * 5
 
 defaultEmbed = [
   EmbedService.TYPES.GROUP_USER.ROLES
+  EmbedService.TYPES.GROUP_USER.XP
 ]
 userEmbed = [
   EmbedService.TYPES.GROUP_USER.USER
 ]
-class GroupCtrl
+class GroupUserCtrl
   createModeratorByUsername: ({groupId, username, roleId}, {user}) ->
     unless user.username is 'austin' # TODO
       router.throw status: 400, info: 'no permission'
@@ -52,4 +53,4 @@ class GroupCtrl
       .map EmbedService.embed {embed: userEmbed}
     , {expireSeconds: FIVE_MINUTES_SECONDS}
 
-module.exports = new GroupCtrl()
+module.exports = new GroupUserCtrl()

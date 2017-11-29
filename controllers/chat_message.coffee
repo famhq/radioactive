@@ -13,6 +13,7 @@ ChatMessage = require '../models/chat_message'
 Conversation = require '../models/conversation'
 GroupUser = require '../models/group_user'
 GroupUserXpTransaction = require '../models/group_user_xp_transaction'
+Language = require '../models/language'
 CacheService = require '../services/cache'
 PushNotificationService = require '../services/push_notification'
 ProfanityService = require '../services/profanity'
@@ -30,6 +31,12 @@ defaultEmbed = [
 
 MAX_CONVERSATION_USER_IDS = 20
 URL_REGEX = /\b(https?):\/\/[-A-Z0-9+&@#/%?=~_|!:,.;]*[A-Z0-9+&@#/%=~_|]/gi
+CLASH_ROYALE_FRIEND_REGEX = ///
+  https://link\.clashroyale\.com/invite/friend/([a-z]+)\?tag=([a-zA-Z0-9]+)([^ ]*)
+///gi
+CLASH_ROYALE_CLAN_REGEX = ///
+  https://link\.clashroyale\.com/invite/clan/([a-z]+)\?tag=([a-zA-Z0-9]+)([^ ]*)
+///gi
 STICKER_REGEX = /(:[a-z_\^0-9]+:)/gi
 IMAGE_REGEX = /\!\[(.*?)\]\((.*?)\)/gi
 CARD_BUILDER_TIMEOUT_MS = 1000
@@ -45,12 +52,19 @@ RATE_LIMIT_CHAT_MESSAGES_MEDIA_EXPIRE_S = 10
 # LARGE_IMAGE_SIZE = 1000
 
 defaultConversationEmbed = [EmbedService.TYPES.CONVERSATION.USERS]
+prepareFn = (item) ->
+  EmbedService.embed {
+    embed: defaultEmbed
+  }, ChatMessage.default(item)
+  .then (item) ->
+    if item?.user?.flags?.isChatBanned isnt true
+      item
 
 class ChatMessageCtrl
   constructor: ->
     @cardBuilder = new cardBuilder {api: config.DEALER_API_URL}
 
-  checkRateLimit: (userId, isMedia, router) ->
+  _checkRateLimit: (userId, isMedia, router) ->
     if isMedia
       key = "#{CacheService.PREFIXES.RATE_LIMIT_CHAT_MESSAGES_MEDIA}:#{userId}"
       rateLimit = RATE_LIMIT_CHAT_MESSAGES_MEDIA
@@ -69,7 +83,7 @@ class ChatMessageCtrl
         expireSeconds: rateLimitExpireS
       }
 
-  checkIfBanned: (ipAddr, userId, router) ->
+  _checkIfBanned: (ipAddr, userId, router) ->
     ipAddr ?= 'n/a'
     Promise.all [
       Ban.getByIp ipAddr, {preferCache: true}
@@ -80,7 +94,82 @@ class ChatMessageCtrl
       if bannedIp?.ip or bannedUserId?.userId or isHoneypotBanned
         router.throw status: 403, 'unable to post'
 
-  # TODO: break down into multiple fns
+  _checkStickers: (userId, stickers) ->
+    if stickers
+      UserItem.getAllByUserId userId
+      .then (userItems) ->
+        _.forEach stickers, (sticker) ->
+          stickerText = sticker.replace /:/g, ''
+          parts = stickerText.split '^'
+          sticker = parts[0]
+          level = parseInt(parts[1] or 1)
+          ownedSticker = _.find userItems, {
+            itemKey: sticker
+          }
+          ownedSticker?.itemLevel ?= 1
+          hasSticker = ownedSticker and ownedSticker.itemLevel >= level
+          unless hasSticker
+            router.throw status: 401, info: 'sticker not found'
+
+  _sendPushNotifications: (conversation, user, body, isImage) ->
+    pushBody = if isImage then '[image]' else body
+    (if conversation.groupId
+      Group.getById conversation.groupId, {preferCache: true}
+    else
+      Promise.resolve null
+    )
+    .then (group) ->
+      unless group?.type is 'public'
+        PushNotificationService.sendToConversation(
+          conversation, {
+            skipMe: true
+            meUser: user
+            text: pushBody
+          }).catch -> null
+
+  _createCards: (body, isImage, chatMessageId) =>
+    urls = not isImage and body.match(URL_REGEX)
+
+    (if _.isEmpty urls
+      Promise.resolve null
+    else if match = urls[0].match CLASH_ROYALE_FRIEND_REGEX
+      language = match[1]
+      tag = match[2]
+      Promise.resolve {
+        card:
+          title: Language.get 'backend.addFriendCardTitle', {
+            language: language or 'en'
+          }
+          image: 'image'
+          description: Language.get 'backend.addFriendCardDescription', {
+            language: language or 'en'
+          }
+          url: urls[0]
+      }
+    else if match = urls[0].match CLASH_ROYALE_CLAN_REGEX
+      language = match[1]
+      tag = match[2]
+      Promise.resolve {
+        card:
+          title: Language.get 'backend.joinClanCardTitle', {
+            language: language or 'en'
+          }
+          image: 'image'
+          description: Language.get 'backend.joinClanCardDescription', {
+            language: language or 'en'
+          }
+          url: urls[0]
+      }
+    else
+      @cardBuilder.create {
+        url: urls[0]
+        callbackUrl:
+          "#{config.RADIOACTIVE_API_URL}/chatMessage/#{chatMessageId}/card"
+      }
+      .timeout CARD_BUILDER_TIMEOUT_MS
+      .catch -> null
+    )
+
   create: ({body, conversationId, clientId}, {user, headers, connection}) =>
     userAgent = headers['user-agent']
     ip = headers['x-forwarded-for'] or
@@ -99,15 +188,15 @@ class ChatMessageCtrl
     stickers = body.match(STICKER_REGEX)
     isMedia = isImage or stickers
 
-    @checkIfBanned ip, user.id, router
+    @_checkIfBanned ip, user.id, router
     .then =>
-      @checkRateLimit user.id, isMedia, router
+      @_checkRateLimit user.id, isMedia, router
     .then ->
       Conversation.getById conversationId
     .then EmbedService.embed {embed: defaultConversationEmbed}
     .then (conversation) =>
       Conversation.hasPermission conversation, user.id
-      .then (hasPermission) ->
+      .then (hasPermission) =>
         unless hasPermission
           router.throw status: 401, info: 'unauthorized'
 
@@ -123,40 +212,14 @@ class ChatMessageCtrl
         #       text
         #   , body
 
-        if stickers
-          UserItem.getAllByUserId user.id
-          .then (userItems) ->
-            _.forEach stickers, (sticker) ->
-              stickerText = sticker.replace /:/g, ''
-              parts = stickerText.split '^'
-              sticker = parts[0]
-              level = parseInt(parts[1] or 1)
-              ownedSticker = _.find userItems, {
-                itemKey: sticker
-              }
-              ownedSticker?.itemLevel ?= 1
-              hasSticker = ownedSticker and ownedSticker.itemLevel >= level
-              unless hasSticker
-                router.throw status: 401, info: 'sticker not found'
-        else
-          Promise.resolve null
+        @_checkStickers user.id, stickers
       .then =>
         chatMessageId = uuid.v4()
 
-        urls = not isImage and body.match(URL_REGEX)
-
-        (if _.isEmpty urls
-          Promise.resolve null
-        else
-          @cardBuilder.create {
-            url: urls[0]
-            callbackUrl:
-              "#{config.RADIOACTIVE_API_URL}/chatMessage/#{chatMessageId}/card"
-          }
-          .timeout CARD_BUILDER_TIMEOUT_MS
-          .catch -> null
-        )
+        @_createCards body, isImage, chatMessageId
         .then ({card} = {}) ->
+          body = body.replace CLASH_ROYALE_FRIEND_REGEX, ''
+          body = body.replace CLASH_ROYALE_CLAN_REGEX, ''
           groupId = conversation.groupId or 'private'
           StatsService.sendEvent(
             user.id, 'chat_message', groupId, conversationId
@@ -170,13 +233,7 @@ class ChatMessageCtrl
             groupId: conversation?.groupId
             card: card
           }, {
-            prepareFn: (item) ->
-              EmbedService.embed {
-                embed: defaultEmbed
-              }, ChatMessage.default(item)
-              .then (item) ->
-                if item?.user?.flags?.isChatBanned isnt true
-                  item
+            prepareFn: prepareFn
           }
         .then ->
           if conversation.groupId
@@ -190,7 +247,7 @@ class ChatMessageCtrl
             Promise.resolve null
         .then (xpGained) ->
           {xpGained}
-        .tap ->
+        .tap =>
           userIds = conversation.userIds
           Conversation.updateById conversation.id, {
             lastUpdateTime: new Date()
@@ -200,21 +257,8 @@ class ChatMessageCtrl
               _.zipObject userIds, _.map userIds, (userId) ->
                 {isRead: userId is user.id}
           }
-          pushBody = if isImage then '[image]' else body
 
-          (if conversation.groupId
-            Group.getById conversation.groupId, {preferCache: true}
-          else
-            Promise.resolve null
-          )
-          .then (group) ->
-            unless group?.type is 'public'
-              PushNotificationService.sendToConversation(
-                conversation, {
-                  skipMe: true
-                  meUser: user
-                  text: pushBody
-                }).catch -> null
+          @_sendPushNotifications conversation, user, body, isImage
 
   deleteById: ({id}, {user}) ->
     ChatMessage.getById id
@@ -241,7 +285,7 @@ class ChatMessageCtrl
     radioactiveHost = config.RADIOACTIVE_API_URL.replace /https?:\/\//i, ''
     isPrivate = headers.host is radioactiveHost
     if isPrivate and body.secret is config.DEALER_SECRET
-      ChatMessage.updateById params.id, {card: body.card}
+      ChatMessage.updateById params.id, {card: body.card}, {prepareFn}
 
   getAllByConversationId: ({conversationId, maxTimeUuid}, {user}, socketInfo) ->
     {emit, socket, route} = socketInfo

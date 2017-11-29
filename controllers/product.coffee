@@ -16,10 +16,21 @@ TWO_MINUTE_SECONDS = 60 * 2
 
 class ProductCtrl
   getAllByGroupId: ({groupId}, {user}) ->
-    Product.getAllByGroupId groupId
+    Promise.all [
+      Product.getAllByGroupId groupId
+      Product.getLocksByUserIdAndGroupId user.id, groupId
+    ]
+    .then ([products, locks]) ->
+      _.map products, (product) ->
+        if lock = _.find locks, {productKey: product.key}
+          _.defaults {
+            isLocked: true, lockExpireSeconds: lock['ttl(time)']
+          }, product
+        else
+          product
 
-  getAll: ({}, {user}) ->
-    Product.getAll()
+  # getAll: ({}, {user}) ->
+  #   Product.getAll()
 
   getByKey: ({key}) ->
     Product.getByKey key
@@ -76,7 +87,6 @@ class ProductCtrl
       else
         router.throw status: 400, info: {isLocked: true}
 
-
   buy: ({key, email}, {user}) =>
     Product.getByKey key
     .then (product) =>
@@ -86,11 +96,20 @@ class ProductCtrl
       if user.fire < product.cost
         router.throw {status: 400, info: 'not enough fire'}
 
-      User.subtractFireById user.id, product.cost
+      (if product.data.lockTime
+        Product.getLockByProductAndUserId product, user.id
+        .then (lock) ->
+          if lock
+            router.throw {status: 400, info: 'locked'}
+          Product.setLockByProductAndUserId product, user.id
+      else
+        Promise.resolve null)
+      .then ->
+        User.subtractFireById user.id, product.cost
       .then (response) =>
         # double-check that they had the fire to buy
         # (for simulatenous purchases)
-        unless response.replaced
+        if product.cost isnt 0 and not response.replaced
           router.throw {status: 400, info: 'not enough fire'}
 
         EmailService.send {

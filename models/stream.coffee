@@ -11,6 +11,7 @@ class Stream
     StreamService.create obj, channels
 
   streamUpdateById: (id, obj) =>
+    console.log 'updatebyid'
     channels = _.map @streamChannelsBy, (channelBy) =>
       channelById = obj?[channelBy]
       "#{@streamChannelKey}:#{channelBy}:#{channelById}"

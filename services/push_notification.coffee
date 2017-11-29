@@ -116,6 +116,11 @@ class PushNotificationService
           image: if icon then icon else null
           payload: data
           data: data
+          # https://github.com/phonegap/phonegap-plugin-push/issues/158
+          # unfortunately causes flash as app opens and closes.
+          # spent 3 hours trying to solve and no luck
+          # https://github.com/phonegap/phonegap-plugin-push/issues/1846
+          # 'force-start': 1
           # 'content-available': true
           priority: 1
           actions: _.filter [
@@ -293,7 +298,7 @@ class PushNotificationService
 
     if config.ENV is config.ENVS.DEV and not message.forceDevSend
       console.log 'send notification', user.id, message
-      return
+      # return
 
     # if [@TYPES.NEWS, @TYPES.NEW_PROMOTION].indexOf(message.type) is -1
     #   Notification.create {

@@ -20,6 +20,7 @@ defaultEmbed = [
   EmbedService.TYPES.GROUP.CONVERSATIONS
   EmbedService.TYPES.GROUP.USER_IDS
   EmbedService.TYPES.GROUP.STAR
+  EmbedService.TYPES.GROUP.USER_COUNT
 ]
 userDataEmbed = [
   EmbedService.TYPES.USER.DATA

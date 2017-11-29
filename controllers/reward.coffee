@@ -204,7 +204,7 @@ class RewardCtrl
           offerId: "#{offer.offer_id}"
         }
     .catch (e) ->
-      console.log e
+      console.log 'fyber err'
 
   _getAdscend: (options, {user, headers, connection}) ->
     request

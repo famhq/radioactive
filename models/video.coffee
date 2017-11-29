@@ -109,6 +109,7 @@ class VideoModel
     cknex().select '*'
     .from 'videos_by_groupId'
     .where 'groupId', '=', groupId
+    .limit 15
     .run()
     .map defaultVideoOutput
 
