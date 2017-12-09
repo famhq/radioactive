@@ -27,6 +27,7 @@ GameRecordTypeCtrl = require './controllers/game_record_type'
 GroupUserXpTransactionCtrl = require './controllers/group_user_xp_transaction'
 ProductCtrl = require './controllers/product'
 RewardCtrl = require './controllers/reward'
+SpecialOfferCtrl = require './controllers/special_offer'
 StarCtrl = require './controllers/star'
 TheadCtrl = require './controllers/thread'
 ThreadCommentCtrl = require './controllers/thread_comment'
@@ -249,6 +250,9 @@ module.exports = router
 .on 'rewards.getAll', authed RewardCtrl.getAll
 .on 'rewards.incrementAttemptsByNetworkAndOfferId',
   authed RewardCtrl.incrementAttemptsByNetworkAndOfferId
+
+.on 'specialOffer.getAll', authed SpecialOfferCtrl.getAll
+.on 'specialOffer.giveReward', authed SpecialOfferCtrl.giveReward
 
 .on 'stars.getByUsername', authed StarCtrl.getByUsername
 .on 'stars.getAll', authed StarCtrl.getAll

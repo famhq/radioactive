@@ -36,7 +36,6 @@ DEFAULT_3_PACK_DATA =
     {rarity: 'legendary', odds: 0.02}
   ]
 
-# name done via lang file
 products =
   ph_pack1: {
     type: 'pack'
