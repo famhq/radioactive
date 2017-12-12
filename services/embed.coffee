@@ -37,6 +37,9 @@ TYPES =
     MY_VOTE: 'addon:myVote'
   BAN:
     USER: 'ban:user'
+  CLASH_ROYALE_CARD:
+    STATS: 'clashRoyaleCard:stats'
+    POPULAR_DECKS: 'clashRoyaleCard:popularDecks'
   CHAT_MESSAGE:
     USER: 'chatMessage:user'
     GROUP_USER: 'chatMessage:groupUser'
@@ -53,6 +56,7 @@ TYPES =
     DECK: 'clashRoyaleMatch:deck1'
   CLASH_ROYALE_DECK:
     CARDS: 'clashRoyaleDeck:cards'
+    STATS: 'clashRoyaleDeck:stats'
   EVENT:
     USERS: 'event:users'
     CREATOR: 'event:creator'
@@ -295,6 +299,23 @@ embedFn = _.curry (props, object) ->
           embedded.group = Group.getById(embedded.groupId)
                             .then Group.sanitizePublic null
 
+      when TYPES.CLASH_ROYALE_CARD.STATS
+        embedded.stats = ClashRoyaleCard.getStatsByKey embedded.key
+
+      when TYPES.CLASH_ROYALE_CARD.POPULAR_DECKS
+        embedded.popularDecks = ClashRoyaleCard.getPopularDecksByKey(
+          embedded.key, {preferCache: true}
+        ).map (popularDeck) ->
+          ClashRoyaleDeck.getById popularDeck.deckId
+          .then embedFn {
+            embed: [
+              TYPES.CLASH_ROYALE_DECK.CARDS
+              TYPES.CLASH_ROYALE_DECK.STATS
+            ]
+          }
+          .then (deck) ->
+            _.defaults {deck}, popularDeck
+
       when TYPES.STAR.USER
         embedded.user = User.getById embedded.userId, {preferCache: true}
         .then embedFn {
@@ -514,6 +535,11 @@ embedFn = _.curry (props, object) ->
             UserPlayer.getAllByPlayerIdAndGameId embedded.id, gameId
             .map ({userId}) -> userId
           , {expireSeconds: ONE_DAY_SECONDS, ignoreNull: true}
+
+      when TYPES.CLASH_ROYALE_DECK.STATS
+        embedded.stats = ClashRoyaleDeck.getStatsById embedded.deckId, {
+          preferCache: true
+        }
 
       when TYPES.CLASH_ROYALE_DECK.CARDS
         cardKeys = embedded.deckId.split('|')

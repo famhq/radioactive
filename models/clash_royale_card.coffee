@@ -27,7 +27,7 @@ defaultClashRoyaleCard = (clashRoyaleCard) ->
     draws: 0
   }
 
-defaultClashRoyaleCardC = (clashRoyaleCard) ->
+defaultClashRoyaleCardOutput = (clashRoyaleCard) ->
   unless clashRoyaleCard?
     return null
 
@@ -123,7 +123,7 @@ class ClashRoyaleCardModel
       .run()
       .then (allCards) ->
         cards = _.filter allCards, {gameType}
-        cards = _.map cards, defaultClashRoyaleCardC
+        cards = _.map cards, defaultClashRoyaleCardOutput
         cards = _.map cards, (card) ->
           _.defaults {
             winRate: card.wins / (card.wins + card.losses)
@@ -133,6 +133,52 @@ class ClashRoyaleCardModel
     if preferCache
       prefix = CacheService.PREFIXES.CLASH_ROYALE_CARD_TOP
       cacheKey = "#{prefix}:#{gameType}"
+      CacheService.preferCache cacheKey, get, {
+        expireSeconds: TEN_MINUTES_SECONDS
+      }
+    else
+      get()
+
+  getPopularDecksByKey: (cardKey, {preferCache} = {}) ->
+    get = ->
+      prefix = CacheService.STATIC_PREFIXES.CARD_DECK_LEADERBOARD
+      key = "#{prefix}:#{cardKey}"
+      CacheService.leaderboardGet key, limit = 5
+      .then (results) ->
+        _.map _.chunk(results, 2), ([deckId, matchCount], i) ->
+          {
+            rank: i + 1
+            deckId
+            matchCount: parseInt matchCount
+          }
+
+    if preferCache
+      prefix = CacheService.PREFIXES.CLASH_ROYALE_CARD_POPULAR_DECKS
+      cacheKey = "#{prefix}:#{cardKey}"
+      CacheService.preferCache cacheKey, get, {
+        expireSeconds: TEN_MINUTES_SECONDS
+      }
+    else
+      get()
+
+  getStatsByKey: (key, {preferCache} = {}) ->
+    get = ->
+      cknex('clash_royale').select '*'
+      .from 'counter_by_cardId'
+      .where 'cardId', '=', key
+      .run()
+      .then (allCards) ->
+        # cards = _.filter allCards, {arena: 'all'}
+        cards = _.map allCards, defaultClashRoyaleCardOutput
+        cards = _.map cards, (card) ->
+          _.defaults {
+            winRate: card.wins / (card.wins + card.losses)
+          }, card
+        _.orderBy cards, 'winRate', 'desc'
+
+    if preferCache
+      prefix = CacheService.PREFIXES.CLASH_ROYALE_CARD_STATS
+      cacheKey = "#{prefix}:#{key}"
       CacheService.preferCache cacheKey, get, {
         expireSeconds: TEN_MINUTES_SECONDS
       }
@@ -209,9 +255,8 @@ class ClashRoyaleCardModel
       'name'
       'key'
       'data'
-      'wins'
-      'losses'
-      'draws'
+      'stats'
+      'popularDecks'
       'time'
     ]
 

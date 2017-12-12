@@ -166,16 +166,41 @@ class RewardCtrl
     isIpV6 = options.ip.match /^([0-9a-f]){1,4}(:([0-9a-f]){1,4}){7}$/i
     ip = if isIpV6 then ip4from6 options.ip else options.ip
 
-    params =
-      appid: config.FYBER_APP_ID
-      device_id: options.deviceId
-      ip: ip
-      locale: options.language
-      # offer_types: '101,112' # hash key breaks with this....
-      page: 1
-      ps_time: Math.round user.joinTime.getTime() / 1000
-      timestamp: Math.round Date.now() / 1000
-      uid: user.id
+    if options.osName is 'Android'
+      params =
+        appid: config.FYBER_APP_ID
+        device_id: options.deviceId
+        google_ad_id: options.deviceId
+        ip: ip
+        locale: options.language?.toUpperCase()
+        # offer_types: '101,112' # hash key breaks with this....
+        page: 1
+        ps_time: Math.round user.joinTime.getTime() / 1000
+        timestamp: Math.round Date.now() / 1000
+        uid: user.id
+    else if options.osName is 'iOS'
+      params =
+        appid: config.FYBER_APP_ID
+        apple_idfa: options.deviceId
+        device_id: options.deviceId
+        ip: ip
+        locale: options.language?.toUpperCase()
+        # offer_types: '101,112' # hash key breaks with this....
+        page: 1
+        ps_time: Math.round user.joinTime.getTime() / 1000
+        timestamp: Math.round Date.now() / 1000
+        uid: user.id
+    else
+      params =
+        appid: config.FYBER_APP_ID
+        device_id: options.deviceId
+        ip: ip
+        locale: options.language?.toUpperCase()
+        # offer_types: '101,112' # hash key breaks with this....
+        page: 1
+        ps_time: Math.round user.joinTime.getTime() / 1000
+        timestamp: Math.round Date.now() / 1000
+        uid: user.id
 
     combined = qs.stringify(params) + '&' + config.FYBER_API_KEY
     shasum = crypto.createHash 'sha1'
@@ -343,12 +368,12 @@ class RewardCtrl
 
   _processFyber: ({sid, uid, amount, _trans_id_, pub0}) ->
     shasum = crypto.createHash 'sha1'
-    shasum.update config.FYBER_SECURITY_TOKEN + uid + amount + _trans_id_
+    shasum.update config.FYBER_SECURITY_TOKEN + uid + amount + _trans_id_ + pub0
     isValid = shasum.digest('hex') is sid
 
+    console.log 'fyber', uid, amount, _trans_id_, pub0, isValid
     unless isValid
       throw router.throw {status: 400, info: 'invalid fyber'}
-    console.log 'fyber', uid, amount, _trans_id_, pub0, isValid
     {
       userId: uid
       fireAmount: parseInt(amount)

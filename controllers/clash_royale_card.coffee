@@ -98,9 +98,12 @@ class ClashRoyaleCardCtrl
     .then EmbedService.embed {embed: defaultEmbed}
     .then ClashRoyaleCard.sanitize null
 
-  getByKey: ({key}) ->
+  getByKey: ({key, embed}) ->
+    embed = _.map embed, (item) ->
+      EmbedService.TYPES.CLASH_ROYALE_CARD[_.snakeCase(item).toUpperCase()]
+
     ClashRoyaleCard.getByKey key
-    .then EmbedService.embed {embed: defaultEmbed}
+    .then EmbedService.embed {embed}
     .then ClashRoyaleCard.sanitize null
 
   getChestCards: ({arena, chest}) =>

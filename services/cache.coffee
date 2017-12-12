@@ -39,8 +39,11 @@ PREFIXES =
   CLASH_ROYALE_CARD_ALL: 'clash_royale_card:all2'
   CLASH_ROYALE_CARD_KEY: 'clash_royale_card_key3'
   CLASH_ROYALE_CARD_TOP: 'clash_royal_card:top'
+  CLASH_ROYALE_CARD_POPULAR_DECKS: 'clash_royal_card:popular_decks'
+  CLASH_ROYALE_CARD_STATS: 'clash_royal_card:stats1'
   CLASH_ROYALE_CARD_RANK: 'clash_royal_card:rank'
   CLASH_ROYALE_DECK_RANK: 'clash_royal_deck:rank'
+  CLASH_ROYALE_DECK_STATS: 'clash_royal_deck:stats1'
   CLASH_ROYALE_DECK_CARD_KEYS: 'clash_royal_deck:card_keys12'
   CLASH_ROYALE_PLAYER_DECK_DECK: 'clash_royale_player_deck:deck8'
   CLASH_ROYALE_PLAYER_DECK_DECK_ID_USER_ID:
@@ -50,8 +53,8 @@ PREFIXES =
   CLASH_ROYALE_PLAYER_DECK_PLAYER_ID:
     'clash_royale_player_deck:player_id2'
   CLASH_ROYALE_API_GET_PLAYER_ID: 'clash_royale_api:get_tag'
-  GROUP_ID: 'group:id2'
-  GROUP_KEY: 'group:key1'
+  GROUP_ID: 'group:id3'
+  GROUP_KEY: 'group:key2'
   GROUP_GET_ALL: 'group:getAll7'
   GROUP_GET_ALL_CATEGORY: 'group:getAll:category4'
   GROUP_STAR: 'group:star2'
@@ -86,7 +89,7 @@ PREFIXES =
 
 class CacheService
   KEYS:
-    ADDON_GET_ALL: 'addon:get_all'
+    ADDON_GET_ALL: 'addon:get_all2'
     AUTO_REFRESH_MAX_REVERSED_PLAYER_ID: 'auto_refresh:max_reversed_player_id'
     AUTO_REFRESH_SUCCESS_COUNT: 'auto_refresh:success_count1'
     BROADCAST_FAILSAFE: 'broadcast:failsafe'
@@ -117,6 +120,7 @@ class CacheService
   PREFIXES: PREFIXES
   STATIC_PREFIXES: # these should stay, don't add a number to end to clear
     GROUP_LEADERBOARD: 'group:leaderboard'
+    CARD_DECK_LEADERBOARD: 'card:deck_leaderboard'
 
   constructor: ->
     @redlock = new Redlock [RedisService], {
@@ -142,9 +146,9 @@ class CacheService
     key = config.REDIS.PREFIX + ':' + setKey
     RedisService.zincrby key, increment, member
 
-  leaderboardGet: (key) ->
+  leaderboardGet: (key, limit = 50) ->
     key = config.REDIS.PREFIX + ':' + key
-    RedisService.zrevrange key, 0, 49, 'WITHSCORES'
+    RedisService.zrevrange key, 0, limit - 1, 'WITHSCORES'
 
   set: (key, value, {expireSeconds} = {}) ->
     key = config.REDIS.PREFIX + ':' + key

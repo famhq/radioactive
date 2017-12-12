@@ -96,8 +96,11 @@ class ClashRoyaleMatchModel
         Promise.resolve null
       )
       .then ->
+        rows = _.filter rows, (row) ->
+          row?.gameType isnt 'friendly'
+        rows = _.map rows, defaultClashRoyaleMatch
         Promise.props {
-          rows: rows.map defaultClashRoyaleMatch
+          rows: rows
           cursor: newCursor
         }
 

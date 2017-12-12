@@ -15,8 +15,18 @@ class SpecialOfferCtrl
         offers
 
 
-  giveReward: ({}, {user}) ->
+  giveReward: ({offerId, usageStats}, {user}) ->
     console.log 'give reward'
-    null
+    SpecialOffer.getTransactionByUserIdAndOfferId user.id, offerId
+    .then (transaction) ->
+      SpecialOffer.createTransaction {
+        offerId: offerId
+        userId: user.id
+        status: 'active'
+        # track x number of days, y fire per days
+        startTime: new Date()
+        days: []
+        fireEarned: 0
+      }
 
 module.exports = new SpecialOfferCtrl()

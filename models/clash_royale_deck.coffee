@@ -70,7 +70,20 @@ tables = [
   }
 ]
 
+TEN_MINUTES_SECONDS = 60 * 10
+
 defaultClashRoyaleDeck = (clashRoyaleDeck) ->
+  unless clashRoyaleDeck?
+    return null
+
+  _.defaults {
+    arena: parseInt clashRoyaleDeck.arena
+    wins: parseInt clashRoyaleDeck.wins
+    losses: parseInt clashRoyaleDeck.losses
+    draws: parseInt clashRoyaleDeck.draws
+  }, clashRoyaleDeck
+
+defaultClashRoyaleDeckOutput = (clashRoyaleDeck) ->
   unless clashRoyaleDeck?
     return null
 
@@ -121,6 +134,17 @@ class ClashRoyaleDeckModel
 
     deckIdQueries = _.map deckIdCnt, (diff, key) ->
       [deckId, gameType, arena] = key.split ','
+
+      # side effect, but cheaper than separate forEach on deckIdCnt
+      cardKeys = deckId.split '|'
+      _.forEach cardKeys, (cardKey) ->
+        # only track these for now
+        if cardKey in ['hunter', 'zappies']
+          prefix = CacheService.STATIC_PREFIXES.CARD_DECK_LEADERBOARD
+          key = "#{prefix}:#{cardKey}"
+          amount = (diff.wins or 0) + (diff.losses or 0) + (diff.draws or 0)
+          CacheService.leaderboardIncrement key, deckId, amount
+
       q = cknex('clash_royale').update 'counter_by_deckId'
       _.forEach diff, (amount, key) ->
         q = q.increment key, amount
@@ -175,6 +199,29 @@ class ClashRoyaleDeckModel
     .run {isSingle: true}
     .then defaultClashRoyaleDeck
 
+  getStatsById: (id, {preferCache} = {}) ->
+    get = ->
+      cknex('clash_royale').select '*'
+      .from 'counter_by_deckId'
+      .where 'deckId', '=', id
+      .run()
+      .then (allDecks) ->
+        decks = _.map allDecks, defaultClashRoyaleDeckOutput
+        decks = _.map decks, (deck) ->
+          _.defaults {
+            winRate: deck.wins / (deck.wins + deck.losses)
+          }, deck
+        _.orderBy decks, 'winRate', 'desc'
+
+    if preferCache
+      prefix = CacheService.PREFIXES.CLASH_ROYALE_DECK_STATS
+      cacheKey = "#{prefix}:#{id}"
+      CacheService.preferCache cacheKey, get, {
+        expireSeconds: TEN_MINUTES_SECONDS
+      }
+    else
+      get()
+
   getAllByIds: (ids) ->
     cknex('clash_royale').select '*'
     .where 'deckId', 'in', id
@@ -190,6 +237,7 @@ class ClashRoyaleDeckModel
     _.pick clashRoyaleDeck, [
       'deckId'
       'cards'
+      'stats'
       'averageElixirCost'
       'wins'
       'losses'
@@ -201,6 +249,7 @@ class ClashRoyaleDeckModel
     clashRoyaleDeck = _.pick clashRoyaleDeck, [
       'deckId'
       'cards' # req for decks tab on profile
+      'stats'
       'averageElixirCost'
       'wins'
       'losses'

@@ -23,6 +23,7 @@ defaultGroup = (group) ->
     description: null
     key: null
     badgeId: null
+    badge: null
     background: null
     language: 'en'
     privacy: 'open' # open | private | inviteOnly
@@ -197,6 +198,7 @@ class GroupModel
       'description'
       'clan'
       'badgeId'
+      'badge'
       'background'
       'mode'
       'type'
@@ -218,6 +220,7 @@ class GroupModel
       'description'
       'clan'
       'badgeId'
+      'badge'
       'background'
       'mode'
       'type'
