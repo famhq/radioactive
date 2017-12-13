@@ -11,7 +11,7 @@ schemas = require '../schemas'
 config = require '../config'
 
 class PushTokensCtrl
-  create: ({token, sourceType}, {user}) ->
+  create: ({token, sourceType, language}, {user}) ->
     userId = user.id
     valid = Joi.validate {userId, token, sourceType},
       userId: schemas.user.id.optional()
@@ -46,7 +46,7 @@ class PushTokensCtrl
         }
         .then PushToken.sanitizePublic
 
-        PushNotificationService.subscribeToAllTopicsByUser user
+        PushNotificationService.subscribeToAllTopicsByUser user, {language}
       ]
 
 

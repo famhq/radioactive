@@ -89,7 +89,7 @@ PREFIXES =
 
 class CacheService
   KEYS:
-    ADDON_GET_ALL: 'addon:get_all2'
+    ADDON_GET_ALL: 'addon:get_all4'
     AUTO_REFRESH_MAX_REVERSED_PLAYER_ID: 'auto_refresh:max_reversed_player_id'
     AUTO_REFRESH_SUCCESS_COUNT: 'auto_refresh:success_count1'
     BROADCAST_FAILSAFE: 'broadcast:failsafe'

@@ -310,5 +310,17 @@
   {
     "globalId": "26000057",
     "name": "flying_machine"
+  },
+  {
+    "globalId": "26000052",
+    "name": "zappies"
+  },
+  {
+    "globalId": "26000044",
+    "name": "hunter"
+  },
+  {
+    "globalId": "26000050",
+    "name": "royal_ghost"
   }
 ]

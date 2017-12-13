@@ -366,10 +366,10 @@ class PushNotificationService
       .catch (err) ->
         console.log 'sub topic err'
 
-  subscribeToAllTopicsByUser: (user) =>
+  subscribeToAllTopicsByUser: (user, {language} = {}) =>
     Promise.all [
       @subscribeToTopicByUserId user.id, 'all'
-      @subscribeToTopicByUserId user.id, user.language
+      @subscribeToTopicByUserId user.id, (language or user.language)
 
       GroupUser.getAllByUserId user.id
       .map ({groupId}) =>
