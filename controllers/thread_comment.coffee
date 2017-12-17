@@ -21,7 +21,13 @@ TEN_MINUTES_SECONDS = 60 * 10
 MAX_COMMENT_DEPTH = 3
 
 # there's probably a cleaner / more efficial way to this
-getCommentsTree = (comments, findParentId, depth = 0, getUnmatched) ->
+getCommentsTree = (comments, findParentId, options) ->
+  options ?= {}
+  {depth, sort, skip, limit, getUnmatched} = options
+  depth ?= 0
+  limit ?= 50
+  skip ?= 0
+
   if depth > MAX_COMMENT_DEPTH
     return {comments: [], unmatched: comments}
 
@@ -33,14 +39,21 @@ getCommentsTree = (comments, findParentId, depth = 0, getUnmatched) ->
   commentsTree = _.map matchedComments, (comment) ->
     # for each map step, reduce size of unmatched
     {comments, unmatched} = getCommentsTree(
-      unmatched, comment.id, depth + 1, true
+      unmatched, comment.id, _.defaults {
+        depth: depth + 1
+        skip: 0
+        getUnmatched: true
+      }, options
     )
     comment.children = comments
     comment
 
-  comments = _.orderBy commentsTree, ({upvotes, downvotes}) ->
-    upvotes - downvotes
-  , 'desc'
+  if sort is 'popular'
+    comments = _.orderBy commentsTree, ({upvotes, downvotes}) ->
+      upvotes - downvotes
+    , 'desc'
+  else
+    comments = _.reverse commentsTree
 
   if getUnmatched
     {comments, unmatched}
@@ -95,15 +108,19 @@ class ThreadCommentCtrl
     .tap ->
       Thread.updateById parentId, {lastUpdateTime: new Date()}
 
-  getAllByThreadId: ({threadId}, {user}) ->
-    key = "#{CacheService.PREFIXES.THREAD_COMMENTS_THREAD_ID}:#{threadId}"
+  getAllByThreadId: ({threadId, sort, skip, limit}, {user}) ->
+    sort ?= 'popular'
+    skip ?= 0
+    prefix = CacheService.PREFIXES.THREAD_COMMENTS_THREAD_ID
+    key = "#{prefix}:#{threadId}:#{sort}"
     CacheService.preferCache key, ->
       ThreadComment.getAllByThreadId threadId, {preferCache: true}
       .map EmbedService.embed {embed: creatorId}
       .then (allComments) ->
-        getCommentsTree allComments, threadId
+        getCommentsTree allComments, threadId, {sort, skip, limit}
     , {expireSeconds: TEN_MINUTES_SECONDS}
     .then (comments) ->
+      comments = comments?.slice skip, skip + limit
       ThreadVote.getAllByCreatorIdAndParentTopId user.id, threadId
       .then (commentVotes) ->
         embedMyVotes comments, commentVotes

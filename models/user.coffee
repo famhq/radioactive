@@ -20,6 +20,8 @@ SIX_HOURS_S = 3600 * 6
 
 # store fire on user object
 
+USER_STARTING_FIRE = 0# 300 # 30 cents
+
 defaultUser = (user) ->
   unless user?
     return null
@@ -30,7 +32,11 @@ defaultUser = (user) ->
     username: null
     name: null
     isMember: 0 # 1 if yes
-    fire: 0
+
+    fire: USER_STARTING_FIRE
+    # fire not = to usd. not added to fire, duplicated
+    promoFire: USER_STARTING_FIRE
+
     hasPushToken: false
     lastActiveIp: null
     lastActiveTime: new Date()

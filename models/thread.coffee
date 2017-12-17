@@ -116,7 +116,9 @@ class ThreadModel
         order = Math.log10(Math.max(Math.abs(rawScore), 1))
         sign = if rawScore > 0 then 1 else if rawScore < 0 then -1 else 0
         postAgeHours = (Date.now() - thread.addTime.getTime()) / (3600 * 1000)
-        score = sign * order / Math.pow(2, postAgeHours / 3.76)
+        if thread.id is 'b3d49e6f-3193-417e-a584-beb082196a2c'
+          postAgeHours = 1 # pin to top for now
+        score = sign * order / Math.pow(2, postAgeHours / 12)#3.76)
         score = Math.round(score * 1000000)
         @updateById thread.id, {score, isScoreStale: false}
       , {concurrency: 50}

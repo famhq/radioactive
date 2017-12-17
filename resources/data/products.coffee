@@ -147,46 +147,46 @@ products =
       backgroundColor: '#9C27B0'
     }, DEFAULT_FREE_PACK_DATA
   }
-  cr_es_pack1: {
-    type: 'pack'
-    groupId: GROUPS.CLASH_ROYALE_ES
-    name: 'Pack de Stickers Clash Royale (1)'
-    cost: 100 # 10c
-    data: _.defaults {
-      backgroundImage: 'https://cdn.wtf/d/images/starfire/packs/cr_es_1.png'
-      backgroundColor: '#F44336'
-    }, DEFAULT_1_PACK_DATA
-  }
-  cr_es_pack3: {
-    type: 'pack'
-    name: 'Pack de Stickers Clash Royale (3)'
-    groupId: GROUPS.CLASH_ROYALE_ES
-    cost: 250 # 25c
-    data: _.defaults {
-      backgroundImage: 'https://cdn.wtf/d/images/starfire/packs/cr_es_3.png'
-      backgroundColor: '#2196F3'
-    }, DEFAULT_3_PACK_DATA
-  }
-  cr_es_google_play_10: {
-    type: 'general'
-    name: '$10 USD Google Play Gift Card'
-    groupId: GROUPS.CLASH_ROYALE_ES
-    cost: 15000
-    data: {
-      backgroundImage: 'https://cdn.wtf/d/images/starfire/products/google_play.png'
-      backgroundColor: '#4CAF50'
-    }
-  }
-  cr_es_visa_10: {
-    type: 'general'
-    name: '$10 USD Visa Gift Card'
-    groupId: GROUPS.CLASH_ROYALE_ES
-    cost: 15000
-    data: {
-      backgroundImage: 'https://cdn.wtf/d/images/starfire/products/visa.png'
-      backgroundColor: '#FFC107'
-    }
-  }
+  # cr_es_pack1: {
+  #   type: 'pack'
+  #   groupId: GROUPS.CLASH_ROYALE_ES
+  #   name: 'Pack de Stickers Clash Royale (1)'
+  #   cost: 100 # 10c
+  #   data: _.defaults {
+  #     backgroundImage: 'https://cdn.wtf/d/images/starfire/packs/cr_es_1.png'
+  #     backgroundColor: '#F44336'
+  #   }, DEFAULT_1_PACK_DATA
+  # }
+  # cr_es_pack3: {
+  #   type: 'pack'
+  #   name: 'Pack de Stickers Clash Royale (3)'
+  #   groupId: GROUPS.CLASH_ROYALE_ES
+  #   cost: 250 # 25c
+  #   data: _.defaults {
+  #     backgroundImage: 'https://cdn.wtf/d/images/starfire/packs/cr_es_3.png'
+  #     backgroundColor: '#2196F3'
+  #   }, DEFAULT_3_PACK_DATA
+  # }
+  # cr_es_google_play_10: {
+  #   type: 'general'
+  #   name: '$10 USD Google Play Gift Card'
+  #   groupId: GROUPS.CLASH_ROYALE_ES
+  #   cost: 15000
+  #   data: {
+  #     backgroundImage: 'https://cdn.wtf/d/images/starfire/products/google_play.png'
+  #     backgroundColor: '#4CAF50'
+  #   }
+  # }
+  # cr_es_visa_10: {
+  #   type: 'general'
+  #   name: '$10 USD Visa Gift Card'
+  #   groupId: GROUPS.CLASH_ROYALE_ES
+  #   cost: 15000
+  #   data: {
+  #     backgroundImage: 'https://cdn.wtf/d/images/starfire/products/visa.png'
+  #     backgroundColor: '#FFC107'
+  #   }
+  # }
 
   # CLASH ROYALE PORTUGUESE
   cr_pt_pack1: {

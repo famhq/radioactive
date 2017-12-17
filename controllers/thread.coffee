@@ -93,6 +93,8 @@ class ThreadCtrl
     ip = headers['x-forwarded-for'] or
           connection.remoteAddress
 
+    diff.category ?= 'general'
+
     @checkIfBanned ip, user.id, router
     .then =>
 

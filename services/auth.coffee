@@ -32,6 +32,9 @@ class AuthService
         if user
           req.user = user
         req
+      .catch ->
+        req
+
     else
       Promise.resolve req
 

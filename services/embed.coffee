@@ -40,6 +40,7 @@ TYPES =
   CLASH_ROYALE_CARD:
     STATS: 'clashRoyaleCard:stats'
     POPULAR_DECKS: 'clashRoyaleCard:popularDecks'
+    BEST_DECKS: 'clashRoyaleCard:bestDecks'
   CHAT_MESSAGE:
     USER: 'chatMessage:user'
     GROUP_USER: 'chatMessage:groupUser'
@@ -316,6 +317,25 @@ embedFn = _.curry (props, object) ->
           .then (deck) ->
             _.defaults {deck}, popularDeck
 
+      # when TYPES.CLASH_ROYALE_CARD.BEST_DECKS
+      #   # FIXME FIXME: cache
+      #   embedded.popularDecks = ClashRoyaleCard.getPopularDecksByKey(
+      #     embedded.key, {preferCache: true, limit: 200}
+      #   ).map (popularDeck) ->
+      #     ClashRoyaleDeck.getById popularDeck.deckId
+      #     .then embedFn {
+      #       embed: [
+      #         TYPES.CLASH_ROYALE_DECK.CARDS
+      #         TYPES.CLASH_ROYALE_DECK.STATS
+      #       ]
+      #     }
+      #     .then (deck) ->
+      #       _.defaults {deck}, popularDeck
+      #   .then (decks) ->
+      #     _.orderBy decks, (deck) ->
+      #       console.log deck
+      #       deck
+
       when TYPES.STAR.USER
         embedded.user = User.getById embedded.userId, {preferCache: true}
         .then embedFn {
@@ -442,6 +462,9 @@ embedFn = _.curry (props, object) ->
           embedded.creator =
             CacheService.preferCache key, ->
               User.getById embedded.creatorId, {preferCache: true}
+              .then embedFn {
+                embed: profileDialogUserEmbed, gameId: config.CLASH_ROYALE_ID
+              }
               .then User.sanitizePublic(null)
             , {expireSeconds: FIVE_MINUTES_SECONDS}
         else
@@ -453,6 +476,9 @@ embedFn = _.curry (props, object) ->
           embedded.creator =
             CacheService.preferCache key, ->
               User.getById embedded.creatorId, {preferCache: true}
+              .then embedFn {
+                embed: profileDialogUserEmbed, gameId: config.CLASH_ROYALE_ID
+              }
               .then User.sanitizePublic(null)
             , {expireSeconds: FIVE_MINUTES_SECONDS}
         else
@@ -462,7 +488,6 @@ embedFn = _.curry (props, object) ->
         timeUuid = if typeof embedded.timeUuid is 'string' \
                    then cknex.getTimeUuidFromString embedded.timeUuid
                    else embedded.timeUuid
-        console.log timeUuid
         embedded.time = timeUuid.getDate()
 
       when TYPES.CHAT_MESSAGE.TIME
