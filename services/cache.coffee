@@ -45,6 +45,7 @@ PREFIXES =
   CLASH_ROYALE_CARD_RANK: 'clash_royal_card:rank'
   CLASH_ROYALE_DECK_RANK: 'clash_royal_deck:rank'
   CLASH_ROYALE_DECK_STATS: 'clash_royal_deck:stats1'
+  CLASH_ROYALE_DECK_GET_POPULAR: 'clash_royal_deck:get_popular'
   CLASH_ROYALE_DECK_CARD_KEYS: 'clash_royal_deck:card_keys12'
   CLASH_ROYALE_PLAYER_DECK_DECK: 'clash_royale_player_deck:deck8'
   CLASH_ROYALE_PLAYER_DECK_DECK_ID_USER_ID:
@@ -56,7 +57,7 @@ PREFIXES =
   CLASH_ROYALE_API_GET_PLAYER_ID: 'clash_royale_api:get_tag'
   GROUP_ID: 'group:id3'
   GROUP_KEY: 'group:key2'
-  GROUP_GET_ALL: 'group:getAll7'
+  GROUP_GET_ALL: 'group:getAll10'
   GROUP_GET_ALL_CATEGORY: 'group:getAll:category4'
   GROUP_STAR: 'group:star2'
   GROUP_USER_COUNT: 'group:user_count1'
@@ -122,6 +123,7 @@ class CacheService
   STATIC_PREFIXES: # these should stay, don't add a number to end to clear
     GROUP_LEADERBOARD: 'group:leaderboard'
     CARD_DECK_LEADERBOARD: 'card:deck_leaderboard'
+    GAME_TYPE_DECK_LEADERBOARD: 'gameType:deck_leaderboard'
 
   constructor: ->
     @redlock = new Redlock [RedisService], {
@@ -138,7 +140,6 @@ class CacheService
     key = config.REDIS.PREFIX + ':' + key
     RedisService.lrange key, 0, -1
 
-  # TODO
   leaderboardUpdate: (setKey, member, score) ->
     key = config.REDIS.PREFIX + ':' + setKey
     RedisService.zadd key, score, member

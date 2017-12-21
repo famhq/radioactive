@@ -27,6 +27,7 @@ class GroupUserCtrl
       if _.isEmpty roles
         GroupRole.upsert {
           groupId: groupId
+          name: 'mods'
           globalPermissions: [
             'deleteMessage', 'tempBanUser', 'permaBanUser'
           ]

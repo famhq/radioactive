@@ -135,7 +135,13 @@ class ClashRoyaleDeckModel
     deckIdQueries = _.map deckIdCnt, (diff, key) ->
       [deckId, gameType, arena] = key.split ','
 
-      # side effect, but cheaper than separate forEach on deckIdCnt
+      # side effects, but cheaper than separate forEach on deckIdCnt
+      if gameType is '3xChallenge' or gameType is '2v2'
+        prefix = CacheService.STATIC_PREFIXES.GAME_TYPE_DECK_LEADERBOARD
+        key = "#{prefix}:#{gameType}"
+        amount = (diff.wins or 0) + (diff.losses or 0) + (diff.draws or 0)
+
+        CacheService.leaderboardIncrement key, deckId, amount
       cardKeys = deckId.split '|'
       _.forEach cardKeys, (cardKey) ->
         # only track these for now
@@ -144,6 +150,7 @@ class ClashRoyaleDeckModel
           key = "#{prefix}:#{cardKey}"
           amount = (diff.wins or 0) + (diff.losses or 0) + (diff.draws or 0)
           CacheService.leaderboardIncrement key, deckId, amount
+
 
       q = cknex('clash_royale').update 'counter_by_deckId'
       _.forEach diff, (amount, key) ->
@@ -190,6 +197,19 @@ class ClashRoyaleDeckModel
   #       'Nameless'
   #     else
   #       name
+
+  getPopularByGameType: (gameType, {limit} = {}) ->
+    limit ?= 5
+    prefix = CacheService.STATIC_PREFIXES.GAME_TYPE_DECK_LEADERBOARD
+    key = "#{prefix}:#{gameType}"
+    CacheService.leaderboardGet key, limit
+    .then (results) ->
+      _.map _.chunk(results, 2), ([deckId, matchCount], i) ->
+        {
+          rank: i + 1
+          deckId
+          matchCount: parseInt matchCount
+        }
 
   getById: (id) ->
     cknex('clash_royale').select '*'

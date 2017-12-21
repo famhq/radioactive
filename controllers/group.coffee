@@ -175,40 +175,56 @@ class GroupCtrl
         category = "#{prefix}:#{userId}"
         CacheService.deleteByCategory category
 
-  getAll: ({filter, language}, {user}) ->
-    key = CacheService.PREFIXES.GROUP_GET_ALL + ':' + [
-      user.id, filter, language
-    ].join(':')
-    category = CacheService.PREFIXES.GROUP_GET_ALL_CATEGORY + ':' + user.id
+  getAllByUserId: ({language, user, userId, embed}) ->
+    embed = _.map embed, (item) ->
+      EmbedService.TYPES.GROUP[_.snakeCase(item).toUpperCase()]
 
-    CacheService.preferCache key, ->
-      (if filter is 'mine'
+    (if user
+      Promise.resolve user
+    else
+      User.getById userId
+    ).then (user) ->
+      key = CacheService.PREFIXES.GROUP_GET_ALL + ':' + [
+        user.id, 'mine_lite', language, embed.join(',')
+      ].join(':')
+      category = CacheService.PREFIXES.GROUP_GET_ALL_CATEGORY + ':' + user.id
+
+      CacheService.preferCache key, ->
         GroupUser.getAllByUserId user.id, {preferCache: true}
         .map ({groupId}) -> groupId
         .then (groupIds) ->
           Group.getAllByIds groupIds
-      else
+        .map EmbedService.embed {embed, user}
+        .map Group.sanitize null
+      , {
+        expireSeconds: THIRTY_MINUTES_SECONDS
+        category: category
+      }
+
+  getAll: ({filter, language, embed}, {user}) =>
+    if filter is 'mine'
+      return @getAllByUserId {filter, language, user, embed}
+    else
+      embed = _.map embed, (item) ->
+        EmbedService.TYPES.GROUP[_.snakeCase(item).toUpperCase()]
+      key = CacheService.PREFIXES.GROUP_GET_ALL + ':' + [
+        user.id, filter, language, embed.join(',')
+      ].join(':')
+      category = CacheService.PREFIXES.GROUP_GET_ALL_CATEGORY + ':' + user.id
+
+      CacheService.preferCache key, ->
         Group.getAll {filter, language}
-      )
-      .then (groups) ->
-        if filter is 'public' and _.isEmpty groups
-          Group.getAll {filter}
-        else
-          groups
-      .map EmbedService.embed {embed: defaultEmbed, user}
-      .map (group) ->
-        if not _.isEmpty group.clanIds
-          group.clan = Clan.getByClanIdAndGameId(
-            group.clanIds[0], config.CLASH_ROYALE_ID
-          )
-
-        Promise.props group
-
-      .map Group.sanitize null
-    , {
-      expireSeconds: THIRTY_MINUTES_SECONDS
-      category: category
-    }
+        .then (groups) ->
+          if filter is 'public' and _.isEmpty groups
+            Group.getAll {filter}
+          else
+            groups
+        .map EmbedService.embed {embed, user}
+        .map Group.sanitize null
+      , {
+        expireSeconds: THIRTY_MINUTES_SECONDS
+        category: category
+      }
 
   getById: ({id}, {user}) ->
     Group.getById id

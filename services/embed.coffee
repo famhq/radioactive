@@ -10,6 +10,7 @@ AddonVote = require '../models/addon_vote'
 Ban = require '../models/ban'
 Conversation = require '../models/conversation'
 ChatMessage = require '../models/chat_message'
+Clan = require '../models/clan'
 ThreadComment = require '../models/thread_comment'
 ThreadVote = require '../models/thread_vote'
 ClashRoyaleCard = require '../models/clash_royale_card'
@@ -386,9 +387,11 @@ embedFn = _.curry (props, object) ->
                               .map ({userId}) -> userId
 
       when TYPES.GROUP.USER_COUNT
-        if embedded.type isnt 'public' and embedded.userIds
+        if embedded.type isnt 'public' and embedded.userIds?.then
           embedded.userCount = embedded.userIds.then (userIds) ->
             userIds.length
+        else if embedded.type isnt 'public' and embedded.userIds
+          embedded.userCount = embedded.userIds.length
         else
           embedded.userCount = GroupUser.getCountByGroupId embedded.id, {
             preferCache: true
@@ -402,6 +405,12 @@ embedFn = _.curry (props, object) ->
 
       when TYPES.GROUP.CONVERSATIONS
         embedded.conversations = Conversation.getAllByGroupId embedded.id
+
+      when TYPES.GROUP.CLAN
+        if not _.isEmpty embedded.clanIds
+          embedded.clan = Clan.getByClanIdAndGameId(
+            embedded.clanIds[0], config.CLASH_ROYALE_ID
+          )
 
       when TYPES.GROUP_USER.ROLES
         if embedded.roleIds

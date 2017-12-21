@@ -34,6 +34,7 @@ tables = [
     fields:
       groupId: 'uuid'
       roleId: 'uuid'
+      name: 'text'
       globalPermissions: 'text' # json
       channelPermissions: 'text' # json
     primaryKey:

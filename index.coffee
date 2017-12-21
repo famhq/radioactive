@@ -48,6 +48,7 @@ CronService = require './services/cron'
 KueRunnerService = require './services/kue_runner'
 ChatMessageCtrl = require './controllers/chat_message'
 ClashRoyaleAPICtrl = require './controllers/clash_royale_api'
+ClashRoyaleDeckCtrl = require './controllers/clash_royale_deck'
 RewardCtrl = require './controllers/reward'
 HealthCtrl = require './controllers/health'
 VideoDiscoveryService = require './services/video_discovery'
@@ -205,6 +206,19 @@ app.get '/updateTopPlayers', (req, res) ->
 
 app.get '/top200Decks', (req, res) ->
   ClashRoyaleAPICtrl.top200Decks req, res
+
+app.get '/top2v2Decks', (req, res) ->
+  ClashRoyaleDeckCtrl.getPopular {gameType: '2v2'}
+  .then (decks) ->
+    decks = _.map decks, (deck) ->
+      winRate = _.find(deck.stats, {gameType: '2v2'})?.winRate
+      winRate = Math.round(winRate * 100 * 100) / 100
+      {
+        card: deck.deckId
+        matchCount: deck.matchCount
+        winRate: "#{winRate}%"
+      }
+    res.status(200).send decks
 
 app.get '/topTouchdown', (req, res) ->
   ClashRoyaleCard.getTop {gameType: 'touchdown2v2DraftPractice'}

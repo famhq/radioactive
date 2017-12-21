@@ -142,6 +142,7 @@ module.exports = router
 .on 'groups.joinById', authed GroupCtrl.joinById
 .on 'groups.leaveById', authed GroupCtrl.leaveById
 .on 'groups.getAll', authed GroupCtrl.getAll
+.on 'groups.getAllByUserId', authed GroupCtrl.getAllByUserId
 .on 'groups.getById', authed GroupCtrl.getById
 .on 'groups.getByKey', authed GroupCtrl.getByKey
 .on 'groups.inviteById', authed GroupCtrl.inviteById
@@ -214,6 +215,8 @@ module.exports = router
   authed ClashRoyaleAPICtrl.refreshByClanId
 
 .on 'clashRoyaleDecks.getById', authed ClashRoyaleDeckCtrl.getById
+.on 'clashRoyaleDecks.getPopular',
+  authed ClashRoyaleDeckCtrl.getPopular
 
 .on 'clashRoyalePlayerDecks.getAllByPlayerId',
   authed ClashRoyalePlayerDeckCtrl.getAllByPlayerId

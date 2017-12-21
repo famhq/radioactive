@@ -23,6 +23,7 @@ config =
   COMMUNITY_LANGUAGES: ['es', 'pt']
   DECK_TRACKED_GAME_TYPES: [
     'PvP', 'classicChallenge', 'grandChallenge', 'tournament', '2v2'
+    '3xChallenge'
   ]
   # also in starfire
   LANGUAGES: ['en', 'es', 'it', 'fr', 'zh', 'ja', 'ko', 'de', 'pt', 'pl', 'ru']

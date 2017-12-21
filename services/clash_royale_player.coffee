@@ -39,7 +39,7 @@ ALLOWED_GAME_TYPES = [
   'PvP', 'tournament',
   'classicChallenge', 'grandChallenge'
   'friendly', 'clanMate', '2v2', 'touchdown2v2DraftPractice',
-  'touchdown2v2Draft', 'newCardChallenge'
+  'touchdown2v2Draft', 'newCardChallenge', '3xChallenge'
 ]
 
 DEBUG = false or config.ENV is config.ENVS.DEV

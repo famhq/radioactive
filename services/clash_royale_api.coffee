@@ -114,6 +114,8 @@ class ClashRoyaleAPIService
                      then 'touchdown2v2Draft'
                      else if match.challengeId is 73001256
                      then 'newCardChallenge'
+                     else if match.challengeId is 73001263
+                     then '3xChallenge'
                      else match.type
         match
 
