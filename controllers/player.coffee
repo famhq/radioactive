@@ -115,9 +115,7 @@ class PlayerCtrl
         card = player.data.cards[getRandomUniqueIndex()]
         {
           key: ClashRoyaleCard.getKeyByName card.name
-          id: _.find(cardIds, {
-            name: ClashRoyaleCard.getKeyByName(card.name)
-          })?.globalId
+          id: cardIds[ClashRoyaleCard.getKeyByName(card.name)]
         }
 
       {

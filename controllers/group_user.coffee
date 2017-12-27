@@ -19,29 +19,38 @@ userEmbed = [
   EmbedService.TYPES.GROUP_USER.USER
 ]
 class GroupUserCtrl
-  createModeratorByUsername: ({groupId, username, roleId}, {user}) ->
-    unless user.username is 'austin' # TODO
-      router.throw status: 400, info: 'no permission'
-    GroupRole.getAllByGroupId groupId
-    .then (roles) ->
-      if _.isEmpty roles
-        GroupRole.upsert {
+  addRoleByGroupIdAndUserId: ({groupId, userId, roleId}, {user}) ->
+    GroupUser.hasPermissionByGroupIdAndUser groupId, user, ['manageRoles']
+    .then (hasPermission) ->
+      unless hasPermission
+        router.throw status: 400, info: 'no permission'
+
+      GroupRole.getAllByGroupId groupId
+      .then (roles) ->
+        role = _.find roles, (role) ->
+          "#{role.roleId}" is roleId
+        unless role
+          router.throw status: 404, info: 'no role exists'
+        GroupUser.addRoleIdByGroupUser {
+          userId: userId
           groupId: groupId
-          name: 'mods'
-          globalPermissions: [
-            'deleteMessage', 'tempBanUser', 'permaBanUser'
-          ]
-        }
-      else
-        roles[0]
-    .then (role) ->
-      User.getByUsername username
-      .then (user) ->
-        GroupUser.upsert {
-          userId: user.id
+        }, roleId
+
+  removeRoleByGroupIdAndUserId: ({groupId, userId, roleId}, {user}) ->
+    GroupUser.hasPermissionByGroupIdAndUser groupId, user, ['manageRoles']
+    .then (hasPermission) ->
+      unless hasPermission
+        router.throw status: 400, info: 'no permission'
+      GroupRole.getAllByGroupId groupId
+      .then (roles) ->
+        role = _.find roles, (role) ->
+          "#{role.roleId}" is roleId
+        unless role
+          router.throw status: 404, info: 'no role exists'
+        GroupUser.removeRoleIdByGroupUser {
+          userId: userId
           groupId: groupId
-          roleIds: ["#{role.roleId}"]
-        }
+        }, roleId
 
   getByGroupIdAndUserId: ({groupId, userId}, {user}) ->
     GroupUser.getByGroupIdAndUserId groupId, userId

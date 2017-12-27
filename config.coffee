@@ -25,6 +25,10 @@ config =
     'PvP', 'classicChallenge', 'grandChallenge', 'tournament', '2v2'
     '3xChallenge'
   ]
+  # ALSO IN STARFIRE
+  DEFAULT_PERMISSIONS:
+    readMessages: true
+    manageChannel: false
   # also in starfire
   LANGUAGES: ['en', 'es', 'it', 'fr', 'zh', 'ja', 'ko', 'de', 'pt', 'pl', 'ru']
   # also in starfire

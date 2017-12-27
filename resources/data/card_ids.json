@@ -1,326 +1,83 @@
-[
-  {
-    "globalId": "26000000",
-    "name": "knight"
-  },
-  {
-    "globalId": "26000001",
-    "name": "archers"
-  },
-  {
-    "globalId": "26000002",
-    "name": "goblins"
-  },
-  {
-    "globalId": "26000003",
-    "name": "giant"
-  },
-  {
-    "globalId": "26000004",
-    "name": "pekka"
-  },
-  {
-    "globalId": "26000005",
-    "name": "minions"
-  },
-  {
-    "globalId": "26000006",
-    "name": "balloon"
-  },
-  {
-    "globalId": "26000007",
-    "name": "witch"
-  },
-  {
-    "globalId": "26000008",
-    "name": "barbarians"
-  },
-  {
-    "globalId": "26000009",
-    "name": "golem"
-  },
-  {
-    "globalId": "26000010",
-    "name": "skeletons"
-  },
-  {
-    "globalId": "26000011",
-    "name": "valkyrie"
-  },
-  {
-    "globalId": "26000012",
-    "name": "skeleton_army"
-  },
-  {
-    "globalId": "26000013",
-    "name": "bomber"
-  },
-  {
-    "globalId": "26000014",
-    "name": "musketeer"
-  },
-  {
-    "globalId": "26000015",
-    "name": "baby_dragon"
-  },
-  {
-    "globalId": "26000016",
-    "name": "prince"
-  },
-  {
-    "globalId": "26000017",
-    "name": "wizard"
-  },
-  {
-    "globalId": "26000018",
-    "name": "mini_pekka"
-  },
-  {
-    "globalId": "26000019",
-    "name": "spear_goblins"
-  },
-  {
-    "globalId": "26000020",
-    "name": "giant_skeleton"
-  },
-  {
-    "globalId": "26000021",
-    "name": "hog_rider"
-  },
-  {
-    "globalId": "26000022",
-    "name": "minion_horde"
-  },
-  {
-    "globalId": "26000023",
-    "name": "ice_wizard"
-  },
-  {
-    "globalId": "26000024",
-    "name": "royal_giant"
-  },
-  {
-    "globalId": "26000025",
-    "name": "guards"
-  },
-  {
-    "globalId": "26000026",
-    "name": "princess"
-  },
-  {
-    "globalId": "26000027",
-    "name": "dark_prince"
-  },
-  {
-    "globalId": "26000028",
-    "name": "three_musketeers"
-  },
-  {
-    "globalId": "26000029",
-    "name": "lava_hound"
-  },
-  {
-    "globalId": "26000030",
-    "name": "ice_spirit"
-  },
-  {
-    "globalId": "26000031",
-    "name": "fire_spirits"
-  },
-  {
-    "globalId": "26000032",
-    "name": "miner"
-  },
-  {
-    "globalId": "26000033",
-    "name": "sparky"
-  },
-  {
-    "globalId": "26000034",
-    "name": "bowler"
-  },
-  {
-    "globalId": "26000035",
-    "name": "lumberjack"
-  },
-  {
-    "globalId": "26000036",
-    "name": "battle_ram"
-  },
-  {
-    "globalId": "26000037",
-    "name": "inferno_dragon"
-  },
-  {
-    "globalId": "26000038",
-    "name": "ice_golem"
-  },
-  {
-    "globalId": "26000039",
-    "name": "mega_minion"
-  },
-  {
-    "globalId": "28000000",
-    "name": "fireball"
-  },
-  {
-    "globalId": "28000001",
-    "name": "arrows"
-  },
-  {
-    "globalId": "28000002",
-    "name": "rage"
-  },
-  {
-    "globalId": "28000003",
-    "name": "rocket"
-  },
-  {
-    "globalId": "28000004",
-    "name": "goblin_barrel"
-  },
-  {
-    "globalId": "28000005",
-    "name": "freeze"
-  },
-  {
-    "globalId": "28000006",
-    "name": "mirror"
-  },
-  {
-    "globalId": "28000007",
-    "name": "lightning"
-  },
-  {
-    "globalId": "28000008",
-    "name": "zap"
-  },
-  {
-    "globalId": "28000009",
-    "name": "poison"
-  },
-  {
-    "globalId": "28000010",
-    "name": "graveyard"
-  },
-  {
-    "globalId": "28000011",
-    "name": "the_log"
-  },
-  {
-    "globalId": "27000000",
-    "name": "cannon"
-  },
-  {
-    "globalId": "27000001",
-    "name": "goblin_hut"
-  },
-  {
-    "globalId": "27000002",
-    "name": "mortar"
-  },
-  {
-    "globalId": "27000003",
-    "name": "inferno_tower"
-  },
-  {
-    "globalId": "27000004",
-    "name": "bomb_tower"
-  },
-  {
-    "globalId": "27000005",
-    "name": "barbarian_hut"
-  },
-  {
-    "globalId": "27000006",
-    "name": "tesla"
-  },
-  {
-    "globalId": "27000007",
-    "name": "elixir_collector"
-  },
-  {
-    "globalId": "27000008",
-    "name": "x_bow"
-  },
-  {
-    "globalId": "27000009",
-    "name": "tombstone"
-  },
-  {
-    "globalId": "27000010",
-    "name": "furnace"
-  },
-  {
-    "globalId": "26000045",
-    "name": "executioner"
-  },
-  {
-    "globalId": "26000046",
-    "name": "bandit"
-  },
-  {
-    "globalId": "26000043",
-    "name": "elite_barbarians"
-  },
-  {
-    "globalId": "28000012",
-    "name": "tornado"
-  },
-  {
-    "globalId": "26000042",
-    "name": "electro_wizard"
-  },
-  {
-    "globalId": "26000041",
-    "name": "goblin_gang"
-  },
-  {
-    "globalId": "28000013",
-    "name": "clone"
-  },
-  {
-    "globalId": "28000016",
-    "name": "heal"
-  },
-  {
-    "globalId": "26000040",
-    "name": "dart_goblin"
-  },
-  {
-    "globalId": "26000048",
-    "name": "night_witch"
-  },
-  {
-    "globalId": "26000049",
-    "name": "bats"
-  },
-  {
-    "globalId": "26000054",
-    "name": "cannon_cart"
-  },
-  {
-    "globalId": "26000055",
-    "name": "mega_knight"
-  },
-  {
-    "globalId": "26000056",
-    "name": "skeleton_barrel"
-  },
-  {
-    "globalId": "26000057",
-    "name": "flying_machine"
-  },
-  {
-    "globalId": "26000052",
-    "name": "zappies"
-  },
-  {
-    "globalId": "26000044",
-    "name": "hunter"
-  },
-  {
-    "globalId": "26000050",
-    "name": "royal_ghost"
-  }
-]
+{
+  "knight": "26000000",
+  "archers": "26000001",
+  "goblins": "26000002",
+  "giant": "26000003",
+  "pekka": "26000004",
+  "minions": "26000005",
+  "balloon": "26000006",
+  "witch": "26000007",
+  "barbarians": "26000008",
+  "golem": "26000009",
+  "skeletons": "26000010",
+  "valkyrie": "26000011",
+  "skeleton_army": "26000012",
+  "bomber": "26000013",
+  "musketeer": "26000014",
+  "baby_dragon": "26000015",
+  "prince": "26000016",
+  "wizard": "26000017",
+  "mini_pekka": "26000018",
+  "spear_goblins": "26000019",
+  "giant_skeleton": "26000020",
+  "hog_rider": "26000021",
+  "minion_horde": "26000022",
+  "ice_wizard": "26000023",
+  "royal_giant": "26000024",
+  "guards": "26000025",
+  "princess": "26000026",
+  "dark_prince": "26000027",
+  "three_musketeers": "26000028",
+  "lava_hound": "26000029",
+  "ice_spirit": "26000030",
+  "fire_spirits": "26000031",
+  "miner": "26000032",
+  "sparky": "26000033",
+  "bowler": "26000034",
+  "lumberjack": "26000035",
+  "battle_ram": "26000036",
+  "inferno_dragon": "26000037",
+  "ice_golem": "26000038",
+  "mega_minion": "26000039",
+  "fireball": "28000000",
+  "arrows": "28000001",
+  "rage": "28000002",
+  "rocket": "28000003",
+  "goblin_barrel": "28000004",
+  "freeze": "28000005",
+  "mirror": "28000006",
+  "lightning": "28000007",
+  "zap": "28000008",
+  "poison": "28000009",
+  "graveyard": "28000010",
+  "the_log": "28000011",
+  "cannon": "27000000",
+  "goblin_hut": "27000001",
+  "mortar": "27000002",
+  "inferno_tower": "27000003",
+  "bomb_tower": "27000004",
+  "barbarian_hut": "27000005",
+  "tesla": "27000006",
+  "elixir_collector": "27000007",
+  "x_bow": "27000008",
+  "tombstone": "27000009",
+  "furnace": "27000010",
+  "executioner": "26000045",
+  "bandit": "26000046",
+  "elite_barbarians": "26000043",
+  "tornado": "28000012",
+  "electro_wizard": "26000042",
+  "goblin_gang": "26000041",
+  "clone": "28000013",
+  "heal": "28000016",
+  "dart_goblin": "26000040",
+  "night_witch": "26000048",
+  "bats": "26000049",
+  "cannon_cart": "26000054",
+  "mega_knight": "26000055",
+  "skeleton_barrel": "26000056",
+  "flying_machine": "26000057",
+  "zappies": "26000052",
+  "hunter": "26000044",
+  "royal_ghost": "26000050"
+}

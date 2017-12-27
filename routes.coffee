@@ -24,6 +24,7 @@ GroupUserCtrl = require './controllers/group_user'
 GroupRecordCtrl = require './controllers/group_record'
 GroupRecordTypeCtrl = require './controllers/group_record_type'
 GameRecordTypeCtrl = require './controllers/game_record_type'
+GroupRoleCtrl = require './controllers/group_role'
 GroupUserXpTransactionCtrl = require './controllers/group_user_xp_transaction'
 ProductCtrl = require './controllers/product'
 RewardCtrl = require './controllers/reward'
@@ -143,12 +144,15 @@ module.exports = router
 .on 'groups.leaveById', authed GroupCtrl.leaveById
 .on 'groups.getAll', authed GroupCtrl.getAll
 .on 'groups.getAllByUserId', authed GroupCtrl.getAllByUserId
+.on 'groups.getAllChannelsById', authed GroupCtrl.getAllChannelsById
 .on 'groups.getById', authed GroupCtrl.getById
 .on 'groups.getByKey', authed GroupCtrl.getByKey
 .on 'groups.inviteById', authed GroupCtrl.inviteById
 
-.on 'groupUsers.createModeratorByUsername',
-  authed GroupUserCtrl.createModeratorByUsername
+.on 'groupUsers.addRoleByGroupIdAndUserId',
+  authed GroupUserCtrl.addRoleByGroupIdAndUserId
+.on 'groupUsers.removeRoleByGroupIdAndUserId',
+  authed GroupUserCtrl.removeRoleByGroupIdAndUserId
 .on 'groupUsers.getByGroupIdAndUserId',
   authed GroupUserCtrl.getByGroupIdAndUserId
 .on 'groupUsers.getTopByGroupId', authed GroupUserCtrl.getTopByGroupId
@@ -170,6 +174,10 @@ module.exports = router
 
 .on 'gameRecordTypes.getAllByPlayerIdAndGameId',
   authed GameRecordTypeCtrl.getAllByPlayerIdAndGameId
+
+.on 'groupRoles.getAllByGroupId', authed GroupRoleCtrl.getAllByGroupId
+.on 'groupRoles.createByGroupId', authed GroupRoleCtrl.createByGroupId
+.on 'groupRoles.updatePermissions', authed GroupRoleCtrl.updatePermissions
 
 .on 'userGroupData.updateMeByGroupId',
   authed UserGroupDataCtrl.updateMeByGroupId

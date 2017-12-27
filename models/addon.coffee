@@ -97,6 +97,9 @@ class AddonModel
       r.table ADDONS_TABLE
       .orderBy {index: r.desc 'score'}
       .run()
+      .then (addons) ->
+        _.filter addons, (addon) ->
+          not addon.isHidden
       .map defaultAddon
 
     if preferCache

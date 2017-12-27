@@ -32,6 +32,7 @@ UserPlayer = require '../models/user_player'
 UserFollower = require '../models/user_follower'
 CacheService = require './cache'
 TagConverterService = require './tag_converter'
+cardIds = require '../resources/data/card_ids.json'
 
 TYPES =
   ADDON:
@@ -59,6 +60,7 @@ TYPES =
   CLASH_ROYALE_DECK:
     CARDS: 'clashRoyaleDeck:cards'
     STATS: 'clashRoyaleDeck:stats'
+    COPY_URL: 'clashRoyaleDeck:copyUrl'
   EVENT:
     USERS: 'event:users'
     CREATOR: 'event:creator'
@@ -313,6 +315,7 @@ embedFn = _.curry (props, object) ->
             embed: [
               TYPES.CLASH_ROYALE_DECK.CARDS
               TYPES.CLASH_ROYALE_DECK.STATS
+              TYPES.CLASH_ROYALE_DECK.COPY_URL
             ]
           }
           .then (deck) ->
@@ -404,7 +407,19 @@ embedFn = _.curry (props, object) ->
         .map User.sanitizePublic null
 
       when TYPES.GROUP.CONVERSATIONS
-        embedded.conversations = Conversation.getAllByGroupId embedded.id
+        embedded.meGroupUser ?= GroupUser.getByGroupIdAndUserId(
+          embedded.id, user.id
+        )
+        .then embedFn {embed: [TYPES.GROUP_USER.ROLES]}
+        embedded.conversations = embedded.meGroupUser.then (meGroupUser) ->
+          Conversation.getAllByGroupId embedded.id
+          .then (conversations) ->
+            _.filter conversations, (conversation) ->
+              GroupUser.hasPermission {
+                meGroupUser
+                permissions: ['readMessages']
+                channelId: conversation.id
+              }
 
       when TYPES.GROUP.CLAN
         if not _.isEmpty embedded.clanIds
@@ -413,20 +428,25 @@ embedFn = _.curry (props, object) ->
           )
 
       when TYPES.GROUP_USER.ROLES
-        if embedded.roleIds
-          embedded.roles = Promise.map embedded.roleIds, (roleId) ->
-            embedded.role = GroupRole.getByGroupIdAndRoleId(
-              embedded.groupId, roleId
-            )
+        embedded.roles = GroupRole.getAllByGroupId(
+          embedded.groupId
+        ).then (roles) ->
+          everyoneRole = _.find roles, {name: 'everyone'}
+          groupUserRoles = _.map embedded.roleIds, (roleId) ->
+            _.find roles, {roleId}
+          if everyoneRole
+            groupUserRoles = groupUserRoles.concat everyoneRole
 
       when TYPES.GROUP_USER.XP
-        embedded.xp = GroupUser.getXpByGroupIdAndUserId(
-          embedded.groupId, embedded.userId
-        )
+        if embedded.userId
+          embedded.xp = GroupUser.getXpByGroupIdAndUserId(
+            embedded.groupId, embedded.userId
+          )
 
       when TYPES.GROUP_USER.USER
-        embedded.user = User.getById embedded.userId
-        .then User.sanitizePublic(null)
+        if embedded.userId
+          embedded.user = User.getById embedded.userId
+          .then User.sanitizePublic(null)
 
       when TYPES.CONVERSATION.LAST_MESSAGE
         embedded.lastMessage = \
@@ -575,6 +595,12 @@ embedFn = _.curry (props, object) ->
           preferCache: true
         }
 
+      when TYPES.CLASH_ROYALE_DECK.COPY_URL
+        cardKeys = embedded.deckId.split '|'
+        copyIds = _.map cardKeys, (key) ->
+          cardIds[key]
+        embedded.copyUrl = "clashroyale://copyDeck?deck=#{copyIds.join(';')}"
+
       when TYPES.CLASH_ROYALE_DECK.CARDS
         cardKeys = embedded.deckId.split('|')
         embedded.cards = Promise.map cardKeys, (cardKey) ->
@@ -605,7 +631,12 @@ embedFn = _.curry (props, object) ->
         key = "#{prefix}:#{embedded.deckId}"
         embedded.deck = CacheService.preferCache key, ->
           ClashRoyaleDeck.getById embedded.deckId
-          .then embedFn {embed: [TYPES.CLASH_ROYALE_DECK.CARDS]}
+          .then embedFn {
+            embed: [
+              TYPES.CLASH_ROYALE_DECK.CARDS
+              TYPES.CLASH_ROYALE_DECK.COPY_URL
+            ]
+          }
           .then ClashRoyaleDeck.sanitize null
         , {expireSeconds: ONE_DAY_SECONDS}
 

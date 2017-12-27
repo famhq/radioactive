@@ -37,6 +37,7 @@
   "crCard.guards": "Guards",
   "crCard.heal": "Heal",
   "crCard.hogRider": "Hog Rider",
+  "crCard.hunter": "Hunter",
   "crCard.iceGolem": "Ice Golem",
   "crCard.iceSpirit": "Ice Spirit",
   "crCard.iceWizard": "Ice Wizard",
@@ -63,6 +64,7 @@
   "crCard.rage": "Rage",
   "crCard.rocket": "Rocket",
   "crCard.royalGiant": "Royal Giant",
+  "crCard.royalGhost": "Royal Ghost",
   "crCard.skeletonArmy": "Skeleton Army",
   "crCard.skeletonBarrel": "Skeleton Barrel",
   "crCard.skeletons": "Skeletons",
@@ -78,6 +80,7 @@
   "crCard.wizard": "Wizard",
   "crCard.xBow": "X-Bow",
   "crCard.zap": "Zap",
+  "crCard.zappies": "Zappies",
 
   "crCard.resource": "Resource",
   "crCard.common": "Common",

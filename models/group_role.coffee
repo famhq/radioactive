@@ -12,6 +12,11 @@ defaultGroupRole = (groupRole) ->
   unless groupRole?
     return null
 
+  # groupRole.channelPermissions = _.mapValues(
+  #   groupRole.channelPermissions
+  #   JSON.stringify
+  # )
+
   _.defaults groupRole, {
     roleId: uuid.v4()
   }
@@ -25,6 +30,13 @@ defaultGroupRoleOutput = (groupRole) ->
   catch error
     {}
 
+  channelPermissions = groupRole.channelPermissions
+  groupRole.channelPermissions = _.mapValues channelPermissions, (permission) ->
+    try
+      JSON.parse permission
+    catch error
+      {}
+
   groupRole
 
 tables = [
@@ -36,7 +48,7 @@ tables = [
       roleId: 'uuid'
       name: 'text'
       globalPermissions: 'text' # json
-      channelPermissions: 'text' # json
+      channelPermissions: {type: 'map', subType: 'uuid', subType2: 'text'}
     primaryKey:
       # a little uneven since some groups will have a lot of roles, but each
       # row is small
@@ -48,14 +60,19 @@ tables = [
 class GroupRoleModel
   SCYLLA_TABLES: tables
 
-  upsert: (groupRole) ->
+  upsert: (groupRole, {map} = {}) ->
     groupRole = defaultGroupRole groupRole
 
     groupRole.globalPermissions = JSON.stringify groupRole.globalPermissions
 
-    cknex().update 'group_roles_by_groupId'
+    q = cknex().update 'group_roles_by_groupId'
     .set _.omit groupRole, ['groupId', 'roleId']
-    .where 'groupId', '=', groupRole.groupId
+
+    if map
+      _.forEach map, (value, column) ->
+        console.log 'add', column, value
+        q.add column, value
+    q.where 'groupId', '=', groupRole.groupId
     .andWhere 'roleId', '=', groupRole.roleId
     .run()
     .then ->

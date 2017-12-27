@@ -145,7 +145,7 @@ class ClashRoyaleDeckModel
       cardKeys = deckId.split '|'
       _.forEach cardKeys, (cardKey) ->
         # only track these for now
-        if cardKey in ['hunter', 'zappies']
+        if cardKey in ['hunter', 'zappies', 'royal_ghost']
           prefix = CacheService.STATIC_PREFIXES.CARD_DECK_LEADERBOARD
           key = "#{prefix}:#{cardKey}"
           amount = (diff.wins or 0) + (diff.losses or 0) + (diff.draws or 0)
@@ -258,7 +258,7 @@ class ClashRoyaleDeckModel
       'deckId'
       'cards'
       'stats'
-      'averageElixirCost'
+      'copyUrl'
       'wins'
       'losses'
       'draws'
@@ -270,7 +270,7 @@ class ClashRoyaleDeckModel
       'deckId'
       'cards' # req for decks tab on profile
       'stats'
-      'averageElixirCost'
+      'copyUrl'
       'wins'
       'losses'
       'draws'

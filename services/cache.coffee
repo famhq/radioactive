@@ -32,7 +32,7 @@ PREFIXES =
   USER_DATA_BLOCKED_USERS: 'user_data:blocked_users'
   USER_DATA_CLASH_ROYALE_DECK_IDS: 'user_data:clash_royale_deck_ids6'
   USER_DAILY_DATA_PUSH: 'user_daily_data:push5'
-  ADDON: 'addon'
+  ADDON: 'addon1'
   CLASH_ROYALE_MATCHES_ID: 'clash_royale_matches:id52'
   CLASH_ROYALE_MATCHES_ID_EXISTS: 'clash_royale_matches:id:exists2'
   CLASH_ROYALE_INVALID_TAG: 'clash_royale:invalid_tag'
@@ -45,9 +45,9 @@ PREFIXES =
   CLASH_ROYALE_CARD_RANK: 'clash_royal_card:rank'
   CLASH_ROYALE_DECK_RANK: 'clash_royal_deck:rank'
   CLASH_ROYALE_DECK_STATS: 'clash_royal_deck:stats1'
-  CLASH_ROYALE_DECK_GET_POPULAR: 'clash_royal_deck:get_popular'
+  CLASH_ROYALE_DECK_GET_POPULAR: 'clash_royal_deck:get_popular1'
   CLASH_ROYALE_DECK_CARD_KEYS: 'clash_royal_deck:card_keys12'
-  CLASH_ROYALE_PLAYER_DECK_DECK: 'clash_royale_player_deck:deck8'
+  CLASH_ROYALE_PLAYER_DECK_DECK: 'clash_royale_player_deck:deck9'
   CLASH_ROYALE_PLAYER_DECK_DECK_ID_USER_ID:
     'clash_royale_player_deck:deck_id:user_id1'
   CLASH_ROYALE_PLAYER_DECK_DECK_ID_PLAYER_ID:
@@ -55,8 +55,8 @@ PREFIXES =
   CLASH_ROYALE_PLAYER_DECK_PLAYER_ID:
     'clash_royale_player_deck:player_id2'
   CLASH_ROYALE_API_GET_PLAYER_ID: 'clash_royale_api:get_tag'
-  GROUP_ID: 'group:id3'
-  GROUP_KEY: 'group:key2'
+  GROUP_ID: 'group:id4'
+  GROUP_KEY: 'group:key3'
   GROUP_GET_ALL: 'group:getAll10'
   GROUP_GET_ALL_CATEGORY: 'group:getAll:category4'
   GROUP_STAR: 'group:star2'
@@ -91,7 +91,7 @@ PREFIXES =
 
 class CacheService
   KEYS:
-    ADDON_GET_ALL: 'addon:get_all4'
+    ADDON_GET_ALL: 'addon:get_all6'
     AUTO_REFRESH_MAX_REVERSED_PLAYER_ID: 'auto_refresh:max_reversed_player_id'
     AUTO_REFRESH_SUCCESS_COUNT: 'auto_refresh:success_count1'
     BROADCAST_FAILSAFE: 'broadcast:failsafe'

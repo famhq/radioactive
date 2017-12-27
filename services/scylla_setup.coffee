@@ -34,7 +34,10 @@ class ScyllaSetupService
     q = cknex(table.keyspace).createColumnFamilyIfNotExists table.name
     _.map table.fields, (type, key) ->
       if typeof type is 'object'
-        q[type.type] key, type.subType
+        if type.subType2
+          q[type.type] key, type.subType, type.subType2
+        else
+          q[type.type] key, type.subType
       else
         q[type] key
 

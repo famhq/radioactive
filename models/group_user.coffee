@@ -5,6 +5,8 @@ Promise = require 'bluebird'
 r = require '../services/rethinkdb'
 cknex = require '../services/cknex'
 CacheService = require '../services/cache'
+GroupRole = require './group_role'
+config = require '../config'
 
 ONE_DAY_SECONDS = 3600 * 24
 TEN_MINUTES_SECONDS = 60 * 10
@@ -89,6 +91,50 @@ class GroupUserModel
       categoryCacheKey = "#{categoryPrefix}:#{groupUser.userId}"
       CacheService.deleteByCategory categoryCacheKey
 
+  addRoleIdByGroupUser: (groupUser, roleId) ->
+    Promise.all [
+      cknex().update 'group_users_by_groupId'
+      .add 'roleIds', [[roleId]]
+      .where 'groupId', '=', groupUser.groupId
+      .andWhere 'userId', '=', groupUser.userId
+      .run()
+
+      cknex().update 'group_users_by_userId'
+      .add 'roleIds', [[roleId]]
+      .where 'userId', '=', groupUser.userId
+      .andWhere 'groupId', '=', groupUser.groupId
+      .run()
+    ]
+    .tap ->
+      prefix = CacheService.PREFIXES.GROUP_USER_USER_ID
+      cacheKey = "#{prefix}:#{groupUser.userId}"
+      CacheService.deleteByKey cacheKey
+      categoryPrefix = CacheService.PREFIXES.GROUP_GET_ALL_CATEGORY
+      categoryCacheKey = "#{categoryPrefix}:#{groupUser.userId}"
+      CacheService.deleteByCategory categoryCacheKey
+
+  removeRoleIdByGroupUser: (groupUser, roleId) ->
+    Promise.all [
+      cknex().update 'group_users_by_groupId'
+      .remove 'roleIds', [roleId]
+      .where 'groupId', '=', groupUser.groupId
+      .andWhere 'userId', '=', groupUser.userId
+      .run()
+
+      cknex().update 'group_users_by_userId'
+      .remove 'roleIds', [roleId]
+      .where 'userId', '=', groupUser.userId
+      .andWhere 'groupId', '=', groupUser.groupId
+      .run()
+    ]
+    .tap ->
+      prefix = CacheService.PREFIXES.GROUP_USER_USER_ID
+      cacheKey = "#{prefix}:#{groupUser.userId}"
+      CacheService.deleteByKey cacheKey
+      categoryPrefix = CacheService.PREFIXES.GROUP_GET_ALL_CATEGORY
+      categoryCacheKey = "#{categoryPrefix}:#{groupUser.userId}"
+      CacheService.deleteByCategory categoryCacheKey
+
   getAllByGroupId: (groupId) ->
     cknex().select '*'
     .from 'group_users_by_groupId'
@@ -129,6 +175,9 @@ class GroupUserModel
     .where 'groupId', '=', groupId
     .andWhere 'userId', '=', userId
     .run {isSingle: true}
+    .then (groupUser) ->
+      # so roles can still be embedded
+      groupUser or {groupId}
 
   getXpByGroupIdAndUserId: (groupId, userId) ->
     cknex().select '*'
@@ -180,11 +229,40 @@ class GroupUserModel
       .run()
     ]
 
-  hasPermission: ({meGroupUser, me, permissions}) ->
-    isGlobalModerator = me?.flags?.isModerator
+  hasPermissionByGroupIdAndUser: (groupId, user, permissions, options) =>
+    options ?= {}
+    {channelId} = options
+
+    @getByGroupIdAndUserId groupId, user.id
+    .then (groupUser) =>
+      groupUser or= {}
+      GroupRole.getAllByGroupId groupId
+      .then (roles) ->
+        everyoneRole = _.find roles, {name: 'everyone'}
+        groupUserRoles = _.map groupUser.roleIds, (roleId) ->
+          _.find roles, {roleId}
+        if everyoneRole
+          groupUserRoles = groupUserRoles.concat everyoneRole
+        groupUser.roles = groupUserRoles
+        groupUser
+      .then =>
+        @hasPermission {
+          meGroupUser: groupUser
+          permissions: permissions
+          channelId: channelId
+          me: user
+        }
+
+  hasPermission: ({meGroupUser, me, permissions, channelId}) ->
+    isGlobalModerator = false#me?.flags?.isModerator # FIXME FIXME
     isGlobalModerator or _.every permissions, (permission) ->
       _.find meGroupUser?.roles, (role) ->
-        role.globalPermissions.indexOf(permission) isnt -1
+        channelPermissions = channelId and role.channelPermissions?[channelId]
+        globalPermissions = role.globalPermissions
+        permissions = _.defaults(
+          channelPermissions, globalPermissions, config.DEFAULT_PERMISSIONS
+        )
+        permissions[permission]
 
 
 module.exports = new GroupUserModel()

@@ -49,6 +49,11 @@ class GroupCtrl
     .tap ({id}) ->
       Promise.all [
         Group.addUser id, user.id
+        GroupRole.upsert {
+          groupId: id
+          name: 'everyone'
+          globalPermissions: {}
+        }
         Conversation.create {
           groupId: id
           name: 'general'
@@ -134,8 +139,6 @@ class GroupCtrl
   joinById: ({id}, {user}) ->
     groupId = id
     userId = user.id
-
-    console.log 'join', groupId, userId
 
     unless groupId
       router.throw {status: 404, info: 'Group not found'}
@@ -225,6 +228,21 @@ class GroupCtrl
         expireSeconds: THIRTY_MINUTES_SECONDS
         category: category
       }
+
+  getAllChannelsById: ({id}, {user}) ->
+    GroupUser.getByGroupIdAndUserId(
+      id, user.id
+    )
+    .then EmbedService.embed {embed: [EmbedService.TYPES.GROUP_USER.ROLES]}
+    .then (meGroupUser) ->
+      Conversation.getAllByGroupId id
+      .then (conversations) ->
+        _.filter conversations, (conversation) ->
+          GroupUser.hasPermission {
+            meGroupUser
+            permissions: ['manageChannel']
+            channelId: conversation.id
+          }
 
   getById: ({id}, {user}) ->
     Group.getById id
