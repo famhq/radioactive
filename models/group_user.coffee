@@ -254,7 +254,7 @@ class GroupUserModel
         }
 
   hasPermission: ({meGroupUser, me, permissions, channelId}) ->
-    isGlobalModerator = false#me?.flags?.isModerator # FIXME FIXME
+    isGlobalModerator = me?.flags?.isModerator
     isGlobalModerator or _.every permissions, (permission) ->
       _.find meGroupUser?.roles, (role) ->
         channelPermissions = channelId and role.channelPermissions?[channelId]

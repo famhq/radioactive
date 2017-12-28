@@ -162,12 +162,12 @@ embedFn = _.curry (props, object) ->
                             .isAfter moment()
 
       when TYPES.USER.IS_BANNED
-        embedded.isChatBanned = Ban.getByUserId embedded.id, {
-          scope: 'chat'
-          preferCache: true
-        }
+        embedded.isChatBanned = Ban.getByGroupIdAndUserId(
+          groupId or config.EMPTY_UUID
+          embedded.id
+          {preferCache: true}
+        )
         .then (ban) ->
-          console.log ban
           Boolean ban?.userId
 
       when TYPES.USER_DATA.FOLLOWING
@@ -532,7 +532,9 @@ embedFn = _.curry (props, object) ->
             CacheService.preferCache key, ->
               User.getById embedded.userId, {preferCache: true}
               .then embedFn {
-                embed: profileDialogUserEmbed, gameId: config.CLASH_ROYALE_ID
+                embed: profileDialogUserEmbed
+                gameId: config.CLASH_ROYALE_ID
+                groupId: embedded.groupId
               }
               .then User.sanitizePublic(null)
             , {expireSeconds: FIVE_MINUTES_SECONDS}

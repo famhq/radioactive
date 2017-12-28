@@ -9,16 +9,6 @@ config = require '../config'
 class GroupRoleCtrl
   getAllByGroupId: ({groupId}, {user}) ->
     GroupRole.getAllByGroupId groupId
-    .tap (roles) ->
-      # probably safe to get rid of this in mid 2018
-      unless _.find roles, {name: 'everyone'}
-        GroupRole.upsert {
-          groupId: groupId
-          name: 'everyone'
-          globalPermissions: {}
-        }
-        .then ->
-          GroupRole.getAllByGroupId groupId
 
   createByGroupId: ({groupId, name}, {user}) ->
     GroupUser.hasPermissionByGroupIdAndUser groupId, user, ['manageRoles']

@@ -2,8 +2,8 @@ _ = require 'lodash'
 
 uuid = require 'node-uuid'
 
-r = require '../services/rethinkdb'
 CacheService = require '../services/cache'
+cknex = require '../services/cknex'
 config = require '../config'
 
 honeypot = require('project-honeypot')(config.HONEYPOT_ACCESS_KEY)
@@ -13,46 +13,97 @@ defaultBan = (ban) ->
     return null
 
   _.defaults ban, {
-    id: uuid.v4()
-    ip: null
-    groupId: null
-    userId: null
-    duration: '24h'
-    scope: 'site'
-    time: new Date()
+    ip: ''
+    timeUuid: cknex.getTimeUuid()
   }
-
-BANS_TABLE = 'bans'
-IP_INDEX = 'ip'
-USER_ID_INDEX = 'userId'
-FILTER_INDEX = 'filter'
-TIME_INDEX = 'time'
 
 ONE_DAY_SECONDS = 3600 * 24
 ONE_MONTH_SECONDS = 3600 * 24 * 31
 
-class BanModel
-  RETHINK_TABLES: [
-    {
-      name: BANS_TABLE
-      indexes: [
-        {name: IP_INDEX}
-        {name: USER_ID_INDEX}
-        {
-          name: FILTER_INDEX
-          fn: (row) -> [row('groupId'), row('duration'), row('scope')]
-        }
-        {name: TIME_INDEX}
-      ]
-    }
-  ]
+tables = [
+  {
+    name: 'bans_by_userId'
+    keyspace: 'starfire'
+    fields:
+      groupId: 'uuid'
+      userId: 'uuid'
+      bannedById: 'uuid'
+      duration: 'text'
+      ip: 'text'
+      timeUuid: 'timeuuid'
+    primaryKey:
+      partitionKey: ['groupId']
+      clusteringColumns: ['userId']
+  }
+  {
+    name: 'bans_by_ip'
+    keyspace: 'starfire'
+    fields:
+      groupId: 'uuid'
+      userId: 'uuid'
+      bannedById: 'uuid'
+      duration: 'text'
+      ip: 'text'
+      timeUuid: 'timeuuid'
+    primaryKey:
+      partitionKey: ['groupId']
+      clusteringColumns: ['ip']
+  }
+  {
+    name: 'bans_by_duration_and_timeUuid'
+    keyspace: 'starfire'
+    fields:
+      groupId: 'uuid'
+      userId: 'uuid'
+      bannedById: 'uuid'
+      duration: 'text'
+      ip: 'text'
+      timeUuid: 'timeuuid'
+    primaryKey:
+      partitionKey: ['groupId', 'duration']
+      clusteringColumns: ['timeUuid']
+    withClusteringOrderBy: ['timeUuid', 'desc']
+  }
+]
 
-  create: (ban) ->
+class BanModel
+  SCYLLA_TABLES: tables
+
+  upsert: (ban, {ttl} = {}) ->
     ban = defaultBan ban
 
-    r.table BANS_TABLE
-    .insert ban
-    .run()
+    console.log 'upsert', ban
+
+    queries = [
+      cknex().update 'bans_by_userId'
+      .set _.omit ban, [
+        'groupId', 'userId'
+      ]
+      .where 'groupId', '=', ban.groupId
+      .andWhere 'userId', '=', ban.userId
+
+      cknex().update 'bans_by_ip'
+      .set _.omit ban, [
+        'groupId', 'ip'
+      ]
+      .where 'groupId', '=', ban.groupId
+      .andWhere 'ip', '=', ban.ip
+
+      cknex().update 'bans_by_duration_and_timeUuid'
+      .set _.omit ban, [
+        'groupId', 'duration', 'timeUuid'
+      ]
+      .where 'groupId', '=', ban.groupId
+      .andWhere 'duration', '=', ban.duration
+      .andWhere 'timeUuid', '=', ban.timeUuid
+    ]
+
+    if ttl
+      queries = _.map queries, (query) ->
+        query.usingTTL ttl
+
+    Promise.all _.map queries, (query) ->
+      query.run()
     .then ->
       if ban.userId
         key = "#{CacheService.PREFIXES.BAN_USER_ID}:#{ban.userId}"
@@ -89,15 +140,16 @@ class BanModel
     else
       get()
 
-  getAll: ({groupId, duration, scope}) ->
-    r.table BANS_TABLE
-    .getAll [groupId, duration, scope], {index: FILTER_INDEX}
-    .orderBy r.desc 'time'
-    .limit 30
+  getAllByGroupIdAndDuration: (groupId, duration) ->
+    console.log groupId, duration
+    cknex().select '*'
+    .from 'bans_by_duration_and_timeUuid'
+    .where 'groupId', '=', groupId
+    .andWhere 'duration', '=', duration
     .run()
     .map defaultBan
 
-  getByIp: (ip, {scope, preferCache} = {}) ->
+  getByGroupIdAndIp: (groupId, ip, {scope, preferCache} = {}) ->
     scope ?= 'chat'
 
     get = ->
@@ -115,16 +167,13 @@ class BanModel
     else
       get()
 
-  getByUserId: (userId, {scope, preferCache} = {}) ->
-    scope ?= 'chat'
-
+  getByGroupIdAndUserId: (groupId, userId, {preferCache} = {}) ->
     get = ->
-      r.table BANS_TABLE
-      .getAll userId, {index: USER_ID_INDEX}
-      .filter {scope}
-      .nth 0
-      .default null
-      .run()
+      cknex().select '*'
+      .from 'bans_by_userId'
+      .where 'groupId', '=', groupId
+      .andWhere 'userId', '=', userId
+      .run {isSingle: true}
       .then defaultBan
 
     if preferCache

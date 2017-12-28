@@ -209,11 +209,12 @@ class ChatMessageModel extends Stream
     else
       initial
 
-  getAllByGroupIdAndUserId: (groupId, userId) ->
+  getAllByGroupIdAndUserIdAndTimeBucket: (groupId, userId, timeBucket) ->
     cknex().select '*'
     .from 'chat_messages_by_groupId_and_userId'
     .where 'groupId', '=', groupId
     .andWhere 'userId', '=', userId
+    .andWhere 'timeBucket', '=', timeBucket
     .run()
     .map defaultChatMessageOutput
 
@@ -273,8 +274,15 @@ class ChatMessageModel extends Stream
       @streamUpdateById id, chatMessage
 
   deleteAllByGroupIdAndUserId: (groupId, userId) =>
-    @getAllByGroupIdAndUserId groupId, userId
-    .map @deleteByChatMessage
+    del = (timeBucket) =>
+      @getAllByGroupIdAndUserIdAndTimeBucket groupId, userId, timeBucket
+      .map @deleteByChatMessage
+
+    del TimeService.getScaledTimeByTimeScale 'week'
+    del TimeService.getScaledTimeByTimeScale(
+      'week'
+      moment().subtract(1, 'week')
+    )
 
   # migrateAll: (order) =>
   #   start = Date.now()

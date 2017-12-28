@@ -68,11 +68,11 @@ embedMyVotes = (comments, commentVotes) ->
     comment
 
 class ThreadCommentCtrl
-  checkIfBanned: (ipAddr, userId, router) ->
+  checkIfBanned: (groupId, ipAddr, userId, router) ->
     ipAddr ?= 'n/a'
     Promise.all [
-      Ban.getByIp ipAddr, {preferCache: true}
-      Ban.getByUserId userId, {preferCache: true}
+      Ban.getByGroupIdAndIp groupId, ipAddr, {preferCache: true}
+      Ban.getByGroupIdAndUserId groupId, userId, {preferCache: true}
     ]
     .then ([bannedIp, bannedUserId]) ->
       if bannedIp?.ip or bannedUserId?.userId
@@ -97,7 +97,7 @@ class ThreadCommentCtrl
     unless body
       router.throw status: 400, info: 'can\'t be empty'
 
-    @checkIfBanned ip, user.id, router
+    @checkIfBanned config.EMPTY_UUID, ip, user.id, router
     .then ->
       ThreadComment.upsert
         creatorId: user.id

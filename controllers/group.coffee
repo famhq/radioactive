@@ -242,6 +242,7 @@ class GroupCtrl
             meGroupUser
             permissions: ['manageChannel']
             channelId: conversation.id
+            me: user
           }
 
   getById: ({id}, {user}) ->

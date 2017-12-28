@@ -298,8 +298,8 @@ class PushNotificationService
       }
 
     if config.ENV is config.ENVS.DEV and not message.forceDevSend
-      console.log 'send notification', user.id, message
-      # return
+      console.log 'send notification', user.id#, message
+      return
 
     # if [@TYPES.NEWS, @TYPES.NEW_PROMOTION].indexOf(message.type) is -1
     #   Notification.create {

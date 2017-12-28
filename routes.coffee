@@ -14,7 +14,7 @@ ClashRoyaleCardCtrl = require './controllers/clash_royale_card'
 DynamicImageCtrl = require './controllers/dynamic_image'
 EventCtrl = require './controllers/event'
 ItemCtrl = require './controllers/item'
-ModCtrl = require './controllers/mod'
+BanCtrl = require './controllers/ban'
 NpsCtrl = require './controllers/nps'
 PaymentCtrl = require './controllers/payment'
 PushTokenCtrl = require './controllers/push_token'
@@ -247,12 +247,10 @@ module.exports = router
 .on 'items.getAllByGroupId', authed ItemCtrl.getAllByGroupId
 .on 'items.getAll', authed ItemCtrl.getAll
 
-.on 'mods.getAllBanned', authed ModCtrl.getAllBanned
-.on 'mods.getAllReportedMessages', authed ModCtrl.getAllReportedMessages
-.on 'mods.banByIp', authed ModCtrl.banByIp
-.on 'mods.banByUserId', authed ModCtrl.banByUserId
-.on 'mods.unbanByUserId', authed ModCtrl.unbanByUserId
-.on 'mods.unflagByChatMessageId', authed ModCtrl.unflagByChatMessageId
+.on 'bans.getAllByGroupId', authed BanCtrl.getAllByGroupId
+.on 'bans.banByGroupIdAndIp', authed BanCtrl.banByGroupIdAndIp
+.on 'bans.banByGroupIdAndUserId', authed BanCtrl.banByGroupIdAndUserId
+.on 'bans.unbanByGroupIdAndUserId', authed BanCtrl.unbanByGroupIdAndUserId
 
 .on 'products.getAllByGroupId', authed ProductCtrl.getAllByGroupId
 .on 'products.buy', authed ProductCtrl.buy

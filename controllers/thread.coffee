@@ -39,11 +39,11 @@ STREAMABLE_ID_REGEX = /https?:\/\/streamable\.com\/([a-zA-Z0-9]+)/i
 
 
 class ThreadCtrl
-  checkIfBanned: (ipAddr, userId, router) ->
+  checkIfBanned: (groupId, ipAddr, userId, router) ->
     ipAddr ?= 'n/a'
     Promise.all [
-      Ban.getByIp ipAddr, {preferCache: true}
-      Ban.getByUserId userId, {preferCache: true}
+      Ban.getByGroupIdAndIp groupId, ipAddr, {preferCache: true}
+      Ban.getByGroupIdAndUserId groupId, userId, {preferCache: true}
     ]
     .then ([bannedIp, bannedUserId]) ->
       if bannedIp?.ip or bannedUserId?.userId
@@ -95,7 +95,7 @@ class ThreadCtrl
 
     diff.category ?= 'general'
 
-    @checkIfBanned ip, user.id, router
+    @checkIfBanned config.EMPTY_UUID, ip, user.id, router
     .then =>
 
       isProfane = ProfanityService.isProfane diff.title + diff.body

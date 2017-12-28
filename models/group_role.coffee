@@ -82,11 +82,23 @@ class GroupRoleModel
       cacheKey = "#{prefix}:#{groupRole.groupId}:#{groupRole.userId}"
       CacheService.deleteByKey cacheKey
 
-  getAllByGroupId: (groupId) ->
+  getAllByGroupId: (groupId) =>
     cknex().select '*'
     .from 'group_roles_by_groupId'
     .where 'groupId', '=', groupId
     .run()
+    .then (roles) =>
+      # probably safe to get rid of this in mid 2018
+      if _.find roles, {name: 'everyone'}
+        roles
+      else
+        @upsert {
+          groupId: groupId
+          name: 'everyone'
+          globalPermissions: {}
+        }
+        .then =>
+          @getAllByGroupId groupId
     .map defaultGroupRoleOutput
 
   getByGroupIdAndRoleId: (groupId, roleId) ->

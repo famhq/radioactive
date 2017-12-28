@@ -83,16 +83,16 @@ class ChatMessageCtrl
         expireSeconds: rateLimitExpireS
       }
 
-  _checkIfBanned: (ipAddr, userId, router) ->
+  _checkIfBanned: (groupId, ipAddr, userId, router) ->
     ipAddr ?= 'n/a'
     Promise.all [
-      Ban.getByIp ipAddr, {preferCache: true}
-      Ban.getByUserId userId, {preferCache: true}
+      Ban.getByGroupIdAndIp groupId, ipAddr, {preferCache: true}
+      Ban.getByGroupIdAndUserId groupId, userId, {preferCache: true}
       Ban.isHoneypotBanned ipAddr, {preferCache: true}
     ]
     .then ([bannedIp, bannedUserId, isHoneypotBanned]) ->
       if bannedIp?.ip or bannedUserId?.userId or isHoneypotBanned
-        router.throw status: 403, 'unable to post'
+        router.throw status: 403, info: 'unable to post'
 
   _checkStickers: (userId, stickers) ->
     if stickers
@@ -188,14 +188,16 @@ class ChatMessageCtrl
     stickers = body.match(STICKER_REGEX)
     isMedia = isImage or stickers
 
-    @_checkIfBanned ip, user.id, router
-    .then =>
-      @_checkRateLimit user.id, isMedia, router
+    @_checkRateLimit user.id, isMedia, router
     .then ->
       Conversation.getById conversationId
     .then EmbedService.embed {embed: defaultConversationEmbed}
     .then (conversation) =>
-      Conversation.hasPermission conversation, user.id
+      (if conversation.groupId
+        @_checkIfBanned conversation.groupId, ip, user.id, router
+      else Promise.resolve null)
+      .then ->
+        Conversation.hasPermission conversation, user.id
       .then (hasPermission) =>
         unless hasPermission
           router.throw status: 401, info: 'unauthorized'
@@ -259,6 +261,7 @@ class ChatMessageCtrl
           }
 
           @_sendPushNotifications conversation, user, body, isImage
+          null # don't block
 
   deleteById: ({id}, {user}) ->
     ChatMessage.getById id
