@@ -20,7 +20,7 @@ userEmbed = [
 ]
 class GroupUserCtrl
   addRoleByGroupIdAndUserId: ({groupId, userId, roleId}, {user}) ->
-    GroupUser.hasPermissionByGroupIdAndUser groupId, user, ['manageRoles']
+    GroupUser.hasPermissionByGroupIdAndUser groupId, user, ['manageRole']
     .then (hasPermission) ->
       unless hasPermission
         router.throw status: 400, info: 'no permission'
@@ -37,7 +37,7 @@ class GroupUserCtrl
         }, roleId
 
   removeRoleByGroupIdAndUserId: ({groupId, userId, roleId}, {user}) ->
-    GroupUser.hasPermissionByGroupIdAndUser groupId, user, ['manageRoles']
+    GroupUser.hasPermissionByGroupIdAndUser groupId, user, ['manageRole']
     .then (hasPermission) ->
       unless hasPermission
         router.throw status: 400, info: 'no permission'

@@ -187,6 +187,7 @@ class ChatMessageCtrl
     isImage = body.match(IMAGE_REGEX)
     stickers = body.match(STICKER_REGEX)
     isMedia = isImage or stickers
+    isLink = body.match(URL_REGEX)
 
     @_checkRateLimit user.id, isMedia, router
     .then ->
@@ -194,7 +195,20 @@ class ChatMessageCtrl
     .then EmbedService.embed {embed: defaultConversationEmbed}
     .then (conversation) =>
       (if conversation.groupId
-        @_checkIfBanned conversation.groupId, ip, user.id, router
+        groupId = conversation.groupId
+        @_checkIfBanned groupId, ip, user.id, router
+        .then ->
+          # TODO: combine with conversation.hasPermission
+          permissions = ['sendMessage']
+          if isImage
+            permissions = permissions.concat 'sendImage'
+          if isLink
+            permissions = permissions.concat 'sendLink'
+          GroupUser.hasPermissionByGroupIdAndUser groupId, user, permissions
+          .then (hasPermission) ->
+            unless hasPermission
+              router.throw status: 400, info: 'no permission'
+
       else Promise.resolve null)
       .then ->
         Conversation.hasPermission conversation, user.id

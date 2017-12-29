@@ -11,7 +11,7 @@ class GroupRoleCtrl
     GroupRole.getAllByGroupId groupId
 
   createByGroupId: ({groupId, name}, {user}) ->
-    GroupUser.hasPermissionByGroupIdAndUser groupId, user, ['manageRoles']
+    GroupUser.hasPermissionByGroupIdAndUser groupId, user, ['manageRole']
     .then (hasPermission) ->
       unless hasPermission
         router.throw status: 400, info: 'no permission'
@@ -22,9 +22,17 @@ class GroupRoleCtrl
         globalPermissions: {}
       }
 
+  deleteByGroupIdAndRoleId: ({groupId, roleId}, {user}) ->
+    GroupUser.hasPermissionByGroupIdAndUser groupId, user, ['manageRole']
+    .then (hasPermission) ->
+      unless hasPermission
+        router.throw status: 400, info: 'no permission'
+
+      GroupRole.deleteByGroupIdAndRoleId groupId, roleId
+
   updatePermissions: (params, {user}) ->
     {groupId, roleId, channelId, permissions} = params
-    GroupUser.hasPermissionByGroupIdAndUser groupId, user, ['manageRoles']
+    GroupUser.hasPermissionByGroupIdAndUser groupId, user, ['manageRole']
     .then (hasPermission) ->
       unless hasPermission
         router.throw status: 400, info: 'no permission'

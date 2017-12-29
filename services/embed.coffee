@@ -358,7 +358,9 @@ embedFn = _.curry (props, object) ->
       when TYPES.BAN.USER
         embedded.user = User.getById embedded.userId, {preferCache: true}
         .then embedFn {
-          embed: profileDialogUserEmbed, gameId: config.CLASH_ROYALE_ID
+          embed: profileDialogUserEmbed
+          gameId: config.CLASH_ROYALE_ID
+          groupId: groupId
         }
         .then User.sanitizePublic null
 
@@ -417,7 +419,7 @@ embedFn = _.curry (props, object) ->
             _.filter conversations, (conversation) ->
               GroupUser.hasPermission {
                 meGroupUser
-                permissions: ['readMessages']
+                permissions: ['readMessage']
                 channelId: conversation.id
               }
 

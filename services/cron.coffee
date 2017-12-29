@@ -55,9 +55,6 @@ class CronService
       VideoDiscoveryService.updateGroupVideos()
       Thread.updateScores 'time'
 
-    @addCron 'hourly', '0 0 * * * *', ->
-      Ban.unbanTemp()
-
   addCron: (key, time, fn) =>
     @crons.push new CronJob {
       cronTime: time

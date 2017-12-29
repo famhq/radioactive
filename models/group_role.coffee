@@ -109,4 +109,11 @@ class GroupRoleModel
     .run {isSingle: true}
     .then defaultGroupRoleOutput
 
+  deleteByGroupIdAndRoleId: (groupId, roleId) ->
+    cknex().delete()
+    .from 'group_roles_by_groupId'
+    .where 'groupId', '=', groupId
+    .andWhere 'roleId', '=', roleId
+    .run()
+
 module.exports = new GroupRoleModel()

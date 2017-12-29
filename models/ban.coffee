@@ -113,14 +113,6 @@ class BanModel
         CacheService.deleteByKey key
       ban
 
-  unbanTemp: ->
-    # TODO: optimize w/ index
-    r.table BANS_TABLE
-    .filter r.row('duration').eq('24h').and(
-      r.row('time').lt r.now().sub ONE_DAY_SECONDS
-    )
-    .delete()
-
   isHoneypotBanned: (ip, {preferCache} = {}) ->
     get = ->
       if ip?.match('74.82.60')
@@ -141,7 +133,6 @@ class BanModel
       get()
 
   getAllByGroupIdAndDuration: (groupId, duration) ->
-    console.log groupId, duration
     cknex().select '*'
     .from 'bans_by_duration_and_timeUuid'
     .where 'groupId', '=', groupId
@@ -153,12 +144,11 @@ class BanModel
     scope ?= 'chat'
 
     get = ->
-      r.table BANS_TABLE
-      .getAll ip, {index: IP_INDEX}
-      .filter {scope}
-      .nth 0
-      .default null
-      .run()
+      cknex().select '*'
+      .from 'bans_by_ip'
+      .where 'groupId', '=', groupId
+      .andWhere 'ip', '=', ip
+      .run {isSingle: true}
       .then defaultBan
 
     if preferCache
@@ -182,21 +172,48 @@ class BanModel
     else
       get()
 
-  deleteAllByIp: (ip) ->
-    r.table BANS_TABLE
-    .getAll ip, {index: IP_INDEX}
-    .delete()
+  deleteByBan: (ban) ->
+    Promise.all _.filter [
+      cknex().delete()
+      .from 'bans_by_userId'
+      .where 'groupId', '=', ban.groupId
+      .andWhere 'userId', '=', ban.userId
+      .run()
+
+      if ban.ip
+        cknex().delete()
+        .from 'bans_by_ip'
+        .where 'groupId', '=', ban.groupId
+        .andWhere 'ip', '=', ban.ip
+        .run()
+
+      cknex().delete()
+      .from 'bans_by_duration_and_timeUuid'
+      .where 'groupId', '=', ban.groupId
+      .andWhere 'duration', '=', ban.duration
+      .andWhere 'timeUuid', '=', ban.timeUuid
+      .run()
+    ]
+
+  deleteAllByGroupIdAndIp: (groupId, ip) =>
+    cknex().select '*'
+    .from 'bans_by_userId'
+    .where 'groupId', '=', groupId
+    .andWhere 'ip', '=', ip
     .run()
+    .map @deleteByBan
     .then ->
       key = "#{CacheService.PREFIXES.BAN_IP}:#{ip}"
       CacheService.deleteByKey key
     .then -> null
 
-  deleteAllByUserId: (userId) ->
-    r.table BANS_TABLE
-    .getAll userId, {index: USER_ID_INDEX}
-    .delete()
+  deleteAllByGroupIdAndUserId: (groupId, userId) =>
+    cknex().select '*'
+    .from 'bans_by_userId'
+    .where 'groupId', '=', groupId
+    .andWhere 'userId', '=', userId
     .run()
+    .map @deleteByBan
     .then ->
       key = "#{CacheService.PREFIXES.BAN_USER_ID}:#{userId}"
       CacheService.deleteByKey key

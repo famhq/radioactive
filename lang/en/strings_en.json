@@ -279,6 +279,7 @@
   "profileDialog.permaBan": "Perm ban",
   "profileDialog.ipBan": "IP Ban",
   "profileDialog.chatBanned": "Banned",
+  "profileDialog.unban": "Unban",
   "profileDialog.delete": "Delete",
   "profileDialog.copy": "Copy Text",
   "profileHistory.currentTitle": "Current deck",

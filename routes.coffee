@@ -178,6 +178,8 @@ module.exports = router
 .on 'groupRoles.getAllByGroupId', authed GroupRoleCtrl.getAllByGroupId
 .on 'groupRoles.createByGroupId', authed GroupRoleCtrl.createByGroupId
 .on 'groupRoles.updatePermissions', authed GroupRoleCtrl.updatePermissions
+.on 'groupRoles.deleteByGroupIdAndRoleId',
+  authed GroupRoleCtrl.deleteByGroupIdAndRoleId
 
 .on 'userGroupData.updateMeByGroupId',
   authed UserGroupDataCtrl.updateMeByGroupId

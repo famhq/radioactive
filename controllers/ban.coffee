@@ -12,7 +12,7 @@ BANNED_LIMIT = 15
 
 class BanCtrl
   getAllByGroupId: ({groupId, duration} = {}, {user}) ->
-    GroupUser.hasPermissionByGroupIdAndUser groupId, user, ['banUsers']
+    GroupUser.hasPermissionByGroupIdAndUser groupId, user, ['tempBanUser']
     .then (hasPermission) ->
       unless hasPermission
         router.throw status: 400, info: 'no permission'
@@ -23,6 +23,7 @@ class BanCtrl
       Ban.getAllByGroupIdAndDuration groupId, duration
       .map EmbedService.embed {
         embed: [EmbedService.TYPES.BAN.USER]
+        groupId: groupId
       }
 
   banByGroupIdAndUserId: ({userId, groupId, duration, type}, {user}) ->
@@ -56,6 +57,6 @@ class BanCtrl
       unless hasPermission
         router.throw status: 400, info: 'no permission'
 
-      Ban.deleteAllByUserId userId
+      Ban.deleteAllByGroupIdAndUserId groupId, userId
 
 module.exports = new BanCtrl()

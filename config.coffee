@@ -27,8 +27,11 @@ config =
   ]
   # ALSO IN STARFIRE
   DEFAULT_PERMISSIONS:
-    readMessages: true
+    readMessage: true
     manageChannel: false
+    sendMessage: true
+    sendLink: true
+    sendImage: true
   # also in starfire
   LANGUAGES: ['en', 'es', 'it', 'fr', 'zh', 'ja', 'ko', 'de', 'pt', 'pl', 'ru']
   # also in starfire
