@@ -2,6 +2,7 @@ Redlock = require 'redlock'
 Promise = require 'bluebird'
 
 RedisService = require './redis'
+RedisPersistentService = require './redis_persistent'
 config = require '../config'
 
 DEFAULT_CACHE_EXPIRE_SECONDS = 3600 * 24 * 30 # 30 days
@@ -11,7 +12,7 @@ ONE_HOUR_SECONDS = 3600
 
 PREFIXES =
   CHAT_USER: 'chat:user3'
-  CHAT_GROUP_USER: 'chat:group_user'
+  CHAT_GROUP_USER: 'chat:group_user3'
   THREAD_USER: 'thread:user1'
   THREAD_CREATOR: 'thread:creator1'
   THREAD: 'thread:id'
@@ -45,7 +46,7 @@ PREFIXES =
   CLASH_ROYALE_CARD_RANK: 'clash_royal_card:rank'
   CLASH_ROYALE_DECK_RANK: 'clash_royal_deck:rank'
   CLASH_ROYALE_DECK_STATS: 'clash_royal_deck:stats1'
-  CLASH_ROYALE_DECK_GET_POPULAR: 'clash_royal_deck:get_popular1'
+  CLASH_ROYALE_DECK_GET_POPULAR: 'clash_royal_deck:get_popular4'
   CLASH_ROYALE_DECK_CARD_KEYS: 'clash_royal_deck:card_keys12'
   CLASH_ROYALE_PLAYER_DECK_DECK: 'clash_royale_player_deck:deck9'
   CLASH_ROYALE_PLAYER_DECK_DECK_ID_USER_ID:
@@ -61,8 +62,8 @@ PREFIXES =
   GROUP_GET_ALL_CATEGORY: 'group:getAll:category4'
   GROUP_STAR: 'group:star2'
   GROUP_USER_COUNT: 'group:user_count1'
-  GROUP_ROLE_GROUP_ID_USER_ID: 'group_role:groupId:userId'
-  GROUP_USER_USER_ID: 'group_user:user_id5'
+  GROUP_ROLE_GROUP_ID_USER_ID: 'group_role:groupId:userId2'
+  GROUP_USER_USER_ID: 'group_user:user_id7'
   GROUP_USER_TOP: 'group_user:top3'
   USERNAME_SEARCH: 'username:search1'
   RATE_LIMIT_CHAT_MESSAGES_TEXT: 'rate_limit:chat_messages:text'
@@ -110,6 +111,7 @@ class CacheService
     CLASH_ROYALE_CARDS: 'clash_royale:cards1'
     PLAYERS_TOP: 'player:top1'
     SPECIAL_OFFER_ALL: 'special_offer:all1'
+    SPECIAL_OFFER_ID: 'special_offer:id'
     KUE_WATCH_STUCK: 'kue:watch_stuck'
   LOCK_PREFIXES:
     KUE_PROCESS: 'kue:process'
@@ -117,6 +119,8 @@ class CacheService
     BROADCAST: 'broadcast'
     UPGRADE_STICKER: 'upgrade_sticker2'
     SET_AUTO_REFRESH: 'set_auto_refresh4'
+    SPECIAL_OFFER_DAILY: 'special_offer:daily'
+    SPECIAL_OFFER_INSTALL: 'special_offer:install'
   LOCKS:
     AUTO_REFRESH: 'auto_refresh'
   PREFIXES: PREFIXES
@@ -142,15 +146,26 @@ class CacheService
 
   leaderboardUpdate: (setKey, member, score) ->
     key = config.REDIS.PREFIX + ':' + setKey
-    RedisService.zadd key, score, member
+    RedisPersistentService.zadd key, score, member
 
-  leaderboardIncrement: (setKey, member, increment) ->
+  leaderboardIncrement: (setKey, member, increment, {currentValueFn} = {}) =>
     key = config.REDIS.PREFIX + ':' + setKey
-    RedisService.zincrby key, increment, member
+    RedisPersistentService.zincrby key, increment, member
+    .tap (newValue) =>
+      # didn't exist before, sync their xp just in case
+      if currentValueFn and "#{newValue}" is "#{increment}"
+        currentValueFn()
+        .then (currentValue) =>
+          if currentValue and "#{currentValue}" isnt "#{newValue}"
+            @leaderboardUpdate setKey, member, currentValue
+        null # don't block
 
   leaderboardGet: (key, limit = 50) ->
     key = config.REDIS.PREFIX + ':' + key
-    RedisService.zrevrange key, 0, limit - 1, 'WITHSCORES'
+    RedisPersistentService.zrevrange key, 0, limit - 1, 'WITHSCORES'
+
+  leaderboardTrim: (key, trimLength = 10000) ->
+    RedisPersistentService.zremrangebyrank key, 0, -1 * (trimLength + 1)
 
   set: (key, value, {expireSeconds} = {}) ->
     key = config.REDIS.PREFIX + ':' + key

@@ -202,16 +202,22 @@ class GroupUserModel
         }
 
   incrementXpByGroupIdAndUserId: (groupId, userId, amount) ->
+    updateXp = cknex().update 'group_users_xp_counter_by_userId'
+    .increment 'xp', amount
+    .where 'groupId', '=', groupId
+    .andWhere 'userId', '=', userId
+    .run()
+
     Promise.all [
-      cknex().update 'group_users_xp_counter_by_userId'
-      .increment 'xp', amount
-      .where 'groupId', '=', groupId
-      .andWhere 'userId', '=', userId
-      .run()
+      updateXp
 
       prefix = CacheService.STATIC_PREFIXES.GROUP_LEADERBOARD
       key = "#{prefix}:#{groupId}"
-      CacheService.leaderboardIncrement key, userId, amount
+      CacheService.leaderboardIncrement key, userId, amount, {
+        currentValueFn: =>
+          updateXp.then =>
+            @getXpByGroupIdAndUserId groupId, userId
+      }
     ]
 
   deleteByGroupIdAndUserId: (groupId, userId) ->

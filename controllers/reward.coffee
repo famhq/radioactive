@@ -23,6 +23,15 @@ ADSCEND_API_URL = 'https://api.adscendmedia.com/v1/publisher'
 THIRTY_MINUTES_SECONDS = 30 * 60
 THREE_HOURS_S = 3600 * 3
 
+FILTER_REGEX = [
+  /horoscope/i
+  # /vuit/i
+  # /emoji search/i
+  # /future sms/i
+  # /fast numbers 2/i
+  # /bubble bird/i
+]
+
 kiipRequest = (path, body) ->
   ip =
   body = _.defaultsDeep body, {
@@ -314,7 +323,9 @@ class RewardCtrl
         unless offer
           return false
         {conversionRate, attemptCount} = offer
-        attemptCount < 100 or conversionRate > 0.01
+        isFilteredOut = _.some FILTER_REGEX, (regex) ->
+          offer.title.match regex
+        not isFilteredOut and (attemptCount < 100 or conversionRate > 0.01)
 
       indexWeights = _.reduce offers, (obj, offer, i) ->
         if offer.conversionRate
@@ -408,6 +419,11 @@ class RewardCtrl
     # console.log 'trialpay add', userId, amount
     # {userId, txnId, offerId, fireAmount: amount}
 
+  _processMappstreet: (query, body) ->
+    # todo set isVerified: true for special_offer_transactions
+    # query.uc = userId|specialOfferId
+    console.log 'mappstreet', query, body
+
   process: (req, res) =>
     network = req.params.network
     {txnId, userId, fireAmount, offerId} = switch network
@@ -416,6 +432,7 @@ class RewardCtrl
       when 'adscend' then @_processAdscend req.query
       when 'ironsource' then @_processIronsource req.query
       when 'trialpay' then @_processTrialpay req.query
+      when 'mappstreet' then @_processMappstreet req.query, req.body
 
     RewardTransaction.getByNetworkAndTxnId network, txnId
     .then (transaction) ->

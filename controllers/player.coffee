@@ -102,7 +102,7 @@ class PlayerCtrl
     .then (player) ->
       seed = user.id + ':' + player.id
       rand = randomSeed.create seed
-      cardCount = player.data.cards.length
+      cardCount = player.data.cards?.length or 0
       usedIds = []
       getRandomUniqueIndex = (tries = 0) ->
         id = rand(cardCount)

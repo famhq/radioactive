@@ -298,6 +298,23 @@ class ChatMessageCtrl
         .then ->
           ChatMessage.deleteByChatMessage chatMessage
 
+  deleteAllByGroupIdAndUserId: ({groupId, userId, duration}, {user}) ->
+    GroupUser.getByGroupIdAndUserId groupId, user.id
+    .then EmbedService.embed {embed: [EmbedService.TYPES.GROUP_USER.ROLES]}
+    .then (groupUser) ->
+      permission = 'deleteMessage'
+      hasPermission = GroupUser.hasPermission {
+        meGroupUser: groupUser
+        me: user
+        permissions: [permission]
+      }
+
+      unless hasPermission
+        router.throw
+          status: 400, info: 'You don\'t have permission to do that'
+    .then ->
+      ChatMessage.deleteAllByGroupIdAndUserId groupId, userId, {duration}
+
   updateCard: ({body, params, headers}) ->
     radioactiveHost = config.RADIOACTIVE_API_URL.replace /https?:\/\//i, ''
     isPrivate = headers.host is radioactiveHost

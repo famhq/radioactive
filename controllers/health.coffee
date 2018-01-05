@@ -60,8 +60,8 @@ class HealthCtrl
         apiData: apiData?.tag is "##{AUSTIN_TAG}"
         apiMatches: Boolean apiMatches
         legacyApi: apiData?.tag is "##{AUSTIN_TAG}"
-        postgresPlayer: player?.id is AUSTIN_TAG
-        cassandraMatches: _.isArray matches?.rows
+        scyllaPlayer: player?.id is AUSTIN_TAG
+        scyllaMatches: _.isArray matches?.rows
         rethinkUser: user?.username is AUSTIN_USERNAME
 
       result.healthy = _.every _.values result

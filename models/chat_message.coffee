@@ -273,7 +273,9 @@ class ChatMessageModel extends Stream
     .tap (chatMessage) =>
       @streamUpdateById id, chatMessage
 
-  deleteAllByGroupIdAndUserId: (groupId, userId) =>
+  deleteAllByGroupIdAndUserId: (groupId, userId, {duration} = {}) =>
+    duration ?= '7d' # TODO (doesn't actually do anything)
+
     del = (timeBucket) =>
       @getAllByGroupIdAndUserIdAndTimeBucket groupId, userId, timeBucket
       .map @deleteByChatMessage

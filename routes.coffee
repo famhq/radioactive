@@ -47,7 +47,7 @@ authed = (handler) ->
 
   (body, req, rest...) ->
     unless req.user?
-      router.throw status: 401, info: 'Unauthorized'
+      router.throw status: 401, info: 'Unauthorized', ignoreLog: true
 
     handler body, req, rest...
 
@@ -102,6 +102,8 @@ module.exports = router
 
 .on 'chatMessages.create', authed ChatMessageCtrl.create
 .on 'chatMessages.deleteById', authed ChatMessageCtrl.deleteById
+.on 'chatMessages.deleteAllByGroupIdAndUserId',
+  authed ChatMessageCtrl.deleteAllByGroupIdAndUserId
 .on 'chatMessages.uploadImage', authed ChatMessageCtrl.uploadImage
 .on 'chatMessages.getAllByConversationId',
   authed ChatMessageCtrl.getAllByConversationId
@@ -263,7 +265,9 @@ module.exports = router
   authed RewardCtrl.incrementAttemptsByNetworkAndOfferId
 
 .on 'specialOffer.getAll', authed SpecialOfferCtrl.getAll
-.on 'specialOffer.giveReward', authed SpecialOfferCtrl.giveReward
+.on 'specialOffer.giveDailyReward', authed SpecialOfferCtrl.giveDailyReward
+.on 'specialOffer.giveInstallReward', authed SpecialOfferCtrl.giveInstallReward
+.on 'specialOffer.logClickById', authed SpecialOfferCtrl.logClickById
 
 .on 'stars.getByUsername', authed StarCtrl.getByUsername
 .on 'stars.getAll', authed StarCtrl.getAll

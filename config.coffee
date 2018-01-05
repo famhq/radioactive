@@ -23,7 +23,7 @@ config =
   COMMUNITY_LANGUAGES: ['es', 'pt']
   DECK_TRACKED_GAME_TYPES: [
     'PvP', 'classicChallenge', 'grandChallenge', 'tournament', '2v2'
-    '3xChallenge'
+    '3xChallenge', 'modernRoyale'
   ]
   # ALSO IN STARFIRE
   DEFAULT_PERMISSIONS:
@@ -100,6 +100,7 @@ config =
   FYBER_API_KEY: env.FYBER_ANDROID_API_KEY
   FYBER_SECURITY_TOKEN: env.FYBER_ANDROID_SECURITY_TOKEN
   IRONSOURCE_SECRET_KEY: env.IRONSOURCE_SECRET_KEY
+  MAPPSTREET_PRIVATE_TOKEN: env.MAPPSTREET_PRIVATE_TOKEN
   ADSCEND_PUBLISHER_ID: env.ADSCEND_PUBLISHER_ID
   ADSCEND_SECRET_KEY: env.ADSCEND_SECRET_KEY
   NATIVE_SORT_OF_SECRET: env.NATIVE_SORT_OF_SECRET
@@ -130,10 +131,7 @@ config =
     KUE_HOST: env.REDIS_KUE_HOST
     PUB_SUB_HOST: env.REDIS_PUB_SUB_HOST
     RADIOACTIVE_HOST: env.REDIS_RADIOACTIVE_HOST
-    # NODES: if env.REDIS_CLUSTER_HOSTS \
-    #        then _.map env.REDIS_CLUSTER_HOSTS.split(','), (host) ->
-    #          {host, port: REDIS_PORT}
-    #        else [env.REDIS_HOST]
+    PERSISTENT_HOST: env.REDIS_PERSISTENT_HOST
   CDN_HOST: env.CDN_HOST
   SCYLLA:
     KEYSPACE: 'clash_royale'

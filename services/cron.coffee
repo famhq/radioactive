@@ -51,9 +51,12 @@ class CronService
       if config.ENV is config.ENVS.PROD
         ClashRoyalePlayerService.updateTopPlayers()
 
-    @addCron 'ten min', '0 */10 * * * *', ->
+    @addCron 'tenMin', '0 */10 * * * *', ->
       VideoDiscoveryService.updateGroupVideos()
       Thread.updateScores 'time'
+
+    @addCron 'oneHour', '0 0 * * * *', ->
+      CleanupService.trimLeaderboards()
 
   addCron: (key, time, fn) =>
     @crons.push new CronJob {

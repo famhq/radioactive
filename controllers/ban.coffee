@@ -46,7 +46,9 @@ class BanCtrl
         if ban.ip?.indexOf('::ffff:10.') isnt -1
           delete ban.ip # TODO: remove. ignores local ips (which shouldn't happen)
 
-        Ban.upsert ban
+        Ban.upsert ban, {
+          ttl: if duration is '24h' then 3600 * 24 else undefined
+        }
     .then ->
       if groupId
         ChatMessage.deleteAllByGroupIdAndUserId groupId, userId

@@ -47,10 +47,10 @@ class UserDataCtrl
       router.throw status: 400, info: valid.error.message
 
     User.getById userId
-    .then (user) ->
-      if user.flags.isModerator
+    .then (otherUser) ->
+      if otherUser.flags.isModerator
         return
-      UserData.getByUserId user.id
+      UserData.getByUserId otherUser.id
       .then (userData) ->
         UserData.upsertByUserId user.id, {
           blockedUserIds: _.uniq userData.blockedUserIds.concat([otherUserId])

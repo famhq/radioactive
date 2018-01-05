@@ -26,6 +26,7 @@ ClashRoyaleClanRecord = require '../models/clash_royale_clan_record'
 GroupRecord = require '../models/group_record'
 ClashRoyalePlayerRecord = require '../models/clash_royale_player_record'
 ClashRoyalePlayerDeck = require '../models/clash_royale_player_deck'
+SpecialOffer = require '../models/special_offer'
 UserGroupData = require '../models/user_group_data'
 Player = require '../models/player'
 UserPlayer = require '../models/user_player'
@@ -76,6 +77,7 @@ TYPES =
     STAR: 'group:star'
   GROUP_USER:
     ROLES: 'groupUser:roles'
+    ROLE_NAMES: 'groupUser:roleNames'
     XP: 'groupUser:xp'
     USER: 'groupUser:user'
   CLAN_RECORD_TYPE:
@@ -84,6 +86,10 @@ TYPES =
     USER_VALUES: 'groupRecordType:userValues'
   GAME_RECORD_TYPE:
     ME_VALUES: 'gameRecordType:playerValues'
+  SPECIAL_OFFER:
+    TRANSACTION: 'specialOffer:transaction'
+  SPECIAL_OFFER_TRANSACTION:
+    SPECIAL_OFFER: 'specialOfferTransaction:specialOffer'
   PLAYER:
     VERIFIED_USER: 'player:verifiedUser'
     HI: 'player:hi'
@@ -283,6 +289,14 @@ embedFn = _.curry (props, object) ->
           limit: 50
         }
 
+      when TYPES.SPECIAL_OFFER.TRANSACTION
+        embedded.transaction = SpecialOffer.getTransactionByUserIdAndOfferId(
+          userId, embedded.id
+        )
+
+      when TYPES.SPECIAL_OFFER_TRANSACTION.SPECIAL_OFFER
+        embedded.specialOffer = SpecialOffer.getById embedded.offerId
+
       when TYPES.CLAN.PLAYERS
         if embedded.data.memberList
           key = CacheService.PREFIXES.CLAN_PLAYERS + ':' + embedded.id
@@ -434,10 +448,18 @@ embedFn = _.curry (props, object) ->
           embedded.groupId
         ).then (roles) ->
           everyoneRole = _.find roles, {name: 'everyone'}
-          groupUserRoles = _.map embedded.roleIds, (roleId) ->
+          groupUserRoles = _.filter _.map embedded.roleIds, (roleId) ->
             _.find roles, {roleId}
           if everyoneRole
             groupUserRoles = groupUserRoles.concat everyoneRole
+
+      when TYPES.GROUP_USER.ROLE_NAMES
+        embedded.roleNames = GroupRole.getAllByGroupId(
+          embedded.groupId
+        ).then (roles) ->
+          groupUserRoleNames = _.filter _.map embedded.roleIds, (roleId) ->
+            _.find(roles, {roleId})?.name
+          groupUserRoleNames = groupUserRoleNames.concat 'everyone'
 
       when TYPES.GROUP_USER.XP
         if embedded.userId
@@ -553,7 +575,7 @@ embedFn = _.curry (props, object) ->
                 embedded.groupId, embedded.userId, {preferCache: true}
               )
               .then embedFn {
-                embed: [TYPES.GROUP_USER.XP]
+                embed: [TYPES.GROUP_USER.XP, TYPES.GROUP_USER.ROLE_NAMES]
               }
             , {expireSeconds: FIVE_MINUTES_SECONDS}
         else

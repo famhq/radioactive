@@ -72,8 +72,6 @@ class BanModel
   upsert: (ban, {ttl} = {}) ->
     ban = defaultBan ban
 
-    console.log 'upsert', ban
-
     queries = [
       cknex().update 'bans_by_userId'
       .set _.omit ban, [

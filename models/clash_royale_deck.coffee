@@ -136,7 +136,7 @@ class ClashRoyaleDeckModel
       [deckId, gameType, arena] = key.split ','
 
       # side effects, but cheaper than separate forEach on deckIdCnt
-      if gameType is '3xChallenge' or gameType is '2v2'
+      if gameType in ['3xChallenge', '2v2', 'modernRoyale']
         prefix = CacheService.STATIC_PREFIXES.GAME_TYPE_DECK_LEADERBOARD
         key = "#{prefix}:#{gameType}"
         amount = (diff.wins or 0) + (diff.losses or 0) + (diff.draws or 0)

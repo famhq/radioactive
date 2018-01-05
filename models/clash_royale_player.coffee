@@ -190,6 +190,9 @@ class ClashRoyalePlayerModel
       .from 'players_by_id'
       .run {isSingle: true}
       .then defaultClashRoyalePlayer
+      .catch (err) ->
+        console.log 'caught getbyid', id
+        throw new Error ''
 
     if preferCache
       prefix = CacheService.PREFIXES.PLAYER_CLASH_ROYALE_ID

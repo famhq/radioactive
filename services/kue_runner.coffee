@@ -55,7 +55,7 @@ class KueRunnerService
           .then (response) ->
             done null, response
           .catch (err) ->
-            console.log 'kue err', err
+            console.log 'kue err', type
             done err
         catch err
           done err

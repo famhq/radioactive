@@ -39,7 +39,7 @@ ALLOWED_GAME_TYPES = [
   'PvP', 'tournament',
   'classicChallenge', 'grandChallenge'
   'friendly', 'clanMate', '2v2', 'touchdown2v2DraftPractice',
-  'touchdown2v2Draft', 'newCardChallenge', '3xChallenge'
+  'touchdown2v2Draft', 'newCardChallenge', '3xChallenge', 'modernRoyale'
 ]
 
 DEBUG = false or config.ENV is config.ENVS.DEV
@@ -404,7 +404,7 @@ class ClashRoyalePlayerService
       'day'
       moment().subtract 1, 'day'
     )
-    console.log 'sending daily push', playerId, isAuto
+    console.log 'sending daily push', playerId, isAuto, GAME_ID
     Promise.all [
       Player.getByPlayerIdAndGameId playerId, GAME_ID
       .then EmbedService.embed {
