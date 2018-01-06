@@ -240,7 +240,7 @@ class GroupCtrl
         _.filter conversations, (conversation) ->
           GroupUser.hasPermission {
             meGroupUser
-            permissions: ['manageChannel']
+            permissions: [GroupUser.PERMISSIONS.MANAGE_CHANNEL]
             channelId: conversation.id
             me: user
           }

@@ -5,6 +5,7 @@ Promise = require 'bluebird'
 User = require '../models/user'
 GroupUser = require '../models/group_user'
 GroupRole = require '../models/group_role'
+Group = require '../models/group'
 EmbedService = require '../services/embed'
 CacheService = require '../services/cache'
 config = require '../config'
@@ -20,7 +21,9 @@ userEmbed = [
 ]
 class GroupUserCtrl
   addRoleByGroupIdAndUserId: ({groupId, userId, roleId}, {user}) ->
-    GroupUser.hasPermissionByGroupIdAndUser groupId, user, ['manageRole']
+    GroupUser.hasPermissionByGroupIdAndUser groupId, user, [
+      GroupUser.PERMISSIONS.MANAGE_ROLE
+    ]
     .then (hasPermission) ->
       unless hasPermission
         router.throw status: 400, info: 'no permission'
@@ -37,7 +40,9 @@ class GroupUserCtrl
         }, roleId
 
   removeRoleByGroupIdAndUserId: ({groupId, userId, roleId}, {user}) ->
-    GroupUser.hasPermissionByGroupIdAndUser groupId, user, ['manageRole']
+    GroupUser.hasPermissionByGroupIdAndUser groupId, user, [
+      GroupUser.PERMISSIONS.MANAGE_ROLE
+    ]
     .then (hasPermission) ->
       unless hasPermission
         router.throw status: 400, info: 'no permission'
@@ -62,5 +67,28 @@ class GroupUserCtrl
       GroupUser.getTopByGroupId groupId
       .map EmbedService.embed {embed: userEmbed}
     , {expireSeconds: FIVE_MINUTES_SECONDS}
+
+  getMeSettingsByGroupId: ({groupId}, {user}) ->
+    Group.hasPermissionByIdAndUserId groupId, user.id, {level: 'member'}
+    .then (hasPermission) ->
+      unless hasPermission
+        router.throw status: 400, info: 'no permission'
+
+      GroupUser.getSettingsByGroupIdAndUserId groupId, user.id
+
+  updateMeSettingsByGroupId: ({groupId, globalNotifications}, {user}) ->
+    Group.hasPermissionByIdAndUserId groupId, user.id, {level: 'member'}
+    .then (hasPermission) ->
+      unless hasPermission
+        router.throw status: 400, info: 'no permission'
+
+      GroupUser.getSettingsByGroupIdAndUserId groupId, user.id
+      .then (settings) ->
+        GroupUser.upsertSettings {
+          groupId, userId: user.id
+          globalNotifications: _.defaults(
+            globalNotifications, settings?.globalNotifications
+          )
+        }
 
 module.exports = new GroupUserCtrl()

@@ -444,13 +444,6 @@
   "userOfWeekPage.title": "User of the week",
   "videosPage.title": "Videos",
 
-  "backend.userJoinedChatMessage": "{name} joined",
-  "backend.addFriendCardTitle": "Add me as a friend",
-  "backend.addFriendCardDescription": "Tap to add me as a friend in Clash Royale",
-  "backend.joinClanCardTitle": "Join my clan",
-  "backend.joinClanCardDescription": "Tap to join my clan in Clash Royale",
-
-
   "error.usernameTaken": "Username is taken",
   "error.invalid": "Invalid",
   "error.invalidUsername": "Invalid username",

@@ -81,13 +81,20 @@ class UserModel
     .run()
     .then defaultUser
 
-  getByUsername: (username) ->
-    r.table USERS_TABLE
-    .getAll username, {index: USERNAME_INDEX}
-    .nth(0)
-    .default(null)
-    .run()
-    .then defaultUser
+  getByUsername: (username, {preferCache} = {}) ->
+    get = ->
+      r.table USERS_TABLE
+      .getAll username, {index: USERNAME_INDEX}
+      .nth(0)
+      .default(null)
+      .run()
+      .then defaultUser
+
+    if preferCache
+      cacheKey = "#{CacheService.PREFIXES.USER_USERENAME}:#{username}"
+      CacheService.preferCache cacheKey, get, {expireSeconds: SIX_HOURS_S}
+    else
+      get()
 
   getAllByUsername: (username, {limit} = {}) ->
     limit ?= 10

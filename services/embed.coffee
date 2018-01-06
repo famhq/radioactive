@@ -27,7 +27,6 @@ GroupRecord = require '../models/group_record'
 ClashRoyalePlayerRecord = require '../models/clash_royale_player_record'
 ClashRoyalePlayerDeck = require '../models/clash_royale_player_deck'
 SpecialOffer = require '../models/special_offer'
-UserGroupData = require '../models/user_group_data'
 Player = require '../models/player'
 UserPlayer = require '../models/user_player'
 UserFollower = require '../models/user_follower'
@@ -46,6 +45,7 @@ TYPES =
     BEST_DECKS: 'clashRoyaleCard:bestDecks'
   CHAT_MESSAGE:
     USER: 'chatMessage:user'
+    MENTIONED_USERS: 'chatMessage:mentionedUsers'
     GROUP_USER: 'chatMessage:groupUser'
     TIME: 'chatMessage:time'
   CONVERSATION:
@@ -75,6 +75,9 @@ TYPES =
     USER: 'group:user'
     CONVERSATIONS: 'group:conversations'
     STAR: 'group:star'
+  GROUP_AUDIT_LOG:
+    USER: 'groupAuditLog:user'
+    TIME: 'groupAuditLog:time'
   GROUP_USER:
     ROLES: 'groupUser:roles'
     ROLE_NAMES: 'groupUser:roleNames'
@@ -106,7 +109,8 @@ TYPES =
     DATA: 'user:data'
     IS_ONLINE: 'user:isOnline'
     FOLLOWER_COUNT: 'user:followerCount'
-    GROUP_DATA: 'user:groupData'
+    GROUP_USER: 'user:groupUser'
+    GROUP_USER_SETTINGS: 'user:groupUserSettings'
     GAME_DATA: 'user:gameData'
     IS_BANNED: 'user:isBanned'
   USER_ITEM:
@@ -127,6 +131,24 @@ NEWBIE_CHEST_COUNT = 0
 CHEST_COUNT = 300
 
 profileDialogUserEmbed = [TYPES.USER.GAME_DATA, TYPES.USER.IS_BANNED]
+
+getCachedChatUser = ({userId, username, groupId}) ->
+  if userId
+    key = "#{CacheService.PREFIXES.CHAT_USER}:#{userId}:#{groupId}"
+    getFn = User.getById
+  else
+    key = "#{CacheService.PREFIXES.CHAT_USER_B_USERNAME}:#{username}:#{groupId}"
+    getFn = User.getByUsername
+
+  CacheService.preferCache key, ->
+    getFn userId or username, {preferCache: true}
+    .then embedFn {
+      embed: profileDialogUserEmbed
+      gameId: config.CLASH_ROYALE_ID
+      groupId: groupId
+    }
+    .then User.sanitizePublic(null)
+  , {expireSeconds: FIVE_MINUTES_SECONDS}
 
 embedFn = _.curry (props, object) ->
   {embed, user, clanId, groupId, gameId, userId, playerId} = props
@@ -152,9 +174,14 @@ embedFn = _.curry (props, object) ->
           UserFollower.getCountByFollowingId embedded.id
         , {expireSeconds: FIVE_MINUTES_SECONDS}
 
-      when TYPES.USER.GROUP_DATA
-        embedded.groupData = UserGroupData.getByUserIdAndGroupId(
-          embedded.id, groupId
+      when TYPES.USER.GROUP_USER
+        embedded.groupUser = GroupUser.getByGroupIdAndUserId(
+          groupId, embedded.id
+        )
+
+      when TYPES.USER.GROUP_USER_SETTINGS
+        embedded.groupUserSettings = GroupUser.getSettingsByGroupIdAndUserId(
+          groupId, embedded.id
         )
 
       when TYPES.USER.GAME_DATA
@@ -433,7 +460,7 @@ embedFn = _.curry (props, object) ->
             _.filter conversations, (conversation) ->
               GroupUser.hasPermission {
                 meGroupUser
-                permissions: ['readMessage']
+                permissions: [GroupUser.PERMISSIONS.READ_MESSAGE]
                 channelId: conversation.id
               }
 
@@ -442,6 +469,17 @@ embedFn = _.curry (props, object) ->
           embedded.clan = Clan.getByClanIdAndGameId(
             embedded.clanIds[0], config.CLASH_ROYALE_ID
           )
+
+      when TYPES.GROUP_AUDIT_LOG.USER
+        if embedded.userId
+          embedded.user = User.getById embedded.userId, {preferCache: true}
+          .then User.sanitizePublic(null)
+
+      when TYPES.GROUP_AUDIT_LOG.TIME
+        timeUuid = if typeof embedded.timeUuid is 'string' \
+                   then cknex.getTimeUuidFromString embedded.timeUuid
+                   else embedded.timeUuid
+        embedded.time = timeUuid.getDate()
 
       when TYPES.GROUP_USER.ROLES
         embedded.roles = GroupRole.getAllByGroupId(
@@ -551,17 +589,7 @@ embedFn = _.curry (props, object) ->
 
       when TYPES.CHAT_MESSAGE.USER
         if embedded.userId
-          key = CacheService.PREFIXES.CHAT_USER + ':' + embedded.userId
-          embedded.user =
-            CacheService.preferCache key, ->
-              User.getById embedded.userId, {preferCache: true}
-              .then embedFn {
-                embed: profileDialogUserEmbed
-                gameId: config.CLASH_ROYALE_ID
-                groupId: embedded.groupId
-              }
-              .then User.sanitizePublic(null)
-            , {expireSeconds: FIVE_MINUTES_SECONDS}
+          embedded.user = getCachedChatUser embedded
         else
           embedded.user = null
 
@@ -580,6 +608,14 @@ embedFn = _.curry (props, object) ->
             , {expireSeconds: FIVE_MINUTES_SECONDS}
         else
           embedded.groupUser = null
+
+      when TYPES.CHAT_MESSAGE.MENTIONED_USERS
+        text = embedded.body
+        mentions = _.map _.uniq(text?.match /\@[a-zA-Z0-9-]+/g), (find) ->
+          find.replace '@', ''
+        mentions = _.take mentions, 5 # so people don't abuse
+        embedded.mentionedUsers = Promise.map mentions, (username) ->
+          getCachedChatUser {username, groupId: embedded.groupId}
 
       when TYPES.PLAYER.HI
         embedded.hi = Promise.resolve(

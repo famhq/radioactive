@@ -13,13 +13,6 @@ GROUP_ID_INDEX = 'groupId'
 LAST_UPDATE_TIME_INDEX = 'lastUpdateTime'
 ONE_DAY_S = 3600 * 24
 
-# group, embed channels / conversations
-# get channels i have permission to
-  # get all channels
-  # get user_group_data (roleIds)
-  # get group_roles perms channel permissions
-  # filter out channels where view isnt true
-
 defaultConversation = (conversation) ->
   unless conversation?
     return null

@@ -11,6 +11,7 @@ Ban = require '../models/ban'
 Group = require '../models/group'
 ChatMessage = require '../models/chat_message'
 Conversation = require '../models/conversation'
+GroupAuditLog = require '../models/group_audit_log'
 GroupUser = require '../models/group_user'
 GroupUserXpTransaction = require '../models/group_user_xp_transaction'
 Language = require '../models/language'
@@ -25,6 +26,7 @@ config = require '../config'
 
 defaultEmbed = [
   EmbedService.TYPES.CHAT_MESSAGE.USER
+  EmbedService.TYPES.CHAT_MESSAGE.MENTIONED_USERS
   EmbedService.TYPES.CHAT_MESSAGE.TIME
   EmbedService.TYPES.CHAT_MESSAGE.GROUP_USER
 ]
@@ -111,21 +113,52 @@ class ChatMessageCtrl
           unless hasSticker
             router.throw status: 401, info: 'sticker not found'
 
-  _sendPushNotifications: (conversation, user, body, isImage) ->
-    pushBody = if isImage then '[image]' else body
-    (if conversation.groupId
-      Group.getById conversation.groupId, {preferCache: true}
+  _sendPushNotificationsToMentions: (options) ->
+    {pushBody, conversation, user, mentionUsernames} = options
+    if conversation.groupId
+      path = {
+        key: 'groupChatConversation'
+        params:
+          id: conversation.groupId
+          conversationId: conversation.id
+          gameKey: config.DEFAULT_GAME_KEY
+      }
     else
-      Promise.resolve null
-    )
-    .then (group) ->
-      unless group?.type is 'public'
-        PushNotificationService.sendToConversation(
-          conversation, {
-            skipMe: true
-            meUser: user
-            text: pushBody
-          }).catch -> null
+      path = {
+        key: 'conversation'
+        params:
+          id: conversation.id
+          gameKey: config.DEFAULT_GAME_KEY
+      }
+
+  _sendPushNotifications: (conversation, user, body, isImage) ->
+    mentionUsernames = _.map _.uniq(body.match /\@[a-zA-Z0-9-]+/g), (find) ->
+      find.replace('@', '').toLowerCase()
+    mentionUsernames = _.take mentionUsernames, 5 # so people don't abuse
+
+    pushBody = if isImage then '[image]' else body
+
+    Promise.all [
+      (if conversation.groupId
+        Group.getById conversation.groupId, {preferCache: true}
+      else
+        Promise.resolve null
+      )
+
+      Promise.map mentionUsernames, (username) ->
+        User.getByUsername username, {preferCache: true}
+        .then (user) ->
+          user?.id
+    ]
+    .then ([group, mentionUserIds]) ->
+      mentionUserIds = _.filter mentionUserIds
+      PushNotificationService.sendToConversation(
+        conversation, {
+          skipMe: true
+          meUser: user
+          text: pushBody
+          mentionUserIds: mentionUserIds
+        }).catch -> null
 
   _createCards: (body, isImage, chatMessageId) =>
     urls = not isImage and body.match(URL_REGEX)
@@ -137,11 +170,11 @@ class ChatMessageCtrl
       tag = match[2]
       Promise.resolve {
         card:
-          title: Language.get 'backend.addFriendCardTitle', {
+          title: Language.get 'card.addFriendCardTitle', {
             language: language or 'en'
           }
           image: 'image'
-          description: Language.get 'backend.addFriendCardDescription', {
+          description: Language.get 'card.addFriendCardDescription', {
             language: language or 'en'
           }
           url: urls[0]
@@ -151,11 +184,11 @@ class ChatMessageCtrl
       tag = match[2]
       Promise.resolve {
         card:
-          title: Language.get 'backend.joinClanCardTitle', {
+          title: Language.get 'card.joinClanCardTitle', {
             language: language or 'en'
           }
           image: 'image'
-          description: Language.get 'backend.joinClanCardDescription', {
+          description: Language.get 'card.joinClanCardDescription', {
             language: language or 'en'
           }
           url: urls[0]
@@ -201,9 +234,9 @@ class ChatMessageCtrl
           # TODO: combine with conversation.hasPermission
           permissions = ['sendMessage']
           if isImage
-            permissions = permissions.concat 'sendImage'
+            permissions = permissions.concat GroupUser.PERMISSIONS.SEND_IMAGE
           if isLink
-            permissions = permissions.concat 'sendLink'
+            permissions = permissions.concat GroupUser.PERMISSIONS.SEND_LINK
           GroupUser.hasPermissionByGroupIdAndUser groupId, user, permissions
           .then (hasPermission) ->
             unless hasPermission
@@ -285,17 +318,27 @@ class ChatMessageCtrl
         GroupUser.getByGroupIdAndUserId conversation.groupId, user.id
         .then EmbedService.embed {embed: [EmbedService.TYPES.GROUP_USER.ROLES]}
         .then (groupUser) ->
-          permission = 'deleteMessage'
           hasPermission = GroupUser.hasPermission {
             meGroupUser: groupUser
             me: user
-            permissions: [permission]
+            permissions: [GroupUser.PERMISSIONS.DELETE_MESSAGE]
           }
 
           unless hasPermission
             router.throw
               status: 400, info: 'You don\'t have permission to do that'
         .then ->
+          User.getById chatMessage.userId
+          .then (otherUser) ->
+            GroupAuditLog.upsert {
+              groupId: conversation.groupId
+              userId: user.id
+              actionText: Language.get 'audit.deleteMessage', {
+                replacements:
+                  name: User.getDisplayName otherUser
+                language: user.language
+              }
+            }
           ChatMessage.deleteByChatMessage chatMessage
 
   deleteAllByGroupIdAndUserId: ({groupId, userId, duration}, {user}) ->
@@ -306,13 +349,24 @@ class ChatMessageCtrl
       hasPermission = GroupUser.hasPermission {
         meGroupUser: groupUser
         me: user
-        permissions: [permission]
+        permissions: [GroupUser.PERMISSIONS.DELETE_MESSAGE]
       }
 
       unless hasPermission
         router.throw
           status: 400, info: 'You don\'t have permission to do that'
     .then ->
+      User.getById userId
+      .then (otherUser) ->
+        GroupAuditLog.upsert {
+          groupId
+          userId: user.id
+          actionText: Language.get 'audit.deleteMessagesLast7d', {
+            replacements:
+              name: User.getDisplayName otherUser
+            language: user.language
+          }
+        }
       ChatMessage.deleteAllByGroupIdAndUserId groupId, userId, {duration}
 
   updateCard: ({body, params, headers}) ->

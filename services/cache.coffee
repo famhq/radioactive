@@ -12,6 +12,7 @@ ONE_HOUR_SECONDS = 3600
 
 PREFIXES =
   CHAT_USER: 'chat:user3'
+  CHAT_USER_B_USERNAME: 'chat:user:byUsername'
   CHAT_GROUP_USER: 'chat:group_user3'
   THREAD_USER: 'thread:user1'
   THREAD_CREATOR: 'thread:creator1'
@@ -24,6 +25,7 @@ PREFIXES =
   CONVERSATION_ID: 'conversation:id'
   VIDEO_DAILY_XP: 'video:daily_xp'
   USER_ID: 'user:id'
+  USER_USERNAME: 'user:username'
   USER_FOLLOWER_COUNT: 'user:follower_count'
   USER_DATA: 'user_data:id'
   USER_DATA_CONVERSATION_USERS: 'user_data:conversation_users'

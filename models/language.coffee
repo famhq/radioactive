@@ -11,6 +11,7 @@ class Language
       paths: null
       languages: null
       pushNotifications: null
+      backend: null
     }
 
     @files = _.mapValues files, (val, file) ->
@@ -38,7 +39,8 @@ class Language
       'en'
 
   get: (strKey, {replacements, file, language} = {}) =>
-    file ?= 'strings'
+    file ?= 'backend'
+    language ?= 'en'
     baseResponse = @files[file][language]?[strKey] or
                     @files[file]['en']?[strKey] or ''
 

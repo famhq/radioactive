@@ -19,6 +19,27 @@ defaultGroupUser = (groupUser) ->
     time: new Date()
   }
 
+defaultGroupUserSettings = (groupUserSettings) ->
+  unless groupUserSettings?
+    return null
+
+  groupUserSettings.globalNotifications = JSON.stringify(
+    groupUserSettings.globalNotifications
+  )
+
+  groupUserSettings
+
+defaultGroupUserSettingsOutput = (groupUserSettings) ->
+  unless groupUserSettings?
+    return null
+
+  groupUserSettings.globalNotifications = try
+    JSON.parse groupUserSettings.globalNotifications
+  catch error
+    {}
+
+  groupUserSettings
+
 tables = [
   {
     name: 'group_users_by_groupId'
@@ -60,10 +81,38 @@ tables = [
       partitionKey: ['userId']
       clusteringColumns: ['groupId']
   }
+  {
+    name: 'group_user_settings'
+    keyspace: 'starfire'
+    fields:
+      groupId: 'uuid'
+      userId: 'uuid'
+      globalNotifications: 'text'
+      channelNotifications: {
+        type: 'map', subType: 'uuid', subType2: 'text'
+      }
+    primaryKey:
+      partitionKey: ['userId']
+      clusteringColumns: ['groupId']
+  }
 ]
+
+PERMISSIONS =
+  MANAGE_CHANNEL: 'manageChannel'
+  READ_MESSAGE: 'readMessage'
+  DELETE_MESSAGE: 'deleteMessage'
+  PERMA_BAN_USER: 'permaBanUser'
+  TEMP_BAN_USER: 'tempBanUser'
+  UNBAN_USER: 'unbanUser'
+  MANAGE_ROLE: 'manageRole'
+  SEND_IMAGE: 'sendImage'
+  SEND_LINK: 'sendLink'
+  READ_AUDIT_LOG: 'readAuditLog'
+  MANAGE_INFO: 'manageInfo'
 
 class GroupUserModel
   SCYLLA_TABLES: tables
+  PERMISSIONS: PERMISSIONS
 
   upsert: (groupUser) ->
     groupUser = defaultGroupUser groupUser
@@ -234,6 +283,23 @@ class GroupUserModel
       .andWhere 'userId', '=', userId
       .run()
     ]
+
+  getSettingsByGroupIdAndUserId: (groupId, userId) ->
+    cknex().select '*'
+    .from 'group_user_settings'
+    .where 'groupId', '=', groupId
+    .andWhere 'userId', '=', userId
+    .run {isSingle: true}
+    .then defaultGroupUserSettingsOutput
+
+  upsertSettings: (settings) ->
+    settings = defaultGroupUserSettings settings
+
+    cknex().update 'group_user_settings'
+    .set _.omit settings, ['userId', 'groupId']
+    .where 'groupId', '=', settings.groupId
+    .andWhere 'userId', '=', settings.userId
+    .run()
 
   hasPermissionByGroupIdAndUser: (groupId, user, permissions, options) =>
     options ?= {}

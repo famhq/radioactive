@@ -20,6 +20,7 @@ PaymentCtrl = require './controllers/payment'
 PushTokenCtrl = require './controllers/push_token'
 PlayerCtrl = require './controllers/player'
 GroupCtrl = require './controllers/group'
+GroupAuditLogCtrl = require './controllers/group_audit_log'
 GroupUserCtrl = require './controllers/group_user'
 GroupRecordCtrl = require './controllers/group_record'
 GroupRecordTypeCtrl = require './controllers/group_record_type'
@@ -37,7 +38,6 @@ UserCtrl = require './controllers/user'
 UserFollowerCtrl = require './controllers/user_follower'
 UserDataCtrl = require './controllers/user_data'
 UserItemCtrl = require './controllers/user_item'
-UserGroupDataCtrl = require './controllers/user_group_data'
 VideoCtrl = require './controllers/video'
 StreamService = require './services/stream'
 
@@ -151,6 +151,9 @@ module.exports = router
 .on 'groups.getByKey', authed GroupCtrl.getByKey
 .on 'groups.inviteById', authed GroupCtrl.inviteById
 
+.on 'groupAuditLogs.getAllByGroupId',
+  authed GroupAuditLogCtrl.getAllByGroupId
+
 .on 'groupUsers.addRoleByGroupIdAndUserId',
   authed GroupUserCtrl.addRoleByGroupIdAndUserId
 .on 'groupUsers.removeRoleByGroupIdAndUserId',
@@ -158,6 +161,10 @@ module.exports = router
 .on 'groupUsers.getByGroupIdAndUserId',
   authed GroupUserCtrl.getByGroupIdAndUserId
 .on 'groupUsers.getTopByGroupId', authed GroupUserCtrl.getTopByGroupId
+.on 'groupUsers.getMeSettingsByGroupId',
+  authed GroupUserCtrl.getMeSettingsByGroupId
+.on 'groupUsers.updateMeSettingsByGroupId',
+  authed GroupUserCtrl.updateMeSettingsByGroupId
 
 .on 'groupUserXpTransactions.getAllByGroupId',
   authed GroupUserXpTransactionCtrl.getAllByGroupId
@@ -182,10 +189,6 @@ module.exports = router
 .on 'groupRoles.updatePermissions', authed GroupRoleCtrl.updatePermissions
 .on 'groupRoles.deleteByGroupIdAndRoleId',
   authed GroupRoleCtrl.deleteByGroupIdAndRoleId
-
-.on 'userGroupData.updateMeByGroupId',
-  authed UserGroupDataCtrl.updateMeByGroupId
-.on 'userGroupData.getMeByGroupId', authed UserGroupDataCtrl.getMeByGroupId
 
 .on 'userItems.getAll', authed UserItemCtrl.getAll
 .on 'userItems.upgradeByItemKey', authed UserItemCtrl.upgradeByItemKey

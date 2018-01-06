@@ -32,8 +32,13 @@ config =
     sendMessage: true
     sendLink: true
     sendImage: true
+  DEFAULT_NOTIFICATIONS:
+    chatMessage: true
+    chatMention: true
   # also in starfire
-  LANGUAGES: ['en', 'es', 'it', 'fr', 'zh', 'ja', 'ko', 'de', 'pt', 'pl', 'ru']
+  LANGUAGES: [
+    'en', 'es', 'it', 'fr', 'zh', 'ja', 'ko', 'de', 'pt', 'pl', 'ru', 'id'
+  ]
   # also in starfire
   ITEM_LEVEL_REQUIREMENTS: [
     {level: 1, countRequired: 0}

@@ -4,6 +4,9 @@ router = require 'exoid-router'
 User = require '../models/user'
 Conversation = require '../models/conversation'
 Group = require '../models/group'
+GroupAuditLog = require '../models/group_audit_log'
+GroupUser = require '../models/group_user'
+Language = require '../models/language'
 Event = require '../models/event'
 EmbedService = require '../services/embed'
 config = require '../config'
@@ -23,9 +26,9 @@ class ConversationCtrl
 
     if groupId
       conversation = Conversation.getByGroupIdAndName groupId, name
-      hasPermission = Group.hasPermissionByIdAndUser groupId, user, {
-        level: 'admin'
-      }
+      hasPermission = GroupUser.hasPermissionByGroupIdAndUser groupId, user, [
+        GroupUser.PERMISSIONS.MANAGE_INFO
+      ]
       .then (hasPermission) ->
         unless hasPermission
           router.throw {status: 400, info: 'You don\'t have permission'}
@@ -36,6 +39,16 @@ class ConversationCtrl
 
     Promise.all [conversation, hasPermission]
     .then ([conversation, hasPermission]) ->
+      if groupId
+        GroupAuditLog.upsert {
+          groupId
+          userId: user.id
+          actionText: Language.get 'audit.addChannel', {
+            replacements:
+              channel: name
+            language: user.language
+          }
+        }
       return conversation or Conversation.create {
         userIds
         groupId
@@ -56,14 +69,24 @@ class ConversationCtrl
 
     Conversation.getById id
     .tap (conversation) ->
-      Group.hasPermissionByIdAndUser conversation.groupId, user, {
-        level: 'admin'
-      }
+      groupId = conversation.groupId
+      GroupUser.hasPermissionByGroupIdAndUser groupId, user, [
+        GroupUser.PERMISSIONS.MANAGE_INFO
+      ]
       .then (hasPermission) ->
         unless hasPermission
           router.throw {status: 400, info: 'You don\'t have permission'}
-    .then ->
-      Conversation.updateById id, {name, description}
+      .then ->
+        GroupAuditLog.upsert {
+          groupId: conversation.groupId
+          userId: user.id
+          actionText: Language.get 'audit.updateChannel', {
+            replacements:
+              channel: name or conversation.name
+            language: user.language
+          }
+        }
+        Conversation.updateById id, {name, description}
 
   getAll: ({}, {user}) ->
     Conversation.getAllByUserId user.id

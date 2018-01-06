@@ -28,6 +28,7 @@ TYPES =
   DAILY_RECAP: 'dailyRecap'
   EVENT: 'event'
   CHAT_MESSAGE: 'chatMessage'
+  CHAT_MENTION: 'chatMention'
   PRIVATE_MESSAGE: 'privateMessage'
   NEW_FRIEND: 'newFriend'
   PRODUCT: 'product'
@@ -37,7 +38,7 @@ TYPES =
 
 defaultUserEmbed = [
   EmbedService.TYPES.USER.DATA
-  EmbedService.TYPES.USER.GROUP_DATA
+  EmbedService.TYPES.USER.GROUP_USER_SETTINGS
 ]
 cdnUrl = "https://#{config.CDN_HOST}/d/images/starfire"
 
@@ -157,7 +158,9 @@ class PushNotificationService
         else
           resolve true
 
-  sendToConversation: (conversation, {skipMe, meUser, text} = {}) =>
+  sendToConversation: (conversation, options = {}) =>
+    {skipMe, meUser, text, mentionUserIds} = options
+    mentionUserIds ?= []
     (if conversation.groupId
       Group.getById conversation.groupId
       .then (group) ->
@@ -165,7 +168,8 @@ class PushNotificationService
           {group, userIds: []}
         else
           GroupUser.getAllByGroupId conversation.groupId
-          .map (groupUser) -> groupUser.userId
+          .map (groupUser) ->
+            groupUser.userId
           .then (userIds) ->
             {group, userIds}
     else if conversation.eventId
@@ -219,9 +223,16 @@ class PushNotificationService
           path: path
         notId: randomSeed.create(conversation.id)(Number.MAX_SAFE_INTEGER)
 
-      @sendToUserIds userIds, message, {
-        skipMe, meUserId: meUser.id, groupId: conversation.groupId
-      }
+      mentionMessage = _.defaults {type: @TYPES.CHAT_MENTION}, message
+
+      Promise.all [
+        @sendToUserIds mentionUserIds, mentionMessage, {
+          skipMe, meUserId: meUser.id, groupId: conversation.groupId
+        }
+        @sendToUserIds userIds, message, {
+          skipMe, meUserId: meUser.id, groupId: conversation.groupId
+        }
+      ]
 
   sendToGroup: (group, message, {skipMe, meUserId, groupId} = {}) =>
     @sendToUserIds group.userIds, message, {skipMe, meUserId, groupId}
@@ -252,7 +263,7 @@ class PushNotificationService
 
     if config.ENV isnt config.ENVS.PROD or config.IS_STAGING
       console.log 'send notification', group.id, JSON.stringify message
-      return
+      return Promise.resolve()
 
     @sendFcm topic, message
 
@@ -297,10 +308,6 @@ class PushNotificationService
         replacements: message.textObj.replacements
       }
 
-    if config.ENV is config.ENVS.DEV and not message.forceDevSend
-      console.log 'send notification', user.id#, message
-      return
-
     # if [@TYPES.NEWS, @TYPES.NEW_PROMOTION].indexOf(message.type) is -1
     #   Notification.create {
     #     title: message.title
@@ -313,9 +320,16 @@ class PushNotificationService
     if user.flags.blockedNotifications?[message.type] is true
       return Promise.resolve null
 
-    if user.groupData and
-        user.groupData.globalBlockedNotifications?[message.type] is true
-      return Promise.resolve null
+    if user.groupUserSettings
+      settings = _.defaults(
+        user.groupUserSettings.globalNotifications, config.DEFAULT_NOTIFICATIONS
+      )
+      if not settings?[message.type]
+        return Promise.resolve null
+
+    if config.ENV is config.ENVS.DEV and not message.forceDevSend
+      console.log 'send notification', user.id, message
+      return
 
     successfullyPushedToNative = false
 
