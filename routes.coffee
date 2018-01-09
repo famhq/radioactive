@@ -31,7 +31,7 @@ ProductCtrl = require './controllers/product'
 RewardCtrl = require './controllers/reward'
 SpecialOfferCtrl = require './controllers/special_offer'
 StarCtrl = require './controllers/star'
-TheadCtrl = require './controllers/thread'
+ThreadCtrl = require './controllers/thread'
 ThreadCommentCtrl = require './controllers/thread_comment'
 ThreadVoteCtrl = require './controllers/thread_vote'
 UserCtrl = require './controllers/user'
@@ -117,12 +117,12 @@ module.exports = router
 .on 'dynamicImage.upsertMeByImageKey',
   authed DynamicImageCtrl.upsertMeByImageKey
 
-.on 'threads.create', authed TheadCtrl.createOrUpdateById
-.on 'threads.getAll', authed TheadCtrl.getAll
-.on 'threads.getById', authed TheadCtrl.getById
-.on 'threads.voteById', authed TheadCtrl.voteById
-.on 'threads.updateById', authed TheadCtrl.createOrUpdateById
-.on 'threads.deleteById', authed TheadCtrl.deleteById
+.on 'threads.upsert', authed ThreadCtrl.upsert
+.on 'threads.getAll', authed ThreadCtrl.getAll
+.on 'threads.getById', authed ThreadCtrl.getById
+.on 'threads.voteById', authed ThreadCtrl.voteById
+.on 'threads.updateById', authed ThreadCtrl.createOrUpdateById
+.on 'threads.deleteById', authed ThreadCtrl.deleteById
 
 .on 'threadVotes.upsertByParent',
   authed ThreadVoteCtrl.upsertByParent
@@ -131,6 +131,8 @@ module.exports = router
 .on 'threadComments.flag', authed ThreadCommentCtrl.flag
 .on 'threadComments.getAllByThreadId',
   authed ThreadCommentCtrl.getAllByThreadId
+.on 'threadComments.deleteByThreadComment',
+  authed ThreadCommentCtrl.deleteByThreadComment
 
 .on 'events.create', authed EventCtrl.create
 .on 'events.updateById', authed EventCtrl.updateById

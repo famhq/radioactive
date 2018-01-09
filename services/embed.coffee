@@ -529,23 +529,25 @@ embedFn = _.curry (props, object) ->
 
       when TYPES.THREAD.PLAYER_DECK
         key = CacheService.PREFIXES.THREAD_DECK + ':' + embedded.id
-        embedded.playerDeck = CacheService.preferCache key, ->
-          ClashRoyalePlayerDeck.getByDeckIdAndPlayerId(
-            embedded.data.deckId
-            embedded.data.playerId
-          )
-          .then embedFn {embed: [TYPES.CLASH_ROYALE_PLAYER_DECK.DECK]}
-          .then (playerDeck) ->
-            playerDeck = _.pick playerDeck, [
-              'deck', 'wins', 'losses', 'draws', 'gameType', 'playerId', 'deck'
-            ]
-            playerDeck.deck = _.pick playerDeck.deck, [
-              'wins', 'losses', 'draws', 'cards'
-            ]
-            playerDeck.deck.cards = _.map playerDeck.deck.cards, (card) ->
-              _.pick card, ['name', 'key']
-            playerDeck
-        , {expireSeconds: ONE_DAY_SECONDS}
+        if embedded.data.extras?.deckId
+          embedded.playerDeck = CacheService.preferCache key, ->
+            ClashRoyalePlayerDeck.getByDeckIdAndPlayerId(
+              embedded.data.extras?.deckId
+              embedded.data.extras?.playerId
+            )
+            .then embedFn {embed: [TYPES.CLASH_ROYALE_PLAYER_DECK.DECK]}
+            .then (playerDeck) ->
+              playerDeck = _.pick playerDeck, [
+                'deck', 'wins', 'losses', 'draws'
+                'gameType', 'playerId', 'deck'
+              ]
+              playerDeck.deck = _.pick playerDeck.deck, [
+                'wins', 'losses', 'draws', 'cards'
+              ]
+              playerDeck.deck.cards = _.map playerDeck.deck.cards, (card) ->
+                _.pick card, ['name', 'key']
+              playerDeck
+          , {expireSeconds: ONE_DAY_SECONDS}
 
       when TYPES.THREAD.CREATOR
         if embedded.creatorId

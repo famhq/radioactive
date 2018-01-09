@@ -20,16 +20,12 @@ class ThreadVoteCtrl
         router.throw status: 400, info: 'already voted'
 
       if vote is 'up'
-        diff = {upvotes: r.row('upvotes').add(1)}
         values = {upvotes: 1}
         if hasVotedDown
-          diff.downvotes = r.row('downvotes').sub(1)
           values.downvotes = -1
       else if vote is 'down'
-        diff = {downvotes: r.row('downvotes').add(1)}
         values = {downvotes: 1}
         if hasVotedUp
-          diff.upvotes = r.row('upvotes').sub(1)
           values.upvotes = -1
 
       voteTime = existingVote?.time or new Date()
@@ -40,7 +36,7 @@ class ThreadVoteCtrl
         )
 
         if parent.type is 'thread'
-          Thread.updateById parent.id, diff
+          Thread.incrementById parent.id, values
         else
           ThreadComment.voteByThreadComment parent, values
       ]

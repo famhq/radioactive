@@ -5,6 +5,7 @@ r = require '../services/rethinkdb'
 CacheService = require '../services/cache'
 User = require './user'
 GroupUser = require './group_user'
+config = require '../config'
 
 GROUPS_TABLE = 'groups'
 TYPE_LANGUAGE_INDEX = 'typeLanguage'
@@ -25,10 +26,14 @@ defaultGroup = (group) ->
     badgeId: null
     badge: null
     background: null
-    language: 'en'
     privacy: 'open' # open | private | inviteOnly
     type: 'general' # public | general | clan | star
-    gameIds: []
+
+    # TODO: index on this when migrating to scylla
+    # need to grab group by gameKey and language
+    gameKeys: []
+    language: 'en'
+
     clanIds: []
     starId: null
   }
@@ -90,7 +95,7 @@ class GroupModel
         when 'admin'
         then group.creatorId is user.id
         # member
-        else userIds?.indexOf(user.id) isnt -1
+        else userIds and userIds.indexOf(user.id) isnt -1
 
   getById: (id, {preferCache} = {}) ->
     get = ->
@@ -153,6 +158,17 @@ class GroupModel
     #   {userIds}
     .run()
     .map defaultGroup
+
+  getByGameKeyAndLanguage: (gameKey, language) ->
+    r.table GROUPS_TABLE
+    .getAll ['public', language], {index: TYPE_LANGUAGE_INDEX}
+    .then (groups) =>
+      group = _.find groups, ({gameKeys}) ->
+        gameKeys and gameKeys.indexOf(gameKey) isnt -1
+      if group
+        return group
+      else
+        @getById config.GROUPS.CLASH_ROYALE_EN
 
   updateById: (id, diff) ->
     r.table GROUPS_TABLE

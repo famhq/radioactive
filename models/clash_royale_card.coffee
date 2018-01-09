@@ -143,7 +143,7 @@ class ClashRoyaleCardModel
     get = ->
       prefix = CacheService.STATIC_PREFIXES.CARD_DECK_LEADERBOARD
       key = "#{prefix}:#{cardKey}"
-      CacheService.leaderboardGet key, limit = 5
+      CacheService.leaderboardGet key, {limit: 5}
       .then (results) ->
         _.map _.chunk(results, 2), ([deckId, matchCount], i) ->
           {

@@ -51,6 +51,7 @@ tables = [
     name: 'chat_messages_by_conversationId'
     keyspace: 'starfire'
     fields:
+      # ideally we should change this to timeuuid and get rid of timeUuid col
       id: 'uuid'
       conversationId: 'uuid'
       clientId: 'uuid'

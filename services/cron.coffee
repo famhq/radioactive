@@ -45,14 +45,14 @@ class CronService
 
     # minute on 3/4 minute
     @addCron 'threeQuarterMinute', '45 * * * * *', ->
-      Item.batchUpsert allItems
-      SpecialOffer.batchUpsert allSpecialOffers
-      Product.batchUpsert allProducts # FIXME: rm
       if config.ENV is config.ENVS.PROD
         ClashRoyalePlayerService.updateTopPlayers()
 
     @addCron 'tenMin', '0 */10 * * * *', ->
       VideoDiscoveryService.updateGroupVideos()
+      Product.batchUpsert allProducts
+      Item.batchUpsert allItems
+      SpecialOffer.batchUpsert allSpecialOffers
       Thread.updateScores 'time'
 
     @addCron 'oneHour', '0 0 * * * *', ->

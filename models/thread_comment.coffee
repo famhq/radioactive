@@ -49,6 +49,7 @@ tables = [
     name: 'thread_comments_by_creatorId'
     keyspace: 'starfire'
     fields:
+      # ideally we should change this to timeuuid and get rid of timeUuid col
       id: 'uuid'
       threadId: 'uuid'
       parentType: 'text'
@@ -62,6 +63,7 @@ tables = [
       clusteringColumns: ['timeUuid']
     withClusteringOrderBy: ['timeUuid', 'desc']
   }
+  # do we even need this?
   {
     name: 'thread_comments_counter_by_creatorId'
     keyspace: 'starfire'
@@ -147,6 +149,12 @@ class ThreadCommentModel
     ]
 
   getAllByThreadId: (threadId) ->
+    # legacy. rm in mid feb 2018
+    if threadId is 'b3d49e6f-3193-417e-a584-beb082196a2c' # cr-es
+      threadId = '7a39b079-e6ce-11e7-9642-4b5962cd09d3'
+    else if threadId is 'fcb35890-f40e-11e7-9af5-920aa1303bef' # bruno
+      threadId = '90c06cb0-86ce-4ed6-9257-f36633db59c2'
+
     Promise.all [
       cknex().select '*'
       .from 'thread_comments_by_threadId'
@@ -159,17 +167,56 @@ class ThreadCommentModel
       .run()
     ]
     .then ([allComments, voteCounts]) ->
+      console.log 'got', allComments.length
       allComments = _.map allComments, (comment) ->
         voteCount = _.find voteCounts, {timeUuid: comment.timeUuid}
         voteCount ?= {upvotes: 0, downvotes: 0}
         _.merge comment, voteCount
 
   getCountByThreadId: (threadId) ->
+    # legacy. rm in mid feb 2018
+    if "#{threadId}" is 'b3d49e6f-3193-417e-a584-beb082196a2c' # cr-es
+      threadId = '7a39b079-e6ce-11e7-9642-4b5962cd09d3'
+    else if "#{threadId}" is 'fcb35890-f40e-11e7-9af5-920aa1303bef' # bruno
+      threadId = '90c06cb0-86ce-4ed6-9257-f36633db59c2'
+
     cknex().select '*'
     .from 'thread_comments_by_threadId'
     .where 'threadId', '=', threadId
     .run()
     .then (threads) -> threads.length
+
+  deleteByThreadComment: (threadComment) ->
+    Promise.all [
+      cknex().delete()
+      .from 'thread_comments_by_threadId'
+      .where 'threadId', '=', threadComment.threadId
+      .andWhere 'parentType', '=', threadComment.parentType
+      .andWhere 'parentId', '=', threadComment.parentId
+      .andWhere 'timeUuid', '=', threadComment.timeUuid
+      .run()
+
+      cknex().delete()
+      .from 'thread_comments_counter_by_threadId'
+      .where 'threadId', '=', threadComment.threadId
+      .andWhere 'parentType', '=', threadComment.parentType
+      .andWhere 'parentId', '=', threadComment.parentId
+      .andWhere 'timeUuid', '=', threadComment.timeUuid
+      .run()
+
+      cknex().delete()
+      .from 'thread_comments_by_creatorId'
+      .where 'creatorId', '=', threadComment.creatorId
+      .andWhere 'timeBucket', '=', threadComment.timeBucket
+      .run()
+
+      cknex().delete()
+      .from 'thread_comments_counter_by_creatorId'
+      .where 'creatorId', '=', threadComment.creatorId
+      .andWhere 'timeBucket', '=', threadComment.timeBucket
+      .run()
+    ]
+
 
   # would need another table to grab by id
   # getById: (id) ->

@@ -101,6 +101,7 @@ PERMISSIONS =
   MANAGE_CHANNEL: 'manageChannel'
   READ_MESSAGE: 'readMessage'
   DELETE_MESSAGE: 'deleteMessage'
+  DELETE_FORUM_COMMENT: 'deleteForumComment'
   PERMA_BAN_USER: 'permaBanUser'
   TEMP_BAN_USER: 'tempBanUser'
   UNBAN_USER: 'unbanUser'

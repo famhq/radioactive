@@ -18,9 +18,9 @@ PREFIXES =
   THREAD_CREATOR: 'thread:creator1'
   THREAD: 'thread:id'
   THREAD_DECK: 'thread:deck11'
-  THREAD_COMMENTS: 'thread:comments5'
-  THREAD_COMMENT_COUNT: 'thread:comment_count'
-  THREADS: 'threads2'
+  THREAD_COMMENTS: 'thread:comments6'
+  THREAD_COMMENT_COUNT: 'thread:comment_count1'
+  THREADS: 'threads3'
   CHAT_MESSAGE_DAILY_XP: 'chat_message:daily_xp'
   CONVERSATION_ID: 'conversation:id'
   VIDEO_DAILY_XP: 'video:daily_xp'
@@ -78,7 +78,7 @@ PREFIXES =
   PLAYER_CLASH_ROYALE_ID: 'player:clash_royale_id'
   PLAYER_MIGRATE: 'player:migrate07'
   REFRESH_PLAYER_ID_LOCK: 'player:refresh_lock'
-  THREAD_COMMENTS_THREAD_ID: 'thread_comments:thread_id1'
+  THREAD_COMMENTS_THREAD_ID: 'thread_comments:thread_id4'
   USER_DECKS_MIGRATE: 'user_decks:migrate16'
   USER_RECORDS_MIGRATE: 'user_records:migrate11'
   USER_PLAYER_USER_ID_GAME_ID: 'user_player:user_id_game_id5'
@@ -115,6 +115,7 @@ class CacheService
     SPECIAL_OFFER_ALL: 'special_offer:all1'
     SPECIAL_OFFER_ID: 'special_offer:id'
     KUE_WATCH_STUCK: 'kue:watch_stuck'
+    STALE_THREAD_IDS: 'threads:stale_ids'
   LOCK_PREFIXES:
     KUE_PROCESS: 'kue:process'
     OPEN_PACK: 'open_pack1'
@@ -130,6 +131,8 @@ class CacheService
     GROUP_LEADERBOARD: 'group:leaderboard'
     CARD_DECK_LEADERBOARD: 'card:deck_leaderboard'
     GAME_TYPE_DECK_LEADERBOARD: 'gameType:deck_leaderboard'
+    THREAD_GROUP_LEADERBOARD_BY_CATEGORY: 'thread:group_leaderboard:category'
+    THREAD_GROUP_LEADERBOARD_ALL: 'thread:group_leaderboard:all'
 
   constructor: ->
     @redlock = new Redlock [RedisService], {
@@ -145,6 +148,22 @@ class CacheService
   arrayGet: (key, value) ->
     key = config.REDIS.PREFIX + ':' + key
     RedisService.lrange key, 0, -1
+
+  arrayGetAll: (key) ->
+    key = config.REDIS.PREFIX + ':' + key
+    RedisService.smembers key
+
+  hashGet: (key, hash) ->
+    key = config.REDIS.PREFIX + ':' + key
+    RedisService.hget key, hash
+
+  hashSet: (key, hash, value) ->
+    key = config.REDIS.PREFIX + ':' + key
+    RedisService.hset key, hash, value
+
+  hashGetAll: (key, hash) ->
+    key = config.REDIS.PREFIX + ':' + key
+    RedisService.hgetall key
 
   leaderboardUpdate: (setKey, member, score) ->
     key = config.REDIS.PREFIX + ':' + setKey
@@ -162,9 +181,11 @@ class CacheService
             @leaderboardUpdate setKey, member, currentValue
         null # don't block
 
-  leaderboardGet: (key, limit = 50) ->
+  leaderboardGet: (key, {limit, skip} = {}) ->
+    skip ?= 0
+    limit ?= 50
     key = config.REDIS.PREFIX + ':' + key
-    RedisPersistentService.zrevrange key, 0, limit - 1, 'WITHSCORES'
+    RedisPersistentService.zrevrange key, skip, skip + limit - 1, 'WITHSCORES'
 
   leaderboardTrim: (key, trimLength = 10000) ->
     RedisPersistentService.zremrangebyrank key, 0, -1 * (trimLength + 1)

@@ -2,9 +2,9 @@ _ = require 'lodash'
 router = require 'exoid-router'
 Promise = require 'bluebird'
 
-Thread = require '../models/thread'
 ThreadComment = require '../models/thread_comment'
 ThreadVote = require '../models/thread_vote'
+GroupUser = require '../models/group_user'
 Ban = require '../models/ban'
 ProfanityService = require '../services/profanity'
 CacheService = require '../services/cache'
@@ -106,9 +106,19 @@ class ThreadCommentCtrl
         parentId: parentId
         parentType: parentType
     .tap ->
-      Thread.updateById parentId, {lastUpdateTime: new Date()}
+      prefix = CacheService.PREFIXES.THREAD_COMMENTS_THREAD_ID
+      Promise.all [
+        CacheService.deleteByKey "#{prefix}:#{threadId}:popular"
+        CacheService.deleteByKey "#{prefix}:#{threadId}:new"
+      ]
 
   getAllByThreadId: ({threadId, sort, skip, limit}, {user}) ->
+    # legacy. rm in mid feb 2018
+    if threadId is 'b3d49e6f-3193-417e-a584-beb082196a2c' # cr-es
+      threadId = '7a39b079-e6ce-11e7-9642-4b5962cd09d3'
+    else if threadId is 'fcb35890-f40e-11e7-9af5-920aa1303bef' # bruno
+      threadId = '90c06cb0-86ce-4ed6-9257-f36633db59c2'
+
     sort ?= 'popular'
     skip ?= 0
     prefix = CacheService.PREFIXES.THREAD_COMMENTS_THREAD_ID
@@ -134,5 +144,20 @@ class ThreadCommentCtrl
     .then EmbedService.embed {
       embed: [EmbedService.TYPES.THREAD_COMMENT.CREATOR]
     }
+
+  deleteByThreadComment: ({threadComment, groupId}, {user}) ->
+    permission = GroupUser.PERMISSIONS.DELETE_FORUM_COMMENT
+    GroupUser.hasPermissionByGroupIdAndUser groupId, user, [permission]
+    .then (hasPermission) ->
+      unless hasPermission
+        router.throw status: 400, info: 'no permission'
+
+      ThreadComment.deleteByThreadComment threadComment
+      .tap ->
+        prefix = CacheService.PREFIXES.THREAD_COMMENTS_THREAD_ID
+        Promise.all [
+          CacheService.deleteByKey "#{prefix}:#{threadComment.threadId}:popular"
+          CacheService.deleteByKey "#{prefix}:#{threadComment.threadId}:new"
+        ]
 
 module.exports = new ThreadCommentCtrl()

@@ -88,72 +88,80 @@ class ThreadCtrl
           aspectRatio: aspectRatio
         }
 
-  createOrUpdateById: (diff, {user, headers, connection}) =>
+  upsert: ({thread, groupId, gameKey, language}, {user, headers, connection}) =>
     userAgent = headers['user-agent']
     ip = headers['x-forwarded-for'] or
           connection.remoteAddress
 
-    diff.category ?= 'general'
+    thread.category ?= 'general'
 
     @checkIfBanned config.EMPTY_UUID, ip, user.id, router
     .then =>
-
-      isProfane = ProfanityService.isProfane diff.title + diff.body
+      isProfane = ProfanityService.isProfane(
+        thread.data.title + thread.data.body
+      )
       msPlayed = Date.now() - user.joinTime?.getTime()
 
       if isProfane or user.flags.isChatBanned
         router.throw status: 400, info: 'unable to post...'
 
-      if diff.body?.length > MAX_LENGTH
+      if thread.data.body?.length > MAX_LENGTH
         router.throw status: 400, info: 'message is too long...'
 
-      if not diff.body or not diff.title
+      if not thread.data.body or not thread.data.title
         router.throw status: 400, info: 'can\'t be empty'
 
-      unless diff.id
-        diff.category ?= 'general'
+      unless thread.id
+        thread.category ?= 'general'
 
-      images = new RegExp('\\!\\[(.*?)\\]\\((.*?)\\)', 'gi').exec(diff.body)
+      images = new RegExp('\\!\\[(.*?)\\]\\((.*?)\\)', 'gi').exec(
+        thread.data.body
+      )
       firstImageSrc = images?[2]
       # for header image
-      diff.attachments ?= []
-      if _.isEmpty(diff.attachments) and firstImageSrc
-        diff.attachments.push [{type: 'image', src: firstImageSrc}]
+      thread.data.attachments ?= []
+      if _.isEmpty(thread.data.attachments) and firstImageSrc
+        thread.data.attachments.push [{type: 'image', src: firstImageSrc}]
 
-      diff.data ?= {}
       Promise.all [
-        @getAttachment diff.body
-        if diff.deck
-          @addDeck diff.deck
+        @getAttachment thread.data.body
+        if thread.data.deck
+          @addDeck thread.data.deck
         else
           Promise.resolve {}
       ]
       .then ([attachment, deckDiff]) =>
         if attachment
-          diff.attachments.push attachment
+          thread.data.attachments.push attachment
 
-        diff = _.defaultsDeep deckDiff, diff
+        thread = _.defaultsDeep deckDiff, thread
 
-        @validateAndCheckPermissions diff, {user}
-        .then (diff) ->
-          if diff.id
-            Thread.updateById diff.id, diff
-            .then ->
-              key = CacheService.PREFIXES.THREAD_DECK + ':' + diff.id
-              CacheService.deleteByKey key
-              {id: diff.id}
-          else
-            Thread.create _.defaults diff, {
-              creatorId: user.id
-            }
+        (if groupId \
+        then Group.getById groupId
+        else Group.getByGameKeyAndLanguage gameKey, language)
+        .then (group) =>
+          @validateAndCheckPermissions thread, {user}
+          .then (thread) ->
+            if thread.id
+              Thread.upsert thread
+              .then ->
+                key = CacheService.PREFIXES.THREAD_DECK + ':' + thread.id
+                CacheService.deleteByKey key
+                {id: thread.id}
+            else
+              Thread.upsert _.defaults thread, {
+                creatorId: user.id
+                groupId: group?.id or config.GROUPS.CLASH_ROYALE_EN
+              }
       .tap ->
+        # TODO: groupId
         CacheService.deleteByCategory CacheService.PREFIXES.THREADS
 
-  validateAndCheckPermissions: (diff, {user}) ->
-    diff = _.pick diff, _.keys schemas.thread
+  validateAndCheckPermissions: (thread, {user}) ->
+    thread = _.pick thread, _.keys schemas.thread
 
-    if diff.id
-      hasPermission = Thread.hasPermissionByIdAndUser diff.id, user, {
+    if thread.id
+      hasPermission = Thread.hasPermissionByIdAndUser thread.id, user, {
         level: 'member'
       }
     else
@@ -163,36 +171,29 @@ class ThreadCtrl
     .then (hasPermission) ->
       unless hasPermission
         router.throw status: 400, info: 'no permission'
-      diff
+      thread
 
-  getAll: ({categories, language, sort, skip, limit, gameId}, {user}) ->
-    gameId ?= config.CLASH_ROYALE_ID
-    if not language in config.COMMUNITY_LANGUAGES and
-        user.username isnt 'austin'
-      categories ?= ['news']
+  getAll: (options, {user}) ->
+    {category, language, sort, maxTimeUuid, skip,
+      limit, gameKey, groupId} = options
 
-    # default to this so clan recruiting isn't shown
-    if not categories or categories[0] is 'all'
-      categories = ['general', 'deckGuide']
+    if category is 'all'
+      category = null
 
     key = CacheService.PREFIXES.THREADS + ':' + [
-      categories.join(','), language, sort, skip, limit
+      groupId, gameKey, category, language, sort, skip, maxTimeUuid, limit
     ].join(':')
 
     CacheService.preferCache key, ->
-      Promise.all [
-        Thread.getAll {categories, sort, language, gameId, skip, limit}
-        # mix in some new posts
-        if sort is 'top' and not skip
-          Thread.getAll {categories, sort: 'new', language, gameId, limit: 3}
-        else
-          Promise.resolve null
-      ]
-      .then ([allThreads, newThreads]) ->
-        _.map newThreads, (thread, i) ->
-          unless _.find allThreads, {id: thread.id}
-            allThreads.splice (i + 1) * 2, 0, thread
-        allThreads
+      (if groupId
+        Promise.resolve groupId
+      else
+        Group.getByGameKeyAndLanguage gameKey, language
+        .then (group) -> group?.id)
+      .then (groupId) ->
+        Thread.getAll {
+          category, sort, language, groupId, skip, maxTimeUuid, limit
+        }
       .map (thread) ->
         EmbedService.embed {
           userId: user.id
@@ -200,11 +201,6 @@ class ThreadCtrl
                  then defaultEmbed.concat playerDeckEmbed
                  else defaultEmbed
         }, thread
-      .map (thread) ->
-        if thread?.translations[language]
-          _.defaults thread?.translations[language], thread
-        else
-          thread
       .map Thread.sanitize null
     , {
       expireSeconds: ONE_MINUTE_SECONDS
@@ -223,16 +219,17 @@ class ThreadCtrl
         threads
 
   getById: ({id, language}, {user}) ->
+    # legacy. rm in mid feb 2018
+    if id is '7a39b079-e6ce-11e7-9642-4b5962cd09d3' # cr-es
+      id = 'b3d49e6f-3193-417e-a584-beb082196a2c'
+    else if id is '90c06cb0-86ce-4ed6-9257-f36633db59c2' # bruno
+      id = 'fcb35890-f40e-11e7-9af5-920aa1303bef'
+
     key = CacheService.PREFIXES.THREAD + ':' + id + ':' + language
 
     CacheService.preferCache key, ->
       Thread.getById id
       .then EmbedService.embed {embed: defaultEmbed, userId: user.id}
-      .then (thread) ->
-        if thread?.translations[language]
-          _.defaults thread?.translations[language], thread
-        else
-          thread
       .then Thread.sanitize null
     , {expireSeconds: ONE_MINUTE_SECONDS}
     .then (thread) ->
