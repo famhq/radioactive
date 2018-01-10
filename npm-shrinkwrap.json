@@ -640,6 +640,15 @@
       "resolved": "https://registry.npmjs.org/bytes/-/bytes-2.4.0.tgz",
       "integrity": "sha1-fZcZb51br39pNeJZhVSe3SpsIzk="
     },
+    "caller-id": {
+      "version": "0.1.0",
+      "resolved": "https://registry.npmjs.org/caller-id/-/caller-id-0.1.0.tgz",
+      "integrity": "sha1-Wb2sCJPRLDhxQIJ5Ix+XRYNk8Hs=",
+      "dev": true,
+      "requires": {
+        "stack-trace": "0.0.10"
+      }
+    },
     "callsite": {
       "version": "1.0.0",
       "resolved": "https://registry.npmjs.org/callsite/-/callsite-1.0.0.tgz",
@@ -6249,6 +6258,12 @@
         "jsbn": "0.1.0",
         "tweetnacl": "0.14.4"
       }
+    },
+    "stack-trace": {
+      "version": "0.0.10",
+      "resolved": "https://registry.npmjs.org/stack-trace/-/stack-trace-0.0.10.tgz",
+      "integrity": "sha1-VHxws0fo0ytOEI6hoqFZ5f3eGcA=",
+      "dev": true
     },
     "starttls": {
       "version": "1.0.1",

@@ -72,7 +72,7 @@ TYPES =
     USER_IDS: 'group:userIds'
     USER_COUNT: 'group:userCount'
     USERS: 'group:users'
-    USER: 'group:user'
+    ME_GROUP_USER: 'group:group_user'
     CONVERSATIONS: 'group:conversations'
     STAR: 'group:star'
   GROUP_AUDIT_LOG:
@@ -449,11 +449,19 @@ embedFn = _.curry (props, object) ->
         .map embedFn {embed: [TYPES.USER.IS_ONLINE]}
         .map User.sanitizePublic null
 
+      when TYPES.GROUP.ME_GROUP_USER
+        embedded.meGroupUser = GroupUser.getByGroupIdAndUserId(
+          embedded.id, user.id
+        )
+        .then embedFn {embed: [TYPES.GROUP_USER.ROLES]}
+
       when TYPES.GROUP.CONVERSATIONS
+        # TODO: rm after 1/11/2017
         embedded.meGroupUser ?= GroupUser.getByGroupIdAndUserId(
           embedded.id, user.id
         )
         .then embedFn {embed: [TYPES.GROUP_USER.ROLES]}
+
         embedded.conversations = embedded.meGroupUser.then (meGroupUser) ->
           Conversation.getAllByGroupId embedded.id
           .then (conversations) ->

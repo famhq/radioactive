@@ -26,7 +26,7 @@ class AddonCtrl
     .then Addon.sanitize null
 
   getByKey: ({key}, {user}) ->
-    Addon.getByKey key
+    Addon.getByKey key, {preferCache: true}
     .then EmbedService.embed {embed: defaultEmbed, user}
     .then Addon.sanitize null
 

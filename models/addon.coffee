@@ -78,19 +78,28 @@ class AddonModel
       .then defaultAddon
 
     if preferCache
-      key = "#{CacheService.PREFIXES.ADDON}:id"
+      key = "#{CacheService.PREFIXES.ADDON_ID}:#{id}"
       CacheService.preferCache key, get, {expireSeconds: FIVE_MINUTE_SECONDS}
     else
       get()
 
 
-  getByKey: (key) ->
-    r.table ADDONS_TABLE
-    .getAll key, {index: KEY_INDEX}
-    .nth 0
-    .default null
-    .run()
-    .then defaultAddon
+  getByKey: (key, {preferCache} = {}) ->
+    get = ->
+      r.table ADDONS_TABLE
+      .getAll key, {index: KEY_INDEX}
+      .nth 0
+      .default null
+      .run()
+      .then defaultAddon
+
+    if preferCache
+      cacheKey = "#{CacheService.PREFIXES.ADDON_KEY}:#{key}"
+      CacheService.preferCache cacheKey, get, {
+        expireSeconds: FIVE_MINUTE_SECONDS
+      }
+    else
+      get()
 
   getAll: ({preferCache} = {}) ->
     get = ->

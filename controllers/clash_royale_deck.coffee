@@ -52,7 +52,7 @@ class ClashRoyaleDeckCtrl
       # .map ClashRoyaleDeck.sanitize null
       .then (decks) ->
         decks = _.filter decks, (deck) ->
-          deck.matchCount > 20 and _.find deck.stats, {gameType}
+          deck.matchCount > 40 and _.find deck.stats, {gameType}
         decks = _.orderBy decks, (deck) ->
           challengeStats = _.find deck.stats, {gameType}
           challengeStats.winRate

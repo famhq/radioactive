@@ -16,22 +16,22 @@ defaultEmbed = [
 
 class ClashRoyalePlayerDeckCtrl
   getAllByPlayerId: ({playerId, sort, type}, {user}) ->
-    Player.getByPlayerIdAndGameId playerId, config.CLASH_ROYALE_ID
-    .then EmbedService.embed {
-      embed: [EmbedService.TYPES.PLAYER.VERIFIED_USER]
-      gameId: config.CLASH_ROYALE_ID
-    }
-    .then (player) ->
-      unless player
-        router.throw {status: 404, info: 'player not found'}
-      if player.data.mode is 'private' and
-          user.id isnt player.verifiedUser?.id and
-          playerId is player.id
-        router.throw {status: 403, info: 'profile is private'}
-
-      ClashRoyalePlayerDeck.getAllByPlayerId playerId, {sort, type}
-      .map EmbedService.embed {embed: defaultEmbed}
-      .map ClashRoyalePlayerDeck.sanitize null
+    # no one is using and it's an unnecessary perf hit
+    # Player.getByPlayerIdAndGameId playerId, config.CLASH_ROYALE_ID
+    # .then EmbedService.embed {
+    #   embed: [EmbedService.TYPES.PLAYER.VERIFIED_USER]
+    #   gameId: config.CLASH_ROYALE_ID
+    # }
+    # .then (player) ->
+    #   unless player
+    #     router.throw {status: 404, info: 'player not found'}
+    #   if player.data.mode is 'private' and
+    #       user.id isnt player.verifiedUser?.id and
+    #       playerId is player.id
+    #     router.throw {status: 403, info: 'profile is private'}
+    ClashRoyalePlayerDeck.getAllByPlayerId playerId, {sort, type}
+    .map EmbedService.embed {embed: defaultEmbed}
+    .map ClashRoyalePlayerDeck.sanitize null
 
   getByDeckIdAndPlayerId: ({deckId, playerId}, {user}) ->
     ClashRoyalePlayerDeck.getByDeckIdAndPlayerId deckId, playerId

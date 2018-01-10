@@ -30,33 +30,33 @@ class CronService
     @crons = []
 
     # minute
-    @addCron 'minute', '0 * * * * *', ->
-      EventService.notifyForStart()
-      if config.ENV is config.ENVS.PROD and not config.IS_STAGING
-        CacheService.get CacheService.KEYS.AUTO_REFRESH_SUCCESS_COUNT
-        .then (successCount) ->
-          unless successCount
-            console.log 'starting auto refresh'
-            ClashRoyalePlayerService.updateAutoRefreshPlayers()
-
-    @addCron 'quarterMinute', '15 * * * * *', ->
-      CleanupService.clean()
-      Thread.updateScores 'stale'
-
-    # minute on 3/4 minute
-    @addCron 'threeQuarterMinute', '45 * * * * *', ->
-      if config.ENV is config.ENVS.PROD
-        ClashRoyalePlayerService.updateTopPlayers()
-
-    @addCron 'tenMin', '0 */10 * * * *', ->
-      VideoDiscoveryService.updateGroupVideos()
-      Product.batchUpsert allProducts
-      Item.batchUpsert allItems
-      SpecialOffer.batchUpsert allSpecialOffers
-      Thread.updateScores 'time'
-
-    @addCron 'oneHour', '0 0 * * * *', ->
-      CleanupService.trimLeaderboards()
+    # @addCron 'minute', '0 * * * * *', ->
+    #   EventService.notifyForStart()
+    #   if config.ENV is config.ENVS.PROD and not config.IS_STAGING
+    #     CacheService.get CacheService.KEYS.AUTO_REFRESH_SUCCESS_COUNT
+    #     .then (successCount) ->
+    #       unless successCount
+    #         console.log 'starting auto refresh'
+    #         ClashRoyalePlayerService.updateAutoRefreshPlayers()
+    #
+    # @addCron 'quarterMinute', '15 * * * * *', ->
+    #   CleanupService.clean()
+    #   Thread.updateScores 'stale'
+    #
+    # # minute on 3/4 minute
+    # @addCron 'threeQuarterMinute', '45 * * * * *', ->
+    #   if config.ENV is config.ENVS.PROD
+    #     ClashRoyalePlayerService.updateTopPlayers()
+    #
+    # @addCron 'tenMin', '0 */10 * * * *', ->
+    #   VideoDiscoveryService.updateGroupVideos()
+    #   Product.batchUpsert allProducts
+    #   Item.batchUpsert allItems
+    #   SpecialOffer.batchUpsert allSpecialOffers
+    #   Thread.updateScores 'time'
+    #
+    # @addCron 'oneHour', '0 0 * * * *', ->
+    #   CleanupService.trimLeaderboards()
 
   addCron: (key, time, fn) =>
     @crons.push new CronJob {

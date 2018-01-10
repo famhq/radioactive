@@ -25,7 +25,7 @@ config =
   COMMUNITY_LANGUAGES: ['es', 'pt']
   DECK_TRACKED_GAME_TYPES: [
     'PvP', 'classicChallenge', 'grandChallenge', 'tournament', '2v2'
-    '3xChallenge', 'modernRoyale'
+    '3xChallenge', 'rampUp'
   ]
   # ALSO IN STARFIRE
   DEFAULT_PERMISSIONS:

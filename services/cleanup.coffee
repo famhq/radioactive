@@ -1,5 +1,6 @@
 Promise = require 'bluebird'
 moment = require 'moment'
+_ = require 'lodash'
 
 r = require './rethinkdb'
 KueCreateService = require './kue_create'
@@ -11,15 +12,17 @@ FOUR_WEEKS_MS = 3600 * 24 * 28 * 1000
 TWO_MIN_MS = 60 * 2 * 1000
 MIN_KUE_STUCK_TIME_MS = 60 * 10 * 1000 # 10 minutes
 
-TRIMMABLE_LEADERBOARDS = [
-  {
-    key: CacheService.STATIC_PREFIXES.GAME_TYPE_DECK_LEADERBOARD
-    trimLength: 10000
-  }
-  {
-    key: CacheService.STATIC_PREFIXES.CARD_DECK_LEADERBOARD
-    trimLength: 10000
-  }
+TRIMMABLE_LEADERBOARDS = _.flatten [
+  _.map ['3xChallenge', '2v2', 'rampUp', 'modernRoyale'], (gameType) ->
+    {
+      key: "#{CacheService.STATIC_PREFIXES.GAME_TYPE_DECK_LEADERBOARD}:#{gameType}"
+      trimLength: 20000
+    }
+  _.map ['hunter', 'zappies', 'royal_ghost'], (cardKey) ->
+    {
+      key: "#{CacheService.STATIC_PREFIXES.CARD_DECK_LEADERBOARD}:#{cardKey}"
+      trimLength: 20000
+    }
 ]
 
 class CleanupService

@@ -8,6 +8,7 @@ cassandra = require 'cassandra-driver'
 Promise = require 'bluebird'
 moment = require 'moment'
 _ = require 'lodash'
+# callerId = require 'caller-id'
 
 config = require '../config'
 
@@ -43,9 +44,15 @@ ready = new Promise (resolve, reject) ->
 cknex = (keyspace = 'starfire') ->
   instance = cassanknexInstance keyspace
   instance.run = (options = {}) -> # skinny arrow on purpose
+    # cid = callerId.getData()
     self = this
     ready.then ->
       new Promise (resolve, reject) ->
+        # console.log cid
+        # console.log self._columnFamily, self._statements
+        # console.log ''
+        # console.log '----------'
+        # console.log ''
         self.exec options, (err, result) ->
           # queryCount += 1
           if err

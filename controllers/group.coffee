@@ -17,6 +17,7 @@ PushNotificationService = require '../services/push_notification'
 config = require '../config'
 
 defaultEmbed = [
+  EmbedService.TYPES.GROUP.ME_GROUP_USER
   EmbedService.TYPES.GROUP.CONVERSATIONS
   EmbedService.TYPES.GROUP.USER_IDS
   EmbedService.TYPES.GROUP.STAR
@@ -205,6 +206,7 @@ class GroupCtrl
       }
 
   getAll: ({filter, language, embed}, {user}) =>
+    # TODO: rm mine part after 1/15/2017
     if filter is 'mine'
       return @getAllByUserId {filter, language, user, embed}
     else

@@ -26,7 +26,7 @@ defaultThread = (thread) ->
   }
 
 defaultThreadOutput = (thread) ->
-  unless thread?
+  unless thread?.id
     return null
 
   thread.data = try
@@ -201,10 +201,15 @@ class ThreadModel
     key = CacheService.KEYS.STALE_THREAD_IDS
     CacheService.arrayAppend key, "#{groupId}|#{category}|#{id}"
 
-  getAllNewish: ->
-    cknex().select '*'
+  getAllNewish: (limit) ->
+    q = cknex().select '*'
     .from 'threads_recent'
-    .run()
+    .where 'partition', '=', 1
+
+    if limit
+      q.limit limit
+
+    q.run()
 
   getCounterById: (id) ->
     cknex().select '*'
@@ -290,12 +295,14 @@ class ThreadModel
       CacheService.leaderboardGet "#{prefix}:#{groupId}", {skip, limit}
     )
     .then (results) ->
+      console.log 'got scores', results.length
       Promise.map _.chunk(results, 2), ([threadId, score]) ->
         cknex().select '*'
         .from 'threads_by_id'
         .where 'id', '=', threadId
         .run {isSingle: true}
-      .filter (thread) -> thread
+      .filter (thread) ->
+        thread
 
   getAllTimeSorted: ({category, language, groupId, maxTimeUuid, limit} = {}) ->
     get = (timeBucket) ->
@@ -341,7 +348,19 @@ class ThreadModel
     .run()
 
   deleteByThread: (thread) ->
+    groupAllPrefix = CacheService.STATIC_PREFIXES
+                    .THREAD_GROUP_LEADERBOARD_ALL
+    groupAllKey = "#{groupAllPrefix}:#{thread.groupId}"
+
+    groupCategoryPrefix = CacheService.STATIC_PREFIXES
+                          .THREAD_GROUP_LEADERBOARD_BY_CATEGORY
+    groupCategoryKey = "#{groupCategoryPrefix}:" +
+                        "#{thread.groupId}:#{thread.category}"
+
     Promise.all [
+      CacheService.leaderboardDelete groupAllKey, thread.id
+      CacheService.leaderboardDelete groupCategoryKey, thread.id
+
       cknex().delete()
       .from 'threads_recent'
       .where 'partition', '=', 1
@@ -397,6 +416,38 @@ class ThreadModel
       return false
 
     return thread.creatorId is user.id
+
+  # migrateGroupId: =>
+  #   # threadIds = ['7ebd10e0-f553-11e7-a8f6-696b99b549b2']
+  #   threadIds = [
+  #     '7ebd10e0-f553-11e7-a8f6-696b99b549b2'
+  #     'e08b3450-f544-11e7-9c81-cc7e056d6806'
+  #     '7e1898b0-f541-11e7-975a-fe08eb96de40'
+  #     '67a12470-f542-11e7-83d8-fdb9b3e7a06f'
+  #     '65baec00-f505-11e7-843a-e517c5b8b8a7'
+  #   ]
+  #   Promise.map threadIds, (id) =>
+  #     cknex().select '*'
+  #     .from 'threads_by_id'
+  #     .where 'id', '=', id
+  #     .run {isSingle: true}
+  #     .then defaultThreadOutput
+  #     .then (thread) =>
+  #       console.log thread
+  #       thread = _.defaults {
+  #         groupId: '68acb51a-3e5a-466a-9e31-c93aacd5919e'
+  #       }, thread
+  #       delete thread.time
+  #       delete thread.get
+  #       delete thread.values
+  #       delete thread.keys
+  #       delete thread.forEach
+  #       console.log thread
+  #       @deleteByThread thread
+  #       .then =>
+  #         @upsert thread
+  #   .then ->
+  #     console.log 'done'
 
   # didn't work w/ threads, but keeping code for now
   # migrateComments: (threadIds) ->
@@ -504,6 +555,28 @@ class ThreadModel
   #       .then ->
   #         console.log 'migrate time', Date.now() - start, minId, _.last(threads).id
   #         CacheService.set 'migrate_threads_min_id5', _.last(threads).id
+
+  # deleteOldThreadRecent: =>
+  #   @getAllNewish()
+  #   .then (results) ->
+  #     Promise.map results, ({id}, i) ->
+  #       # console.log 'deleteOldThreadRecent got', id
+  #       # @getById id
+  #       # .then (thread) ->
+  #       time = id.getDate()
+  #       hoursOld = (Date.now() - time.getTime()) / (3600 * 1000)
+  #       # console.log 'deleteOldThreadRecent hoursOld', hoursOld, i, id
+  #       if hoursOld > 36
+  #         cknex().delete()
+  #         .from 'threads_recent'
+  #         .where 'partition', '=', 1
+  #         .andWhere 'id', '=', id
+  #         .run()
+  #         .then ->
+  #           console.log 'deleteOldThreadRecent deleted', hoursOld, i
+  #     , {concurrency: 30}
+  #     .then ->
+  #       console.log 'done'
 
 
   sanitize: _.curry (requesterId, thread) ->

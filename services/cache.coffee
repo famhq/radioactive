@@ -20,7 +20,7 @@ PREFIXES =
   THREAD_DECK: 'thread:deck11'
   THREAD_COMMENTS: 'thread:comments6'
   THREAD_COMMENT_COUNT: 'thread:comment_count1'
-  THREADS: 'threads3'
+  THREADS: 'threads9'
   CHAT_MESSAGE_DAILY_XP: 'chat_message:daily_xp'
   CONVERSATION_ID: 'conversation:id'
   VIDEO_DAILY_XP: 'video:daily_xp'
@@ -35,7 +35,8 @@ PREFIXES =
   USER_DATA_BLOCKED_USERS: 'user_data:blocked_users'
   USER_DATA_CLASH_ROYALE_DECK_IDS: 'user_data:clash_royale_deck_ids6'
   USER_DAILY_DATA_PUSH: 'user_daily_data:push5'
-  ADDON: 'addon1'
+  ADDON_ID: 'addon:id'
+  ADDON_KEY: 'addon:key3'
   CLASH_ROYALE_MATCHES_ID: 'clash_royale_matches:id52'
   CLASH_ROYALE_MATCHES_ID_EXISTS: 'clash_royale_matches:id:exists2'
   CLASH_ROYALE_INVALID_TAG: 'clash_royale:invalid_tag'
@@ -48,7 +49,7 @@ PREFIXES =
   CLASH_ROYALE_CARD_RANK: 'clash_royal_card:rank'
   CLASH_ROYALE_DECK_RANK: 'clash_royal_deck:rank'
   CLASH_ROYALE_DECK_STATS: 'clash_royal_deck:stats1'
-  CLASH_ROYALE_DECK_GET_POPULAR: 'clash_royal_deck:get_popular4'
+  CLASH_ROYALE_DECK_GET_POPULAR: 'clash_royal_deck:get_popular2'
   CLASH_ROYALE_DECK_CARD_KEYS: 'clash_royal_deck:card_keys12'
   CLASH_ROYALE_PLAYER_DECK_DECK: 'clash_royale_player_deck:deck9'
   CLASH_ROYALE_PLAYER_DECK_DECK_ID_USER_ID:
@@ -60,7 +61,7 @@ PREFIXES =
   CLASH_ROYALE_API_GET_PLAYER_ID: 'clash_royale_api:get_tag'
   GROUP_ID: 'group:id4'
   GROUP_KEY: 'group:key3'
-  GROUP_GET_ALL: 'group:getAll10'
+  GROUP_GET_ALL: 'group:getAll11'
   GROUP_GET_ALL_CATEGORY: 'group:getAll:category4'
   GROUP_STAR: 'group:star2'
   GROUP_USER_COUNT: 'group:user_count1'
@@ -131,8 +132,8 @@ class CacheService
     GROUP_LEADERBOARD: 'group:leaderboard'
     CARD_DECK_LEADERBOARD: 'card:deck_leaderboard'
     GAME_TYPE_DECK_LEADERBOARD: 'gameType:deck_leaderboard'
-    THREAD_GROUP_LEADERBOARD_BY_CATEGORY: 'thread:group_leaderboard:category'
-    THREAD_GROUP_LEADERBOARD_ALL: 'thread:group_leaderboard:all'
+    THREAD_GROUP_LEADERBOARD_BY_CATEGORY: 'thread:group_leaderboard:by_category'
+    THREAD_GROUP_LEADERBOARD_ALL: 'thread:group_leaderboard:by_all'
 
   constructor: ->
     @redlock = new Redlock [RedisService], {
@@ -169,6 +170,10 @@ class CacheService
     key = config.REDIS.PREFIX + ':' + setKey
     RedisPersistentService.zadd key, score, member
 
+  leaderboardDelete: (setKey, member) ->
+    key = config.REDIS.PREFIX + ':' + setKey
+    RedisPersistentService.zrem key, member
+
   leaderboardIncrement: (setKey, member, increment, {currentValueFn} = {}) =>
     key = config.REDIS.PREFIX + ':' + setKey
     RedisPersistentService.zincrby key, increment, member
@@ -188,6 +193,7 @@ class CacheService
     RedisPersistentService.zrevrange key, skip, skip + limit - 1, 'WITHSCORES'
 
   leaderboardTrim: (key, trimLength = 10000) ->
+    key = config.REDIS.PREFIX + ':' + key
     RedisPersistentService.zremrangebyrank key, 0, -1 * (trimLength + 1)
 
   set: (key, value, {expireSeconds} = {}) ->
