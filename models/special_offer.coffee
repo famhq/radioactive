@@ -126,6 +126,8 @@ class SpecialOfferModel
     get = ->
       cknex().select '*'
       .from 'special_offers'
+      # without this might be causing db crashes?
+      .where 'timeBucket', '=', 'all'
       .run()
       .map defaultSpecialOfferOutput
 

@@ -14,8 +14,7 @@ class SpecialOfferCtrl
   getAll: ({country}, {user}) =>
     country = 'us'
 
-    # TODO: cache by userId
-    SpecialOffer.getAll()
+    SpecialOffer.getAll {preferCache: true}
     .then @filterMapstreetOffers country, user.id
     .map EmbedService.embed {
       embed: [EmbedService.TYPES.SPECIAL_OFFER.TRANSACTION]
