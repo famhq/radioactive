@@ -68,6 +68,7 @@ PREFIXES =
   GROUP_ROLE_GROUP_ID_USER_ID: 'group_role:groupId:userId2'
   GROUP_USER_USER_ID: 'group_user:user_id7'
   GROUP_USER_TOP: 'group_user:top3'
+  GROUP_USER_XP_COMPLETE_TRANSACTION: 'groupUserXp:completeTransaction'
   USERNAME_SEARCH: 'username:search1'
   RATE_LIMIT_CHAT_MESSAGES_TEXT: 'rate_limit:chat_messages:text'
   RATE_LIMIT_CHAT_MESSAGES_MEDIA: 'rate_limit:chat_messages:media'

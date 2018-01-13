@@ -48,10 +48,17 @@ class StreamService
             }]
           }
 
-      if @openSubscriptions[socket.id]?[route]
-        @openSubscriptions[socket.id][route].unsubscribe()
+      subscriptionKey = channel
+
+      if @openSubscriptions[socket.id]?[subscriptionKey]
+        @openSubscriptions[socket.id][subscriptionKey].unsubscribe()
 
       @openSubscriptions[socket.id] ?= {}
-      @openSubscriptions[socket.id][route] = subscription
+      @openSubscriptions[socket.id][subscriptionKey] = subscription
+
+  unsubscribe: ({socket, channel}) =>
+    subscriptionKey = channel
+    if @openSubscriptions[socket.id]?[subscriptionKey]
+      @openSubscriptions[socket.id][subscriptionKey].unsubscribe()
 
 module.exports = new StreamService()

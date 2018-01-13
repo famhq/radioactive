@@ -14,6 +14,7 @@ Conversation = require '../models/conversation'
 GroupAuditLog = require '../models/group_audit_log'
 GroupUser = require '../models/group_user'
 GroupUserXpTransaction = require '../models/group_user_xp_transaction'
+GroupUsersOnline = require '../models/group_users_online'
 Language = require '../models/language'
 CacheService = require '../services/cache'
 PushNotificationService = require '../services/push_notification'
@@ -41,6 +42,7 @@ CLASH_ROYALE_CLAN_REGEX = ///
 ///gi
 STICKER_REGEX = /(:[a-z_\^0-9]+:)/gi
 IMAGE_REGEX = /\!\[(.*?)\]\((.*?)\)/gi
+ADDON_REGEX = /\([^\)]+"addon:([a-zA-Z0-9-]+)\|([a-zA-Z0-9-]+)/i
 CARD_BUILDER_TIMEOUT_MS = 1000
 SMALL_IMAGE_SIZE = 200
 MAX_LENGTH = 5000
@@ -217,10 +219,11 @@ class ChatMessageCtrl
     if body?.length > MAX_LENGTH
       router.throw status: 400, info: 'message is too long...'
 
-    isImage = body.match(IMAGE_REGEX)
-    stickers = body.match(STICKER_REGEX)
+    isImage = body.match IMAGE_REGEX
+    stickers = body.match STICKER_REGEX
     isMedia = isImage or stickers
-    isLink = body.match(URL_REGEX)
+    isLink = body.match URL_REGEX
+    isAddon = body.match ADDON_REGEX
 
     @_checkRateLimit user.id, isMedia, router
     .then ->
@@ -229,6 +232,9 @@ class ChatMessageCtrl
     .then (conversation) =>
       (if conversation.groupId
         groupId = conversation.groupId
+
+        GroupUsersOnline.upsert {userId: user.id, groupId}
+
         @_checkIfBanned groupId, ip, user.id, router
         .then ->
           # TODO: combine with conversation.hasPermission
@@ -237,6 +243,8 @@ class ChatMessageCtrl
             permissions = permissions.concat GroupUser.PERMISSIONS.SEND_IMAGE
           if isLink
             permissions = permissions.concat GroupUser.PERMISSIONS.SEND_LINK
+          if isAddon
+            permissions = permissions.concat GroupUser.PERMISSIONS.SEND_ADDON
           GroupUser.hasPermissionByGroupIdAndUser groupId, user, permissions
           .then (hasPermission) ->
             unless hasPermission
@@ -375,10 +383,19 @@ class ChatMessageCtrl
     if isPrivate and body.secret is config.DEALER_SECRET
       ChatMessage.updateById params.id, {card: body.card}, {prepareFn}
 
-  getAllByConversationId: ({conversationId, maxTimeUuid}, {user}, socketInfo) ->
+  unsubscribeByConversationId: ({conversationId}, {user}, {socket}) ->
+    ChatMessage.unsubscribeByConversationId conversationId, {socket}
+
+  getAllByConversationId: (options, {user}, socketInfo) ->
+    {conversationId, maxTimeUuid, isStreamed} = options
     {emit, socket, route} = socketInfo
+
     Conversation.getById conversationId, {preferCache: true}
     .then (conversation) ->
+
+      if conversation.groupId
+        GroupUsersOnline.upsert {userId: user.id, groupId: conversation.groupId}
+
       Conversation.hasPermission conversation, user.id
       .then (hasPermission) ->
         unless hasPermission
@@ -389,7 +406,7 @@ class ChatMessageCtrl
         ChatMessage.getAllByConversationId conversationId, {
           limit: limit
           maxTimeUuid: maxTimeUuid
-          isStreamed: true
+          isStreamed: isStreamed
           emit: emit
           socket: socket
           route: route

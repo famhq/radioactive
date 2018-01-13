@@ -138,7 +138,7 @@ class ThreadCtrl
 
         (if groupId \
         then Group.getById groupId
-        else Group.getByGameKeyAndLanguage gameKey, language)
+        else Group.getByKeyAndLanguage gameKey, language)
         .then (group) =>
           @validateAndCheckPermissions thread, {user}
           .then (thread) ->
@@ -188,7 +188,7 @@ class ThreadCtrl
       (if groupId
         Promise.resolve groupId
       else
-        Group.getByGameKeyAndLanguage gameKey, language
+        Group.getByKeyAndLanguage gameKey, language
         .then (group) -> group?.id)
       .then (groupId) ->
         Thread.getAll {

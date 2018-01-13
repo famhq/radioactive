@@ -35,4 +35,10 @@ class Stream
       postFn
     }
 
+  unsubscribe: ({socket, channelBy, channelById}) =>
+    StreamService.unsubscribe {
+      channel: "#{@streamChannelKey}:#{channelBy}:#{channelById}"
+      socket
+    }
+
 module.exports = Stream

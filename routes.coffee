@@ -107,6 +107,8 @@ module.exports = router
 .on 'chatMessages.uploadImage', authed ChatMessageCtrl.uploadImage
 .on 'chatMessages.getAllByConversationId',
   authed ChatMessageCtrl.getAllByConversationId
+.on 'chatMessages.unsubscribeByConversationId',
+  authed ChatMessageCtrl.unsubscribeByConversationId
 
 .on 'pushTokens.create', authed PushTokenCtrl.create
 .on 'pushTokens.updateByToken', authed PushTokenCtrl.updateByToken
@@ -151,6 +153,7 @@ module.exports = router
 .on 'groups.getAllChannelsById', authed GroupCtrl.getAllChannelsById
 .on 'groups.getById', authed GroupCtrl.getById
 .on 'groups.getByKey', authed GroupCtrl.getByKey
+.on 'groups.getByKeyAndLanguage', authed GroupCtrl.getByKeyAndLanguage
 .on 'groups.inviteById', authed GroupCtrl.inviteById
 
 .on 'groupAuditLogs.getAllByGroupId',
@@ -167,6 +170,8 @@ module.exports = router
   authed GroupUserCtrl.getMeSettingsByGroupId
 .on 'groupUsers.updateMeSettingsByGroupId',
   authed GroupUserCtrl.updateMeSettingsByGroupId
+.on 'groupUsers.getOnlineCountByGroupId',
+  authed GroupUserCtrl.getOnlineCountByGroupId
 
 .on 'groupUserXpTransactions.getAllByGroupId',
   authed GroupUserXpTransactionCtrl.getAllByGroupId
@@ -254,7 +259,6 @@ module.exports = router
 .on 'nps.create', authed NpsCtrl.create
 
 .on 'items.getAllByGroupId', authed ItemCtrl.getAllByGroupId
-.on 'items.getAll', authed ItemCtrl.getAll
 
 .on 'bans.getAllByGroupId', authed BanCtrl.getAllByGroupId
 .on 'bans.banByGroupIdAndIp', authed BanCtrl.banByGroupIdAndIp

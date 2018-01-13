@@ -148,7 +148,7 @@ class ClashRoyalePlayerDeckModel
   getAllByPlayerId: (playerId, {limit, sort, type} = {}) =>
     unless playerId
       console.log 'player decks getall empty playerId'
-      return Promise.resolve null
+      return Promise.resolve []
 
     @getAll {limit, sort, type, playerId}
 

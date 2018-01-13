@@ -257,4 +257,9 @@ class GroupCtrl
     .then EmbedService.embed {embed: defaultEmbed, user}
     .then Group.sanitize null
 
+  getByKeyAndLanguage: ({key, language}, {user}) ->
+    Group.getByKeyAndLanguage key, language
+    .then EmbedService.embed {embed: defaultEmbed, user}
+    .then Group.sanitize null
+
 module.exports = new GroupCtrl()

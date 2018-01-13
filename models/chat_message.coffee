@@ -209,6 +209,14 @@ class ChatMessageModel extends Stream
       }
     else
       initial
+      .map (initialPostFn or _.identity)
+
+  unsubscribeByConversationId: (conversationId, {socket}) =>
+    @unsubscribe {
+      socket: socket
+      channelBy: 'conversationId'
+      channelById: conversationId
+    }
 
   getAllByGroupIdAndUserIdAndTimeBucket: (groupId, userId, timeBucket) ->
     cknex().select '*'

@@ -34,7 +34,7 @@ class VideoCtrl
       GroupUserXpTransaction.completeActionByGroupIdAndUserId(
         video.groupId
         user.id
-        'dailyVideoView'
+        GroupUserXpTransaction.ACTIONS.dailyVideoView
       )
       .catch -> null
     .then (xpGained) ->

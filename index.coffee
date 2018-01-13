@@ -221,7 +221,7 @@ app.get '/top2v2Decks', (req, res) ->
     res.status(200).send decks
 
 app.get '/topTouchdown', (req, res) ->
-  ClashRoyaleCard.getTop {gameType: 'touchdown2v2DraftPractice'}
+  ClashRoyaleCard.getTop {gameType: 'touchdown2v2Draft'}
   .then (cards) ->
     cards = _.map cards, (card) ->
       winRate = card.winRate * 100

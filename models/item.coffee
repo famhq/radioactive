@@ -62,10 +62,11 @@ class ItemModel
     .where 'groupId', '=', groupId
     .run()
 
-  getAll: ->
-    cknex().select '*'
-    .from 'items_by_groupId'
-    .run()
+  # not performant (grabs from all shards)
+  # getAll: ->
+  #   cknex().select '*'
+  #   .from 'items_by_groupId'
+  #   .run()
 
   getByKey: (key) ->
     cknex().select '*'

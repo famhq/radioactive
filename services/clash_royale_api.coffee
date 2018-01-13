@@ -110,7 +110,9 @@ class ClashRoyaleAPIService
                      then 'classicChallenge'
                      else if match.challengeId is 73001201
                      then 'touchdown2v2DraftPractice'
-                     else if match.challengeId in [73001203, 72000051]
+                     else if match.challengeId in [\
+                       73001203, 72000051, 73001291\
+                     ]
                      then 'touchdown2v2Draft'
                      else if match.challengeId is 73001256
                      then 'newCardChallenge'

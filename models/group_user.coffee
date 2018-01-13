@@ -9,7 +9,7 @@ GroupRole = require './group_role'
 config = require '../config'
 
 ONE_DAY_SECONDS = 3600 * 24
-TEN_MINUTES_SECONDS = 60 * 10
+ONE_HOUR_SECONDS = 3600
 
 defaultGroupUser = (groupUser) ->
   unless groupUser?
@@ -52,7 +52,10 @@ tables = [
       time: 'timestamp'
     primaryKey:
       # a little uneven since some groups will have a lot of users, but each
-      # row is small
+      # row is small...
+      # TODO: probably sohuldn't add to group for public groups. dependent
+      # on switching getCountByGroupId to use a counter.
+      # 1/10/2018 largest row (500k users) is 20mb
       partitionKey: ['groupId']
       clusteringColumns: ['userId']
   }
@@ -108,6 +111,7 @@ PERMISSIONS =
   MANAGE_ROLE: 'manageRole'
   SEND_IMAGE: 'sendImage'
   SEND_LINK: 'sendLink'
+  SEND_ADDON: 'sendAddon'
   READ_AUDIT_LOG: 'readAuditLog'
   MANAGE_INFO: 'manageInfo'
 
@@ -207,7 +211,7 @@ class GroupUserModel
     if preferCache
       cacheKey = "#{CacheService.PREFIXES.GROUP_USER_COUNT}:#{groupId}"
       CacheService.preferCache cacheKey, get, {
-        expireSeconds: TEN_MINUTES_SECONDS
+        expireSeconds: ONE_HOUR_SECONDS
       }
     else
       get()
@@ -221,7 +225,8 @@ class GroupUserModel
 
   getByGroupIdAndUserId: (groupId, userId) ->
     cknex().select '*'
-    .from 'group_users_by_groupId'
+    # .from 'group_users_by_groupId'
+    .from 'group_users_by_userId'
     .where 'groupId', '=', groupId
     .andWhere 'userId', '=', userId
     .run {isSingle: true}

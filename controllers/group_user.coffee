@@ -4,6 +4,7 @@ Promise = require 'bluebird'
 
 User = require '../models/user'
 GroupUser = require '../models/group_user'
+GroupUsersOnline = require '../models/group_users_online'
 GroupRole = require '../models/group_role'
 Group = require '../models/group'
 EmbedService = require '../services/embed'
@@ -90,5 +91,8 @@ class GroupUserCtrl
             globalNotifications, settings?.globalNotifications
           )
         }
+
+  getOnlineCountByGroupId: ({groupId}) ->
+    GroupUsersOnline.getCountByGroupId groupId
 
 module.exports = new GroupUserCtrl()

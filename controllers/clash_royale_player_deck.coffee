@@ -15,7 +15,7 @@ defaultEmbed = [
 ]
 
 class ClashRoyalePlayerDeckCtrl
-  getAllByPlayerId: ({playerId, sort, type}, {user}) ->
+  getAllByPlayerId: ({playerId, sort, type, limit}, {user}) ->
     # no one is using and it's an unnecessary perf hit
     # Player.getByPlayerIdAndGameId playerId, config.CLASH_ROYALE_ID
     # .then EmbedService.embed {
@@ -29,7 +29,7 @@ class ClashRoyalePlayerDeckCtrl
     #       user.id isnt player.verifiedUser?.id and
     #       playerId is player.id
     #     router.throw {status: 403, info: 'profile is private'}
-    ClashRoyalePlayerDeck.getAllByPlayerId playerId, {sort, type}
+    ClashRoyalePlayerDeck.getAllByPlayerId playerId, {sort, type, limit}
     .map EmbedService.embed {embed: defaultEmbed}
     .map ClashRoyalePlayerDeck.sanitize null
 

@@ -79,12 +79,14 @@ class GroupModel
     .then (group) =>
       @hasPermission group, user, {level}
 
+  # TODO: phase out for groupUser.hasPermission
   hasPermission: (group, user, {level} = {}) ->
     unless group and user
       return false
 
     level ?= 'member'
 
+    # public groups have waaaaaaaaaaay to many users
     if level isnt 'admin' and group.type is 'public'
       return Promise.resolve true
 
@@ -159,7 +161,8 @@ class GroupModel
     .run()
     .map defaultGroup
 
-  getByGameKeyAndLanguage: (gameKey, language) ->
+  getByKeyAndLanguage: (gameKey, language) ->
+    console.log 'getall', gameKey, language
     r.table GROUPS_TABLE
     .getAll ['public', language], {index: TYPE_LANGUAGE_INDEX}
     .then (groups) =>
@@ -223,6 +226,7 @@ class GroupModel
       'starId'
       'star'
       'conversations'
+      'meGroupUser'
       'embedded'
     ]
     sanitizedGroup
@@ -246,6 +250,7 @@ class GroupModel
       'star'
       'password'
       'conversations'
+      'meGroupUser'
       'embedded'
     ]
     sanitizedGroup
