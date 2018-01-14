@@ -257,8 +257,8 @@ class GroupCtrl
     .then EmbedService.embed {embed: defaultEmbed, user}
     .then Group.sanitize null
 
-  getByKeyAndLanguage: ({key, language}, {user}) ->
-    Group.getByKeyAndLanguage key, language
+  getByGameKeyAndLanguage: ({gameKey, language}, {user}) ->
+    Group.getByGameKeyAndLanguage gameKey, language
     .then EmbedService.embed {embed: defaultEmbed, user}
     .then Group.sanitize null
 

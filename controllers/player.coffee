@@ -100,6 +100,8 @@ class PlayerCtrl
   getVerifyDeckId: ({}, {user}) ->
     Player.getByUserIdAndGameId user.id, GAME_ID
     .then (player) ->
+      unless player
+        router.throw status: 404, info: 'player not found'
       seed = user.id + ':' + player.id
       rand = randomSeed.create seed
       cardCount = player.data.cards?.length or 0

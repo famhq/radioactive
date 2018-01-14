@@ -161,7 +161,7 @@ class GroupModel
     .run()
     .map defaultGroup
 
-  getByKeyAndLanguage: (gameKey, language) ->
+  getByGameKeyAndLanguage: (gameKey, language) ->
     console.log 'getall', gameKey, language
     r.table GROUPS_TABLE
     .getAll ['public', language], {index: TYPE_LANGUAGE_INDEX}

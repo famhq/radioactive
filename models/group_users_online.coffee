@@ -42,7 +42,7 @@ class GroupUsersOnline
       .count '*'
       .from 'group_users_online'
       .where 'groupId', '=', groupId
-      .run()
+      .run {isSingle: true}
       .then (response) ->
         response?.count or 0
     , {expireSeconds: FIFTEEN_MINUTES_SECONDS}

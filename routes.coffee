@@ -153,7 +153,7 @@ module.exports = router
 .on 'groups.getAllChannelsById', authed GroupCtrl.getAllChannelsById
 .on 'groups.getById', authed GroupCtrl.getById
 .on 'groups.getByKey', authed GroupCtrl.getByKey
-.on 'groups.getByKeyAndLanguage', authed GroupCtrl.getByKeyAndLanguage
+.on 'groups.getByGameKeyAndLanguage', authed GroupCtrl.getByGameKeyAndLanguage
 .on 'groups.inviteById', authed GroupCtrl.inviteById
 
 .on 'groupAuditLogs.getAllByGroupId',

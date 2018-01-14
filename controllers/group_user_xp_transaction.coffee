@@ -18,7 +18,7 @@ class GroupUserXpTransactionCtrl
       shasum = crypto.createHmac 'md5', config.NATIVE_SORT_OF_SECRET
       shasum.update "#{timestamp}"
       compareKey = shasum.digest('hex')
-      if not compareKey or compareKey isnt successKey
+      if not timestamp or not successKey or compareKey isnt successKey
         router.throw {status: 400, info: 'invalid'}
 
     GroupUserXpTransaction.completeActionByGroupIdAndUserId(

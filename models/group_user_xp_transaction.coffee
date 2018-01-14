@@ -62,7 +62,7 @@ class GroupUserXpTransactionModel
       maxCount: 1
       ttl: ONE_DAY_SECONDS
     rewardedVideos:
-      xp: 5
+      xp: 1
       maxCount: 3
       ttl: THREE_HOURS_SECONDS
 

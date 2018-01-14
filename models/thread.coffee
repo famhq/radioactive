@@ -515,7 +515,7 @@ class ThreadModel
   #         (if gcache[config.DEFAULT_GAME_KEY + ':' + thread.language]
   #           Promise.resolve gcache[config.DEFAULT_GAME_KEY + ':' + thread.language]
   #         else
-  #           Group.getByKeyAndLanguage config.DEFAULT_GAME_KEY, thread.language or 'en'
+  #           Group.getByGameKeyAndLanguage config.DEFAULT_GAME_KEY, thread.language or 'en'
   #           .then (group) ->
   #             gcache[config.DEFAULT_GAME_KEY + ':' + thread.language] = group
   #             group
