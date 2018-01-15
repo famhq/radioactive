@@ -24,22 +24,38 @@ specialOffers = [
   #     days: 3
   #     minutesPerDay: 10
   # }
-  # {
-  #   id: '25d1d9e8-265c-42c0-bff3-2fc01c0e87a3'
-  #   name: 'Coin Master'
-  #   iOSPackage: 'com.mobile-softing.coinmaster'
-  #   androidPackage: 'com.moonactive.coinmaster'
-  #   # TODO
-  #   backgroundImage: 'https://pbs.twimg.com/profile_banners/2965707675/1466583543/1500x500'
-  #   backgroundColor: '#f5cc3e'
-  #   textColor: '#000000'
-  #   countryData: {} # [{installPayout, dailyPayout, days, minutesPerDay}]
-  #   defaultData:
-  #     installPayout: 100 # 10c
-  #     dailyPayout: 50 # 5c
-  #     days: 3
-  #     minutesPerDay: 10
-  # }
+  {
+    id: '5762a7e3-0907-4c42-90dc-b73435ad52f2'
+    name: 'Final Fantasy XV: A New Empire'
+    iOSPackage: 'com.mobile-softing.coinmaster'
+    androidPackage: 'com.epicactiononline.ffxv.ane'
+    backgroundImage: 'https://cdn.wtf/d/images/starfire/offers/com_epicactiononline_ffxv_ane.jpg'
+    backgroundColor: '#35b3c8'
+    textColor: '#000000'
+    countryData:
+      us:
+        installPayout: 60 # 6c
+        dailyPayout: 180 # 18c
+      # ca:
+      #   installPayout: 60 # 6c
+      #   dailyPayout: 180 # 18c
+      kr:
+        installPayout: 60 # 6c
+        dailyPayout: 180 # 18c
+      jp:
+        installPayout: 60 # 6c
+        dailyPayout: 180 # 18c
+      br:
+        installPayout: 3 # .3c
+        dailyPayout: 40 # 4c
+    defaultData:
+      installPayout: 0 # 6c
+      dailyPayout: 0 # 15c
+      days: 3
+      minutesPerDay: 30
+      priority: 10
+      trackUrl: 'https://control.kochava.com/v1/cpi/click?campaign_id=koniso-android-ybve1w8d1a21f1f1b88&network_id=7298&site_id=1&device_id={deviceId}'
+  }
   {
     id: 'fdda171b-1438-4ae2-8116-f8c930bda5d8'
     name: 'Freestreet'

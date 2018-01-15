@@ -147,7 +147,7 @@ getCachedChatUser = ({userId, username, groupId}) ->
       gameId: config.CLASH_ROYALE_ID
       groupId: groupId
     }
-    .then User.sanitizePublic(null)
+    .then User.sanitizeChat(null)
   , {expireSeconds: FIVE_MINUTES_SECONDS}
 
 embedFn = _.curry (props, object) ->

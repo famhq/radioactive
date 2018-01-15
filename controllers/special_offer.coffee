@@ -20,6 +20,10 @@ class SpecialOfferCtrl
       embed: [EmbedService.TYPES.SPECIAL_OFFER.TRANSACTION]
       userId: user.id
     }
+    .then (offers) ->
+      _.orderBy offers, (offer) ->
+        offer.defaultData.priority or 0
+      , 'desc'
 
   filterMapstreetOffers: (country, userId) ->
     (offers) ->
@@ -49,13 +53,14 @@ class SpecialOfferCtrl
           uc = "#{userId}%7C#{offer.id}" # userId|offerId
           if offerInfo
             _.defaults {
-              trackUrl: "#{offerInfo.url}?uc=#{uc}"
+              defaultData:
+                trackUrl: "#{offerInfo.url}?uc=#{uc}"
             }, offer
           else
             offer
 
-        _.filter offers, ({defaultData, trackUrl}) ->
-          return defaultData.sourceType isnt 'mappstreet' or trackUrl
+        _.filter offers, ({defaultData}) ->
+          defaultData.sourceType isnt 'mappstreet' or defaultData.trackUrl
 
   logClickById: ({id, deviceId}, {user}) ->
     SpecialOffer.getTransactionByUserIdAndOfferId user.id, id
@@ -86,7 +91,7 @@ class SpecialOfferCtrl
         if transactionByDeviceId and
             "#{transactionByDeviceId.userId}" isnt "#{user.id}"
           router.throw status: 400, info: 'specialOffers: multiple deviceId'
-        if transaction.status isnt 'installed'
+        if not transaction.status in ['installed', 'playing']
           router.throw status: 400, info: 'specialOffers: invalid status'
 
         data = _.defaults offer.countryData[country], offer.defaultData
@@ -107,6 +112,12 @@ class SpecialOfferCtrl
         if transaction.days[day]
           router.throw status: 400, info: 'specialOffers: day exists'
 
+        # TODO
+        if day >= data.days
+          status = 'completed'
+        else
+          status = 'playing'
+
         Promise.all [
           User.addFireById user.id, dailyPayout
           SpecialOffer.upsertTransaction {
@@ -114,7 +125,7 @@ class SpecialOfferCtrl
             userId: user.id
             deviceId: deviceId
             fireEarned: transaction.fireEarned + dailyPayout
-            status: 'completed' # TODO: handle > 1 day
+            status: status
           }, {
             map: {
               days:

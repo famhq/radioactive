@@ -192,4 +192,15 @@ class UserModel
     ]
     sanitizedUser
 
+  sanitizeChat: _.curry (requesterId, user) ->
+    sanitizedUser = module.exports.sanitizePublic requesterId, user
+    if sanitizedUser.gameData # trim it down a bunch
+      sanitizedUser.gameData = _.pick sanitizedUser.gameData, [
+        'isVerified', 'data'
+      ]
+      sanitizedUser.gameData.data = _.pick sanitizedUser.gameData.data, [
+        'trophies'
+      ]
+    sanitizedUser
+
 module.exports = new UserModel()

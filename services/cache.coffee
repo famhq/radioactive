@@ -11,7 +11,7 @@ DEFAULT_REDLOCK_EXPIRE_SECONDS = 30
 ONE_HOUR_SECONDS = 3600
 
 PREFIXES =
-  CHAT_USER: 'chat:user3'
+  CHAT_USER: 'chat:user4'
   CHAT_USER_B_USERNAME: 'chat:user:byUsername'
   CHAT_GROUP_USER: 'chat:group_user3'
   THREAD_USER: 'thread:user1'
@@ -94,6 +94,7 @@ PREFIXES =
   HONEY_POT_BAN_IP: 'honey_pot:ban_ip5'
   REWARD_INCREMENT: 'reward:increment'
   REWARD_ATTEMPT_TIME: 'reward_attempt:time1'
+  SPECIAL_OFFER_ID: 'special_offer:id'
 
 class CacheService
   KEYS:
@@ -115,8 +116,7 @@ class CacheService
       'clash_royal_player_deck:queued_increments:draw1'
     CLASH_ROYALE_CARDS: 'clash_royale:cards1'
     PLAYERS_TOP: 'player:top1'
-    SPECIAL_OFFER_ALL: 'special_offer:all1'
-    SPECIAL_OFFER_ID: 'special_offer:id'
+    SPECIAL_OFFER_ALL: 'special_offer:all2'
     KUE_WATCH_STUCK: 'kue:watch_stuck'
     STALE_THREAD_IDS: 'threads:stale_ids'
   LOCK_PREFIXES:

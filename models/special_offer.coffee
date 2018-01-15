@@ -147,7 +147,7 @@ class SpecialOfferModel
       .then defaultSpecialOfferOutput
 
     if preferCache
-      cacheKey = CacheService.KEYS.SPECIAL_OFFER_ID
+      cacheKey = "#{CacheService.PREFIXES.SPECIAL_OFFER_ID}:id"
       CacheService.preferCache cacheKey, get, {expireSeconds: FIVE_MINUTES_S}
     else
       get()

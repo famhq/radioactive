@@ -39,6 +39,13 @@ class UserCtrl
         null # don't block
     .then User.sanitize null
 
+  getCountry: ({}, {headers, connection}) ->
+    ip = headers['x-forwarded-for'] or
+          connection.remoteAddress
+    # rendered via starfire server (wrong ip)
+    isServerSide = ip?.indexOf('::ffff:10.') isnt -1
+    if isServerSide then null else geoip.lookup(ip)?.country
+
   updateLastActiveTime: (user, ip) ->
     diff = {
       lastActiveIp: ip

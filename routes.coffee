@@ -73,6 +73,7 @@ module.exports = router
 .on 'users.setAvatarImage', authed UserCtrl.setAvatarImage
 .on 'users.setFlags', authed UserCtrl.setFlags
 .on 'users.setFlagsById', authed UserCtrl.setFlagsById
+.on 'users.getCountry', authed UserCtrl.getCountry
 
 .on 'userData.getMe', authed UserDataCtrl.getMe
 .on 'userData.getByUserId', authed UserDataCtrl.getByUserId
