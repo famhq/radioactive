@@ -123,14 +123,12 @@ class ChatMessageCtrl
         params:
           id: conversation.groupId
           conversationId: conversation.id
-          gameKey: config.DEFAULT_GAME_KEY
       }
     else
       path = {
         key: 'conversation'
         params:
           id: conversation.id
-          gameKey: config.DEFAULT_GAME_KEY
       }
 
   _sendPushNotifications: (conversation, user, body, isImage) ->
@@ -414,6 +412,7 @@ class ChatMessageCtrl
           initialPostFn: (item) ->
             EmbedService.embed {embed: defaultEmbed}, ChatMessage.default(item)
             .then (item) ->
+              # TODO: rm?
               if item?.user?.flags?.isChatBanned isnt true
                 item
         }

@@ -193,6 +193,8 @@ class UserModel
     sanitizedUser
 
   sanitizeChat: _.curry (requesterId, user) ->
+    unless user
+      return null
     sanitizedUser = module.exports.sanitizePublic requesterId, user
     if sanitizedUser.gameData # trim it down a bunch
       sanitizedUser.gameData = _.pick sanitizedUser.gameData, [

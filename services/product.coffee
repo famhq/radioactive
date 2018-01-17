@@ -21,7 +21,7 @@ class ProductService
         data:
           path:
             key: 'groupShop'
-            params: {gameKey: config.DEFAULT_GAME_KEY, id: groupId}
+            params: {id: groupId}
       }
 
 

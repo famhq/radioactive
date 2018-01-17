@@ -557,6 +557,7 @@ embedFn = _.curry (props, object) ->
               playerDeck
           , {expireSeconds: ONE_DAY_SECONDS}
 
+      # TODO: use same as chat_message_creator
       when TYPES.THREAD.CREATOR
         if embedded.creatorId
           key = CacheService.PREFIXES.THREAD_CREATOR + ':' + embedded.creatorId
@@ -566,7 +567,7 @@ embedFn = _.curry (props, object) ->
               .then embedFn {
                 embed: profileDialogUserEmbed, gameId: config.CLASH_ROYALE_ID
               }
-              .then User.sanitizePublic(null)
+              .then User.sanitizeChat(null)
             , {expireSeconds: FIVE_MINUTES_SECONDS}
         else
           embedded.creator = null
@@ -580,7 +581,7 @@ embedFn = _.curry (props, object) ->
               .then embedFn {
                 embed: profileDialogUserEmbed, gameId: config.CLASH_ROYALE_ID
               }
-              .then User.sanitizePublic(null)
+              .then User.sanitizeChat(null)
             , {expireSeconds: FIVE_MINUTES_SECONDS}
         else
           embedded.creator = null

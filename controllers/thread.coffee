@@ -88,7 +88,7 @@ class ThreadCtrl
           aspectRatio: aspectRatio
         }
 
-  upsert: ({thread, groupId, gameKey, language}, {user, headers, connection}) =>
+  upsert: ({thread, groupId, language}, {user, headers, connection}) =>
     userAgent = headers['user-agent']
     ip = headers['x-forwarded-for'] or
           connection.remoteAddress
@@ -136,9 +136,7 @@ class ThreadCtrl
 
         thread = _.defaultsDeep deckDiff, thread
 
-        (if groupId \
-        then Group.getById groupId
-        else Group.getByGameKeyAndLanguage gameKey, language)
+        Group.getById groupId
         .then (group) =>
           @validateAndCheckPermissions thread, {user}
           .then (thread) ->
@@ -175,25 +173,19 @@ class ThreadCtrl
 
   getAll: (options, {user}) ->
     {category, language, sort, maxTimeUuid, skip,
-      limit, gameKey, groupId} = options
+      limit, groupId} = options
 
     if category is 'all'
       category = null
 
     key = CacheService.PREFIXES.THREADS + ':' + [
-      groupId, gameKey, category, language, sort, skip, maxTimeUuid, limit
+      groupId, category, language, sort, skip, maxTimeUuid, limit
     ].join(':')
 
     CacheService.preferCache key, ->
-      (if groupId
-        Promise.resolve groupId
-      else
-        Group.getByGameKeyAndLanguage gameKey, language
-        .then (group) -> group?.id)
-      .then (groupId) ->
-        Thread.getAll {
-          category, sort, language, groupId, skip, maxTimeUuid, limit
-        }
+      Thread.getAll {
+        category, sort, language, groupId, skip, maxTimeUuid, limit
+      }
       .map (thread) ->
         EmbedService.embed {
           userId: user.id

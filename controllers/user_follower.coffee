@@ -36,23 +36,23 @@ class UserFollowerCtrl
       }
 
     UserFollower.create {userId: user.id, followingId: followingId}
-    .then ->
-      User.getById followingId
-      .then (otherUser) ->
-        PushNotificationService.send otherUser, {
-          titleObj:
-            key: 'newFollower.title'
-          type: PushNotificationService.TYPES.NEW_FRIEND
-          url: "https://#{config.SUPERNOVA_HOST}"
-          textObj:
-            key: 'newFollower.text'
-            replacements:
-              name: User.getDisplayName(user)
-          data:
-            path:
-              key: 'friends'
-              params: {gameKey: config.DEFAULT_GAME_KEY}
-        }
+    # .then ->
+    #   User.getById followingId
+    #   .then (otherUser) ->
+    #     PushNotificationService.send otherUser, {
+    #       titleObj:
+    #         key: 'newFollower.title'
+    #       type: PushNotificationService.TYPES.NEW_FRIEND
+    #       url: "https://#{config.SUPERNOVA_HOST}"
+    #       textObj:
+    #         key: 'newFollower.text'
+    #         replacements:
+    #           name: User.getDisplayName(user)
+    #       data:
+    #         path:
+    #           key: 'friends'
+    #           params: {gameKey: config.DEFAULT_GAME_KEY}
+    #     }
       .catch -> null
       # key = "#{CacheService.PREFIXES.USER_DATA_FOLLOWING_PLAYERS}:#{user.id}"
       # CacheService.deleteByKey key

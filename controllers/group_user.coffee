@@ -3,10 +3,12 @@ router = require 'exoid-router'
 Promise = require 'bluebird'
 
 User = require '../models/user'
+GroupAuditLog = require '../models/group_audit_log'
 GroupUser = require '../models/group_user'
 GroupUsersOnline = require '../models/group_users_online'
 GroupRole = require '../models/group_role'
 Group = require '../models/group'
+Language = require '../models/language'
 EmbedService = require '../services/embed'
 CacheService = require '../services/cache'
 config = require '../config'
@@ -35,6 +37,20 @@ class GroupUserCtrl
           "#{role.roleId}" is roleId
         unless role
           router.throw status: 404, info: 'no role exists'
+
+        User.getById userId
+        .then (otherUser) ->
+          GroupAuditLog.upsert {
+            groupId
+            userId: user.id
+            actionText: Language.get 'audit.giveRole', {
+              replacements:
+                name: User.getDisplayName otherUser
+                roleName: role.name
+              language: user.language
+            }
+          }
+
         GroupUser.addRoleIdByGroupUser {
           userId: userId
           groupId: groupId
@@ -53,6 +69,20 @@ class GroupUserCtrl
           "#{role.roleId}" is roleId
         unless role
           router.throw status: 404, info: 'no role exists'
+
+        User.getById userId
+        .then (otherUser) ->
+          GroupAuditLog.upsert {
+            groupId
+            userId: user.id
+            actionText: Language.get 'audit.removeRole', {
+              replacements:
+                name: User.getDisplayName otherUser
+                roleName: role.name
+              language: user.language
+            }
+          }
+
         GroupUser.removeRoleIdByGroupUser {
           userId: userId
           groupId: groupId

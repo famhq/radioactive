@@ -150,7 +150,7 @@ class BanModel
       .then defaultBan
 
     if preferCache
-      key = "#{CacheService.PREFIXES.BAN_IP}:#{ip}"
+      key = "#{CacheService.PREFIXES.BAN_IP}:#{groupId}:#{ip}"
       CacheService.preferCache key, get, {expireSeconds: ONE_DAY_SECONDS}
     else
       get()
@@ -165,7 +165,7 @@ class BanModel
       .then defaultBan
 
     if preferCache
-      key = "#{CacheService.PREFIXES.BAN_USER_ID}:#{userId}"
+      key = "#{CacheService.PREFIXES.BAN_USER_ID}:#{groupId}:#{userId}"
       CacheService.preferCache key, get, {expireSeconds: ONE_DAY_SECONDS}
     else
       get()

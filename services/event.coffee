@@ -19,7 +19,6 @@ class EventService
               key: 'event'
               params:
                 id: event.id
-                gameKey: config.DEFAULT_GAME_KEY
         }
 
 module.exports = new EventService()

@@ -52,7 +52,7 @@ class SpecialOfferCtrl
           }
           uc = "#{userId}%7C#{offer.id}" # userId|offerId
           if offerInfo
-            _.defaults {
+            _.defaultsDeep {
               defaultData:
                 trackUrl: "#{offerInfo.url}?uc=#{uc}"
             }, offer

@@ -44,7 +44,7 @@ class UserCtrl
           connection.remoteAddress
     # rendered via starfire server (wrong ip)
     isServerSide = ip?.indexOf('::ffff:10.') isnt -1
-    if isServerSide then null else geoip.lookup(ip)?.country
+    if isServerSide then null else geoip.lookup(ip)?.country?.toLowerCase()
 
   updateLastActiveTime: (user, ip) ->
     diff = {
@@ -173,6 +173,7 @@ class UserCtrl
         router.throw status: 400, info: "username taken: #{username}"
       User.updateById user.id, {username}
     .tap ->
+      # TODO: groupIds
       key = "#{CacheService.PREFIXES.CHAT_USER}:#{user.id}"
       CacheService.deleteByKey key
       null
