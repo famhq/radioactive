@@ -61,7 +61,7 @@ class ClashRoyaleClan
             tag: "##{existingPlayer.id}"
           }
           donations = clanPlayer.donations
-          clanChestCrowns = clanPlayer.clanChestCrowns
+          clanChestCrowns = clanPlayer.clanChestPoints
           # TODO: batch these
           ClashRoyalePlayerRecord.upsert {
             playerId: existingPlayer.id
