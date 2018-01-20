@@ -82,6 +82,7 @@ class PlayerRecordModel
   getRecords: (options) ->
     {gameRecordTypeId, playerId, minScaledTime, maxScaledTime, limit} = options
     limit ?= 30
+    limit = Math.min limit, 100
 
     cknex('clash_royale').select '*'
     .from 'player_records_by_playerId'

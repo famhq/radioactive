@@ -186,7 +186,7 @@ class PushNotificationService
         path = {
           key: 'groupChatConversation'
           params:
-            id: group.id
+            groupId: group.key or group.id
             conversationId: conversation.id
             gameKey: config.DEFAULT_GAME_KEY
         }

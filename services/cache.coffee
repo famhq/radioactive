@@ -89,12 +89,13 @@ PREFIXES =
   CLAN_CLAN_ID_GAME_ID: 'clan:clan_id_game_id11'
   CLAN_MIGRATE: 'clan:migrate9'
   CLAN_PLAYERS: 'clan:players1'
-  BAN_IP: 'ban:ip1'
-  BAN_USER_ID: 'ban:user_id7'
+  BAN_IP: 'ban:ip2'
+  BAN_USER_ID: 'ban:user_id2'
   HONEY_POT_BAN_IP: 'honey_pot:ban_ip5'
   REWARD_INCREMENT: 'reward:increment'
   REWARD_ATTEMPT_TIME: 'reward_attempt:time1'
   SPECIAL_OFFER_ID: 'special_offer:id'
+  USER_SPECIAL_OFFERS: 'user_special_offers'
 
 class CacheService
   KEYS:

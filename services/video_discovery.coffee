@@ -85,7 +85,7 @@ class VideoDisoveryService
                   key: 'groupVideos'
                   params:
                     gameKey: 'clash-royale'
-                    id: config.GROUPS.PLAY_HARD
+                    groupId: config.GROUPS.PLAY_HARD
             }
           )
 

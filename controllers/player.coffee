@@ -190,8 +190,7 @@ class PlayerCtrl
           path:
             key: 'groupChat'
             params:
-              gameKey: config.DEFAULT_GAME_KEY
-              id: group.id
+              groupId: group.key or group.id
 
       PushNotificationService.sendToGroup group, message, {
         skipMe: true, userId

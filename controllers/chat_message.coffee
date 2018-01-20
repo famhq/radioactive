@@ -121,7 +121,7 @@ class ChatMessageCtrl
       path = {
         key: 'groupChatConversation'
         params:
-          id: conversation.groupId
+          groupId: conversation.groupId
           conversationId: conversation.id
       }
     else

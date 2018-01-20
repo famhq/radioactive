@@ -105,11 +105,12 @@ class VideoModel
     .run {isSingle: true}
     .then defaultVideoOutput
 
-  getAllByGroupId: (groupId) ->
+  getAllByGroupId: (groupId, {limit, sort} = {}) ->
+    limit ?= 15
     cknex().select '*'
     .from 'videos_by_groupId'
     .where 'groupId', '=', groupId
-    .limit 15
+    .limit limit
     .run()
     .map defaultVideoOutput
 

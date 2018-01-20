@@ -21,7 +21,7 @@ class ProductService
         data:
           path:
             key: 'groupShop'
-            params: {id: groupId}
+            params: {groupId}
       }
 
 

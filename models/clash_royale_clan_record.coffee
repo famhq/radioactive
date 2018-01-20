@@ -66,6 +66,7 @@ class ClanRecordModel
   getRecords: (options) ->
     {clanRecordTypeId, clanId, minScaledTime, maxScaledTime, limit} = options
     limit ?= 30
+    limit = Math.min limit, 100
 
     cknex('clash_royale').select '*'
     .from 'clan_records_by_clanId'

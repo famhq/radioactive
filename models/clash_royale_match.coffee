@@ -76,6 +76,7 @@ class ClashRoyaleMatchModel
 
   getAllByPlayerId: (playerId, {limit, cursor} = {}) ->
     limit ?= 10
+    limit = Math.min limit, 100
 
     (if cursor
       CacheService.getCursor cursor

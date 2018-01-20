@@ -1,6 +1,7 @@
 _ = require 'lodash'
 request = require 'request-promise'
 geoip = require 'geoip-lite'
+router = require 'exoid-router'
 
 SpecialOffer = require '../models/special_offer'
 User = require '../models/user'
@@ -9,21 +10,34 @@ EmbedService = require '../services/embed'
 config = require '../config'
 
 ONE_DAY_MS = 3600 * 24 * 1000
+ONE_HOUR_SECONDS = 60 * 3600
 
 class SpecialOfferCtrl
-  getAll: ({country}, {user}) =>
-    country = 'us'
+  getAll: ({limit}, {user, headers, connection}) =>
+    limit ?= 20
+    key = "#{CacheService.PREFIXES.USER_SPECIAL_OFFERS}:#{user.id}"
+    CacheService.preferCache key, =>
+      ip = headers['x-forwarded-for'] or
+            connection.remoteAddress
+      country = geoip.lookup(ip)?.country
+      SpecialOffer.getAll {limit}, {preferCache: true}
+      .then @filterMapstreetOffers country, user.id
+      .map EmbedService.embed {
+        embed: [EmbedService.TYPES.SPECIAL_OFFER.TRANSACTION]
+        userId: user.id
+      }
+      .then (offers) ->
+        offers = _.filter offers, (offer) ->
+          not offer?.transaction? or offer.transaction.status isnt 'completed'
 
-    SpecialOffer.getAll {preferCache: true}
-    .then @filterMapstreetOffers country, user.id
-    .map EmbedService.embed {
-      embed: [EmbedService.TYPES.SPECIAL_OFFER.TRANSACTION]
-      userId: user.id
-    }
+        offers = _.map offers, (offer) ->
+          _.defaults {meCountryData: offer.countryData[country]}, offer
+        _.orderBy offers, (offer) ->
+          offer.defaultData.priority or 0
+        , 'desc'
+    , {expireSeconds: ONE_HOUR_SECONDS}
     .then (offers) ->
-      _.orderBy offers, (offer) ->
-        offer.defaultData.priority or 0
-      , 'desc'
+      _.take offers, limit
 
   filterMapstreetOffers: (country, userId) ->
     (offers) ->
@@ -72,6 +86,9 @@ class SpecialOfferCtrl
           deviceId: deviceId
           status: 'clicked'
         }
+        .tap ->
+          key = "#{CacheService.PREFIXES.USER_SPECIAL_OFFERS}:#{user.id}"
+          CacheService.deleteByKey key
 
   giveDailyReward: (options, {user, headers, connection}) ->
     {offer, usageStats, deviceId} = options
@@ -135,6 +152,9 @@ class SpecialOfferCtrl
             }
           }
         ]
+        .tap ->
+          key = "#{CacheService.PREFIXES.USER_SPECIAL_OFFERS}:#{user.id}"
+          CacheService.deleteByKey key
     , {expireSeconds: 10, unlockWhenCompleted: true}
 
   giveInstallReward: (options, {user, headers, connection}) ->
@@ -174,6 +194,9 @@ class SpecialOfferCtrl
             fireEarned: installPayout
           }
         ]
+        .tap ->
+          key = "#{CacheService.PREFIXES.USER_SPECIAL_OFFERS}:#{user.id}"
+          CacheService.deleteByKey key
     , {expireSeconds: 10, unlockWhenCompleted: true}
 
 module.exports = new SpecialOfferCtrl()

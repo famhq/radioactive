@@ -104,10 +104,12 @@ class BanModel
       query.run()
     .then ->
       if ban.userId
-        key = "#{CacheService.PREFIXES.BAN_USER_ID}:#{ban.userId}"
+        prefix = CacheService.PREFIXES.BAN_USER_ID
+        key = "#{prefix}:#{ban.groupId}:#{ban.userId}"
         CacheService.deleteByKey key
       if ban.ip
-        key = "#{CacheService.PREFIXES.BAN_IP}:#{ban.ip}"
+        prefix = CacheService.PREFIXES.BAN_IP
+        key = "#{prefix}:#{ban.groupId}:#{ban.ip}"
         CacheService.deleteByKey key
       ban
 
@@ -201,7 +203,7 @@ class BanModel
     .run()
     .map @deleteByBan
     .then ->
-      key = "#{CacheService.PREFIXES.BAN_IP}:#{ip}"
+      key = "#{CacheService.PREFIXES.BAN_IP}:#{groupId}:#{ip}"
       CacheService.deleteByKey key
     .then -> null
 
@@ -213,7 +215,7 @@ class BanModel
     .run()
     .map @deleteByBan
     .then ->
-      key = "#{CacheService.PREFIXES.BAN_USER_ID}:#{userId}"
+      key = "#{CacheService.PREFIXES.BAN_USER_ID}:#{groupId}:#{userId}"
       CacheService.deleteByKey key
     .then -> null
 

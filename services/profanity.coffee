@@ -111,6 +111,7 @@ profaneRegExp = new RegExp "#{regExpWords.join('|')}", 'ig'
 
 class ProfanityService
   isProfane: (str) ->
-    Boolean str?.match profaneRegExp
+    hasExcessiveBlockQuotes = str.indexOf('>>>>') isnt -1
+    hasExcessiveBlockQuotes or Boolean str?.match profaneRegExp
 
 module.exports = new ProfanityService()

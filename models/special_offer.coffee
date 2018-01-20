@@ -122,12 +122,14 @@ class SpecialOfferModel
     Promise.map specialOffers, (specialOffer) =>
       @upsert specialOffer, {skipRun: true}
 
-  getAll: ({preferCache} = {}) ->
+  getAll: ({limit}, {preferCache} = {}) ->
+    limit ?= 20
     get = ->
       cknex().select '*'
       .from 'special_offers'
       # without this might be causing db crashes?
       .where 'timeBucket', '=', 'all'
+      .limit limit
       .run()
       .map defaultSpecialOfferOutput
 

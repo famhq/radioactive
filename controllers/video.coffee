@@ -13,8 +13,8 @@ defaultEmbed = []
 ONE_DAY_SECONDS = 3600 * 24
 
 class VideoCtrl
-  getAllByGroupId: ({groupId, sort}) ->
-    Video.getAllByGroupId(groupId, {sort})
+  getAllByGroupId: ({groupId, sort, limit}) ->
+    Video.getAllByGroupId(groupId, {sort, limit})
     .map EmbedService.embed {embed: defaultEmbed}
     .map Video.sanitize null
 
