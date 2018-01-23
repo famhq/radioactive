@@ -16,11 +16,12 @@ PREFIXES =
   CHAT_GROUP_USER: 'chat:group_user3'
   THREAD_USER: 'thread:user1'
   THREAD_CREATOR: 'thread:creator3'
-  THREAD: 'thread:id'
+  THREAD: 'thread:id:embedded2'
+  THREAD_BY_ID: 'thread:id2'
   THREAD_DECK: 'thread:deck11'
   THREAD_COMMENTS: 'thread:comments6'
   THREAD_COMMENT_COUNT: 'thread:comment_count1'
-  THREADS: 'threads1'
+  THREADS_CATEGORY: 'threads4'
   CHAT_MESSAGE_DAILY_XP: 'chat_message:daily_xp'
   CONVERSATION_ID: 'conversation:id'
   VIDEO_DAILY_XP: 'video:daily_xp'
@@ -62,7 +63,7 @@ PREFIXES =
   GROUP_ID: 'group:id4'
   GROUP_KEY: 'group:key3'
   GROUP_GET_ALL: 'group:getAll11'
-  GROUP_GET_ALL_CATEGORY: 'group:getAll:category4'
+  GROUP_GET_ALL_CATEGORY: 'group:getAll:category6'
   GROUP_STAR: 'group:star2'
   GROUP_USER_COUNT: 'group:user_count1'
   GROUP_ROLE_GROUP_ID_USER_ID: 'group_role:groupId:userId2'
@@ -95,7 +96,7 @@ PREFIXES =
   REWARD_INCREMENT: 'reward:increment'
   REWARD_ATTEMPT_TIME: 'reward_attempt:time1'
   SPECIAL_OFFER_ID: 'special_offer:id'
-  USER_SPECIAL_OFFERS: 'user_special_offers'
+  USER_SPECIAL_OFFERS: 'user_special_offers7'
 
 class CacheService
   KEYS:
@@ -137,6 +138,7 @@ class CacheService
     GAME_TYPE_DECK_LEADERBOARD: 'gameType:deck_leaderboard'
     THREAD_GROUP_LEADERBOARD_BY_CATEGORY: 'thread:group_leaderboard:by_category'
     THREAD_GROUP_LEADERBOARD_ALL: 'thread:group_leaderboard:by_all'
+    PINNED_THREAD_IDS: 'pinned_thread_ids'
 
   constructor: ->
     @redlock = new Redlock [RedisService], {
@@ -145,29 +147,25 @@ class CacheService
       # retryDelay:  200
     }
 
-  arrayAppend: (key, value) ->
+  tempSetAdd: (key, value) ->
     key = config.REDIS.PREFIX + ':' + key
-    RedisService.rpush key, value #JSON.stringify value
+    RedisService.sadd key, value
 
-  arrayGet: (key, value) ->
-    key = config.REDIS.PREFIX + ':' + key
-    RedisService.lrange key, 0, -1
-
-  arrayGetAll: (key) ->
+  tempSetGetAll: (key) ->
     key = config.REDIS.PREFIX + ':' + key
     RedisService.smembers key
 
-  hashGet: (key, hash) ->
+  setAdd: (key, value) ->
     key = config.REDIS.PREFIX + ':' + key
-    RedisService.hget key, hash
+    RedisPersistentService.sadd key, value
 
-  hashSet: (key, hash, value) ->
+  setRemove: (key, value) ->
     key = config.REDIS.PREFIX + ':' + key
-    RedisService.hset key, hash, value
+    RedisPersistentService.srem key, value
 
-  hashGetAll: (key, hash) ->
+  setGetAll: (key) ->
     key = config.REDIS.PREFIX + ':' + key
-    RedisService.hgetall key
+    RedisPersistentService.smembers key
 
   leaderboardUpdate: (setKey, member, score) ->
     key = config.REDIS.PREFIX + ':' + setKey
@@ -260,10 +258,7 @@ class CacheService
 
     if category
       categoryKey = 'category:' + category
-      @arrayGet categoryKey
-      .then (categoryKeys) =>
-        if categoryKeys.indexOf(key) is -1
-          @arrayAppend categoryKey, rawKey
+      @tempSetAdd categoryKey, rawKey
 
     RedisService.get key
     .then (value) ->
@@ -284,7 +279,7 @@ class CacheService
 
   deleteByCategory: (category) =>
     categoryKey = 'category:' + category
-    @arrayGet categoryKey
+    @tempSetGetAll categoryKey
     .then (categoryKeys) =>
       Promise.map categoryKeys, @deleteByKey
     .then =>

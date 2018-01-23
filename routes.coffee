@@ -124,7 +124,8 @@ module.exports = router
 .on 'threads.getAll', authed ThreadCtrl.getAll
 .on 'threads.getById', authed ThreadCtrl.getById
 .on 'threads.voteById', authed ThreadCtrl.voteById
-.on 'threads.updateById', authed ThreadCtrl.createOrUpdateById
+.on 'threads.pinById', authed ThreadCtrl.pinById
+.on 'threads.unpinById', authed ThreadCtrl.unpinById
 .on 'threads.deleteById', authed ThreadCtrl.deleteById
 
 .on 'threadVotes.upsertByParent',
@@ -179,10 +180,8 @@ module.exports = router
 .on 'groupUserXpTransactions.incrementByGroupIdAndActionKey',
   authed GroupUserXpTransactionCtrl.incrementByGroupIdAndActionKey
 
-.on 'groupRecords.getAllByUserIdAndGroupId',
-  authed GroupRecordCtrl.getAllByUserIdAndGroupId
-.on 'groupRecords.save', authed GroupRecordCtrl.save
-.on 'groupRecords.bulkSave', authed GroupRecordCtrl.bulkSave
+.on 'groupRecords.getAllByGroupIdAndRecordTypeKey',
+  authed GroupRecordCtrl.getAllByGroupIdAndRecordTypeKey
 
 .on 'groupRecordTypes.getAllByGroupId',
   authed GroupRecordTypeCtrl.getAllByGroupId

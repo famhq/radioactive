@@ -9,6 +9,7 @@ config = require '../config'
 
 # update the scores for posts up until they're 10 days old
 SCORE_UPDATE_TIME_RANGE_S = 3600 * 24 * 10
+ONE_HOUR_SECONDS = 3600
 
 defaultThread = (thread) ->
   unless thread?
@@ -177,29 +178,39 @@ class ThreadModel
     .then ->
       thread
 
-  getById: (id) =>
-    Promise.all [
-      cknex().select '*'
-      .from 'threads_by_id'
-      .where 'id', '=', id
-      .run {isSingle: true}
+  getById: (id, {preferCache, omitCounter} = {}) =>
+    get = =>
+      Promise.all [
+        cknex().select '*'
+        .from 'threads_by_id'
+        .where 'id', '=', id
+        .run {isSingle: true}
 
-      @getCounterById id
-    ]
-    .then ([thread, threadCounter]) ->
-      threadCounter or= {upvotes: 0, downvotes: 0}
-      _.defaults thread, threadCounter
-    .then defaultThreadOutput
+        if omitCounter then Promise.resolve(null) else @getCounterById id
+      ]
+      .then ([thread, threadCounter]) ->
+        if omitCounter
+          thread
+        else
+          threadCounter or= {upvotes: 0, downvotes: 0}
+          _.defaults thread, threadCounter
+      .then defaultThreadOutput
+
+    if preferCache
+      key = "#{CacheService.PREFIXES.THREAD_BY_ID}:#{id}:#{Boolean omitCounter}"
+      CacheService.preferCache key, get, {expireSeconds: ONE_HOUR_SECONDS}
+    else
+      get()
 
   getStale: ->
-    CacheService.arrayGetAll CacheService.KEYS.STALE_THREAD_IDS
+    CacheService.tempSetGetAll CacheService.KEYS.STALE_THREAD_IDS
     .map (value) ->
       arr = value.split '|'
       {groupId: arr[0], category: arr[1], id: arr[2]}
 
-  setStaleByGroupIdAndCategoryAndId: (groupId, category, id) ->
+  setStaleByThread: ({groupId, category, id}) ->
     key = CacheService.KEYS.STALE_THREAD_IDS
-    CacheService.arrayAppend key, "#{groupId}|#{category}|#{id}"
+    CacheService.tempSetAdd key, "#{groupId}|#{category}|#{id}"
 
   getAllNewish: (limit) ->
     q = cknex().select '*'
@@ -217,19 +228,36 @@ class ThreadModel
     .where 'id', '=', id
     .run {isSingle: true}
 
+  getAllPinnedThreadIds: ->
+    # TODO: this may get very large. when that happens, probably should
+    # move to scylla with each key having a 1 month expiry. or figure out
+    # a different solution for updatescores
+    key = CacheService.STATIC_PREFIXES.PINNED_THREAD_IDS
+    CacheService.setGetAll key
+
+  setPinnedThreadId: (threadId) ->
+    key = CacheService.STATIC_PREFIXES.PINNED_THREAD_IDS
+    CacheService.setAdd key, threadId
+
+  deletePinnedThreadId: (threadId) ->
+    key = CacheService.STATIC_PREFIXES.PINNED_THREAD_IDS
+    CacheService.setRemove key, threadId
+
   updateScores: (type, groupIds) =>
     # FIXME: also need to factor in time when grabbing threads. Even without
     # an upvote, threads need to eventually be updated for time increasing.
     # maybe do it by addTime up until 3 days, and run not as freq?
+    Promise.all [
+      @getAllPinnedThreadIds()
 
-    (if type is 'time' then @getAllNewish() else @getStale())
-    .map ({id, groupId, category}) =>
-      @getCounterById id
-      .then (threadCount) ->
-        threadCount or= {upvotes: 0, downvotes: 0}
-        _.defaults {id, groupId, category}, threadCount
-    .then (threadCounts) =>
-      console.log 'updating threads', type, threadCounts?.length
+      (if type is 'time' then @getAllNewish() else @getStale())
+      .map ({id, groupId, category}) =>
+        @getCounterById id
+        .then (threadCount) ->
+          threadCount or= {upvotes: 0, downvotes: 0}
+          _.defaults {id, groupId, category}, threadCount
+    ]
+    .then ([pinnedThreadIds, threadCounts]) =>
       Promise.map threadCounts, (thread) =>
         # https://medium.com/hacking-and-gonzo/how-reddit-ranking-algorithms-work-ef111e33d0d9
         # ^ simplification in comments
@@ -248,8 +276,10 @@ class ThreadModel
         order = Math.log10(Math.max(Math.abs(rawScore), 1))
         sign = if rawScore > 0 then 1 else if rawScore < 0 then -1 else 0
         postAgeHours = (Date.now() - addTime.getTime()) / (3600 * 1000)
-        if "#{thread.id}" is 'fcb35890-f40e-11e7-9af5-920aa1303bef' or "#{thread.id}" is '90c06cb0-86ce-4ed6-9257-f36633db59c2'
+        if "#{thread.id}" in pinnedThreadIds
           postAgeHours = 1
+          sign = 1
+          order = Math.log10(Math.max(Math.abs(9999), 1))
         score = sign * order / Math.pow(2, postAgeHours / 12)#3.76)
         score = Math.round(score * 1000000)
         @setScoreByThread thread, score
@@ -340,7 +370,10 @@ class ThreadModel
       else
         results
 
-  incrementById: (id, diff) ->
+  incrementById: (id, diff) =>
+    @getById id, {preferCache: true, omitCounter: true}
+    .then @setStaleByThrea
+
     q = cknex().update 'threads_counter_by_id'
     _.forEach diff, (amount, key) ->
       q = q.increment key, amount
@@ -407,7 +440,7 @@ class ThreadModel
     unless user
       return Promise.resolve false
 
-    @getById id
+    @getById id, {preferCache: true, omitCounter: true}
     .then (thread) =>
       @hasPermission thread, user, {level}
 

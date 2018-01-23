@@ -7,6 +7,7 @@ uuid = require 'uuid'
 User = require '../models/user'
 UserData = require '../models/user_data'
 Group = require '../models/group'
+GroupUser = require '../models/group_user'
 Thread = require '../models/thread'
 ThreadVote = require '../models/thread_vote'
 ClashRoyaleDeck = require '../models/clash_royale_deck'
@@ -111,6 +112,9 @@ class ThreadCtrl
       if not thread.data.body or not thread.data.title
         router.throw status: 400, info: 'can\'t be empty'
 
+      if thread.data.title.match /like si\b/i
+        router.throw status: 400, info: 'title must not contain that phrase'
+
       unless thread.id
         thread.category ?= 'general'
 
@@ -143,8 +147,12 @@ class ThreadCtrl
             if thread.id
               Thread.upsert thread
               .then ->
-                key = CacheService.PREFIXES.THREAD_DECK + ':' + thread.id
-                CacheService.deleteByKey key
+                deckKey = CacheService.PREFIXES.THREAD_DECK + ':' + thread.id
+                key = CacheService.PREFIXES.THREAD + ':' + id
+                Promise.all [
+                  CacheService.deleteByKey deckKey
+                  CacheService.deleteByKey key
+                ]
                 {id: thread.id}
             else
               Thread.upsert _.defaults thread, {
@@ -153,7 +161,7 @@ class ThreadCtrl
               }
       .tap ->
         # TODO: groupId
-        CacheService.deleteByCategory CacheService.PREFIXES.THREADS
+        CacheService.deleteByCategory CacheService.PREFIXES.THREADS_CATEGORY
 
   validateAndCheckPermissions: (thread, {user}) ->
     thread = _.pick thread, _.keys schemas.thread
@@ -178,7 +186,7 @@ class ThreadCtrl
     if category is 'all'
       category = null
 
-    key = CacheService.PREFIXES.THREADS + ':' + [
+    key = CacheService.PREFIXES.THREADS_CATEGORY + ':' + [
       groupId, category, language, sort, skip, maxTimeUuid, limit
     ].join(':')
 
@@ -196,7 +204,7 @@ class ThreadCtrl
       .map Thread.sanitize null
     , {
       expireSeconds: ONE_MINUTE_SECONDS
-      category: CacheService.PREFIXES.THREADS
+      category: CacheService.PREFIXES.THREADS_CATEGORY
     }
     .then (threads) ->
       if _.isEmpty threads
@@ -217,7 +225,7 @@ class ThreadCtrl
     else if id is '90c06cb0-86ce-4ed6-9257-f36633db59c2' # bruno
       id = 'fcb35890-f40e-11e7-9af5-920aa1303bef'
 
-    key = CacheService.PREFIXES.THREAD + ':' + id + ':' + language
+    key = CacheService.PREFIXES.THREAD + ':' + id
 
     CacheService.preferCache key, ->
       Thread.getById id
@@ -231,10 +239,67 @@ class ThreadCtrl
         thread
 
   deleteById: ({id}, {user}) ->
-    unless user.flags.isModerator
-      router.throw status: 400, info: 'no permission'
-    Thread.deleteById id
-    .tap ->
-      CacheService.deleteByCategory CacheService.PREFIXES.THREADS
+    Thread.getById id
+    .then (thread) ->
+      permission = GroupUser.PERMISSIONS.DELETE_FORUM_THREAD
+      GroupUser.hasPermissionByGroupIdAndUser thread.groupId, user, [permission]
+      .then (hasPermission) ->
+        unless hasPermission
+          router.throw
+            status: 400, info: 'You don\'t have permission to do that'
+
+        Thread.deleteById id
+        .tap ->
+          CacheService.deleteByCategory CacheService.PREFIXES.THREADS_CATEGORY
+
+  pinById: ({id}, {user}) ->
+    Thread.getById id
+    .then (thread) ->
+      permission = GroupUser.PERMISSIONS.PIN_FORUM_THREAD
+      GroupUser.hasPermissionByGroupIdAndUser thread.groupId, user, [permission]
+      .then (hasPermission) ->
+        unless hasPermission
+          router.throw
+            status: 400, info: 'You don\'t have permission to do that'
+
+        Thread.upsert {
+          groupId: thread.groupId
+          creatorId: thread.creatorId
+          category: thread.category
+          id: thread.id
+          timeBucket: thread.timeBucket
+          data: _.defaults {isPinned: true}, thread.data
+        }
+        .tap ->
+          Thread.setPinnedThreadId id
+          Promise.all [
+            CacheService.deleteByCategory CacheService.PREFIXES.THREADS_CATEGORY
+            CacheService.deleteByKey CacheService.PREFIXES.THREAD + ':' + id
+          ]
+
+  unpinById: ({id}, {user}) ->
+    Thread.getById id
+    .then (thread) ->
+      permission = GroupUser.PERMISSIONS.PIN_FORUM_THREAD
+      GroupUser.hasPermissionByGroupIdAndUser thread.groupId, user, [permission]
+      .then (hasPermission) ->
+        unless hasPermission
+          router.throw
+            status: 400, info: 'You don\'t have permission to do that'
+
+        Thread.upsert {
+          groupId: thread.groupId
+          creatorId: thread.creatorId
+          category: thread.category
+          id: thread.id
+          timeBucket: thread.timeBucket
+          data: _.defaults {isPinned: false}, thread.data
+        }
+        .tap ->
+          Thread.deletePinnedThreadId id
+          Promise.all [
+            CacheService.deleteByCategory CacheService.PREFIXES.THREADS_CATEGORY
+            CacheService.deleteByKey CacheService.PREFIXES.THREAD + ':' + id
+          ]
 
 module.exports = new ThreadCtrl()

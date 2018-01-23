@@ -12,6 +12,7 @@ config = require '../config'
 User = require '../models/user'
 RewardTransaction = require '../models/reward_transaction'
 RewardAttempt = require '../models/reward_attempt'
+GroupRecord = require '../models/group_record'
 CacheService = require '../services/cache'
 TimeService = require '../services/time'
 
@@ -27,7 +28,7 @@ FILTER_REGEX = [
   /horoscope/i
   # /vuit/i
   # /emoji search/i
-  # /future sms/i
+  /future sms/i
   # /fast numbers 2/i
   # /bubble bird/i
 ]
@@ -129,7 +130,7 @@ class RewardCtrl
         locale: options.locale?.replace '-', '_'
         os: "#{options.osName} #{options.osVersion}"
       user:
-        userid: user.id
+        userid: "#{option.groupId}_#{user.id}"
       moment:
         id: config.KIIP_MOMENT_ID
     }
@@ -186,7 +187,7 @@ class RewardCtrl
         page: 1
         ps_time: Math.round user.joinTime.getTime() / 1000
         timestamp: Math.round Date.now() / 1000
-        uid: user.id
+        uid: "#{options.groupId}_#{user.id}"
     else if options.osName is 'iOS'
       params =
         appid: config.FYBER_APP_ID
@@ -198,7 +199,7 @@ class RewardCtrl
         page: 1
         ps_time: Math.round user.joinTime.getTime() / 1000
         timestamp: Math.round Date.now() / 1000
-        uid: user.id
+        uid: "#{options.groupId}_#{user.id}"
     else
       params =
         appid: config.FYBER_APP_ID
@@ -209,7 +210,7 @@ class RewardCtrl
         page: 1
         ps_time: Math.round user.joinTime.getTime() / 1000
         timestamp: Math.round Date.now() / 1000
-        uid: user.id
+        uid: "#{options.groupId}_#{user.id}"
 
     combined = qs.stringify(params) + '&' + config.FYBER_API_KEY
     shasum = crypto.createHash 'sha1'
@@ -238,7 +239,7 @@ class RewardCtrl
           offerId: "#{offer.offer_id}"
         }
     .catch (e) ->
-      console.log 'fyber err'
+      console.log 'fyber err'#, e
 
   _getAdscend: (options, {user, headers, connection}) ->
     request
@@ -351,12 +352,16 @@ class RewardCtrl
 
     isValid = shasum.digest('hex') is signature
 
+    ids = user_id.split('_')
+    [groupId, userId] = ids
+
     unless isValid
       throw router.throw {status: 400, info: 'invalid kiip'}
 
     {
       txnId: transaction_id
-      userId: user_id
+      userId: userId
+      groupId: groupId
       fireAmount: parseInt(quantity)
       offerId: "#{content}"
     }
@@ -382,11 +387,15 @@ class RewardCtrl
     shasum.update config.FYBER_SECURITY_TOKEN + uid + amount + _trans_id_ + pub0
     isValid = shasum.digest('hex') is sid
 
+    ids = uid.split('_')
+    [groupId, userId] = ids
+
     console.log 'fyber', uid, amount, _trans_id_, pub0, isValid
     unless isValid
       throw router.throw {status: 400, info: 'invalid fyber'}
     {
-      userId: uid
+      userId: userId
+      groupId: groupId
       fireAmount: parseInt(amount)
       txnId: _trans_id_
       offerId: "#{pub0}" or ''
@@ -397,13 +406,16 @@ class RewardCtrl
     shasum.update qs.stringify {offerId, amount, userId, txnId}
     isValid = shasum.digest('hex') is hash
 
+    ids = userId.split('_')
+    [groupId, userId] = ids
+
     amount = amount * 1000
 
     unless isValid
       throw router.throw {status: 400, info: 'invalid ascend'}
 
     console.log 'adscend add', userId, amount
-    {userId, txnId, offerId, fireAmount: amount}
+    {userId, groupId, txnId, offerId, fireAmount: amount}
 
   _processTrialpay: ({offerId, amount, userId, txnId, hash}) ->
     return Promise.resolve true
@@ -421,12 +433,12 @@ class RewardCtrl
 
   _processMappstreet: (query, body) ->
     # todo set isVerified: true for special_offer_transactions
-    # query.uc = userId|specialOfferId
+    # query.uc = userId_specialOfferId
     console.log 'mappstreet', query, body
 
   process: (req, res) =>
     network = req.params.network
-    {txnId, userId, fireAmount, offerId} = switch network
+    {txnId, userId, fireAmount, offerId, groupId} = switch network
       when 'kiip' then @_processKiip req.body
       when 'fyber' then @_processFyber req.query
       when 'adscend' then @_processAdscend req.query
@@ -446,6 +458,10 @@ class RewardCtrl
         RewardAttempt.incrementByNetworkAndOfferId network, offerId, 'successes'
       ]
     .then ->
+      GroupRecord.incrementByGroupIdAndRecordTypeKey(
+        groupId, 'fireEarned', fireAmount
+      )
+
       User.addFireById userId, fireAmount
 
     res.sendStatus 200

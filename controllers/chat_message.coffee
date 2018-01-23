@@ -440,16 +440,16 @@ class ChatMessageCtrl
           key: "#{keyPrefix}.small.jpg"
           stream: ImageService.toStream
             buffer: file.buffer
-            width: smallWidth
-            height: smallHeight
+            width: Math.min size.width, smallWidth
+            height: Math.min size.height, smallHeight
             useMin: true
 
         ImageService.uploadImage
           key: "#{keyPrefix}.large.jpg"
           stream: ImageService.toStream
             buffer: file.buffer
-            width: smallWidth * 5
-            height: smallHeight * 5
+            width: Math.min size.width, smallWidth * 5
+            height: Math.min size.height, smallHeight * 5
             useMin: true
       ]
       .then (imageKeys) ->

@@ -5,6 +5,7 @@ router = require 'exoid-router'
 
 SpecialOffer = require '../models/special_offer'
 User = require '../models/user'
+GroupRecord = require '../models/group_record'
 CacheService = require '../services/cache'
 EmbedService = require '../services/embed'
 config = require '../config'
@@ -28,7 +29,8 @@ class SpecialOfferCtrl
       }
       .then (offers) ->
         offers = _.filter offers, (offer) ->
-          not offer?.transaction? or offer.transaction.status isnt 'completed'
+          not offer?.transaction? or
+            not (offer.transaction.status in ['completed', 'failed'])
 
         offers = _.map offers, (offer) ->
           _.defaults {meCountryData: offer.countryData[country]}, offer
@@ -91,7 +93,7 @@ class SpecialOfferCtrl
           CacheService.deleteByKey key
 
   giveDailyReward: (options, {user, headers, connection}) ->
-    {offer, usageStats, deviceId} = options
+    {offer, usageStats, deviceId, groupId} = options
 
     prefix = CacheService.LOCK_PREFIXES.SPECIAL_OFFER_DAILY
     key = "#{prefix}:#{offer.id}|#{user.id}"
@@ -107,6 +109,15 @@ class SpecialOfferCtrl
       .then ([offer, transaction, transactionByDeviceId]) ->
         if transactionByDeviceId and
             "#{transactionByDeviceId.userId}" isnt "#{user.id}"
+          SpecialOffer.upsertTransaction {
+            offerId: offer.id
+            userId: user.id
+            deviceId: deviceId
+            status: 'failed'
+          }
+          .tap ->
+            key = "#{CacheService.PREFIXES.USER_SPECIAL_OFFERS}:#{user.id}"
+            CacheService.deleteByKey key
           router.throw status: 400, info: 'specialOffers: multiple deviceId'
         if not transaction.status in ['installed', 'playing']
           router.throw status: 400, info: 'specialOffers: invalid status'
@@ -135,6 +146,10 @@ class SpecialOfferCtrl
         else
           status = 'playing'
 
+        GroupRecord.incrementByGroupIdAndRecordTypeKey(
+          groupId, 'fireEarned', dailyPayout
+        )
+
         Promise.all [
           User.addFireById user.id, dailyPayout
           SpecialOffer.upsertTransaction {
@@ -158,7 +173,7 @@ class SpecialOfferCtrl
     , {expireSeconds: 10, unlockWhenCompleted: true}
 
   giveInstallReward: (options, {user, headers, connection}) ->
-    {offer, usageStats, deviceId} = options
+    {offer, usageStats, deviceId, groupId} = options
     prefix = CacheService.LOCK_PREFIXES.SPECIAL_OFFER_INSTALL
     key = "#{prefix}:#{offer.id}|#{user.id}"
     CacheService.lock key, ->
@@ -173,6 +188,15 @@ class SpecialOfferCtrl
       .then ([offer, transaction, transactionByDeviceId]) ->
         if transactionByDeviceId and
             "#{transactionByDeviceId.userId}" isnt "#{user.id}"
+          SpecialOffer.upsertTransaction {
+            offerId: offer.id
+            userId: user.id
+            deviceId: deviceId
+            status: 'failed'
+          }
+          .tap ->
+            key = "#{CacheService.PREFIXES.USER_SPECIAL_OFFERS}:#{user.id}"
+            CacheService.deleteByKey key
           router.throw status: 400, info: 'specialOffers: multiple deviceId'
         if transaction.status isnt 'clicked'
           router.throw status: 400, info: 'specialOffers: invalid inst status'
@@ -181,6 +205,10 @@ class SpecialOfferCtrl
         installPayout = data.installPayout
         unless installPayout
           router.throw status: 400, info: 'specialOffers: no payout'
+
+        GroupRecord.incrementByGroupIdAndRecordTypeKey(
+          groupId, 'fireEarned', installPayout
+        )
 
         Promise.all [
           User.addFireById user.id, installPayout
