@@ -12,6 +12,7 @@ TYPE_LANGUAGE_INDEX = 'typeLanguage'
 KEY_INDEX = 'key'
 
 ONE_DAY_SECONDS = 3600 * 24
+ONE_HOUR_SECONDS = 3600
 
 defaultGroup = (group) ->
   unless group?
@@ -161,17 +162,23 @@ class GroupModel
     .run()
     .map defaultGroup
 
-  getByGameKeyAndLanguage: (gameKey, language) ->
-    console.log 'getall', gameKey, language
-    r.table GROUPS_TABLE
-    .getAll ['public', language], {index: TYPE_LANGUAGE_INDEX}
-    .then (groups) =>
-      group = _.find groups, ({gameKeys}) ->
-        gameKeys and gameKeys.indexOf(gameKey) isnt -1
-      if group
-        return group
-      else
-        @getById config.GROUPS.CLASH_ROYALE_EN
+  getByGameKeyAndLanguage: (gameKey, language, {preferCache} = {}) ->
+    get = =>
+      r.table GROUPS_TABLE
+      .getAll ['public', language], {index: TYPE_LANGUAGE_INDEX}
+      .then (groups) =>
+        group = _.find groups, ({gameKeys}) ->
+          gameKeys and gameKeys.indexOf(gameKey) isnt -1
+        if group
+          return group
+        else
+          @getById config.GROUPS.CLASH_ROYALE_EN
+    if preferCache
+      prefix = CacheService.PREFIXES.GROUP_GAME_KEY_LANGUAGE
+      key = "#{prefix}:#{gameKey}:#{language}"
+      CacheService.preferCache key, get, {expireSeconds: ONE_HOUR_SECONDS}
+    else
+      get()
 
   updateById: (id, diff) ->
     r.table GROUPS_TABLE

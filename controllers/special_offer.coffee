@@ -1,4 +1,5 @@
 _ = require 'lodash'
+Promise = require 'bluebird'
 request = require 'request-promise'
 geoip = require 'geoip-lite'
 router = require 'exoid-router'
@@ -119,8 +120,10 @@ class SpecialOfferCtrl
             key = "#{CacheService.PREFIXES.USER_SPECIAL_OFFERS}:#{user.id}"
             CacheService.deleteByKey key
           router.throw status: 400, info: 'specialOffers: multiple deviceId'
-        if not transaction.status in ['installed', 'playing']
-          router.throw status: 400, info: 'specialOffers: invalid status'
+        if not (transaction.status in ['installed', 'playing'])
+          router.throw
+            status: 400
+            info: 'specialOffers: invalid status ' + transaction.status
 
         data = _.defaults offer.countryData[country], offer.defaultData
         dailyPayout = data.dailyPayout
@@ -135,7 +138,7 @@ class SpecialOfferCtrl
           router.throw status: 400, info: 'specialOffers: not enough minutes'
 
         dt = Date.now() - transaction.startTime.getTime()
-        day = Math.floor dt / ONE_DAY_MS
+        day = Math.ceil dt / ONE_DAY_MS
 
         if transaction.days[day]
           router.throw status: 400, info: 'specialOffers: day exists'
@@ -167,6 +170,10 @@ class SpecialOfferCtrl
             }
           }
         ]
+        .catch (err) ->
+          key = "#{CacheService.PREFIXES.USER_SPECIAL_OFFERS}:#{user.id}"
+          CacheService.deleteByKey key
+          throw err
         .tap ->
           key = "#{CacheService.PREFIXES.USER_SPECIAL_OFFERS}:#{user.id}"
           CacheService.deleteByKey key
@@ -199,7 +206,9 @@ class SpecialOfferCtrl
             CacheService.deleteByKey key
           router.throw status: 400, info: 'specialOffers: multiple deviceId'
         if transaction.status isnt 'clicked'
-          router.throw status: 400, info: 'specialOffers: invalid inst status'
+          router.throw
+            status: 400
+            info: 'specialOffers: invalid inst status ' + transaction.status
 
         data = _.defaults offer.countryData[country], offer.defaultData
         installPayout = data.installPayout
@@ -222,6 +231,10 @@ class SpecialOfferCtrl
             fireEarned: installPayout
           }
         ]
+        .catch (err) ->
+          key = "#{CacheService.PREFIXES.USER_SPECIAL_OFFERS}:#{user.id}"
+          CacheService.deleteByKey key
+          throw err
         .tap ->
           key = "#{CacheService.PREFIXES.USER_SPECIAL_OFFERS}:#{user.id}"
           CacheService.deleteByKey key

@@ -14,17 +14,12 @@ ONE_DAY_SECONDS = 3600 * 24
 
 class VideoCtrl
   getAllByGroupId: ({groupId, sort, limit}) ->
-    Video.getAllByGroupId(groupId, {sort, limit})
+    Video.getAllByGroupId(groupId, {sort, limit, preferCache: true})
     .map EmbedService.embed {embed: defaultEmbed}
     .map Video.sanitize null
 
   getById: ({id}) ->
     Video.getById id
-    .then EmbedService.embed {embed: defaultEmbed}
-    .then Video.sanitize null
-
-  getByKey: ({key}) ->
-    Video.getByKey key
     .then EmbedService.embed {embed: defaultEmbed}
     .then Video.sanitize null
 

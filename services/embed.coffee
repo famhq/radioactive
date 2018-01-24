@@ -456,11 +456,11 @@ embedFn = _.curry (props, object) ->
         .then embedFn {embed: [TYPES.GROUP_USER.ROLES]}
 
       when TYPES.GROUP.CONVERSATIONS
-        # TODO: rm after 1/11/2017
-        embedded.meGroupUser ?= GroupUser.getByGroupIdAndUserId(
-          embedded.id, user.id
-        )
-        .then embedFn {embed: [TYPES.GROUP_USER.ROLES]}
+        # # TODO: rm after 1/11/2017
+        # embedded.meGroupUser ?= GroupUser.getByGroupIdAndUserId(
+        #   embedded.id, user.id
+        # )
+        # .then embedFn {embed: [TYPES.GROUP_USER.ROLES]}
 
         embedded.conversations = embedded.meGroupUser.then (meGroupUser) ->
           Conversation.getAllByGroupId embedded.id
@@ -491,20 +491,22 @@ embedFn = _.curry (props, object) ->
 
       when TYPES.GROUP_USER.ROLES
         embedded.roles = GroupRole.getAllByGroupId(
-          embedded.groupId
+          embedded.groupId, {preferCache: true}
         ).then (roles) ->
           everyoneRole = _.find roles, {name: 'everyone'}
           groupUserRoles = _.filter _.map embedded.roleIds, (roleId) ->
-            _.find roles, {roleId}
+            _.find roles, (role) ->
+              "#{role.roleId}" is "#{roleId}"
           if everyoneRole
             groupUserRoles = groupUserRoles.concat everyoneRole
 
       when TYPES.GROUP_USER.ROLE_NAMES
         embedded.roleNames = GroupRole.getAllByGroupId(
-          embedded.groupId
+          embedded.groupId, {preferCache: true}
         ).then (roles) ->
           groupUserRoleNames = _.filter _.map embedded.roleIds, (roleId) ->
-            _.find(roles, {roleId})?.name
+            _.find(roles, (role) ->
+              "#{role.roleId}" is "#{roleId}")?.name
           groupUserRoleNames = groupUserRoleNames.concat 'everyone'
 
       when TYPES.GROUP_USER.XP

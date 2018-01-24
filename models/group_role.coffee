@@ -7,6 +7,7 @@ cknex = require '../services/cknex'
 CacheService = require '../services/cache'
 
 ONE_DAY_SECONDS = 3600 * 24
+ONE_HOUR_SECONDS = 3600
 
 defaultGroupRole = (groupRole) ->
   unless groupRole?
@@ -80,26 +81,40 @@ class GroupRoleModel
     .tap ->
       prefix = CacheService.PREFIXES.GROUP_ROLE_GROUP_ID_USER_ID
       cacheKey = "#{prefix}:#{groupRole.groupId}:#{groupRole.userId}"
-      CacheService.deleteByKey cacheKey
+      prefix = CacheService.PREFIXES.GROUP_ROLES
+      allCacheKey = "#{prefix}:#{groupRole.groupId}"
+      Promise.all [
+        CacheService.deleteByKey cacheKey
+        CacheService.deleteByKey allCacheKey
+      ]
 
-  getAllByGroupId: (groupId) =>
-    cknex().select '*'
-    .from 'group_roles_by_groupId'
-    .where 'groupId', '=', groupId
-    .run()
-    .then (roles) =>
-      # probably safe to get rid of this in mid 2018
-      if _.find roles, {name: 'everyone'}
-        roles
-      else
-        @upsert {
-          groupId: groupId
-          name: 'everyone'
-          globalPermissions: {}
-        }
-        .then =>
-          @getAllByGroupId groupId
-    .map defaultGroupRoleOutput
+  getAllByGroupId: (groupId, {preferCache} = {}) =>
+    get = =>
+      cknex().select '*'
+      .from 'group_roles_by_groupId'
+      .where 'groupId', '=', groupId
+      .run()
+      .then (roles) =>
+        # probably safe to get rid of this in mid 2018
+        if _.find roles, {name: 'everyone'}
+          roles
+        else
+          @upsert {
+            groupId: groupId
+            name: 'everyone'
+            globalPermissions: {}
+          }
+          .then =>
+            @getAllByGroupId groupId
+      .map defaultGroupRoleOutput
+
+    if preferCache
+      cacheKey = "#{CacheService.PREFIXES.GROUP_ROLES}:#{groupId}"
+      CacheService.preferCache cacheKey, get, {
+        expireSeconds: ONE_HOUR_SECONDS
+      }
+    else
+      get()
 
   getByGroupIdAndRoleId: (groupId, roleId) ->
     cknex().select '*'

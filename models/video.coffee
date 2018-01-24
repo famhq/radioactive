@@ -3,7 +3,10 @@ Promise = require 'bluebird'
 uuid = require 'node-uuid'
 
 cknex = require '../services/cknex'
+CacheService = require '../services/cache'
 config = require '../config'
+
+ONE_HOUR_SECONDS = 3600
 
 defaultVideo = (video) ->
   unless video?
@@ -96,6 +99,8 @@ class VideoModel
       .run()
     ]
     .then ->
+      cacheKey = "#{CacheService.PREFIXES.VIDEOS_GROUP_ID}:#{video.groupId}"
+      CacheService.deleteByKey cacheKey
       video
 
   getById: (id) ->
@@ -105,14 +110,23 @@ class VideoModel
     .run {isSingle: true}
     .then defaultVideoOutput
 
-  getAllByGroupId: (groupId, {limit, sort} = {}) ->
+  getAllByGroupId: (groupId, {limit, sort, preferCache} = {}) ->
     limit ?= 15
-    cknex().select '*'
-    .from 'videos_by_groupId'
-    .where 'groupId', '=', groupId
-    .limit limit
-    .run()
-    .map defaultVideoOutput
+    get = ->
+      cknex().select '*'
+      .from 'videos_by_groupId'
+      .where 'groupId', '=', groupId
+      .limit limit
+      .run()
+      .map defaultVideoOutput
+
+    if preferCache
+      cacheKey = "#{CacheService.PREFIXES.VIDEOS_GROUP_ID}:#{groupId}:#{limit}"
+      CacheService.preferCache cacheKey, get, {
+        expireSeconds: ONE_HOUR_SECONDS
+      }
+    else
+      get()
 
   getAllByGroupIdAndMinTime: (groupId, minTime) ->
     cknex().select '*'

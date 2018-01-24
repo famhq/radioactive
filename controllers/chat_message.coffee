@@ -208,7 +208,10 @@ class ChatMessageCtrl
     ip = headers['x-forwarded-for'] or
           connection.remoteAddress
 
-    isProfane = ProfanityService.isProfane body
+    if user?.flags?.isModerator
+      isProfane = false
+    else
+      isProfane = ProfanityService.isProfane body
     msPlayed = Date.now() - user.joinTime?.getTime()
 
     if isProfane or user.flags.isChatBanned

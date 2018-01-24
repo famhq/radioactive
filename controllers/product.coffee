@@ -8,6 +8,7 @@ Item = require '../models/item'
 UserItem = require '../models/user_item'
 User = require '../models/user'
 GroupUser = require '../models/group_user'
+GroupRecord = require '../models/group_record'
 KueCreateService = require '../services/kue_create'
 EmailService = require '../services/email'
 CacheService = require '../services/cache'
@@ -123,6 +124,11 @@ class ProductCtrl
         if product.cost isnt 0 and not response.replaced
           router.throw {status: 400, info: 'not enough fire'}
 
+        if product.cost
+          GroupRecord.incrementByGroupIdAndRecordTypeKey(
+            product.groupId, 'fireSpent', product.cost
+          )
+
         EmailService.send {
           to: EmailService.EMAILS.EVERYONE
           subject: "Starfire Product Purchase: #{key}"
@@ -138,6 +144,8 @@ class ProductCtrl
           Cost: #{product.cost}
           """
         }
+        .catch (err) ->
+          console.log 'email err', err
 
         if product.type is 'pack'
           @openPackUnlocked {key}, {user}

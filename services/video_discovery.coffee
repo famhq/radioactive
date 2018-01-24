@@ -39,14 +39,16 @@ youtube = google.youtube {
   auth: oauth2Client
 }
 
-PLAY_HARD_CHANNEL_ID = 'UC4IMfO_--bwBaNgWeoLxAgg'
+CHANNEL_IDS =
+  "#{config.GROUPS.PLAY_HARD}": 'UC4IMfO_--bwBaNgWeoLxAgg'
+  "#{config.GROUPS.ECLIHPSE}": 'UCLAOdac7WmMXQKhOP-8lmrQ'
 
 class VideoDisoveryService
-  updateGroupVideos: ->
+  updateGroupVideos: (groupId) ->
     hasSentPushNotification = false
     Promise.promisify(youtube.search.list) {
       part: 'snippet'
-      channelId: PLAY_HARD_CHANNEL_ID
+      channelId: CHANNEL_IDS[groupId]
       maxResults: 50
       type: 'video'
       order: 'date'
@@ -59,9 +61,9 @@ class VideoDisoveryService
       oldestVideo = _.minBy videos, (video) -> video.snippet.publishedAt
       minTime = new Date(oldestVideo.snippet.publishedAt)
       Promise.all [
-        Video.getAllByGroupIdAndMinTime config.GROUPS.PLAY_HARD, minTime
+        Video.getAllByGroupIdAndMinTime groupId, minTime
         Promise.resolve videos
-        Group.getById config.GROUPS.PLAY_HARD
+        Group.getById groupId
       ]
     .then ([existingVideos, videos, group]) ->
       Promise.map videos, (video) ->
@@ -70,27 +72,27 @@ class VideoDisoveryService
           sourceId: video.id
         }
         isLive = video.snippet.liveBroadcastContent in ['live', 'upcoming']
-        if not exists and not hasSentPushNotification and not isLive
-          hasSentPushNotification = true
-          PushNotificationService.sendToGroupTopic(
-            group, {
-              titleObj:
-                key: 'newVideo.title'
-              textObj:
-                key: 'newVideo.text'
-                replacements:
-                  groupName: group.name
-              data:
-                path:
-                  key: 'groupVideos'
-                  params:
-                    gameKey: 'clash-royale'
-                    groupId: config.GROUPS.PLAY_HARD
-            }
-          )
+        if not exists and not isLive
+          if not hasSentPushNotification
+            hasSentPushNotification = true
+            PushNotificationService.sendToGroupTopic(
+              group, {
+                titleObj:
+                  key: 'newVideo.title'
+                textObj:
+                  key: 'newVideo.text'
+                  replacements:
+                    groupName: group.name
+                data:
+                  path:
+                    key: 'groupVideos'
+                    params:
+                      groupId: groupId
+              }
+            )
 
           Video.upsert {
-            groupId: config.GROUPS.PLAY_HARD
+            groupId: groupId
             title: video.snippet.title
             description: video.snippet.description
             duration: video.contentDetails.duration

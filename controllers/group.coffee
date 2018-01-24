@@ -258,7 +258,7 @@ class GroupCtrl
     .then Group.sanitize null
 
   getByGameKeyAndLanguage: ({gameKey, language}, {user}) ->
-    Group.getByGameKeyAndLanguage gameKey, language
+    Group.getByGameKeyAndLanguage gameKey, language, {preferCache: true}
     .then EmbedService.embed {embed: defaultEmbed, user}
     .then Group.sanitize null
 

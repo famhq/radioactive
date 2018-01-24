@@ -11,7 +11,7 @@ tables = [
     name: 'group_records_counter_by_groupId'
     keyspace: 'starfire'
     fields:
-      groupId: 'text'
+      groupId: 'uuid'
       recordTypeKey: 'text'
       value: 'counter'
       scaledTime: 'text'

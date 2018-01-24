@@ -316,11 +316,12 @@ class GroupUserModel
     @getByGroupIdAndUserId groupId, user.id
     .then (groupUser) =>
       groupUser or= {}
-      GroupRole.getAllByGroupId groupId
+      GroupRole.getAllByGroupId groupId, {preferCache: true}
       .then (roles) ->
         everyoneRole = _.find roles, {name: 'everyone'}
         groupUserRoles = _.map groupUser.roleIds, (roleId) ->
-          _.find roles, {roleId}
+          _.find roles, (role) ->
+            "#{role.roleId}" is "#{roleId}"
         if everyoneRole
           groupUserRoles = groupUserRoles.concat everyoneRole
         groupUser.roles = groupUserRoles

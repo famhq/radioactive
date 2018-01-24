@@ -13,7 +13,7 @@ ONE_HOUR_SECONDS = 3600
 PREFIXES =
   CHAT_USER: 'chat:user4'
   CHAT_USER_B_USERNAME: 'chat:user:byUsername'
-  CHAT_GROUP_USER: 'chat:group_user3'
+  CHAT_GROUP_USER: 'chat:group_user5'
   THREAD_USER: 'thread:user1'
   THREAD_CREATOR: 'thread:creator3'
   THREAD: 'thread:id:embedded2'
@@ -25,6 +25,7 @@ PREFIXES =
   CHAT_MESSAGE_DAILY_XP: 'chat_message:daily_xp'
   CONVERSATION_ID: 'conversation:id'
   VIDEO_DAILY_XP: 'video:daily_xp'
+  VIDEOS_GROUP_ID: 'videos:group_id'
   USER_ID: 'user:id'
   USER_USERNAME: 'user:username'
   USER_FOLLOWER_COUNT: 'user:follower_count'
@@ -64,10 +65,12 @@ PREFIXES =
   GROUP_KEY: 'group:key3'
   GROUP_GET_ALL: 'group:getAll11'
   GROUP_GET_ALL_CATEGORY: 'group:getAll:category6'
+  GROUP_GAME_KEY_LANGUAGE: 'group:game_key_language'
   GROUP_STAR: 'group:star2'
   GROUP_USER_COUNT: 'group:user_count1'
-  GROUP_ROLE_GROUP_ID_USER_ID: 'group_role:groupId:userId2'
-  GROUP_USER_USER_ID: 'group_user:user_id7'
+  GROUP_ROLE_GROUP_ID_USER_ID: 'group_role:groupId:userId3'
+  GROUP_ROLES: 'group_role:groupId1'
+  GROUP_USER_USER_ID: 'group_user:user_id8'
   GROUP_USER_TOP: 'group_user:top3'
   GROUP_USERS_ONLINE: 'group_users:online2'
   GROUP_USER_XP_COMPLETE_TRANSACTION: 'groupUserXp:completeTransaction'
@@ -96,7 +99,7 @@ PREFIXES =
   REWARD_INCREMENT: 'reward:increment'
   REWARD_ATTEMPT_TIME: 'reward_attempt:time1'
   SPECIAL_OFFER_ID: 'special_offer:id'
-  USER_SPECIAL_OFFERS: 'user_special_offers7'
+  USER_SPECIAL_OFFERS: 'user_special_offers9'
 
 class CacheService
   KEYS:

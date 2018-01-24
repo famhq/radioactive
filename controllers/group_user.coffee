@@ -34,7 +34,7 @@ class GroupUserCtrl
       GroupRole.getAllByGroupId groupId
       .then (roles) ->
         role = _.find roles, (role) ->
-          "#{role.roleId}" is roleId
+          "#{role.roleId}" is "#{roleId}"
         unless role
           router.throw status: 404, info: 'no role exists'
 
@@ -66,7 +66,7 @@ class GroupUserCtrl
       GroupRole.getAllByGroupId groupId
       .then (roles) ->
         role = _.find roles, (role) ->
-          "#{role.roleId}" is roleId
+          "#{role.roleId}" is "#{roleId}"
         unless role
           router.throw status: 404, info: 'no role exists'
 
