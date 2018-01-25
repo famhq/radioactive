@@ -21,7 +21,7 @@ PREFIXES =
   THREAD_DECK: 'thread:deck11'
   THREAD_COMMENTS: 'thread:comments6'
   THREAD_COMMENT_COUNT: 'thread:comment_count1'
-  THREADS_CATEGORY: 'threads4'
+  THREADS_CATEGORY: 'threads5'
   CHAT_MESSAGE_DAILY_XP: 'chat_message:daily_xp'
   CONVERSATION_ID: 'conversation:id'
   VIDEO_DAILY_XP: 'video:daily_xp'

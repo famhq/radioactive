@@ -17,6 +17,7 @@ ClashRoyaleCard = require '../models/clash_royale_card'
 ClashRoyalePlayerDeck = require '../models/clash_royale_player_deck'
 GroupUser = require '../models/group_user'
 Ban = require '../models/ban'
+NewsRoyaleService = require '../services/news_royale'
 allItems = require '../resources/data/items'
 allProducts = require '../resources/data/products'
 allSpecialOffers = require '../resources/data/special_offers'
@@ -52,13 +53,13 @@ class CronService
       Item.batchUpsert allItems
       SpecialOffer.batchUpsert allSpecialOffers
       Thread.updateScores 'time'
-
-    @addCron 'videos', '0 3 * * * *', ->
+      NewsRoyaleService.scrape()
       VideoDiscoveryService.updateGroupVideos config.GROUPS.PLAY_HARD
       # VideoDiscoveryService.updateGroupVideos config.GROUPS.ECLIHPSE
 
     @addCron 'oneHour', '0 0 * * * *', ->
       CleanupService.trimLeaderboards()
+
 
   addCron: (key, time, fn) =>
     @crons.push new CronJob {

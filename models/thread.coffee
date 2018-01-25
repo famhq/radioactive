@@ -297,13 +297,13 @@ class ThreadModel
     CacheService.leaderboardUpdate groupCategoryKey, id, score
 
   getAll: (options = {}) =>
-    {category, language, groupId, sort, skip, maxTimeUuid, limit} = options
+    {category, groupId, sort, skip, maxTimeUuid, limit} = options
     limit ?= 20
     skip ?= 0
     (if sort is 'new'
-      @getAllTimeSorted {category, language, groupId, maxTimeUuid, limit}
+      @getAllTimeSorted {category, groupId, maxTimeUuid, limit}
     else
-      @getAllScoreSorted {category, language, groupId, skip, limit})
+      @getAllScoreSorted {category, groupId, skip, limit})
     .map (thread) =>
       unless thread
         return
@@ -314,7 +314,7 @@ class ThreadModel
     .map defaultThreadOutput
 
   # need skip for redis-style (score), maxTimeUuid for scylla-style (time)
-  getAllScoreSorted: ({category, language, groupId, skip, limit} = {}) ->
+  getAllScoreSorted: ({category, groupId, skip, limit} = {}) ->
     (if category
       prefix = CacheService.STATIC_PREFIXES.THREAD_GROUP_LEADERBOARD_BY_CATEGORY
       CacheService.leaderboardGet "#{prefix}:#{groupId}:#{category}", {
@@ -334,7 +334,7 @@ class ThreadModel
       .filter (thread) ->
         thread
 
-  getAllTimeSorted: ({category, language, groupId, maxTimeUuid, limit} = {}) ->
+  getAllTimeSorted: ({category, groupId, maxTimeUuid, limit} = {}) ->
     get = (timeBucket) ->
       if category
         q = cknex().select '*'
