@@ -21,6 +21,7 @@ StatsService = require './stats'
 ONE_DAY_SECONDS = 3600 * 24
 RETRY_COUNT = 10
 CONSECUTIVE_ERRORS_UNTIL_INACTIVE = 10
+MAX_INT_32 = 2147483647
 
 TYPES =
   NEW_PROMOTION: 'sale'
@@ -180,7 +181,7 @@ class PushNotificationService
       Promise.resolve {userIds: conversation.userIds}
     ).then ({group, event, userIds}) =>
       if event
-        return # FIXME FIXME: re-enable
+        return # TODO: re-enable
 
       if group
         path = {
@@ -221,7 +222,7 @@ class PushNotificationService
           conversationId: conversation.id
           contextId: conversation.id
           path: path
-        notId: randomSeed.create(conversation.id)(Number.MAX_SAFE_INTEGER)
+        notId: randomSeed.create(conversation.id)(MAX_INT_32)
 
       mentionMessage = _.defaults {type: @TYPES.CHAT_MENTION}, message
 
