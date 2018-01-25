@@ -58,6 +58,10 @@ class GroupRoleCtrl
         }
 
       GroupRole.deleteByGroupIdAndRoleId groupId, roleId
+      .tap ->
+        prefix = CacheService.PREFIXES.GROUP_ROLES
+        key = "#{prefix}:#{groupId}"
+        CacheService.deleteByKey key
 
   updatePermissions: (params, {user}) ->
     {groupId, roleId, channelId, permissions} = params
@@ -103,5 +107,9 @@ class GroupRoleCtrl
         }
 
       GroupRole.upsert diff, if channelId then mapOptions else undefined
+      .tap ->
+        prefix = CacheService.PREFIXES.GROUP_ROLES
+        key = "#{prefix}:#{groupId}"
+        CacheService.deleteByKey key
 
 module.exports = new GroupRoleCtrl()

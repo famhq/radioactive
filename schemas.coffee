@@ -48,16 +48,10 @@ event =
 
 thread =
   id: id.optional()
-  # creatorId: id
   groupId: id.optional()
-  title: Joi.string()
-  summary: Joi.string()
-  category: Joi.string()
-  language: Joi.string()
-  gameId: Joi.string()
-  attachmentIds: Joi.array()
-  attachments: Joi.array()
-  body: Joi.string()
+  category: Joi.optional()
+  creatorId: Joi.optional()
+  timeBucket: Joi.optional()
   data: Joi.object()
 
 module.exports = {

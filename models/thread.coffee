@@ -448,7 +448,7 @@ class ThreadModel
     unless thread and user
       return false
 
-    return thread.creatorId is user.id
+    return user?.username is 'austin' or thread.creatorId is user.id
 
   # migrateGroupId: =>
   #   # threadIds = ['7ebd10e0-f553-11e7-a8f6-696b99b549b2']

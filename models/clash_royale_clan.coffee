@@ -61,6 +61,8 @@ class ClashRoyaleClan
       get()
 
   getAllByIds: (ids, {preferCache} = {}) ->
+    # maybe fixes crashing scylla? cache hits goes up to 500k
+    ids = _.take ids, 100
     cknex('clash_royale').select '*'
     .where 'id', 'in', ids
     .from 'clans_by_id'

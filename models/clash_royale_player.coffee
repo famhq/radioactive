@@ -202,6 +202,8 @@ class ClashRoyalePlayerModel
       get()
 
   getAllByIds: (ids, {preferCache} = {}) ->
+    # maybe fixes crashing scylla? cache hits goes up to 500k
+    ids = _.take ids, 200
     cknex('clash_royale').select '*'
     .where 'id', 'in', ids
     .from 'players_by_id'

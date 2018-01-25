@@ -71,7 +71,6 @@ class GroupRoleModel
 
     if map
       _.forEach map, (value, column) ->
-        console.log 'add', column, value
         q.add column, value
     q.where 'groupId', '=', groupRole.groupId
     .andWhere 'roleId', '=', groupRole.roleId

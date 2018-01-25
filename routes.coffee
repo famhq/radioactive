@@ -1,6 +1,7 @@
 router = require 'exoid-router'
 
 AddonCtrl = require './controllers/addon'
+AppInstallActionCtrl = require './controllers/app_install_action'
 AuthCtrl = require './controllers/auth'
 ChatMessageCtrl = require './controllers/chat_message'
 ClanCtrl = require './controllers/clan'
@@ -97,6 +98,9 @@ module.exports = router
 .on 'addons.getById', authed AddonCtrl.getById
 .on 'addons.getByKey', authed AddonCtrl.getByKey
 .on 'addons.voteById', authed AddonCtrl.voteById
+
+.on 'appInstallActions.upsert', authed AppInstallActionCtrl.upsert
+.on 'appInstallActions.get', authed AppInstallActionCtrl.get
 
 .on 'clanRecordTypes.getAllByClanIdAndGameId',
   authed ClanRecordTypeCtrl.getAllByClanIdAndGameId

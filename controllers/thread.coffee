@@ -148,7 +148,7 @@ class ThreadCtrl
               Thread.upsert thread
               .then ->
                 deckKey = CacheService.PREFIXES.THREAD_DECK + ':' + thread.id
-                key = CacheService.PREFIXES.THREAD + ':' + id
+                key = CacheService.PREFIXES.THREAD + ':' + thread.id
                 Promise.all [
                   CacheService.deleteByKey deckKey
                   CacheService.deleteByKey key
@@ -164,17 +164,23 @@ class ThreadCtrl
         CacheService.deleteByCategory CacheService.PREFIXES.THREADS_CATEGORY
 
   validateAndCheckPermissions: (thread, {user}) ->
-    thread = _.pick thread, _.keys schemas.thread
-
     if thread.id
-      hasPermission = Thread.hasPermissionByIdAndUser thread.id, user, {
-        level: 'member'
-      }
+      threadPromise = Thread.getById thread.id
+      hasPermission = threadPromise.then (existingThread) ->
+        Thread.hasPermission thread, user, {
+          level: 'member'
+        }
     else
       hasPermission = Promise.resolve true
 
-    hasPermission
-    .then (hasPermission) ->
+    Promise.all [
+      threadPromise
+      hasPermission
+    ]
+    .then ([existingThread, hasPermission]) ->
+      thread = _.defaultsDeep thread, existingThread
+      thread = _.pick thread, _.keys schemas.thread
+
       unless hasPermission
         router.throw status: 400, info: 'no permission'
       thread
@@ -197,7 +203,7 @@ class ThreadCtrl
       .map (thread) ->
         EmbedService.embed {
           userId: user.id
-          embed: if thread.category is 'deckGuide' \
+          embed: if thread.data?.extras?.deckId \
                  then defaultEmbed.concat playerDeckEmbed
                  else defaultEmbed
         }, thread
@@ -214,7 +220,7 @@ class ThreadCtrl
       .then (threadVotes) ->
         threads = _.map threads, (thread) ->
           thread.myVote = _.find threadVotes, ({parentId}) ->
-            "#{parentId}" is thread.id
+            "#{parentId}" is "#{thread.id}"
           thread
         threads
 

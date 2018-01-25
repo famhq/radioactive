@@ -195,6 +195,7 @@ class GroupUserModel
     cknex().select '*'
     .from 'group_users_by_groupId'
     .where 'groupId', '=', groupId
+    .limit 5000 # for sanity. really this shouldn't be used in large groups
     .run()
 
   # TODO: should keep track of this in separate counter table since this can be

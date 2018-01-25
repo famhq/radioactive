@@ -56,6 +56,8 @@ class PlayerModel
     @GamePlayers[gameId].getAutoRefresh minReversedPlayerId
 
   getAllByUserIdsAndGameId: (userIds, gameId) =>
+    # maybe fixes crashing scylla? cache hits goes up to 500k
+    userIds = _.take userIds, 100
     UserPlayer.getAllByUserIdsAndGameId userIds, gameId
     .then (players) =>
       playerIds = _.map players, 'playerId'
@@ -65,6 +67,8 @@ class PlayerModel
     @GamePlayers[gameId].getById playerId
 
   getAllByPlayerIdsAndGameId: (playerIds, gameId) =>
+    # maybe fixes crashing scylla? cache hits goes up to 500k
+    playerIds = _.take playerIds, 100
     @GamePlayers[gameId].getAllByIds playerIds
 
   upsertByPlayerIdAndGameId: (playerId, gameId, diff, {userId} = {}) ->
