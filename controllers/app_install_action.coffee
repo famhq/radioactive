@@ -9,13 +9,20 @@ class AppInstallActionCtrl
           connection.remoteAddress
     if config.ENV is config.ENVS.DEV
       ip ?= '000.000.0.000'
-    AppInstallAction.upsert {ip, path}
+    if ip
+      AppInstallAction.upsert {ip, path}
+    else
+      Promise.resolve null
 
   get: ({path}, {headers, connection}) ->
     ip = headers['x-forwarded-for'] or
           connection.remoteAddress
     if config.ENV is config.ENVS.DEV
       ip ?= '000.000.0.000'
-    AppInstallAction.getByIp ip
+
+    if ip
+      AppInstallAction.getByIp ip
+    else
+      Promise.resolve null
 
 module.exports = new AppInstallActionCtrl()

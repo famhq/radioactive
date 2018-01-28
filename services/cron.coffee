@@ -45,6 +45,7 @@ class CronService
       Thread.updateScores 'stale'
 
     @addCron 'threeQuarterMinute', '30 */5 * * * *', ->
+      Product.batchUpsert allProducts # TODO: rm
       if config.ENV is config.ENVS.PROD
         ClashRoyalePlayerService.updateTopPlayers()
 

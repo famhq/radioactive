@@ -36,11 +36,11 @@ defaultAddon = (addon) ->
     key: null
     url: null
     iconUrl: null
-    translations: {} # TODO
     upvotes: 0
     downvotes: 0
     score: 0
     data: {}
+    translatedLanguages: null # leave null for all
     supportedLanguages: null # leave null for all
     lastUpdateTime: new Date()
     addTime: new Date()
@@ -138,6 +138,7 @@ class AddonModel
       'myVote'
       'addTime'
       'supportedLanguages'
+      'translatedLanguages'
       'lastUpdateTime'
       'embedded'
     ]

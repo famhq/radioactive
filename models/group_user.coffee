@@ -85,6 +85,15 @@ tables = [
       clusteringColumns: ['groupId']
   }
   {
+    name: 'group_users_counter_by_groupId'
+    keyspace: 'starfire'
+    fields:
+      groupId: 'uuid'
+      userCount: 'counter'
+    primaryKey:
+      partitionKey: ['groupId']
+  }
+  {
     name: 'group_user_settings'
     keyspace: 'starfire'
     fields:
@@ -147,6 +156,12 @@ class GroupUserModel
       categoryCacheKey = "#{categoryPrefix}:#{groupUser.userId}"
       CacheService.deleteByCategory categoryCacheKey
 
+  create: (groupUser) =>
+    Promise.all [
+      @upsert groupUser
+      @incrementCountByGroupId groupUser.groupId, 1
+    ]
+
   addRoleIdByGroupUser: (groupUser, roleId) ->
     Promise.all [
       cknex().update 'group_users_by_groupId'
@@ -198,9 +213,8 @@ class GroupUserModel
     .limit 5000 # for sanity. really this shouldn't be used in large groups
     .run()
 
-  # TODO: should keep track of this in separate counter table since this can be
-  # slow
-  getCountByGroupId: (groupId, {preferCache} = {}) ->
+  # TODO: rm ~march 2018
+  getLegacyCountByGroupId: (groupId, {preferCache} = {}) ->
     get = ->
       cknex().select()
       .count '*'
@@ -210,6 +224,28 @@ class GroupUserModel
       .then (response) ->
         response?.count or 0
 
+    if preferCache
+      cacheKey = "#{CacheService.PREFIXES.GROUP_USER_COUNT}:#{groupId}"
+      CacheService.preferCache cacheKey, get, {
+        expireSeconds: ONE_HOUR_SECONDS
+      }
+    else
+      get()
+
+  getCountByGroupId: (groupId, {preferCache} = {}) =>
+    get = =>
+      cknex().select '*'
+      .from 'group_users_counter_by_groupId'
+      .where 'groupId', '=', groupId
+      .run {isSingle: true}
+      .then (response) =>
+        if response
+          response.userCount
+        else
+          @getLegacyCountByGroupId groupId, {preferCache}
+          .then (count) =>
+            @incrementCountByGroupId groupId, count
+            count
 
     if preferCache
       cacheKey = "#{CacheService.PREFIXES.GROUP_USER_COUNT}:#{groupId}"
@@ -219,6 +255,11 @@ class GroupUserModel
     else
       get()
 
+  incrementCountByGroupId: (groupId, amount) ->
+    cknex().update 'group_users_counter_by_groupId'
+    .increment 'userCount', amount
+    .where 'groupId', '=', groupId
+    .run()
 
   getAllByUserId: (userId) ->
     cknex().select '*'
@@ -278,19 +319,21 @@ class GroupUserModel
       }
     ]
 
-  deleteByGroupIdAndUserId: (groupId, userId) ->
+  deleteByGroupIdAndUserId: (groupId, userId) =>
     Promise.all [
       cknex().delete()
       .from 'group_users_by_groupId'
-      .where 'userId', '=', userId
-      .andWhere 'groupId', '=', groupId
+      .where 'groupId', '=', groupId
+      .andWhere 'userId', '=', userId
       .run()
 
       cknex().delete()
       .from 'group_users_by_userId'
-      .where 'groupId', '=', groupId
-      .andWhere 'userId', '=', userId
+      .where 'userId', '=', userId
+      .andWhere 'groupId', '=', groupId
       .run()
+
+      @incrementCountByGroupId groupId, -1
     ]
 
   getSettingsByGroupIdAndUserId: (groupId, userId) ->
@@ -320,7 +363,7 @@ class GroupUserModel
       GroupRole.getAllByGroupId groupId, {preferCache: true}
       .then (roles) ->
         everyoneRole = _.find roles, {name: 'everyone'}
-        groupUserRoles = _.map groupUser.roleIds, (roleId) ->
+        groupUserRoles = _.filter _.map groupUser.roleIds, (roleId) ->
           _.find roles, (role) ->
             "#{role.roleId}" is "#{roleId}"
         if everyoneRole

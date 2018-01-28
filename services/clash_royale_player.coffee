@@ -404,7 +404,7 @@ class ClashRoyalePlayerService
       'day'
       moment().subtract 1, 'day'
     )
-    console.log 'sending daily push', playerId, isAuto, GAME_ID
+    # console.log 'sending daily push', playerId, isAuto, GAME_ID
     Promise.all [
       Player.getByPlayerIdAndGameId playerId, GAME_ID
       .then EmbedService.embed {

@@ -4,15 +4,18 @@ Promise = require 'bluebird'
 
 ThreadComment = require '../models/thread_comment'
 ThreadVote = require '../models/thread_vote'
+Thread = require '../models/thread'
 GroupUser = require '../models/group_user'
 Ban = require '../models/ban'
+GroupUserXpTransaction = require '../models/group_user_xp_transaction'
 ProfanityService = require '../services/profanity'
 CacheService = require '../services/cache'
 EmbedService = require '../services/embed'
 config = require '../config'
 
-creatorId = [
+defaultEmbed = [
   EmbedService.TYPES.THREAD_COMMENT.CREATOR
+  EmbedService.TYPES.THREAD_COMMENT.GROUP_USER
   EmbedService.TYPES.THREAD_COMMENT.TIME
 ]
 
@@ -97,22 +100,32 @@ class ThreadCommentCtrl
     unless body
       router.throw status: 400, info: 'can\'t be empty'
 
-    @checkIfBanned config.EMPTY_UUID, ip, user.id, router
-    .then ->
-      ThreadComment.upsert
-        creatorId: user.id
-        body: body
-        threadId: threadId
-        parentId: parentId
-        parentType: parentType
-    .tap ->
-      prefix = CacheService.PREFIXES.THREAD_COMMENTS_THREAD_ID
-      Promise.all [
-        CacheService.deleteByKey "#{prefix}:#{threadId}:popular"
-        CacheService.deleteByKey "#{prefix}:#{threadId}:new"
-      ]
+    Thread.getById threadId, {preferCache: true, omitCounter: true}
+    .then (thread) =>
+      @checkIfBanned config.EMPTY_UUID, ip, user.id, router
+      .then ->
+        ThreadComment.upsert
+          creatorId: user.id
+          body: body
+          threadId: threadId
+          parentId: parentId
+          parentType: parentType
+      .then ->
+        prefix = CacheService.PREFIXES.THREAD_COMMENTS_THREAD_ID
+        Promise.all [
+          CacheService.deleteByKey "#{prefix}:#{threadId}:popular"
+          CacheService.deleteByKey "#{prefix}:#{threadId}:new"
+          GroupUserXpTransaction.completeActionByGroupIdAndUserId(
+            thread.groupId
+            user.id
+            'dailyForumComment'
+          )
+          .catch -> null
+        ]
+        .then ([cache1, cache2, xpGained]) ->
+          {xpGained}
 
-  getAllByThreadId: ({threadId, sort, skip, limit}, {user}) ->
+  getAllByThreadId: ({threadId, sort, skip, limit, groupId}, {user}) ->
     # legacy. rm in mid feb 2018
     if threadId is 'b3d49e6f-3193-417e-a584-beb082196a2c' # cr-es
       threadId = '7a39b079-e6ce-11e7-9642-4b5962cd09d3'
@@ -124,8 +137,8 @@ class ThreadCommentCtrl
     prefix = CacheService.PREFIXES.THREAD_COMMENTS_THREAD_ID
     key = "#{prefix}:#{threadId}:#{sort}"
     CacheService.preferCache key, ->
-      ThreadComment.getAllByThreadId threadId, {preferCache: true}
-      .map EmbedService.embed {embed: creatorId}
+      ThreadComment.getAllByThreadId threadId
+      .map EmbedService.embed {embed: defaultEmbed, groupId}
       .then (allComments) ->
         getCommentsTree allComments, threadId, {sort, skip, limit}
     , {expireSeconds: TEN_MINUTES_SECONDS}

@@ -16,8 +16,11 @@ defaultEmbed = [
 ]
 
 class AddonCtrl
-  getAll: ->
-    Addon.getAll {preferCache: true}
+  getAll: ({language}) ->
+    Addon.getAll {language, preferCache: true}
+    .then (addons) ->
+      _.filter addons, (addon) ->
+        not addon.supportedLanguages or language in addon.supportedLanguages
     .map Addon.sanitize null
 
   getById: ({id}, {user}) ->

@@ -325,7 +325,6 @@ class ThreadModel
       CacheService.leaderboardGet "#{prefix}:#{groupId}", {skip, limit}
     )
     .then (results) ->
-      console.log 'got scores', results.length
       Promise.map _.chunk(results, 2), ([threadId, score]) ->
         cknex().select '*'
         .from 'threads_by_id'

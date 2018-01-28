@@ -100,6 +100,7 @@ TYPES =
     USER_IDS: 'player:user_ids'
   THREAD_COMMENT:
     CREATOR: 'threadComment:creator'
+    GROUP_USER: 'threadComment:groupUser'
     TIME: 'threadComment:time'
   THREAD:
     CREATOR: 'thread:creator'
@@ -147,6 +148,18 @@ getCachedChatUser = ({userId, username, groupId}) ->
       groupId: groupId
     }
     .then User.sanitizeChat(null)
+  , {expireSeconds: FIVE_MINUTES_SECONDS}
+
+getCachedChatGroupUser = ({userId, groupId}) ->
+  prefix = CacheService.PREFIXES.CHAT_GROUP_USER
+  key = "#{prefix}:#{groupId}:#{userId}"
+  CacheService.preferCache key, ->
+    GroupUser.getByGroupIdAndUserId(
+      groupId, userId, {preferCache: true}
+    )
+    .then embedFn {
+      embed: [TYPES.GROUP_USER.XP, TYPES.GROUP_USER.ROLE_NAMES]
+    }
   , {expireSeconds: FIVE_MINUTES_SECONDS}
 
 embedFn = _.curry (props, object) ->
@@ -558,34 +571,27 @@ embedFn = _.curry (props, object) ->
               playerDeck
           , {expireSeconds: ONE_DAY_SECONDS}
 
-      # TODO: use same as chat_message_creator
       when TYPES.THREAD.CREATOR
         if embedded.creatorId
-          key = CacheService.PREFIXES.THREAD_CREATOR + ':' + embedded.creatorId
-          embedded.creator =
-            CacheService.preferCache key, ->
-              User.getById embedded.creatorId, {preferCache: true}
-              .then embedFn {
-                embed: profileDialogUserEmbed, gameId: config.CLASH_ROYALE_ID
-              }
-              .then User.sanitizeChat(null)
-            , {expireSeconds: FIVE_MINUTES_SECONDS}
+          embedded.creator = getCachedChatUser {
+            userId: embedded.creatorId
+            groupId: groupId
+          }
         else
           embedded.creator = null
 
       when TYPES.THREAD_COMMENT.CREATOR
-        if embedded.creatorId
-          key = CacheService.PREFIXES.THREAD_CREATOR + ':' + embedded.creatorId
-          embedded.creator =
-            CacheService.preferCache key, ->
-              User.getById embedded.creatorId, {preferCache: true}
-              .then embedFn {
-                embed: profileDialogUserEmbed, gameId: config.CLASH_ROYALE_ID
-              }
-              .then User.sanitizeChat(null)
-            , {expireSeconds: FIVE_MINUTES_SECONDS}
-        else
-          embedded.creator = null
+        if groupId and embedded.creatorId
+          embedded.creator = getCachedChatUser {
+            userId: embedded.creatorId
+            groupId: groupId
+          }
+
+      when TYPES.THREAD_COMMENT.GROUP_USER
+        if groupId and embedded.creatorId
+          embedded.groupUser = getCachedChatGroupUser {
+            userId: embedded.creatorId, groupId: groupId
+          }
 
       when TYPES.THREAD_COMMENT.TIME
         timeUuid = if typeof embedded.timeUuid is 'string' \
@@ -607,19 +613,9 @@ embedFn = _.curry (props, object) ->
 
       when TYPES.CHAT_MESSAGE.GROUP_USER
         if embedded.groupId and embedded.userId
-          prefix = CacheService.PREFIXES.CHAT_GROUP_USER
-          key = "#{prefix}:#{embedded.groupId}:#{embedded.userId}"
-          embedded.groupUser =
-            CacheService.preferCache key, ->
-              GroupUser.getByGroupIdAndUserId(
-                embedded.groupId, embedded.userId, {preferCache: true}
-              )
-              .then embedFn {
-                embed: [TYPES.GROUP_USER.XP, TYPES.GROUP_USER.ROLE_NAMES]
-              }
-            , {expireSeconds: FIVE_MINUTES_SECONDS}
-        else
-          embedded.groupUser = null
+          embedded.groupUser = getCachedChatGroupUser {
+            userId: embedded.userId, groupId: embedded.groupId
+          }
 
       when TYPES.CHAT_MESSAGE.MENTIONED_USERS
         text = embedded.body
@@ -714,8 +710,8 @@ embedFn = _.curry (props, object) ->
           .then ClashRoyaleDeck.sanitize null
         , {expireSeconds: ONE_DAY_SECONDS}
 
-      else
-        console.log 'no match found', key
+      # else
+      #   console.log 'no match found', key
 
   return Promise.props embedded
 

@@ -7,6 +7,7 @@ GroupRole = require '../models/group_role'
 GroupUser = require '../models/group_user'
 GroupAuditLog = require '../models/group_audit_log'
 Language = require '../models/language'
+CacheService = require '../services/cache'
 config = require '../config'
 
 class GroupRoleCtrl

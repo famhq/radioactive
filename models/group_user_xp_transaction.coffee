@@ -57,6 +57,10 @@ class GroupUserXpTransactionModel
       xp: 5
       maxCount: 1
       ttl: ONE_DAY_SECONDS
+    dailyForumComment:
+      xp: 5
+      maxCount: 1
+      ttl: ONE_DAY_SECONDS
     dailyVideoView:
       xp: 5
       maxCount: 1

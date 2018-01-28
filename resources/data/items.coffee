@@ -8,6 +8,7 @@ GROUPS =
   CLASH_ROYALE_EN: '73ed4af0-a2f2-4371-a893-1360d3989708'
   CLASH_ROYALE_ES: '4f26e51e-7f35-41dd-9f21-590c7bb9ce34'
   CLASH_ROYALE_PT: '68acb51a-3e5a-466a-9e31-c93aacd5919e'
+  CLASH_ROYALE_PL: '22e9db0b-45be-4c6d-86a5-434b38684db9'
   LEGACY: config.CLASH_ROYALE_ID
 
 items =
@@ -52,6 +53,15 @@ items =
   cr_pt_thumbs_up: {name: 'CR Thumbs Up', groupId: GROUPS.CLASH_ROYALE_PT, rarity: 'common'}
   cr_pt_thumb: {name: 'CR Thumb', groupId: GROUPS.CLASH_ROYALE_PT, rarity: 'common'}
   cr_pt_trophy: {name: 'CR Trophy', groupId: GROUPS.CLASH_ROYALE_PT, rarity: 'common'}
+
+  cr_pl_starfire: {name: 'Starfire Logo', groupId: GROUPS.CLASH_ROYALE_PL, rarity: 'common'}
+  cr_pl_angry: {name: 'CR Angry', groupId: GROUPS.CLASH_ROYALE_PL, rarity: 'common'}
+  cr_pl_crying: {name: 'CR Crying', groupId: GROUPS.CLASH_ROYALE_PL, rarity: 'common'}
+  cr_pl_laughing: {name: 'CR Laughing', groupId: GROUPS.CLASH_ROYALE_PL, rarity: 'epic'}
+  cr_pl_shop_goblin: {name: 'CR Shop Goblin', groupId: GROUPS.CLASH_ROYALE_PL, rarity: 'rare'}
+  cr_pl_thumbs_up: {name: 'CR Thumbs Up', groupId: GROUPS.CLASH_ROYALE_PL, rarity: 'common'}
+  cr_pl_thumb: {name: 'CR Thumb', groupId: GROUPS.CLASH_ROYALE_PL, rarity: 'common'}
+  cr_pl_trophy: {name: 'CR Trophy', groupId: GROUPS.CLASH_ROYALE_PL, rarity: 'common'}
 
   # legacy items earned before 11/21
   sf_logo: {name: 'Starfire Logo', groupId: GROUPS.LEGACY, rarity: 'common'}

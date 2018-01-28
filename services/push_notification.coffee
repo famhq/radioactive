@@ -365,7 +365,7 @@ class PushNotificationService
               }
 
   subscribeToTopicByUserId: (userId, topic) ->
-    console.log 'subscribeTopic', topic
+    # console.log 'subscribeTopic', topic
     PushToken.getAllByUserId userId
     .map ({sourceType, token}) ->
       unless sourceType in ['android', 'ios-fcm', 'web-fcm']

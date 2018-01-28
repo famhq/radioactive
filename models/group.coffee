@@ -87,18 +87,17 @@ class GroupModel
 
     level ?= 'member'
 
+    if level is 'admin'
+      return Promise.resolve group.creatorId is user.id
+
     # public groups have waaaaaaaaaaay to many users
-    if level isnt 'admin' and group.type is 'public'
+    if group.type is 'public'
       return Promise.resolve true
 
     GroupUser.getAllByGroupId group.id
     .map ({userId}) -> "#{userId}"
     .then (userIds) ->
-      return switch level
-        when 'admin'
-        then group.creatorId is user.id
-        # member
-        else userIds and userIds.indexOf(user.id) isnt -1
+      userIds and userIds.indexOf(user.id) isnt -1
 
   getById: (id, {preferCache} = {}) ->
     get = ->
@@ -191,7 +190,7 @@ class GroupModel
       null
 
   addUser: (groupId, userId) ->
-    GroupUser.upsert {groupId, userId}
+    GroupUser.create {groupId, userId}
     .tap ->
       key = "#{CacheService.PREFIXES.GROUP_ID}:#{groupId}"
       CacheService.deleteByKey key

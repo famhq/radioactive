@@ -56,7 +56,7 @@ class ClashRoyaleAPICtrl
     # should "fix". multiple at same time causes actions on matches
     # to be duplicated
     CacheService.lock key, ->
-      console.log 'refresh', playerId
+      # console.log 'refresh', playerId
       Player.getByUserIdAndGameId user.id, config.CLASH_ROYALE_ID
       .then (mePlayer) ->
         if mePlayer?.id is playerId

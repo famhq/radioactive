@@ -167,7 +167,6 @@ class ThreadCommentModel
       .run()
     ]
     .then ([allComments, voteCounts]) ->
-      console.log 'got', allComments.length
       allComments = _.map allComments, (comment) ->
         voteCount = _.find voteCounts, {timeUuid: comment.timeUuid}
         voteCount ?= {upvotes: 0, downvotes: 0}
