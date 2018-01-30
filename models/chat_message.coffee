@@ -105,6 +105,16 @@ tables = [
     primaryKey:
       partitionKey: ['id']
   }
+  {
+    name: 'chat_messages_slow_mode_log'
+    keyspace: 'starfire'
+    fields:
+      conversationId: 'uuid'
+      userId: 'uuid'
+      time: 'timestamp'
+    primaryKey:
+      partitionKey: ['conversationId', 'userId']
+  }
 ]
 
 class ChatMessageModel extends Stream
@@ -152,6 +162,23 @@ class ChatMessageModel extends Stream
       unless isUpdate
         @streamCreate chatMessage
       chatMessage
+
+  getLastTimeByUserIdAndConversationId: (userId, conversationId) ->
+    cknex().select '*'
+    .from 'chat_messages_slow_mode_log'
+    .where 'conversationId', '=', conversationId
+    .andWhere 'userId', '=', userId
+    .run {isSingle: true}
+    .then (response) ->
+      response?.time
+
+  upsertSlowModeLog: ({userId, conversationId}) ->
+    cknex().update 'chat_messages_slow_mode_log'
+    .set {time: new Date()}
+    .where 'conversationId', '=', conversationId
+    .andWhere 'userId', '=', userId
+    .usingTTL 3600 * 24 # 1 day
+    .run()
 
   getAllByConversationId: (conversationId, options = {}) =>
     {limit, isStreamed, emit, socket, route, initialPostFn, postFn,

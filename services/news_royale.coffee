@@ -19,7 +19,7 @@ class NewsRoyaleService
     .then (response) ->
       # console.log response
       $ = cheerio.load response
-      posts = $('.article-small').not('.hidden').map (i, el) ->
+      posts = $('article').not('.hidden').map (i, el) ->
         # console.log $(el).html()
         {
           id: $(el).attr('data-post-id')
@@ -28,7 +28,7 @@ class NewsRoyaleService
         }
       .get()
 
-      posts = _.filter posts, ({id}) -> id
+      posts = _.filter posts, ({id, url}) -> id and url
 
       Thread.getAll {
         groupId: CLASH_ROYALE_ES_GROUP_ID
@@ -46,7 +46,6 @@ class NewsRoyaleService
             pathParts = urlParts[1].split('?')
             path = encodeURIComponent pathParts[0]
             qs = pathParts[1]
-            path
             url = "#{urlParts[0]}/news/#{path}?#{qs}"
             request url
             .catch (err) ->

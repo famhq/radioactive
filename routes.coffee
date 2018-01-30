@@ -109,6 +109,8 @@ module.exports = router
 .on 'chatMessages.deleteById', authed ChatMessageCtrl.deleteById
 .on 'chatMessages.deleteAllByGroupIdAndUserId',
   authed ChatMessageCtrl.deleteAllByGroupIdAndUserId
+.on 'chatMessages.getLastTimeByMeAndConversationId',
+  authed ChatMessageCtrl.getLastTimeByMeAndConversationId
 .on 'chatMessages.uploadImage', authed ChatMessageCtrl.uploadImage
 .on 'chatMessages.getAllByConversationId',
   authed ChatMessageCtrl.getAllByConversationId

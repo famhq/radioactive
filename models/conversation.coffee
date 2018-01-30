@@ -25,6 +25,7 @@ defaultConversation = (conversation) ->
     name: null
     description: null
     userData: {}
+    data: {}
     # null used to determine if message has been sent in convo
     lastUpdateTime: null # new Date()
   }
@@ -133,6 +134,10 @@ class ConversationModel
     .get id
     .update diff
     .run()
+    .tap ->
+      prefix = CacheService.PREFIXES.CONVERSATION_ID
+      key = "#{prefix}:#{id}"
+      CacheService.deleteByKey key
 
   deleteById: (id) ->
     r.table CONVERSATIONS_TABLE
@@ -145,6 +150,7 @@ class ConversationModel
       'id'
       'userIds'
       'userData'
+      'data'
       'users'
       'groupId'
       'name'

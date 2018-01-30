@@ -64,7 +64,7 @@ class ConversationCtrl
             }
       }
 
-  updateById: ({id, name, description}, {user}) ->
+  updateById: ({id, name, description, isSlowMode, slowModeCooldown}, {user}) ->
     name = name and _.kebabCase(name.toLowerCase()).replace(/[^0-9a-z-]/gi, '')
 
     Conversation.getById id
@@ -86,7 +86,10 @@ class ConversationCtrl
             language: user.language
           }
         }
-        Conversation.updateById id, {name, description}
+        Conversation.updateById id, {
+          name, description
+          data: {isSlowMode, slowModeCooldown}
+        }
 
   getAll: ({}, {user}) ->
     Conversation.getAllByUserId user.id

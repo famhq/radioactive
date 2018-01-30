@@ -123,6 +123,7 @@ PERMISSIONS =
   SEND_IMAGE: 'sendImage'
   SEND_LINK: 'sendLink'
   SEND_ADDON: 'sendAddon'
+  BYPASS_SLOW_MODE: 'bypassSlowMode'
   READ_AUDIT_LOG: 'readAuditLog'
   MANAGE_INFO: 'manageInfo'
 

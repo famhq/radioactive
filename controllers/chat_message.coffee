@@ -98,6 +98,20 @@ class ChatMessageCtrl
       if bannedIp?.ip or bannedUserId?.userId or isHoneypotBanned
         router.throw status: 403, info: 'unable to post'
 
+  _checkSlowMode: (conversation, userId, router) ->
+    isSlowMode = conversation?.data?.isSlowMode
+    slowModeCooldownSeconds = conversation?.data?.slowModeCooldown
+    if isSlowMode and slowModeCooldownSeconds
+      ChatMessage.getLastTimeByUserIdAndConversationId userId, conversation.id
+      .then (lastMeMessageTime) ->
+        msSinceLastMessage = Date.now() - lastMeMessageTime
+        cooldownSecondsLeft = slowModeCooldownSeconds -
+                                Math.floor(msSinceLastMessage / 1000)
+        if cooldownSecondsLeft > 0
+          router.throw status: 403, info: 'unable to post'
+    else
+      Promise.resolve null
+
   _checkStickers: (userId, stickers) ->
     if stickers
       UserItem.getAllByUserId userId
@@ -236,7 +250,10 @@ class ChatMessageCtrl
 
         GroupUsersOnline.upsert {userId: user.id, groupId}
 
-        @_checkIfBanned groupId, ip, user.id, router
+        Promise.all [
+          @_checkIfBanned groupId, ip, user.id, router
+          @_checkSlowMode conversation, user.id, router
+        ]
         .then ->
           # TODO: combine with conversation.hasPermission
           permissions = ['sendMessage']
@@ -293,6 +310,11 @@ class ChatMessageCtrl
           }, {
             prepareFn: prepareFn
           }
+        .then ->
+          if conversation.data?.isSlowMode
+            ChatMessage.upsertSlowModeLog {
+              userId: user.id, conversationId: conversation.id
+            }
         .then ->
           if conversation.groupId
             GroupUserXpTransaction.completeActionByGroupIdAndUserId(
@@ -386,6 +408,9 @@ class ChatMessageCtrl
 
   unsubscribeByConversationId: ({conversationId}, {user}, {socket}) ->
     ChatMessage.unsubscribeByConversationId conversationId, {socket}
+
+  getLastTimeByMeAndConversationId: ({conversationId}, {user}, {socket}) ->
+    ChatMessage.getLastTimeByUserIdAndConversationId user.id, conversationId
 
   getAllByConversationId: (options, {user}, socketInfo) ->
     {conversationId, maxTimeUuid, isStreamed} = options

@@ -41,8 +41,6 @@ class CronService
             ClashRoyalePlayerService.updateAutoRefreshPlayers()
 
     @addCron 'quarterMinute', '15 * * * * *', ->
-      VideoDiscoveryService.updateGroupVideos config.GROUPS.ECLIHPSE
-
       CleanupService.clean()
       Thread.updateScores 'stale'
 
