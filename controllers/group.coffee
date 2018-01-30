@@ -179,6 +179,28 @@ class GroupCtrl
         category = "#{prefix}:#{userId}"
         CacheService.deleteByCategory category
 
+  sendNotificationById: ({title, description, pathKey, id}, {user}) ->
+    groupId = id
+    pathKey or= 'groupHome'
+
+    # GroupUser.hasPermissionByGroupIdAndUser groupId, user, permissions
+    Group.getById groupId
+    .then (group) ->
+      Group.hasPermission group, user, {level: 'admin'}
+      .then (hasPermission) ->
+        unless hasPermission
+          router.throw status: 400, info: 'no permission'
+        PushNotificationService.sendToGroupTopic group, {
+          title: title
+          text: description
+          type: PushNotificationService.TYPES.NEWS
+          data:
+            path:
+              key: pathKey
+              params:
+                groupId: groupId
+        }
+
   getAllByUserId: ({language, user, userId, embed}) ->
     embed = _.map embed, (item) ->
       EmbedService.TYPES.GROUP[_.snakeCase(item).toUpperCase()]

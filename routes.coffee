@@ -161,6 +161,7 @@ module.exports = router
 .on 'groups.getByKey', authed GroupCtrl.getByKey
 .on 'groups.getByGameKeyAndLanguage', authed GroupCtrl.getByGameKeyAndLanguage
 .on 'groups.inviteById', authed GroupCtrl.inviteById
+.on 'groups.sendNotificationById', authed GroupCtrl.sendNotificationById
 
 .on 'groupAuditLogs.getAllByGroupId',
   authed GroupAuditLogCtrl.getAllByGroupId

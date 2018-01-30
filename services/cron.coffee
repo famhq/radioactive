@@ -41,11 +41,12 @@ class CronService
             ClashRoyalePlayerService.updateAutoRefreshPlayers()
 
     @addCron 'quarterMinute', '15 * * * * *', ->
+      VideoDiscoveryService.updateGroupVideos config.GROUPS.ECLIHPSE
+
       CleanupService.clean()
       Thread.updateScores 'stale'
 
-    @addCron 'threeQuarterMinute', '30 */5 * * * *', ->
-      Product.batchUpsert allProducts # TODO: rm
+    @addCron 'fiveMinute', '30 */5 * * * *', ->
       if config.ENV is config.ENVS.PROD
         ClashRoyalePlayerService.updateTopPlayers()
 
@@ -56,7 +57,7 @@ class CronService
       Thread.updateScores 'time'
       NewsRoyaleService.scrape()
       VideoDiscoveryService.updateGroupVideos config.GROUPS.PLAY_HARD
-      # VideoDiscoveryService.updateGroupVideos config.GROUPS.ECLIHPSE
+      VideoDiscoveryService.updateGroupVideos config.GROUPS.ECLIHPSE
 
     @addCron 'oneHour', '0 0 * * * *', ->
       CleanupService.trimLeaderboards()

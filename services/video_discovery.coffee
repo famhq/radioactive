@@ -8,6 +8,7 @@ cld = require 'cld'
 Video = require '../models/video'
 Group = require '../models/group'
 ImageService = require './image'
+CacheService = require './cache'
 PushNotificationService = require './push_notification'
 config = require '../config'
 
@@ -83,6 +84,7 @@ class VideoDisoveryService
                   key: 'newVideo.text'
                   replacements:
                     groupName: group.name
+                type: PushNotificationService.TYPES.VIDEO
                 data:
                   path:
                     key: 'groupVideos'
@@ -103,6 +105,12 @@ class VideoDisoveryService
             time: new Date(video.snippet.publishedAt)
           }
           .tap (video) ->
+            # TODO: don't hard code limit
+            key = "#{CacheService.PREFIXES.VIDEOS_GROUP_ID}:#{groupId}:15"
+            CacheService.deleteByKey key
+            key = "#{CacheService.PREFIXES.VIDEOS_GROUP_ID}:#{groupId}:1"
+            CacheService.deleteByKey key
+
             keyPrefix = "images/starfire/vt/#{video.id}"
             ImageService.getYoutubePreview keyPrefix, video.sourceId
             .then (thumbnailImage) ->

@@ -256,7 +256,7 @@ class PushNotificationService
 
     message = {
       toType: 'topic'
-      type: TYPES.VIDEO
+      type: message.type
       title: message.title
       text: message.text
       data: message.data

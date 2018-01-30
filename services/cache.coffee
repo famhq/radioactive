@@ -25,7 +25,7 @@ PREFIXES =
   CHAT_MESSAGE_DAILY_XP: 'chat_message:daily_xp'
   CONVERSATION_ID: 'conversation:id'
   VIDEO_DAILY_XP: 'video:daily_xp'
-  VIDEOS_GROUP_ID: 'videos:group_id'
+  VIDEOS_GROUP_ID: 'videos:group_id1'
   USER_ID: 'user:id'
   USER_USERNAME: 'user:username'
   USER_FOLLOWER_COUNT: 'user:follower_count'
