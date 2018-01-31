@@ -51,7 +51,7 @@ PREFIXES =
   CLASH_ROYALE_CARD_RANK: 'clash_royal_card:rank'
   CLASH_ROYALE_DECK_RANK: 'clash_royal_deck:rank'
   CLASH_ROYALE_DECK_STATS: 'clash_royal_deck:stats1'
-  CLASH_ROYALE_DECK_GET_POPULAR: 'clash_royal_deck:get_popular2'
+  CLASH_ROYALE_DECK_GET_POPULAR: 'clash_royal_deck:get_popular3'
   CLASH_ROYALE_DECK_CARD_KEYS: 'clash_royal_deck:card_keys12'
   CLASH_ROYALE_PLAYER_DECK_DECK: 'clash_royale_player_deck:deck9'
   CLASH_ROYALE_PLAYER_DECK_DECK_ID_USER_ID:

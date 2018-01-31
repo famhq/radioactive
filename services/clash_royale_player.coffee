@@ -40,6 +40,7 @@ ALLOWED_GAME_TYPES = [
   'classicChallenge', 'grandChallenge'
   'friendly', 'clanMate', '2v2', 'touchdown2v2DraftPractice',
   'touchdown2v2Draft', 'newCardChallenge', '3xChallenge', 'rampUp'
+  'youtubeDecks'
 ]
 
 DEBUG = false or config.ENV is config.ENVS.DEV

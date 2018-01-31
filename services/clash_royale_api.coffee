@@ -120,6 +120,8 @@ class ClashRoyaleAPIService
                      then 'rampUp'
                      else if match.challengeId is 73001263
                      then '3xChallenge'
+                     else if match.challengeId is 73001299
+                     then 'youtubeDecks'
                      else match.type
         match
 
