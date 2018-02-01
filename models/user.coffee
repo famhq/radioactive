@@ -179,6 +179,7 @@ class UserModel
       'isChatBanned'
       'isOnline'
       'flags'
+      'upgrades'
       'data'
       'gameData'
       'followerCount'

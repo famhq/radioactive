@@ -40,16 +40,20 @@ class ProductCtrl
   getPackItems: (product) ->
     Item.getAllByGroupId product.groupId
     .then (items) ->
-      groupedItems = _.groupBy items, 'rarity'
-      odds = _.reduce product.data.odds, (obj, {rarity, odds}) ->
-        if groupedItems[rarity]
-          obj[rarity] = odds
-        obj
-      , {}
-      packItems = _.map _.range(product.data.count or 1), (i) ->
-        rarity = deck.pick odds
-        population = groupedItems[rarity]
-        _.sample population
+      groupedItems = _.groupBy items, ({type, rarity}) -> "#{type}|#{rarity}"
+      if product.data.odds
+        odds = _.reduce product.data.odds, (obj, {type, rarity, odds}) ->
+          if groupedItems["#{type}|#{rarity}"]
+            obj["#{type}|#{rarity}"] = odds
+          obj
+        , {}
+        packItems = _.map _.range(product.data.count or 1), (i) ->
+          typeAndRarity = deck.pick odds
+          population = groupedItems[typeAndRarity]
+          _.sample population
+      else
+        packItems = _.map product.data.itemKeys, (itemKey) ->
+          _.find items, {key: itemKey}
 
       packItems = _.shuffle packItems
 

@@ -72,7 +72,7 @@ class ProductModel
 
   batchUpsert: (products) =>
     Promise.map products, (product) =>
-      @upsert product, {skipRun: true}
+      @upsert product
 
   getAllByGroupId: (groupId) ->
     cknex().select '*'
@@ -113,7 +113,7 @@ class ProductModel
     .usingTTL product.data.lockTime
     .run()
 
-  upsert: (product, {skipRun} = {}) ->
+  upsert: (product) ->
     product = defaultProduct product
 
     Promise.all [

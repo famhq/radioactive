@@ -11,7 +11,7 @@ DEFAULT_REDLOCK_EXPIRE_SECONDS = 30
 ONE_HOUR_SECONDS = 3600
 
 PREFIXES =
-  CHAT_USER: 'chat:user4'
+  CHAT_USER: 'chat:user6'
   CHAT_USER_B_USERNAME: 'chat:user:byUsername'
   CHAT_GROUP_USER: 'chat:group_user5'
   THREAD_USER: 'thread:user1'
@@ -130,6 +130,7 @@ class CacheService
     BROADCAST: 'broadcast'
     UPGRADE_STICKER: 'upgrade_sticker2'
     SET_AUTO_REFRESH: 'set_auto_refresh4'
+    CONSUME_ITEM: 'consume_item0'
     SPECIAL_OFFER_DAILY: 'special_offer:daily'
     SPECIAL_OFFER_INSTALL: 'special_offer:install'
   LOCKS:

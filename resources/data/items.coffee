@@ -12,79 +12,85 @@ GROUPS =
   LEGACY: config.CLASH_ROYALE_ID
 
 items =
-  ph: {name: 'PlayHard', groupId: GROUPS.PLAY_HARD, rarity: 'common'}
-  ph_bruno: {name: 'Bruno', groupId: GROUPS.PLAY_HARD, rarity: 'common'}
-  ph_huum: {name: 'Huum', groupId: GROUPS.PLAY_HARD, rarity: 'common'}
-  ph_surpreso: {name: 'Surpreso', groupId: GROUPS.PLAY_HARD, rarity: 'common'}
-  ph_feliz: {name: 'Feliz', groupId: GROUPS.PLAY_HARD, rarity: 'common'}
-  ph_bora: {name: 'Bora', groupId: GROUPS.PLAY_HARD, rarity: 'common'}
-  ph_assustadao: {name: 'Assustadao', groupId: GROUPS.PLAY_HARD, rarity: 'common'}
-  ph_aleluia: {name: 'Aleluia', groupId: GROUPS.PLAY_HARD, rarity: 'common'}
-  ph_tenso: {name: 'Tenso', groupId: GROUPS.PLAY_HARD, rarity: 'common'}
-  ph_hmm: {name: 'Hmm', groupId: GROUPS.PLAY_HARD, rarity: 'rare'}
-  ph_uau: {name: 'Uau', groupId: GROUPS.PLAY_HARD, rarity: 'rare'}
-  ph_love: {name: 'Love', groupId: GROUPS.PLAY_HARD, rarity: 'rare'}
-  ph_voa: {name: 'Voa', groupId: GROUPS.PLAY_HARD, rarity: 'epic'}
-  ph_god: {name: 'God', groupId: GROUPS.PLAY_HARD, rarity: 'legendary'}
+  ph: {name: 'PlayHard', groupId: GROUPS.PLAY_HARD, rarity: 'common', type: 'sticker'}
+  ph_bruno: {name: 'Bruno', groupId: GROUPS.PLAY_HARD, rarity: 'common', type: 'sticker'}
+  ph_huum: {name: 'Huum', groupId: GROUPS.PLAY_HARD, rarity: 'common', type: 'sticker'}
+  ph_surpreso: {name: 'Surpreso', groupId: GROUPS.PLAY_HARD, rarity: 'common', type: 'sticker'}
+  ph_feliz: {name: 'Feliz', groupId: GROUPS.PLAY_HARD, rarity: 'common', type: 'sticker'}
+  ph_bora: {name: 'Bora', groupId: GROUPS.PLAY_HARD, rarity: 'common', type: 'sticker'}
+  ph_assustadao: {name: 'Assustadao', groupId: GROUPS.PLAY_HARD, rarity: 'common', type: 'sticker'}
+  ph_aleluia: {name: 'Aleluia', groupId: GROUPS.PLAY_HARD, rarity: 'common', type: 'sticker'}
+  ph_tenso: {name: 'Tenso', groupId: GROUPS.PLAY_HARD, rarity: 'common', type: 'sticker'}
+  ph_hmm: {name: 'Hmm', groupId: GROUPS.PLAY_HARD, rarity: 'rare', type: 'sticker'}
+  ph_uau: {name: 'Uau', groupId: GROUPS.PLAY_HARD, rarity: 'rare', type: 'sticker'}
+  ph_love: {name: 'Love', groupId: GROUPS.PLAY_HARD, rarity: 'rare', type: 'sticker'}
+  ph_voa: {name: 'Voa', groupId: GROUPS.PLAY_HARD, rarity: 'epic', type: 'sticker'}
+  ph_god: {name: 'God', groupId: GROUPS.PLAY_HARD, rarity: 'legendary', type: 'sticker'}
+  ph_badge_7_days: {
+    name: 'Badge for 7 days', groupId: GROUPS.PLAY_HARD, rarity: 'common', type: 'consumable'
+    data:
+      duration: 3600 * 24 * 7
+      upgradeType: 'fireBadge'
+  }
 
-  cr_en_starfire: {name: 'Starfire Logo', groupId: GROUPS.CLASH_ROYALE_EN, rarity: 'common'}
-  cr_en_angry: {name: 'CR Angry', groupId: GROUPS.CLASH_ROYALE_EN, rarity: 'common'}
-  cr_en_crying: {name: 'CR Crying', groupId: GROUPS.CLASH_ROYALE_EN, rarity: 'common'}
-  cr_en_laughing: {name: 'CR Laughing', groupId: GROUPS.CLASH_ROYALE_EN, rarity: 'epic'}
-  cr_en_shop_goblin: {name: 'CR Shop Goblin', groupId: GROUPS.CLASH_ROYALE_EN, rarity: 'rare'}
-  cr_en_thumbs_up: {name: 'CR Thumbs Up', groupId: GROUPS.CLASH_ROYALE_EN, rarity: 'common'}
-  cr_en_thumb: {name: 'CR Thumb', groupId: GROUPS.CLASH_ROYALE_EN, rarity: 'common'}
-  cr_en_trophy: {name: 'CR Trophy', groupId: GROUPS.CLASH_ROYALE_EN, rarity: 'common'}
+  cr_en_starfire: {name: 'Starfire Logo', groupId: GROUPS.CLASH_ROYALE_EN, rarity: 'common', type: 'sticker'}
+  cr_en_angry: {name: 'CR Angry', groupId: GROUPS.CLASH_ROYALE_EN, rarity: 'common', type: 'sticker'}
+  cr_en_crying: {name: 'CR Crying', groupId: GROUPS.CLASH_ROYALE_EN, rarity: 'common', type: 'sticker'}
+  cr_en_laughing: {name: 'CR Laughing', groupId: GROUPS.CLASH_ROYALE_EN, rarity: 'epic', type: 'sticker'}
+  cr_en_shop_goblin: {name: 'CR Shop Goblin', groupId: GROUPS.CLASH_ROYALE_EN, rarity: 'rare', type: 'sticker'}
+  cr_en_thumbs_up: {name: 'CR Thumbs Up', groupId: GROUPS.CLASH_ROYALE_EN, rarity: 'common', type: 'sticker'}
+  cr_en_thumb: {name: 'CR Thumb', groupId: GROUPS.CLASH_ROYALE_EN, rarity: 'common', type: 'sticker'}
+  cr_en_trophy: {name: 'CR Trophy', groupId: GROUPS.CLASH_ROYALE_EN, rarity: 'common', type: 'sticker'}
 
-  cr_es_starfire: {name: 'Starfire Logo', groupId: GROUPS.CLASH_ROYALE_ES, rarity: 'common'}
-  cr_es_angry: {name: 'CR Angry', groupId: GROUPS.CLASH_ROYALE_ES, rarity: 'common'}
-  cr_es_crying: {name: 'CR Crying', groupId: GROUPS.CLASH_ROYALE_ES, rarity: 'common'}
-  cr_es_laughing: {name: 'CR Laughing', groupId: GROUPS.CLASH_ROYALE_ES, rarity: 'epic'}
-  cr_es_shop_goblin: {name: 'CR Shop Goblin', groupId: GROUPS.CLASH_ROYALE_ES, rarity: 'rare'}
-  cr_es_thumbs_up: {name: 'CR Thumbs Up', groupId: GROUPS.CLASH_ROYALE_ES, rarity: 'common'}
-  cr_es_thumb: {name: 'CR Thumb', groupId: GROUPS.CLASH_ROYALE_ES, rarity: 'common'}
-  cr_es_trophy: {name: 'CR Trophy', groupId: GROUPS.CLASH_ROYALE_ES, rarity: 'common'}
+  cr_es_starfire: {name: 'Starfire Logo', groupId: GROUPS.CLASH_ROYALE_ES, rarity: 'common', type: 'sticker'}
+  cr_es_angry: {name: 'CR Angry', groupId: GROUPS.CLASH_ROYALE_ES, rarity: 'common', type: 'sticker'}
+  cr_es_crying: {name: 'CR Crying', groupId: GROUPS.CLASH_ROYALE_ES, rarity: 'common', type: 'sticker'}
+  cr_es_laughing: {name: 'CR Laughing', groupId: GROUPS.CLASH_ROYALE_ES, rarity: 'epic', type: 'sticker'}
+  cr_es_shop_goblin: {name: 'CR Shop Goblin', groupId: GROUPS.CLASH_ROYALE_ES, rarity: 'rare', type: 'sticker'}
+  cr_es_thumbs_up: {name: 'CR Thumbs Up', groupId: GROUPS.CLASH_ROYALE_ES, rarity: 'common', type: 'sticker'}
+  cr_es_thumb: {name: 'CR Thumb', groupId: GROUPS.CLASH_ROYALE_ES, rarity: 'common', type: 'sticker'}
+  cr_es_trophy: {name: 'CR Trophy', groupId: GROUPS.CLASH_ROYALE_ES, rarity: 'common', type: 'sticker'}
 
-  cr_pt_starfire: {name: 'Starfire Logo', groupId: GROUPS.CLASH_ROYALE_PT, rarity: 'common'}
-  cr_pt_angry: {name: 'CR Angry', groupId: GROUPS.CLASH_ROYALE_PT, rarity: 'common'}
-  cr_pt_crying: {name: 'CR Crying', groupId: GROUPS.CLASH_ROYALE_PT, rarity: 'common'}
-  cr_pt_laughing: {name: 'CR Laughing', groupId: GROUPS.CLASH_ROYALE_PT, rarity: 'epic'}
-  cr_pt_shop_goblin: {name: 'CR Shop Goblin', groupId: GROUPS.CLASH_ROYALE_PT, rarity: 'rare'}
-  cr_pt_thumbs_up: {name: 'CR Thumbs Up', groupId: GROUPS.CLASH_ROYALE_PT, rarity: 'common'}
-  cr_pt_thumb: {name: 'CR Thumb', groupId: GROUPS.CLASH_ROYALE_PT, rarity: 'common'}
-  cr_pt_trophy: {name: 'CR Trophy', groupId: GROUPS.CLASH_ROYALE_PT, rarity: 'common'}
+  cr_pt_starfire: {name: 'Starfire Logo', groupId: GROUPS.CLASH_ROYALE_PT, rarity: 'common', type: 'sticker'}
+  cr_pt_angry: {name: 'CR Angry', groupId: GROUPS.CLASH_ROYALE_PT, rarity: 'common', type: 'sticker'}
+  cr_pt_crying: {name: 'CR Crying', groupId: GROUPS.CLASH_ROYALE_PT, rarity: 'common', type: 'sticker'}
+  cr_pt_laughing: {name: 'CR Laughing', groupId: GROUPS.CLASH_ROYALE_PT, rarity: 'epic', type: 'sticker'}
+  cr_pt_shop_goblin: {name: 'CR Shop Goblin', groupId: GROUPS.CLASH_ROYALE_PT, rarity: 'rare', type: 'sticker'}
+  cr_pt_thumbs_up: {name: 'CR Thumbs Up', groupId: GROUPS.CLASH_ROYALE_PT, rarity: 'common', type: 'sticker'}
+  cr_pt_thumb: {name: 'CR Thumb', groupId: GROUPS.CLASH_ROYALE_PT, rarity: 'common', type: 'sticker'}
+  cr_pt_trophy: {name: 'CR Trophy', groupId: GROUPS.CLASH_ROYALE_PT, rarity: 'common', type: 'sticker'}
 
-  cr_pl_starfire: {name: 'Starfire Logo', groupId: GROUPS.CLASH_ROYALE_PL, rarity: 'common'}
-  cr_pl_angry: {name: 'CR Angry', groupId: GROUPS.CLASH_ROYALE_PL, rarity: 'common'}
-  cr_pl_crying: {name: 'CR Crying', groupId: GROUPS.CLASH_ROYALE_PL, rarity: 'common'}
-  cr_pl_laughing: {name: 'CR Laughing', groupId: GROUPS.CLASH_ROYALE_PL, rarity: 'epic'}
-  cr_pl_shop_goblin: {name: 'CR Shop Goblin', groupId: GROUPS.CLASH_ROYALE_PL, rarity: 'rare'}
-  cr_pl_thumbs_up: {name: 'CR Thumbs Up', groupId: GROUPS.CLASH_ROYALE_PL, rarity: 'common'}
-  cr_pl_thumb: {name: 'CR Thumb', groupId: GROUPS.CLASH_ROYALE_PL, rarity: 'common'}
-  cr_pl_trophy: {name: 'CR Trophy', groupId: GROUPS.CLASH_ROYALE_PL, rarity: 'common'}
+  cr_pl_starfire: {name: 'Starfire Logo', groupId: GROUPS.CLASH_ROYALE_PL, rarity: 'common', type: 'sticker'}
+  cr_pl_angry: {name: 'CR Angry', groupId: GROUPS.CLASH_ROYALE_PL, rarity: 'common', type: 'sticker'}
+  cr_pl_crying: {name: 'CR Crying', groupId: GROUPS.CLASH_ROYALE_PL, rarity: 'common', type: 'sticker'}
+  cr_pl_laughing: {name: 'CR Laughing', groupId: GROUPS.CLASH_ROYALE_PL, rarity: 'epic', type: 'sticker'}
+  cr_pl_shop_goblin: {name: 'CR Shop Goblin', groupId: GROUPS.CLASH_ROYALE_PL, rarity: 'rare', type: 'sticker'}
+  cr_pl_thumbs_up: {name: 'CR Thumbs Up', groupId: GROUPS.CLASH_ROYALE_PL, rarity: 'common', type: 'sticker'}
+  cr_pl_thumb: {name: 'CR Thumb', groupId: GROUPS.CLASH_ROYALE_PL, rarity: 'common', type: 'sticker'}
+  cr_pl_trophy: {name: 'CR Trophy', groupId: GROUPS.CLASH_ROYALE_PL, rarity: 'common', type: 'sticker'}
 
   # legacy items earned before 11/21
-  sf_logo: {name: 'Starfire Logo', groupId: GROUPS.LEGACY, rarity: 'common'}
-  cr_angry: {name: 'CR Angry', groupId: GROUPS.LEGACY, rarity: 'common'}
-  cr_crying: {name: 'CR Crying', groupId: GROUPS.LEGACY, rarity: 'common'}
-  cr_laughing: {name: 'CR Laughing', groupId: GROUPS.LEGACY, rarity: 'epic'}
-  cr_shop_goblin: {name: 'CR Shop Goblin', groupId: GROUPS.LEGACY, rarity: 'rare'}
-  cr_thumbs_up: {name: 'CR Thumbs Up', groupId: GROUPS.LEGACY, rarity: 'common'}
-  cr_thumb: {name: 'CR Thumb', groupId: GROUPS.LEGACY, rarity: 'common'}
-  cr_trophy: {name: 'CR Trophy', groupId: GROUPS.LEGACY, rarity: 'common'}
+  sf_logo: {name: 'Starfire Logo', groupId: GROUPS.LEGACY, rarity: 'common', type: 'sticker'}
+  cr_angry: {name: 'CR Angry', groupId: GROUPS.LEGACY, rarity: 'common', type: 'sticker'}
+  cr_crying: {name: 'CR Crying', groupId: GROUPS.LEGACY, rarity: 'common', type: 'sticker'}
+  cr_laughing: {name: 'CR Laughing', groupId: GROUPS.LEGACY, rarity: 'epic', type: 'sticker'}
+  cr_shop_goblin: {name: 'CR Shop Goblin', groupId: GROUPS.LEGACY, rarity: 'rare', type: 'sticker'}
+  cr_thumbs_up: {name: 'CR Thumbs Up', groupId: GROUPS.LEGACY, rarity: 'common', type: 'sticker'}
+  cr_thumb: {name: 'CR Thumb', groupId: GROUPS.LEGACY, rarity: 'common', type: 'sticker'}
+  cr_trophy: {name: 'CR Trophy', groupId: GROUPS.LEGACY, rarity: 'common', type: 'sticker'}
 
 module.exports = _.map items, (value, key) -> _.defaults {key}, value
 
-# cr_barbarian: {name: 'CR Barbarian', groupId: GROUPS.CLASH_ROYALE_EN, rarity: 'epic'}
-# cr_blue_king: {name: 'CR Blue King', groupId: GROUPS.CLASH_ROYALE_EN, rarity: 'common'}
-# cr_epic_chest: {name: 'CR Epic Chest', groupId: GROUPS.CLASH_ROYALE_EN, rarity: 'epic'}
-# cr_giant_chest: {name: 'CR Giant Chest', groupId: GROUPS.CLASH_ROYALE_EN, rarity: 'rare'}
-# cr_goblin: {name: 'CR Goblin', groupId: GROUPS.CLASH_ROYALE_EN, rarity: 'rare'}
-# cr_gold_chest: {name: 'CR Gold Chest', groupId: GROUPS.CLASH_ROYALE_EN, rarity: 'common'}
-# cr_knight: {name: 'CR Knight', groupId: GROUPS.CLASH_ROYALE_EN, rarity: 'rare'}
-# cr_magical_chest: {name: 'CR Magical Chest', groupId: GROUPS.CLASH_ROYALE_EN, rarity: 'rare'}
-# cr_red_king: {name: 'CR Red King', groupId: GROUPS.CLASH_ROYALE_EN, rarity: 'common'}
-# cr_silver_chest: {name: 'CR Silver chest', groupId: GROUPS.CLASH_ROYALE_EN, rarity: 'common'}
-# cr_smc: {name: 'CR Super Magical Chest', groupId: GROUPS.CLASH_ROYALE_EN, rarity: 'legendary'}
+# cr_barbarian: {name: 'CR Barbarian', groupId: GROUPS.CLASH_ROYALE_EN, rarity: 'epic', type: 'sticker'}
+# cr_blue_king: {name: 'CR Blue King', groupId: GROUPS.CLASH_ROYALE_EN, rarity: 'common', type: 'sticker'}
+# cr_epic_chest: {name: 'CR Epic Chest', groupId: GROUPS.CLASH_ROYALE_EN, rarity: 'epic', type: 'sticker'}
+# cr_giant_chest: {name: 'CR Giant Chest', groupId: GROUPS.CLASH_ROYALE_EN, rarity: 'rare', type: 'sticker'}
+# cr_goblin: {name: 'CR Goblin', groupId: GROUPS.CLASH_ROYALE_EN, rarity: 'rare', type: 'sticker'}
+# cr_gold_chest: {name: 'CR Gold Chest', groupId: GROUPS.CLASH_ROYALE_EN, rarity: 'common', type: 'sticker'}
+# cr_knight: {name: 'CR Knight', groupId: GROUPS.CLASH_ROYALE_EN, rarity: 'rare', type: 'sticker'}
+# cr_magical_chest: {name: 'CR Magical Chest', groupId: GROUPS.CLASH_ROYALE_EN, rarity: 'rare', type: 'sticker'}
+# cr_red_king: {name: 'CR Red King', groupId: GROUPS.CLASH_ROYALE_EN, rarity: 'common', type: 'sticker'}
+# cr_silver_chest: {name: 'CR Silver chest', groupId: GROUPS.CLASH_ROYALE_EN, rarity: 'common', type: 'sticker'}
+# cr_smc: {name: 'CR Super Magical Chest', groupId: GROUPS.CLASH_ROYALE_EN, rarity: 'legendary', type: 'sticker'}
 
 # coffeelint: enable=max_line_length,cyclomatic_complexity

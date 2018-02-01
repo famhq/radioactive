@@ -41,7 +41,8 @@ config =
     chatMention: true
   # also in starfire
   LANGUAGES: [
-    'en', 'es', 'it', 'fr', 'zh', 'ja', 'ko', 'de', 'pt', 'pl', 'ru', 'id'
+    'en', 'es', 'it', 'fr', 'zh', 'ja', 'ko', 'de', 'pt', 'pl', 'ru'
+    'id', 'tr', 'tl'
   ]
   # also in starfire
   ITEM_LEVEL_REQUIREMENTS: [

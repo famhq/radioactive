@@ -6,6 +6,7 @@ config = require '../config'
 cknex = require '../services/cknex'
 User = require '../models/user'
 UserData = require '../models/user_data'
+UserUpgrade = require '../models/user_upgrade'
 AddonVote = require '../models/addon_vote'
 Ban = require '../models/ban'
 Conversation = require '../models/conversation'
@@ -114,6 +115,7 @@ TYPES =
     GROUP_USER_SETTINGS: 'user:groupUserSettings'
     GAME_DATA: 'user:gameData'
     IS_BANNED: 'user:isBanned'
+    UPGRADES: 'user:upgrades'
   USER_ITEM:
     ITEM: 'userItem:item'
   USER_DATA:
@@ -130,7 +132,9 @@ MAX_FRIENDS = 100 # FIXME add pagination
 NEWBIE_CHEST_COUNT = 0
 CHEST_COUNT = 300
 
-profileDialogUserEmbed = [TYPES.USER.GAME_DATA, TYPES.USER.IS_BANNED]
+profileDialogUserEmbed = [
+  TYPES.USER.GAME_DATA, TYPES.USER.IS_BANNED, TYPES.USER.UPGRADES
+]
 
 getCachedChatUser = ({userId, username, groupId}) ->
   if userId
@@ -205,6 +209,9 @@ embedFn = _.curry (props, object) ->
         embedded.isOnline = moment(embedded.lastActiveTime)
                             .add(LAST_ACTIVE_TIME_MS)
                             .isAfter moment()
+
+      when TYPES.USER.UPGRADES
+        embedded.upgrades = UserUpgrade.getAllByUserId embedded.id
 
       when TYPES.USER.IS_BANNED
         embedded.isChatBanned = Ban.getByGroupIdAndUserId(

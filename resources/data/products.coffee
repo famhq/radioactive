@@ -15,26 +15,26 @@ DEFAULT_FREE_PACK_DATA =
   lockTime: ONE_DAY_SECONDS
   count: 1
   odds: [
-    {rarity: 'common', odds: 0.8}
-    {rarity: 'rare', odds: 0.13}
-    {rarity: 'epic', odds: 0.05}
-    {rarity: 'legendary', odds: 0.02}
+    {type: 'sticker', rarity: 'common', odds: 0.8}
+    {type: 'sticker', rarity: 'rare', odds: 0.13}
+    {type: 'sticker', rarity: 'epic', odds: 0.05}
+    {type: 'sticker', rarity: 'legendary', odds: 0.02}
   ]
 DEFAULT_1_PACK_DATA =
   count: 1
   odds: [
-    {rarity: 'common', odds: 0.8}
-    {rarity: 'rare', odds: 0.13}
-    {rarity: 'epic', odds: 0.05}
-    {rarity: 'legendary', odds: 0.02}
+    {type: 'sticker', rarity: 'common', odds: 0.8}
+    {type: 'sticker', rarity: 'rare', odds: 0.13}
+    {type: 'sticker', rarity: 'epic', odds: 0.05}
+    {type: 'sticker', rarity: 'legendary', odds: 0.02}
   ]
 DEFAULT_3_PACK_DATA =
   count: 3
   odds: [
-    {rarity: 'common', odds: 0.8}
-    {rarity: 'rare', odds: 0.13}
-    {rarity: 'epic', odds: 0.05}
-    {rarity: 'legendary', odds: 0.02}
+    {type: 'sticker', rarity: 'common', odds: 0.8}
+    {type: 'sticker', rarity: 'rare', odds: 0.13}
+    {type: 'sticker', rarity: 'epic', odds: 0.05}
+    {type: 'sticker', rarity: 'legendary', odds: 0.02}
   ]
 
 products =
@@ -52,7 +52,7 @@ products =
   ph_pack1: {
     type: 'pack'
     groupId: GROUPS.PLAY_HARD
-    name: 'PlayHard Sticker Pack (1)'
+    name: 'Pacote de emojis PH (1)'
     cost: 100 # 10c
     data: _.defaults {
       backgroundImage: 'https://cdn.wtf/d/images/starfire/packs/ph_1.png'
@@ -62,7 +62,7 @@ products =
   ph_pack3: {
     type: 'pack'
     groupId: GROUPS.PLAY_HARD
-    name: 'PlayHard Sticker Pack (3)'
+    name: 'Pacote de emojis PH (3)'
     cost: 250 # 25c
     data: _.defaults {
       backgroundImage: 'https://cdn.wtf/d/images/starfire/packs/ph_3.png'
@@ -88,6 +88,17 @@ products =
       backgroundImage: 'https://cdn.wtf/d/images/starfire/products/visa.png'
       backgroundColor: '#FFC107'
     }
+  }
+  ph_badge: {
+    name: 'Distintivo "fire" no nome'
+    type: 'pack'
+    groupId: GROUPS.PLAY_HARD
+    cost: 200
+    data:
+      backgroundImage: 'https://cdn.wtf/d/images/starfire/items/ph_badge_7_days_large.png'
+      backgroundColor: '#333'
+      count: 1
+      itemKeys: ['ph_badge_7_days']
   }
   # ph_send_message: {
   #   name: 'Envie uma mensagem para Bruno'

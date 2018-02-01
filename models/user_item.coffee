@@ -51,12 +51,17 @@ class UserItemModel
     .where 'userId', '=', userId
     .run()
     .map defaultUserItemOutput
+    .then (userItems) ->
+      _.filter userItems, ({count}) -> Boolean count
 
   getAllKeysByUserId: (userId) ->
     cknex().select '*'
     .from 'user_items_counter_by_userId'
     .where 'userId', '=', userId
     .run()
+    .map defaultUserItemOutput
+    .then (userItems) ->
+      _.filter userItems, ({count}) -> Boolean count
     .map (item) -> item.itemKey
 
   getByUserIdAndItemKey: (userId, itemKey) ->
