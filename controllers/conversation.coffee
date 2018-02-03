@@ -100,24 +100,31 @@ class ConversationCtrl
     Conversation.getById id
     .then EmbedService.embed {embed: defaultEmbed}
     .tap (conversation) ->
-      if conversation.groupId
-        # FIXME FIXME: channel perms
-        Group.hasPermissionByIdAndUser conversation.groupId, user
-        .then (hasPermission) ->
-          unless hasPermission
-            router.throw status: 400, info: 'no permission'
-      else if conversation.eventId
-        Event.hasPermissionByIdAndUser conversation.eventId, user
-        .then (hasPermission) ->
-          unless hasPermission
-            router.throw status: 400, info: 'no permission'
-      else if conversation.userIds.indexOf(user.id) is -1
-        router.throw status: 400, info: 'no permission'
+      Promise.all [
+        if conversation.groupId
+          groupId = conversation.groupId
+          GroupUser.hasPermissionByGroupIdAndUser groupId, user, [
+            GroupUser.PERMISSIONS.READ_MESSAGE
+          ], {channelId: id}
+          .then (hasPermission) ->
+            unless hasPermission
+              router.throw status: 400, info: 'no permission'
+        else if conversation.eventId
+          Event.hasPermissionByIdAndUser conversation.eventId, user
+          .then (hasPermission) ->
+            unless hasPermission
+              router.throw status: 400, info: 'no permission'
+        else if conversation.userIds.indexOf(user.id) is -1
+          router.throw status: 400, info: 'no permission'
+          Promise.resolve null
 
-      # TODO: different way to track if read (groups get too large)
-      # should store lastReadTime on user for each group
-      unless conversation.groupId
-        Conversation.markRead conversation, user.id
+        # TODO: different way to track if read (groups get too large)
+        # should store lastReadTime on user for each group
+        if conversation.groupId
+          Promise.resolve null
+        else
+          Conversation.markRead conversation, user.id
+      ]
     .then Conversation.sanitize null
 
 

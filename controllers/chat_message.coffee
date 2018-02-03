@@ -255,15 +255,16 @@ class ChatMessageCtrl
           @_checkSlowMode conversation, user.id, router
         ]
         .then ->
-          # TODO: combine with conversation.hasPermission
-          permissions = ['sendMessage']
+          permissions = [GroupUser.PERMISSIONS.SEND_MESSAGE]
           if isImage
             permissions = permissions.concat GroupUser.PERMISSIONS.SEND_IMAGE
           if isLink
             permissions = permissions.concat GroupUser.PERMISSIONS.SEND_LINK
           if isAddon
             permissions = permissions.concat GroupUser.PERMISSIONS.SEND_ADDON
-          GroupUser.hasPermissionByGroupIdAndUser groupId, user, permissions
+          GroupUser.hasPermissionByGroupIdAndUser groupId, user, permissions, {
+            channelId: conversationId
+          }
           .then (hasPermission) ->
             unless hasPermission
               router.throw status: 400, info: 'no permission'
@@ -422,7 +423,14 @@ class ChatMessageCtrl
       if conversation.groupId
         GroupUsersOnline.upsert {userId: user.id, groupId: conversation.groupId}
 
-      Conversation.hasPermission conversation, user.id
+      (if conversation.groupId
+        groupId = conversation.groupId
+        permissions = [GroupUser.PERMISSIONS.READ_MESSAGE]
+        GroupUser.hasPermissionByGroupIdAndUser groupId, user, permissions, {
+          channelId: conversationId
+        }
+      else
+        Conversation.hasPermission conversation, user.id)
       .then (hasPermission) ->
         unless hasPermission
           router.throw status: 401, info: 'unauthorized'

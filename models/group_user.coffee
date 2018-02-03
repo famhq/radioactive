@@ -120,6 +120,7 @@ PERMISSIONS =
   TEMP_BAN_USER: 'tempBanUser'
   UNBAN_USER: 'unbanUser'
   MANAGE_ROLE: 'manageRole'
+  SEND_MESSAGE: 'sendMessage'
   SEND_IMAGE: 'sendImage'
   SEND_LINK: 'sendLink'
   SEND_ADDON: 'sendAddon'
