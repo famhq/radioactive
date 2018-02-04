@@ -1,8 +1,10 @@
 _ = require 'lodash'
 router = require 'exoid-router'
 moment = require 'moment'
+deck = require 'deck'
 Promise = require 'bluebird'
 
+GroupUser = require '../models/group_user'
 UserItem = require '../models/user_item'
 UserUpgrade = require '../models/user_upgrade'
 Item = require '../models/item'
@@ -78,6 +80,67 @@ class UserItemCtrl
         .tap ->
           key = "#{CacheService.PREFIXES.CHAT_USER}:#{user.id}:#{groupId}"
           CacheService.deleteByKey key
+    , {expireSeconds: TWO_MINUTES_SECONDS, unlockWhenCompleted: true}
+
+
+  _getScratchedItem: (item) ->
+    Item.getAllByGroupId item.groupId
+    .then (items) ->
+      if item.data.itemKeys
+        key = _.sample item.data.itemKeys
+        console.log 'key', key, items
+        return _.find items, {key}
+      else
+        groupedItems = _.groupBy items, ({type, rarity}) -> "#{type}|#{rarity}"
+        odds = _.reduce item.data.odds, (obj, {type, rarity, odds}) ->
+          if groupedItems["#{type}|#{rarity}"]
+            obj["#{type}|#{rarity}"] = odds
+          obj
+        , {}
+        typeAndRarity = deck.pick odds
+        population = groupedItems[typeAndRarity]
+        _.sample population
+
+  scratchByItemKey: ({itemKey, groupId}, {user}) =>
+    prefix = CacheService.LOCK_PREFIXES.SCRATCH_ITEM
+    key = "#{prefix}:#{user.id}:#{itemKey}"
+    CacheService.lock key, =>
+      Promise.all [
+        Item.getByKey itemKey
+        UserItem.getByUserIdAndItemKey user.id, itemKey
+      ]
+      .then ([item, userItem]) =>
+        unless item?.data?.coinRequired
+          router.throw {status: 404, info: 'item not found'}
+        unless userItem?.count > 0
+          router.throw {status: 404, info: 'no scratches'}
+
+        Promise.all [
+          Item.getByKey item.data.coinRequired
+          UserItem.getByUserIdAndItemKey user.id, item.data.coinRequired
+          @_getScratchedItem item
+        ]
+        .then ([coinItem, coinUserItem, scratchedItem]) ->
+          unless coinUserItem and coinUserItem.count > 0
+            router.throw {status: 404, info: 'no coins'}
+
+          Item.batchIncrementCirculatingByItemKeys [scratchedItem.key]
+          xpEarned = config.RARITY_XP[scratchedItem.rarity]
+
+          console.log 'inc', scratchedItem.key
+
+          Promise.all [
+            UserItem.incrementByItemKeyAndUserId coinItem.key, user.id, -1
+            UserItem.incrementByItemKeyAndUserId item.key, user.id, -1
+            GroupUser.incrementXpByGroupIdAndUserId(
+              groupId, user.id, xpEarned
+            )
+            UserItem.incrementByItemKeyAndUserId scratchedItem.key, user.id, 1
+          ]
+          .then ->
+            scratchedItem
+
+
     , {expireSeconds: TWO_MINUTES_SECONDS, unlockWhenCompleted: true}
 
 module.exports = new UserItemCtrl()

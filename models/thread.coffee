@@ -614,6 +614,7 @@ class ThreadModel
   sanitize: _.curry (requesterId, thread) ->
     _.pick thread, [
       'id'
+      'category'
       'creatorId'
       'creator'
       'data'

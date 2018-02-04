@@ -131,6 +131,7 @@ class CacheService
     UPGRADE_STICKER: 'upgrade_sticker2'
     SET_AUTO_REFRESH: 'set_auto_refresh4'
     CONSUME_ITEM: 'consume_item0'
+    SCRATCH_ITEM: 'scratch_item2'
     SPECIAL_OFFER_DAILY: 'special_offer:daily'
     SPECIAL_OFFER_INSTALL: 'special_offer:install'
   LOCKS:

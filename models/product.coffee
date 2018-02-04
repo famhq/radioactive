@@ -105,13 +105,16 @@ class ProductModel
     .run()
 
   setLockByProductAndUserId: (product, userId) ->
-    cknex().update 'product_locks'
+    q = cknex().update 'product_locks'
     .set {time: new Date()}
     .where 'userId', '=', userId
     .andWhere 'groupId', '=', product.groupId
     .andWhere 'productKey', '=', product.key
-    .usingTTL product.data.lockTime
-    .run()
+
+    if product.data.lockTime isnt 'infinity'
+      q = q.usingTTL product.data.lockTime
+
+    q.run()
 
   upsert: (product) ->
     product = defaultProduct product

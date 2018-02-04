@@ -49,26 +49,27 @@ products =
   #     info: '1 raffle ticket. On Feburary 2nd, 1 ticket will be selected at random
   #           and the winning user will get a shoutout in Bruno\'s video on the 3rd'
   # }
-  ph_pack1: {
-    type: 'pack'
-    groupId: GROUPS.PLAY_HARD
-    name: 'Pacote de emojis PH (1)'
-    cost: 100 # 10c
-    data: _.defaults {
-      backgroundImage: 'https://cdn.wtf/d/images/starfire/packs/ph_1.png'
-      backgroundColor: '#F44336'
-    }, DEFAULT_1_PACK_DATA
-  }
-  ph_pack3: {
-    type: 'pack'
-    groupId: GROUPS.PLAY_HARD
-    name: 'Pacote de emojis PH (3)'
-    cost: 250 # 25c
-    data: _.defaults {
-      backgroundImage: 'https://cdn.wtf/d/images/starfire/packs/ph_3.png'
-      backgroundColor: '#2196F3'
-    }, DEFAULT_3_PACK_DATA
-  }
+
+  # ph_pack1: {
+  #   type: 'pack'
+  #   groupId: GROUPS.PLAY_HARD
+  #   name: 'Pacote de emojis PH (1)'
+  #   cost: 100 # 10c
+  #   data: _.defaults {
+  #     backgroundImage: 'https://cdn.wtf/d/images/starfire/packs/ph_1.png'
+  #     backgroundColor: '#F44336'
+  #   }, DEFAULT_1_PACK_DATA
+  # }
+  # ph_pack3: {
+  #   type: 'pack'
+  #   groupId: GROUPS.PLAY_HARD
+  #   name: 'Pacote de emojis PH (3)'
+  #   cost: 250 # 25c
+  #   data: _.defaults {
+  #     backgroundImage: 'https://cdn.wtf/d/images/starfire/packs/ph_3.png'
+  #     backgroundColor: '#2196F3'
+  #   }, DEFAULT_3_PACK_DATA
+  # }
   ph_google_play_30: {
     name: '30 BRL Google Play'
     type: 'general'
@@ -99,6 +100,43 @@ products =
       backgroundColor: '#333'
       count: 1
       itemKeys: ['ph_badge_7_days']
+  }
+  ph_coin: {
+    name: 'PH Coin'
+    type: 'pack'
+    groupId: GROUPS.PLAY_HARD
+    cost: 200
+    data:
+      backgroundImage: 'https://cdn.wtf/d/images/starfire/packs/ph_coin.png'
+      backgroundColor: '#333'
+      count: 1
+      itemKeys: ['ph_coin']
+  }
+  ph_scratch_free: {
+    type: 'pack'
+    groupId: GROUPS.PLAY_HARD
+    name: 'Free Scratch'
+    cost: 0
+    data:
+      # FIXME
+      backgroundImage: 'https://cdn.wtf/d/images/starfire/packs/ph_scratch_free.png'
+      backgroundColor: '#9C27B0'
+      lockTime: ONE_DAY_SECONDS
+      count: 1
+      itemKeys: ['ph_scratch']
+  }
+  ph_starter: {
+    type: 'pack'
+    groupId: GROUPS.PLAY_HARD
+    name: 'PH Starter Pack'
+    cost: 0
+    data:
+      # FIXME
+      backgroundImage: 'https://cdn.wtf/d/images/starfire/packs/ph_starter_scratch.png'
+      backgroundColor: '#9C27B0'
+      lockTime: 'infinity'
+      count: 2
+      itemKeys: ['ph_starter_scratch', 'ph_starter_coin']
   }
   # ph_send_message: {
   #   name: 'Envie uma mensagem para Bruno'
@@ -165,31 +203,33 @@ products =
     groupId: GROUPS.CLASH_ROYALE_ES
     name: 'Gratis Pack de Stickers Clash Royale (1)'
     cost: 0
-    data: _.defaults {
+    data:
       backgroundImage: 'https://cdn.wtf/d/images/starfire/packs/cr_es_free.png'
       backgroundColor: '#9C27B0'
-    }, DEFAULT_FREE_PACK_DATA
+      lockTime: ONE_DAY_SECONDS
+      count: 2
+      itemKeys: ['cr_es_scratch', 'cr_es_coin']
   }
-  cr_es_pack1: {
-    type: 'pack'
-    groupId: GROUPS.CLASH_ROYALE_ES
-    name: 'Pack de Stickers Clash Royale (1)'
-    cost: 100 # 10c
-    data: _.defaults {
-      backgroundImage: 'https://cdn.wtf/d/images/starfire/packs/cr_es_1.png'
-      backgroundColor: '#F44336'
-    }, DEFAULT_1_PACK_DATA
-  }
-  cr_es_pack3: {
-    type: 'pack'
-    name: 'Pack de Stickers Clash Royale (3)'
-    groupId: GROUPS.CLASH_ROYALE_ES
-    cost: 250 # 25c
-    data: _.defaults {
-      backgroundImage: 'https://cdn.wtf/d/images/starfire/packs/cr_es_3.png'
-      backgroundColor: '#2196F3'
-    }, DEFAULT_3_PACK_DATA
-  }
+  # cr_es_pack1: {
+  #   type: 'pack'
+  #   groupId: GROUPS.CLASH_ROYALE_ES
+  #   name: 'Pack de Stickers Clash Royale (1)'
+  #   cost: 100 # 10c
+  #   data: _.defaults {
+  #     backgroundImage: 'https://cdn.wtf/d/images/starfire/packs/cr_es_1.png'
+  #     backgroundColor: '#F44336'
+  #   }, DEFAULT_1_PACK_DATA
+  # }
+  # cr_es_pack3: {
+  #   type: 'pack'
+  #   name: 'Pack de Stickers Clash Royale (3)'
+  #   groupId: GROUPS.CLASH_ROYALE_ES
+  #   cost: 250 # 25c
+  #   data: _.defaults {
+  #     backgroundImage: 'https://cdn.wtf/d/images/starfire/packs/cr_es_3.png'
+  #     backgroundColor: '#2196F3'
+  #   }, DEFAULT_3_PACK_DATA
+  # }
   cr_es_google_play_10: {
     type: 'general'
     name: '$10 USD Google Play Gift Card'

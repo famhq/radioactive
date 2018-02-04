@@ -58,6 +58,7 @@ tables = [
 defaultItem = (item) ->
   unless item?
     return null
+  item = _.cloneDeep item
   item.data = JSON.stringify item.data
   _.defaults item, {
     type: 'sticker'

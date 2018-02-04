@@ -67,6 +67,7 @@ config =
   ]
   NOTIFICATION_COLOR: '#fc373e'
   RARITY_XP:
+    starter: 2
     common: 2
     rare: 10
     epic: 30

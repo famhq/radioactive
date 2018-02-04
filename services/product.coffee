@@ -20,8 +20,8 @@ class ProductService
             packName: productName
         data:
           path:
-            key: 'groupShop'
-            params: {groupId}
+            key: 'groupCollectionWithTab'
+            params: {groupId, tab: 'shop'}
       }
 
 

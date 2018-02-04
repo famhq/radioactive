@@ -207,6 +207,7 @@ module.exports = router
 .on 'userItems.getAll', authed UserItemCtrl.getAll
 .on 'userItems.upgradeByItemKey', authed UserItemCtrl.upgradeByItemKey
 .on 'userItems.consumeByItemKey', authed UserItemCtrl.consumeByItemKey
+.on 'userItems.scratchByItemKey', authed UserItemCtrl.scratchByItemKey
 
 .on 'players.getByUserIdAndGameId',
   authed PlayerCtrl.getByUserIdAndGameId

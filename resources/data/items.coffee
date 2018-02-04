@@ -11,8 +11,15 @@ GROUPS =
   CLASH_ROYALE_PL: '22e9db0b-45be-4c6d-86a5-434b38684db9'
   LEGACY: config.CLASH_ROYALE_ID
 
+DEFAULT_STICKER_ODDS = [
+  {type: 'sticker', rarity: 'common', odds: 0.8}
+  {type: 'sticker', rarity: 'rare', odds: 0.13}
+  {type: 'sticker', rarity: 'epic', odds: 0.05}
+  {type: 'sticker', rarity: 'legendary', odds: 0.02}
+]
+
 items =
-  ph: {name: 'PlayHard', groupId: GROUPS.PLAY_HARD, rarity: 'common', type: 'sticker'}
+  ph: {name: 'PlayHard', groupId: GROUPS.PLAY_HARD, rarity: 'starter', type: 'sticker'}
   ph_bruno: {name: 'Bruno', groupId: GROUPS.PLAY_HARD, rarity: 'common', type: 'sticker'}
   ph_huum: {name: 'Huum', groupId: GROUPS.PLAY_HARD, rarity: 'common', type: 'sticker'}
   ph_surpreso: {name: 'Surpreso', groupId: GROUPS.PLAY_HARD, rarity: 'common', type: 'sticker'}
@@ -32,6 +39,28 @@ items =
       duration: 3600 * 24 * 7
       upgradeType: 'fireBadge'
   }
+  ph_scratch: {
+    name: 'PH scratch off', groupId: GROUPS.PLAY_HARD, rarity: 'common', type: 'scratch'
+    data:
+      coinRequired: 'ph_coin'
+      odds: DEFAULT_STICKER_ODDS
+  }
+  ph_coin: {
+    name: 'PH Coin', groupId: GROUPS.PLAY_HARD, rarity: 'common', type: 'coin'
+    data:
+      scratchItemKey: 'ph_scratch'
+  }
+  ph_starter_scratch: {
+    name: 'PH scratch off', groupId: GROUPS.PLAY_HARD, rarity: 'common', type: 'scratch'
+    data:
+      coinRequired: 'ph_starter_coin'
+      odds: [{type: 'sticker', rarity: 'starter', odds: 1}]
+  }
+  ph_starter_coin: {
+    name: 'PH Coin', groupId: GROUPS.PLAY_HARD, rarity: 'common', type: 'coin'
+    data:
+      scratchItemKey: 'ph_starter_scratch'
+  }
 
   cr_en_starfire: {name: 'Starfire Logo', groupId: GROUPS.CLASH_ROYALE_EN, rarity: 'common', type: 'sticker'}
   cr_en_angry: {name: 'CR Angry', groupId: GROUPS.CLASH_ROYALE_EN, rarity: 'common', type: 'sticker'}
@@ -42,6 +71,8 @@ items =
   cr_en_thumb: {name: 'CR Thumb', groupId: GROUPS.CLASH_ROYALE_EN, rarity: 'common', type: 'sticker'}
   cr_en_trophy: {name: 'CR Trophy', groupId: GROUPS.CLASH_ROYALE_EN, rarity: 'common', type: 'sticker'}
 
+
+
   cr_es_starfire: {name: 'Starfire Logo', groupId: GROUPS.CLASH_ROYALE_ES, rarity: 'common', type: 'sticker'}
   cr_es_angry: {name: 'CR Angry', groupId: GROUPS.CLASH_ROYALE_ES, rarity: 'common', type: 'sticker'}
   cr_es_crying: {name: 'CR Crying', groupId: GROUPS.CLASH_ROYALE_ES, rarity: 'common', type: 'sticker'}
@@ -50,6 +81,19 @@ items =
   cr_es_thumbs_up: {name: 'CR Thumbs Up', groupId: GROUPS.CLASH_ROYALE_ES, rarity: 'common', type: 'sticker'}
   cr_es_thumb: {name: 'CR Thumb', groupId: GROUPS.CLASH_ROYALE_ES, rarity: 'common', type: 'sticker'}
   cr_es_trophy: {name: 'CR Trophy', groupId: GROUPS.CLASH_ROYALE_ES, rarity: 'common', type: 'sticker'}
+  cr_es_scratch: {
+    name: 'CR scratch', groupId: GROUPS.CLASH_ROYALE_ES, rarity: 'common', type: 'scratch'
+    data:
+      coinRequired: 'cr_es_coin'
+      odds: DEFAULT_STICKER_ODDS
+  }
+  cr_es_coin: {
+    name: 'CR Coin', groupId: GROUPS.CLASH_ROYALE_ES, rarity: 'common', type: 'coin'
+    data:
+      scratchItemKey: 'cr_es_scratch'
+  }
+
+
 
   cr_pt_starfire: {name: 'Starfire Logo', groupId: GROUPS.CLASH_ROYALE_PT, rarity: 'common', type: 'sticker'}
   cr_pt_angry: {name: 'CR Angry', groupId: GROUPS.CLASH_ROYALE_PT, rarity: 'common', type: 'sticker'}

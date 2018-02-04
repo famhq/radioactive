@@ -23,16 +23,14 @@ class ProductCtrl
       Product.getLocksByUserIdAndGroupId user.id, groupId
     ]
     .then ([products, locks]) ->
-      _.map products, (product) ->
-        if lock = _.find locks, {productKey: product.key}
+      _.filter _.map products, (product) ->
+        lock = _.find locks, {productKey: product.key}
+        if lock and lock['ttl(time)']
           _.defaults {
             isLocked: true, lockExpireSeconds: lock['ttl(time)']
           }, product
-        else
+        else if not lock
           product
-
-  # getAll: ({}, {user}) ->
-  #   Product.getAll()
 
   getByKey: ({key}) ->
     Product.getByKey key
@@ -107,7 +105,7 @@ class ProductCtrl
         .then (lock) ->
           if lock
             router.throw {status: 400, info: 'locked'}
-          else
+          else if product.data.lockTime isnt 'infinity'
             KueCreateService.createJob {
               job:
                 userId: user.id
