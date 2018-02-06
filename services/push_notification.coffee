@@ -35,6 +35,7 @@ TYPES =
   PRODUCT: 'product'
   GROUP: 'group'
   STATUS: 'status'
+  TRADE: 'trade'
   VIDEO: 'video'
 
 defaultUserEmbed = [
@@ -330,7 +331,7 @@ class PushNotificationService
 
     if config.ENV is config.ENVS.DEV and not message.forceDevSend
       console.log 'send notification', user.id, message
-      return
+      return Promise.resolve()
 
     successfullyPushedToNative = false
 

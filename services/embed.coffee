@@ -29,6 +29,7 @@ ClashRoyalePlayerRecord = require '../models/clash_royale_player_record'
 ClashRoyalePlayerDeck = require '../models/clash_royale_player_deck'
 SpecialOffer = require '../models/special_offer'
 Player = require '../models/player'
+Trade = require '../models/trade'
 UserPlayer = require '../models/user_player'
 UserFollower = require '../models/user_follower'
 CacheService = require './cache'
@@ -107,6 +108,9 @@ TYPES =
     CREATOR: 'thread:creator'
     COMMENT_COUNT: 'thread:commentCount'
     PLAYER_DECK: 'thread:playerDeck'
+  TRADE:
+    ITEMS: 'trade:items'
+    USERS: 'trade:users'
   USER:
     DATA: 'user:data'
     IS_ONLINE: 'user:isOnline'
@@ -631,6 +635,39 @@ embedFn = _.curry (props, object) ->
         mentions = _.take mentions, 5 # so people don't abuse
         embedded.mentionedUsers = Promise.map mentions, (username) ->
           getCachedChatUser {username, groupId: embedded.groupId}
+
+      when TYPES.TRADE.ITEMS
+        # can't cache long since the items change frequently (circulation #)
+        sendItemsKey = CacheService.PREFIXES.TRADE_SEND_ITEMS +
+                       ':' + embedded.id
+        receiveItemsKey = CacheService.PREFIXES.TRADE_RECEIVE_ITEMS +
+                          ':' + embedded.id
+        embedded.sendItems = CacheService.preferCache sendItemsKey, ->
+          Promise.map embedded.sendItemKeys, (itemKey) ->
+            if itemKey.itemKey
+              Promise.props _.defaults {
+                item: Item.getByKey(itemKey.itemKey)
+              }, itemKey
+          .filter (item) -> Boolean item?.item
+        , {expireSeconds: ONE_HOUR_SECONDS}
+
+        embedded.receiveItems = CacheService.preferCache receiveItemsKey, ->
+          Promise.map embedded.receiveItemKeys, (itemKey) ->
+            if itemKey.itemKey
+              Promise.props _.defaults {
+                item: Item.getByKey(itemKey.itemKey)
+              }, itemKey
+          .filter (item) -> Boolean item?.item
+        , {expireSeconds: ONE_HOUR_SECONDS}
+      when TYPES.TRADE.USERS
+        fromId = embedded.fromId
+        toId = embedded.toId
+        embedded.from = if fromId \
+                      then User.getById(fromId).then User.sanitizePublic(null)
+                      else null
+        embedded.to = if toId \
+                      then User.getById(toId).then User.sanitizePublic(null)
+                      else null
 
       when TYPES.PLAYER.HI
         embedded.hi = Promise.resolve(

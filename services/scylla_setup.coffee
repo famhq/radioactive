@@ -9,7 +9,7 @@ config = require '../config'
 
 class ScyllaSetupService
   setup: (tables) =>
-    CacheService.runOnce 'scylla_setup7', =>
+    CacheService.runOnce 'scylla_setup4', =>
       Promise.all [
         @createKeyspaceIfNotExists 'starfire'
         @createKeyspaceIfNotExists 'clash_royale'
@@ -17,7 +17,7 @@ class ScyllaSetupService
       .then =>
         if config.ENV is config.ENVS.DEV
           @createTableIfNotExist _.find(tables, {
-            name: 'items_by_groupId'
+            name: 'trades_by_id'
           })
         else
           Promise.each tables, @createTableIfNotExist

@@ -86,6 +86,8 @@ PREFIXES =
   PLAYER_MIGRATE: 'player:migrate07'
   REFRESH_PLAYER_ID_LOCK: 'player:refresh_lock'
   THREAD_COMMENTS_THREAD_ID: 'thread_comments:thread_id12'
+  TRADE_SEND_ITEMS: 'trade:send_items5'
+  TRADE_RECEIVE_ITEMS: 'trade:receive_items5'
   USER_DECKS_MIGRATE: 'user_decks:migrate16'
   USER_RECORDS_MIGRATE: 'user_records:migrate11'
   USER_PLAYER_USER_ID_GAME_ID: 'user_player:user_id_game_id5'

@@ -35,6 +35,7 @@ StarCtrl = require './controllers/star'
 ThreadCtrl = require './controllers/thread'
 ThreadCommentCtrl = require './controllers/thread_comment'
 ThreadVoteCtrl = require './controllers/thread_vote'
+TradeCtrl = require './controllers/trade'
 UserCtrl = require './controllers/user'
 UserFollowerCtrl = require './controllers/user_follower'
 UserDataCtrl = require './controllers/user_data'
@@ -204,7 +205,18 @@ module.exports = router
 .on 'groupRoles.deleteByGroupIdAndRoleId',
   authed GroupRoleCtrl.deleteByGroupIdAndRoleId
 
+.on 'trade.getById', authed TradeCtrl.getById
+.on 'trade.create', authed TradeCtrl.create
+.on 'trade.getAll', authed TradeCtrl.getAll
+.on 'trade.declineById', authed TradeCtrl.declineById
+.on 'trade.deleteById', authed TradeCtrl.deleteById
+.on 'trade.updateById', authed TradeCtrl.updateById
+
+.on 'time.get', authed -> {now: new Date()}
+
+
 .on 'userItems.getAll', authed UserItemCtrl.getAll
+.on 'userItems.getAllByUserId', authed UserItemCtrl.getAllByUserId
 .on 'userItems.upgradeByItemKey', authed UserItemCtrl.upgradeByItemKey
 .on 'userItems.consumeByItemKey', authed UserItemCtrl.consumeByItemKey
 .on 'userItems.scratchByItemKey', authed UserItemCtrl.scratchByItemKey

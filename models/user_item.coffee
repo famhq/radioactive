@@ -40,6 +40,9 @@ class UserItemModel
 
   batchIncrementByItemKeysAndUserId: (itemKeys, userId) =>
     counts = _.countBy itemKeys
+    @batchIncrementByCountsAndUserId counts, userId
+
+  batchIncrementByCountsAndUserId: (counts, userId) =>
     queries = _.map counts, (count, itemKey) =>
       @incrementByItemKeyAndUserId itemKey, userId, count, {skipRun: true}
 

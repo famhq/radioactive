@@ -23,6 +23,10 @@ class UserItemCtrl
     UserItem.getAllByUserId user.id
     .map EmbedService.embed {embed: defaultEmbed}
 
+  getAllByUserId: ({userId}, {user}) ->
+    UserItem.getAllByUserId userId
+    .map EmbedService.embed {embed: defaultEmbed}
+
   upgradeByItemKey: ({itemKey}, {user}) ->
     prefix = CacheService.LOCK_PREFIXES.UPGRADE_STICKER
     key = "#{prefix}:#{user.id}:#{itemKey}"
