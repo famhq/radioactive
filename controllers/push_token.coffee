@@ -39,7 +39,7 @@ class PushTokensCtrl
           hasPushToken: true
         }
 
-        PushToken.create {
+        PushToken.upsert {
           userId: userId
           token: token
           sourceType: sourceType
@@ -66,7 +66,9 @@ class PushTokensCtrl
       User.updateById userId, {
         hasPushToken: true
       }
-      PushToken.updateByToken token, diff
+      PushToken.getByToken token
+      .then (pushToken) ->
+        PushToken.upsert _.defaults diff, pushToken
     ]
     .then ->
       null

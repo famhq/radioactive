@@ -16,6 +16,7 @@ config =
     STARFIRE: '319a9065-e3dc-4d02-ad30-62047716a88f'
     CLASH_ROYALE_EN: '73ed4af0-a2f2-4371-a893-1360d3989708'
     ECLIHPSE: '137ec250-0941-4d72-8074-b257e0966c17'
+    NICKATNYTE: 'b8e3e948-6f9a-4f7d-a6ef-7b0b35f3a523'
   CLASH_ROYALE_TROPHIES_RECORD_ID: 'ed3b3643-039b-4a3f-9d44-0742b86e0a2c'
   CLASH_ROYALE_DONATIONS_RECORD_ID: '3b87da6c-7a2b-42c1-a59d-7354acaf80b0'
   CLASH_ROYALE_CLAN_CROWNS_RECORD_ID: 'aee6d338-2d6e-4b9a-af65-a48674bce3ef'
@@ -46,9 +47,9 @@ config =
   ]
   # also in starfire
   ITEM_LEVEL_REQUIREMENTS: [
-    {level: 1, countRequired: 0}
-    {level: 2, countRequired: 10}
     {level: 3, countRequired: 100}
+    {level: 2, countRequired: 10}
+    {level: 1, countRequired: 0}
   ]
   # also in starfire TODO: shared config file
   XP_LEVEL_REQUIREMENTS: [

@@ -73,28 +73,6 @@ class PushNotificationService
     # }
     webpush.sendNotification JSON.parse(token), JSON.stringify message
 
-  sendIos: (token, {title, text, type, data, icon}) ->
-    request 'https://iid.googleapis.com/iid/v1:batchImport', {
-      json: true
-      method: 'POST'
-      headers:
-        'Authorization': "key=#{config.GOOGLE_API_KEY}"
-      body:
-        apns_tokens: [token]
-        sandbox: false
-        application: 'com.clay.redtritium'
-    }
-    .then (response) ->
-      newToken = response?.results?[0]?.registration_token
-      if newToken
-        PushToken.updateByToken token, {
-          sourceType: 'ios-fcm'
-          apnsToken: token
-          token: newToken
-        }
-    .then =>
-      @sendFcm token, {title, text, type, data, icon}, {isiOS: true}
-
   sendFcm: (to, {title, text, type, data, icon, toType, notId}, {isiOS} = {}) =>
     toType ?= 'token'
     new Promise (resolve, reject) =>
@@ -337,26 +315,31 @@ class PushNotificationService
 
 
     PushToken.getAllByUserId user.id
-    .map ({id, sourceType, token, errorCount}) =>
+    .map (pushToken) =>
+      {id, sourceType, token, errorCount} = pushToken
       fn = if sourceType is 'web' \
            then @sendWeb
            else if sourceType in ['android', 'ios-fcm', 'web-fcm']
            then @sendFcm
-           else @sendIos
+
+      unless fn
+        console.log 'no fn', sourceType
+        return
 
       fn token, message, {isiOS: sourceType is 'ios-fcm'}
       .then ->
         successfullyPushedToNative = true
         if errorCount
-          PushToken.updateById id, {
+          PushToken.upsert _.defaults {
             errorCount: 0
-          }
+          }, pushToken
       .catch (err) ->
         newErrorCount = errorCount + 1
-        PushToken.updateById id, {
+        PushToken.upsert _.defaults {
           errorCount: newErrorCount
           isActive: newErrorCount < CONSECUTIVE_ERRORS_UNTIL_INACTIVE
-        }
+        }, PushToken
+
         if newErrorCount >= CONSECUTIVE_ERRORS_UNTIL_INACTIVE
           PushToken.getAllByUserId user.id
           .then (tokens) ->

@@ -2,7 +2,6 @@ _ = require 'lodash'
 uuid = require 'node-uuid'
 Promise = require 'bluebird'
 
-r = require '../services/rethinkdb'
 cknex = require '../services/cknex'
 CacheService = require '../services/cache'
 GroupRole = require './group_role'

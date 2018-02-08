@@ -241,18 +241,27 @@ app.get '/videoDiscovery', (req, res) ->
   VideoDiscoveryService.discover()
   res.status(200).send()
 
+app.get '/migrateConversations', (req, res) ->
+  Conversation = require './models/conversation'
+  Conversation.migrateAll()
+  res.status(200).send()
+
+app.get '/migratePushTokens', (req, res) ->
+  PushToken = require './models/push_token'
+  PushToken.migrateAll()
+  res.status(200).send()
+
+app.get '/migrateUserPlayers', (req, res) ->
+  UserPlayer = require './models/user_player'
+  UserPlayer.migrateAll()
+  res.status(200).send()
+
 app.get '/cleanKueFailed', (req, res) ->
   KueCreateService = require './services/kue_create'
   KueCreateService.clean()
   .catch ->
     console.log 'kue clean route fail'
   res.sendStatus 200
-
-# FIXME: rm
-# app.get '/migrateAll', (req, res) ->
-#   ChatMessage = require './models/chat_message'
-#   ChatMessage.migrateAll()
-#   res.sendStatus 200
 
 app.get '/di/crForumSig/:userId.png', (req, res) ->
   $page = new ForumSigPage {req, res}

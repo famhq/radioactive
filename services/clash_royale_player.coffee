@@ -484,7 +484,8 @@ class ClashRoyalePlayerService
             }
 
         .then ->
-          ClashRoyaleTopPlayer.upsertByRank rank, {
+          ClashRoyaleTopPlayer.upsert {
+            rank: rank
             playerId: playerId
           }
 

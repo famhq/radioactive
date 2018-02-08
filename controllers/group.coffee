@@ -55,7 +55,7 @@ class GroupCtrl
           name: 'everyone'
           globalPermissions: {}
         }
-        Conversation.create {
+        Conversation.upsert {
           groupId: id
           name: 'general'
           type: 'channel'

@@ -26,13 +26,13 @@ class EventCtrl
         userIds: [user.id]
         conversationId: conversationId
       }
-      .tap ({id}) ->
-        Conversation.create {
-          id: conversationId
-          userIds: [user.id]
-          eventId: id
-          type: 'event'
-        }
+      # .tap ({id}) -> # TODO
+      #   Conversation.upsert {
+      #     id: conversationId
+      #     userIds: [user.id]
+      #     eventId: id
+      #     type: 'event'
+      #   }
 
   validateAndCheckPermissions: (diff, {user}) ->
     diff = _.pick diff, _.keys schemas.event

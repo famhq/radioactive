@@ -218,10 +218,6 @@ class ChatMessageModel extends Stream
       if reverse
         results.reverse()
       results
-      # FIXME FIXME: in early 2018 delete all messages from
-      # timeBucket=WEEK-2017-46 (mid-nov) back. bunch of duplicates from bad
-      # rethinkdb import
-      _.uniqBy results, (chatMessage) -> "#{chatMessage.id}"
 
     if isStreamed
       @stream {

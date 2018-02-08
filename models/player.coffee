@@ -78,7 +78,7 @@ class PlayerModel
       prefix = CacheService.PREFIXES.USER_PLAYER_USER_ID_GAME_ID
       cacheKey = "#{prefix}:#{userId}:#{gameId}"
       CacheService.preferCache cacheKey, ->
-        UserPlayer.create {userId, gameId, playerId}
+        UserPlayer.upsert {userId, gameId, playerId}
       , {ignoreNull: true}
       .then ->
         prefix = CacheService.PREFIXES.PLAYER_USER_IDS

@@ -105,10 +105,10 @@ products =
     name: 'PH Coin'
     type: 'pack'
     groupId: GROUPS.PLAY_HARD
-    cost: 200
+    cost: 50
     data:
       backgroundImage: 'https://cdn.wtf/d/images/starfire/packs/ph_coin.png'
-      backgroundColor: '#333'
+      backgroundColor: '#2196F3'
       count: 1
       itemKeys: ['ph_coin']
   }
@@ -118,9 +118,8 @@ products =
     name: 'Free Scratch'
     cost: 0
     data:
-      # FIXME
       backgroundImage: 'https://cdn.wtf/d/images/starfire/packs/ph_scratch_free.png'
-      backgroundColor: '#9C27B0'
+      backgroundColor: '#F44336'
       lockTime: ONE_DAY_SECONDS
       count: 1
       itemKeys: ['ph_scratch']
@@ -131,7 +130,6 @@ products =
     name: 'PH Starter Pack'
     cost: 0
     data:
-      # FIXME
       backgroundImage: 'https://cdn.wtf/d/images/starfire/packs/ph_starter_scratch.png'
       backgroundColor: '#9C27B0'
       lockTime: 'infinity'

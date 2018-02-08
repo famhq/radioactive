@@ -429,9 +429,10 @@ embedFn = _.curry (props, object) ->
         .then User.sanitizePublic null
 
       when TYPES.CONVERSATION.USERS
-        embedded.users = Promise.map embedded.userIds, (userId) ->
-          User.getById userId, {preferCache: true}
-        .map User.sanitizePublic null
+        if embedded.userIds
+          embedded.users = Promise.map embedded.userIds, (userId) ->
+            User.getById userId, {preferCache: true}
+          .map User.sanitizePublic null
 
       when TYPES.EVENT.USERS
         embedded.users = Promise.map embedded.userIds, (userId) ->

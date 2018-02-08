@@ -330,14 +330,13 @@ class ChatMessageCtrl
           {xpGained}
         .tap =>
           userIds = conversation.userIds
-          Conversation.updateById conversation.id, {
+          pickedConversation = _.pick conversation, [
+            'userId', 'userIds', 'groupId', 'id'
+          ]
+          Conversation.upsert _.defaults(pickedConversation, {
             lastUpdateTime: new Date()
-            # TODO: different way to track if read (groups get too large)
-            # should store lastReadTime on user for each group
-            userData: unless conversation.groupId
-              _.zipObject userIds, _.map userIds, (userId) ->
-                {isRead: userId is user.id}
-          }
+            isRead: false
+          }), {userId: user.id}
 
           @_sendPushNotifications conversation, user, body, isImage
           null # don't block
@@ -413,12 +412,12 @@ class ChatMessageCtrl
   getLastTimeByMeAndConversationId: ({conversationId}, {user}, {socket}) ->
     ChatMessage.getLastTimeByUserIdAndConversationId user.id, conversationId
 
-  getAllByConversationId: (options, {user}, socketInfo) ->
+  getAllByConversationId: (options, {user}, socketInfo) =>
     {conversationId, maxTimeUuid, isStreamed} = options
     {emit, socket, route} = socketInfo
 
     Conversation.getById conversationId, {preferCache: true}
-    .then (conversation) ->
+    .then (conversation) =>
 
       if conversation.groupId
         GroupUsersOnline.upsert {userId: user.id, groupId: conversation.groupId}
@@ -431,7 +430,7 @@ class ChatMessageCtrl
         }
       else
         Conversation.hasPermission conversation, user.id)
-      .then (hasPermission) ->
+      .then (hasPermission) =>
         unless hasPermission
           router.throw status: 401, info: 'unauthorized'
 
@@ -452,6 +451,33 @@ class ChatMessageCtrl
               if item?.user?.flags?.isChatBanned isnt true
                 item
         }
+        .then (chatMessages) =>
+          # TODO: rm after 3/1/2018.
+          if not maxTimeUuid and _.isEmpty(chatMessages) and
+              conversation.data?.legacyId
+            @_migrateChatMessages conversation.data.legacyId, conversation.id
+          else
+            chatMessages
+
+  _migrateChatMessages: (legacyConversationId, newId) ->
+    # TODO: lock for a day
+    key = 'conversation:migrate_chat_messages6:' + newId
+    CacheService.runOnce key, ->
+      ChatMessage.getAllByConversationId(legacyConversationId, {limit: 2000})
+      .tap (chatMessages) ->
+        Promise.map chatMessages, (message) ->
+          # hacky https://github.com/datastax/nodejs-driver/pull/243
+          message = _.defaults {conversationId: newId}, message
+          delete message.get
+          delete message.values
+          delete message.keys
+          delete message.forEach
+          ChatMessage.upsert message
+        , {concurrency: 30}
+      .map ChatMessage.default
+      .map EmbedService.embed {embed: defaultEmbed}
+    , {expireSeconds: 3600 * 24}
+
 
   uploadImage: ({}, {user, file}) ->
     router.assert {file}, {

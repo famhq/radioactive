@@ -5,6 +5,7 @@ Promise = require 'bluebird'
 cknex = require '../services/cknex'
 config = require '../config'
 
+# TOOD: rm itemLevel column in database (we calculate it from count now)
 tables = [
   {
     name: 'user_items_counter_by_userId'
@@ -12,7 +13,7 @@ tables = [
     fields:
       userId: 'uuid'
       itemKey: 'text'
-      itemLevel: 'counter'
+      # itemLevel: 'counter'
       count: 'counter'
     primaryKey:
       partitionKey: ['userId']
@@ -31,7 +32,9 @@ defaultUserItemOutput = (item) ->
     return null
 
   item.count = parseInt item.count
-  item.itemLevel = parseInt item.itemLevel or 1
+  item.itemLevel = _.find(config.ITEM_LEVEL_REQUIREMENTS, (req) ->
+    item.count >= req.countRequired
+  )?.level or 1
 
   item
 

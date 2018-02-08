@@ -23,7 +23,7 @@ PREFIXES =
   THREAD_COMMENT_COUNT: 'thread:comment_count1'
   THREADS_CATEGORY: 'threads5'
   CHAT_MESSAGE_DAILY_XP: 'chat_message:daily_xp'
-  CONVERSATION_ID: 'conversation:id'
+  CONVERSATION_ID: 'conversation:id4'
   VIDEO_DAILY_XP: 'video:daily_xp'
   VIDEOS_GROUP_ID: 'videos:group_id1'
   USER_ID: 'user:id'

@@ -75,7 +75,7 @@ class ClanModel
       Promise.all _.filter [
         if userId
           GroupUser.upsert {groupId: group.id, userId: userId}
-        Conversation.create {
+        Conversation.upsert {
           groupId: group.id
           name: 'general'
           type: 'channel'

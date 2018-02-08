@@ -2,94 +2,49 @@ _ = require 'lodash'
 Promise = require 'bluebird'
 uuid = require 'node-uuid'
 
-r = require '../services/rethinkdb'
+cknex = require '../services/cknex'
 config = require '../config'
 
-CLASH_ROYALE_TOP_PLAYERS_TABLE = 'clash_royale_top_players'
-RANK_INDEX = 'rank'
+tables = [
+  {
+    name: 'top_players'
+    keyspace: 'clash_royale'
+    fields:
+      region: 'text'
+      rank: 'int'
+      playerId: 'text'
+    primaryKey:
+      partitionKey: ['region']
+      clusteringColumns: ['rank']
+  }
+]
 
 defaultClashRoyaleTopPlayer = (clashRoyaleTopPlayer) ->
   unless clashRoyaleTopPlayer?
     return null
 
   _.defaults clashRoyaleTopPlayer, {
-    id: uuid.v4()
-    rank: null
-    playerId: null
+    region: 'all'
   }
 
 class ClashRoyaleTopPlayerModel
-  RETHINK_TABLES: [
-    {
-      name: CLASH_ROYALE_TOP_PLAYERS_TABLE
-      options: {}
-      indexes: [
-        {name: RANK_INDEX}
-      ]
-    }
-  ]
-
-  create: (clashRoyaleTopPlayer) ->
-    clashRoyaleTopPlayer = defaultClashRoyaleTopPlayer clashRoyaleTopPlayer
-
-    r.table CLASH_ROYALE_TOP_PLAYERS_TABLE
-    .insert clashRoyaleTopPlayer
-    .run()
-    .then ->
-      clashRoyaleTopPlayer
-
-  getById: (id) ->
-    r.table CLASH_ROYALE_TOP_PLAYERS_TABLE
-    .get id
-    .run()
-    .then defaultClashRoyaleTopPlayer
+  SCYLLA_TABLES: tables
 
   getAll: ->
-    r.table CLASH_ROYALE_TOP_PLAYERS_TABLE
-    .orderBy r.asc('rank')
+    cknex('clash_royale').select '*'
+    .from 'top_players'
+    .where 'region', '=', 'all'
     .run()
     .map defaultClashRoyaleTopPlayer
 
-  updateById: (id, diff) ->
-    r.table CLASH_ROYALE_TOP_PLAYERS_TABLE
-    .get id
-    .update diff
-    .run()
-
-  upsertByRank: (rank, diff) ->
-    r.table CLASH_ROYALE_TOP_PLAYERS_TABLE
-    .getAll rank, {index: RANK_INDEX}
-    .nth 0
-    .default null
-    .do (topPlayer) ->
-      r.branch(
-        topPlayer.eq null
-
-        r.table CLASH_ROYALE_TOP_PLAYERS_TABLE
-        .insert defaultClashRoyaleTopPlayer _.defaults(_.clone(diff), {
-          rank
-        })
-
-        r.table CLASH_ROYALE_TOP_PLAYERS_TABLE
-        .getAll rank, {index: RANK_INDEX}
-        .nth 0
-        .default null
-        .update diff
-      )
-    .run()
-
-  updateByKey: (key, diff) ->
-    r.table CLASH_ROYALE_TOP_PLAYERS_TABLE
-    .getAll key, {index: KEY_INDEX}
-    .nth 0
-    .default null
-    .update diff
-    .run()
-
-  deleteById: (id) ->
-    r.table CLASH_ROYALE_TOP_PLAYERS_TABLE
-    .get id
-    .delete()
+  upsert: (topPlayer) ->
+    topPlayer = defaultClashRoyaleTopPlayer topPlayer
+    cknex('clash_royale').update 'top_players'
+    .set _.omit topPlayer, [
+      'region', 'rank'
+    ]
+    .where 'region', '=', topPlayer.region
+    .andWhere 'rank', '=', topPlayer.rank
     .run()
 
 module.exports = new ClashRoyaleTopPlayerModel()

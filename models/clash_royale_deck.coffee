@@ -244,7 +244,7 @@ class ClashRoyaleDeckModel
 
   getAllByIds: (ids) ->
     cknex('clash_royale').select '*'
-    .where 'deckId', 'in', id
+    .where 'deckId', 'in', ids
     .andWhere 'gameType', '=', 'all'
     .from 'counter_by_deckId'
     .run()

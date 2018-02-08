@@ -49,20 +49,13 @@ class ConversationCtrl
             language: user.language
           }
         }
-      return conversation or Conversation.create {
+      return conversation or Conversation.upsert {
         userIds
         groupId
         name
         description
         type: if groupId then 'channel' else 'pm'
-        # TODO: different way to track if read (groups get too large)
-        # should store lastReadTime on user for each group
-        userData: unless groupId
-          _.zipObject userIds, _.map (userId) ->
-            {
-              isRead: userId is user.id
-            }
-      }
+      }, {userId}
 
   updateById: ({id, name, description, isSlowMode, slowModeCooldown}, {user}) ->
     name = name and _.kebabCase(name.toLowerCase()).replace(/[^0-9a-z-]/gi, '')
@@ -114,7 +107,9 @@ class ConversationCtrl
           .then (hasPermission) ->
             unless hasPermission
               router.throw status: 400, info: 'no permission'
-        else if conversation.userIds.indexOf(user.id) is -1
+        else if not _.find(conversation.userIds, (userId) ->
+          "#{userId}" is "#{user.id}"
+        )
           router.throw status: 400, info: 'no permission'
           Promise.resolve null
 
