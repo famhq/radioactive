@@ -106,6 +106,9 @@ class GroupModel
       r.table GROUPS_TABLE
       .get id
       .run()
+      .catch (err) ->
+        console.log 'rethink err', id, err
+        throw err
       .then defaultGroup
 
     if preferCache

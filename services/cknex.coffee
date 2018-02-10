@@ -56,6 +56,7 @@ cknex = (keyspace = 'starfire') ->
         self.exec options, (err, result) ->
           # queryCount += 1
           if err
+            console.log 'scylla err', self._columnFamily, self._statements
             reject err
           else if options.returnPageState
             resolve result

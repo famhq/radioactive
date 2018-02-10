@@ -61,6 +61,7 @@ prepareFn = (item) ->
     embed: defaultEmbed
   }, ChatMessage.default(item)
   .then (item) ->
+    # TODO: rm?
     if item?.user?.flags?.isChatBanned isnt true
       item
 
@@ -96,7 +97,9 @@ class ChatMessageCtrl
     ]
     .then ([bannedIp, bannedUserId, isHoneypotBanned]) ->
       if bannedIp?.ip or bannedUserId?.userId or isHoneypotBanned
-        router.throw status: 403, info: 'unable to post'
+        router.throw
+          status: 403
+          info: "unable to post, banned #{userId}, #{ipAddr}"
 
   _checkSlowMode: (conversation, userId, router) ->
     isSlowMode = conversation?.data?.isSlowMode
@@ -108,7 +111,7 @@ class ChatMessageCtrl
         cooldownSecondsLeft = slowModeCooldownSeconds -
                                 Math.floor(msSinceLastMessage / 1000)
         if cooldownSecondsLeft > 0
-          router.throw status: 403, info: 'unable to post'
+          router.throw status: 403, info: 'unable to post, slow'
     else
       Promise.resolve null
 
@@ -229,7 +232,7 @@ class ChatMessageCtrl
     msPlayed = Date.now() - user.joinTime?.getTime()
 
     if isProfane or user.flags.isChatBanned
-      router.throw status: 400, info: 'unable to post...'
+      router.throw status: 400, info: 'unable to post, profane'
 
     if body?.length > MAX_LENGTH
       router.throw status: 400, info: 'message is too long...'
@@ -243,6 +246,9 @@ class ChatMessageCtrl
     @_checkRateLimit user.id, isMedia, router
     .then ->
       Conversation.getById conversationId
+      .catch (err) ->
+        console.log 'err getting conversation', conversationId, body
+        throw err
     .then EmbedService.embed {embed: defaultConversationEmbed}
     .then (conversation) =>
       (if conversation.groupId
@@ -346,59 +352,63 @@ class ChatMessageCtrl
     .then (chatMessage) ->
       Conversation.getById chatMessage.conversationId
       .then (conversation) ->
-        GroupUser.getByGroupIdAndUserId conversation.groupId, user.id
-        .then EmbedService.embed {embed: [EmbedService.TYPES.GROUP_USER.ROLES]}
-        .then (groupUser) ->
-          hasPermission = GroupUser.hasPermission {
-            meGroupUser: groupUser
-            me: user
-            permissions: [GroupUser.PERMISSIONS.DELETE_MESSAGE]
+        if conversation.groupId
+          GroupUser.getByGroupIdAndUserId conversation.groupId, user.id
+          .then EmbedService.embed {
+            embed: [EmbedService.TYPES.GROUP_USER.ROLES]
           }
-
-          unless hasPermission
-            router.throw
-              status: 400, info: 'You don\'t have permission to do that'
-        .then ->
-          User.getById chatMessage.userId
-          .then (otherUser) ->
-            GroupAuditLog.upsert {
-              groupId: conversation.groupId
-              userId: user.id
-              actionText: Language.get 'audit.deleteMessage', {
-                replacements:
-                  name: User.getDisplayName otherUser
-                language: user.language
-              }
+          .then (groupUser) ->
+            hasPermission = GroupUser.hasPermission {
+              meGroupUser: groupUser
+              me: user
+              permissions: [GroupUser.PERMISSIONS.DELETE_MESSAGE]
             }
-          ChatMessage.deleteByChatMessage chatMessage
+
+            unless hasPermission
+              router.throw
+                status: 400, info: 'You don\'t have permission to do that'
+          .then ->
+            User.getById chatMessage.userId
+            .then (otherUser) ->
+              GroupAuditLog.upsert {
+                groupId: conversation.groupId
+                userId: user.id
+                actionText: Language.get 'audit.deleteMessage', {
+                  replacements:
+                    name: User.getDisplayName otherUser
+                  language: user.language
+                }
+              }
+            ChatMessage.deleteByChatMessage chatMessage
 
   deleteAllByGroupIdAndUserId: ({groupId, userId, duration}, {user}) ->
-    GroupUser.getByGroupIdAndUserId groupId, user.id
-    .then EmbedService.embed {embed: [EmbedService.TYPES.GROUP_USER.ROLES]}
-    .then (groupUser) ->
-      permission = 'deleteMessage'
-      hasPermission = GroupUser.hasPermission {
-        meGroupUser: groupUser
-        me: user
-        permissions: [GroupUser.PERMISSIONS.DELETE_MESSAGE]
-      }
-
-      unless hasPermission
-        router.throw
-          status: 400, info: 'You don\'t have permission to do that'
-    .then ->
-      User.getById userId
-      .then (otherUser) ->
-        GroupAuditLog.upsert {
-          groupId
-          userId: user.id
-          actionText: Language.get 'audit.deleteMessagesLast7d', {
-            replacements:
-              name: User.getDisplayName otherUser
-            language: user.language
-          }
+    if groupId
+      GroupUser.getByGroupIdAndUserId groupId, user.id
+      .then EmbedService.embed {embed: [EmbedService.TYPES.GROUP_USER.ROLES]}
+      .then (groupUser) ->
+        permission = 'deleteMessage'
+        hasPermission = GroupUser.hasPermission {
+          meGroupUser: groupUser
+          me: user
+          permissions: [GroupUser.PERMISSIONS.DELETE_MESSAGE]
         }
-      ChatMessage.deleteAllByGroupIdAndUserId groupId, userId, {duration}
+
+        unless hasPermission
+          router.throw
+            status: 400, info: 'You don\'t have permission to do that'
+      .then ->
+        User.getById userId
+        .then (otherUser) ->
+          GroupAuditLog.upsert {
+            groupId
+            userId: user.id
+            actionText: Language.get 'audit.deleteMessagesLast7d', {
+              replacements:
+                name: User.getDisplayName otherUser
+              language: user.language
+            }
+          }
+        ChatMessage.deleteAllByGroupIdAndUserId groupId, userId, {duration}
 
   updateCard: ({body, params, headers}) ->
     radioactiveHost = config.RADIOACTIVE_API_URL.replace /https?:\/\//i, ''
@@ -444,12 +454,7 @@ class ChatMessageCtrl
           socket: socket
           route: route
           reverse: true
-          initialPostFn: (item) ->
-            EmbedService.embed {embed: defaultEmbed}, ChatMessage.default(item)
-            .then (item) ->
-              # TODO: rm?
-              if item?.user?.flags?.isChatBanned isnt true
-                item
+          initialPostFn: prepareFn
         }
         .then (chatMessages) =>
           # TODO: rm after 3/1/2018.
@@ -463,7 +468,7 @@ class ChatMessageCtrl
     # TODO: lock for a day
     key = 'conversation:migrate_chat_messages6:' + newId
     CacheService.runOnce key, ->
-      ChatMessage.getAllByConversationId(legacyConversationId, {limit: 2000})
+      ChatMessage.getAllByConversationId(legacyConversationId, {limit: 1000})
       .tap (chatMessages) ->
         Promise.map chatMessages, (message) ->
           # hacky https://github.com/datastax/nodejs-driver/pull/243
@@ -472,10 +477,9 @@ class ChatMessageCtrl
           delete message.values
           delete message.keys
           delete message.forEach
-          ChatMessage.upsert message
+          ChatMessage.upsert message, {isUpdate: true}
         , {concurrency: 30}
-      .map ChatMessage.default
-      .map EmbedService.embed {embed: defaultEmbed}
+      .map prepareFn
     , {expireSeconds: 3600 * 24}
 
 

@@ -142,7 +142,7 @@ class PushNotificationService
     {skipMe, meUser, text, mentionUserIds} = options
     mentionUserIds ?= []
     (if conversation.groupId
-      Group.getById conversation.groupId
+      Group.getById "#{conversation.groupId}"
       .then (group) ->
         if group.type is 'public'
           {group, userIds: []}
@@ -313,7 +313,6 @@ class PushNotificationService
 
     successfullyPushedToNative = false
 
-
     PushToken.getAllByUserId user.id
     .map (pushToken) =>
       {id, sourceType, token, errorCount} = pushToken
@@ -330,15 +329,15 @@ class PushNotificationService
       .then ->
         successfullyPushedToNative = true
         if errorCount
-          PushToken.upsert _.defaults {
+          PushToken.upsert _.defaults({
             errorCount: 0
-          }, pushToken
+          }, pushToken)
       .catch (err) ->
         newErrorCount = errorCount + 1
-        PushToken.upsert _.defaults {
+        PushToken.upsert _.defaults({
           errorCount: newErrorCount
           isActive: newErrorCount < CONSECUTIVE_ERRORS_UNTIL_INACTIVE
-        }, PushToken
+        }, pushToken)
 
         if newErrorCount >= CONSECUTIVE_ERRORS_UNTIL_INACTIVE
           PushToken.getAllByUserId user.id

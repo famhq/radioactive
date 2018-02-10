@@ -195,9 +195,10 @@ embedFn = _.curry (props, object) ->
         , {expireSeconds: FIVE_MINUTES_SECONDS}
 
       when TYPES.USER.GROUP_USER
-        embedded.groupUser = GroupUser.getByGroupIdAndUserId(
-          groupId, embedded.id
-        )
+        if groupId
+          embedded.groupUser = GroupUser.getByGroupIdAndUserId(
+            groupId, embedded.id
+          )
 
       when TYPES.USER.GROUP_USER_SETTINGS
         embedded.groupUserSettings = GroupUser.getSettingsByGroupIdAndUserId(
@@ -480,12 +481,6 @@ embedFn = _.curry (props, object) ->
         .then embedFn {embed: [TYPES.GROUP_USER.ROLES]}
 
       when TYPES.GROUP.CONVERSATIONS
-        # # TODO: rm after 1/11/2017
-        # embedded.meGroupUser ?= GroupUser.getByGroupIdAndUserId(
-        #   embedded.id, user.id
-        # )
-        # .then embedFn {embed: [TYPES.GROUP_USER.ROLES]}
-
         embedded.conversations = embedded.meGroupUser.then (meGroupUser) ->
           Conversation.getAllByGroupId embedded.id
           .then (conversations) ->

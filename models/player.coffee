@@ -74,7 +74,7 @@ class PlayerModel
   upsertByPlayerIdAndGameId: (playerId, gameId, diff, {userId} = {}) ->
     clonedDiff = _.cloneDeep(diff)
 
-    (if userId
+    (if userId and playerId
       prefix = CacheService.PREFIXES.USER_PLAYER_USER_ID_GAME_ID
       cacheKey = "#{prefix}:#{userId}:#{gameId}"
       CacheService.preferCache cacheKey, ->

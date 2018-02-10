@@ -28,6 +28,8 @@ defaultConversationOutput = (conversation) ->
     {}
 
   conversation.userIds ?= []
+  if conversation.groupId
+    conversation.groupId = "#{conversation.groupId}"
 
   conversation
 
@@ -126,6 +128,9 @@ class ConversationModel
       .where 'id', '=', id
       .run {isSingle: true}
       .then defaultConversationOutput
+      .catch (err) ->
+        console.log 'covnersation get err', id
+        throw err
 
     if preferCache
       prefix = CacheService.PREFIXES.CONVERSATION_ID
@@ -192,78 +197,75 @@ class ConversationModel
     _.pick conversation, [
       'id'
       'userIds'
-      'userData'
       'data'
       'users'
       'groupId'
-      'name'
-      'description'
       'lastUpdateTime'
       'lastMessage'
       'isRead'
       'embedded'
     ]
 
-  migrateAll: =>
-    CacheService = require '../services/cache'
-    r = require '../services/rethinkdb'
-    start = Date.now()
-    Promise.all [
-      CacheService.get 'migrate_conversations_min_id8'
-      .then (minId) =>
-        minId ?= '0000'
-        r.table 'conversations'
-        .between minId, 'zzzz'
-        .orderBy {index: r.asc('id')}
-        .limit 500
-        .then (conversations) =>
-          Promise.map conversations, (conversation) =>
-            if conversation.type is 'pm' and not conversation.lastUpdateTime
-              return Promise.resolve null
-            conversation.data ?= {}
-            conversation.data.name = conversation.name
-            conversation.data.description = conversation.description
-            conversation.data.legacyId = conversation.id
-            conversation = _.pick conversation, ['userIds', 'groupId', 'type', 'data', 'isRead', 'lastUpdateTime']
-            conversation.isRead = true
-            @upsert conversation
-          .catch (err) ->
-            console.log err
-          .then ->
-            console.log 'migrate time', Date.now() - start, minId, _.last(conversations)?.id
-            CacheService.set 'migrate_conversations_min_id8', _.last(conversations)?.id
-            .then ->
-              _.last(conversations)?.id
-
-      CacheService.get 'migrate_conversations_max_id8'
-      .then (maxId) =>
-        maxId ?= 'zzzz'
-        r.table 'conversations'
-        .between '0000', maxId
-        .orderBy {index: r.desc('id')}
-        .limit 500
-        .then (conversations) =>
-          Promise.map conversations, (conversation) =>
-            if conversation.type is 'pm' and not conversation.lastUpdateTime
-              return Promise.resolve null
-            conversation.data ?= {}
-            conversation.data.name = conversation.name
-            conversation.data.description = conversation.description
-            conversation.data.legacyId = conversation.id
-            conversation = _.pick conversation, ['userIds', 'groupId', 'type', 'data', 'isRead', 'lastUpdateTime']
-            conversation.isRead = true
-            @upsert conversation
-          .catch (err) ->
-            console.log err
-          .then ->
-            console.log 'migrate time desc', Date.now() - start, maxId, _.last(conversations)?.id
-            CacheService.set 'migrate_conversations_max_id8', _.last(conversations)?.id
-            .then ->
-              _.last(conversations)?.id
-        ]
-
-    .then ([l1, l2]) =>
-      if l1 and l2 and l1 < l2
-        @migrateAll()
+  # migrateAll: =>
+  #   CacheService = require '../services/cache'
+  #   r = require '../services/rethinkdb'
+  #   start = Date.now()
+  #   Promise.all [
+  #     CacheService.get 'migrate_conversations_min_id8'
+  #     .then (minId) =>
+  #       minId ?= '0000'
+  #       r.table 'conversations'
+  #       .between minId, 'zzzz'
+  #       .orderBy {index: r.asc('id')}
+  #       .limit 500
+  #       .then (conversations) =>
+  #         Promise.map conversations, (conversation) =>
+  #           if conversation.type is 'pm' and not conversation.lastUpdateTime
+  #             return Promise.resolve null
+  #           conversation.data ?= {}
+  #           conversation.data.name = conversation.name
+  #           conversation.data.description = conversation.description
+  #           conversation.data.legacyId = conversation.id
+  #           conversation = _.pick conversation, ['userIds', 'groupId', 'type', 'data', 'isRead', 'lastUpdateTime']
+  #           conversation.isRead = true
+  #           @upsert conversation
+  #         .catch (err) ->
+  #           console.log err
+  #         .then ->
+  #           console.log 'migrate time', Date.now() - start, minId, _.last(conversations)?.id
+  #           CacheService.set 'migrate_conversations_min_id8', _.last(conversations)?.id
+  #           .then ->
+  #             _.last(conversations)?.id
+  #
+  #     CacheService.get 'migrate_conversations_max_id8'
+  #     .then (maxId) =>
+  #       maxId ?= 'zzzz'
+  #       r.table 'conversations'
+  #       .between '0000', maxId
+  #       .orderBy {index: r.desc('id')}
+  #       .limit 500
+  #       .then (conversations) =>
+  #         Promise.map conversations, (conversation) =>
+  #           if conversation.type is 'pm' and not conversation.lastUpdateTime
+  #             return Promise.resolve null
+  #           conversation.data ?= {}
+  #           conversation.data.name = conversation.name
+  #           conversation.data.description = conversation.description
+  #           conversation.data.legacyId = conversation.id
+  #           conversation = _.pick conversation, ['userIds', 'groupId', 'type', 'data', 'isRead', 'lastUpdateTime']
+  #           conversation.isRead = true
+  #           @upsert conversation
+  #         .catch (err) ->
+  #           console.log err
+  #         .then ->
+  #           console.log 'migrate time desc', Date.now() - start, maxId, _.last(conversations)?.id
+  #           CacheService.set 'migrate_conversations_max_id8', _.last(conversations)?.id
+  #           .then ->
+  #             _.last(conversations)?.id
+  #       ]
+  #
+  #   .then ([l1, l2]) =>
+  #     if l1 and l2 and l1 < l2
+  #       @migrateAll()
 
 module.exports = new ConversationModel()

@@ -41,7 +41,8 @@ class PubSubService
     @subscriptions[channel][id] = {
       fn: fn
       unsubscribe: =>
-        delete @subscriptions[channel][id]
+        if @subscriptions[channel]
+          delete @subscriptions[channel][id]
         count = _.keys(@subscriptions[channel]).length
         unless count
           @redisSub.unsubscribe channelWithPrefix

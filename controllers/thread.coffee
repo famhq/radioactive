@@ -125,7 +125,9 @@ class ThreadCtrl
       # for header image
       thread.data.attachments ?= []
       if _.isEmpty(thread.data.attachments) and firstImageSrc
-        thread.data.attachments.push [{type: 'image', src: firstImageSrc}]
+        thread.data.attachments.push {
+          type: 'image', src: firstImageSrc.replace(/^<|>$/g, '')
+        }
 
       Promise.all [
         @getAttachment thread.data.body

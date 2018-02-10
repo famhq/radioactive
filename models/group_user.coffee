@@ -213,6 +213,9 @@ class GroupUserModel
     .where 'groupId', '=', groupId
     .limit 5000 # for sanity. really this shouldn't be used in large groups
     .run()
+    .catch (err) ->
+      console.log 'err getallgid groupUser', groupId
+      throw err
 
   # TODO: rm ~march 2018
   getLegacyCountByGroupId: (groupId, {preferCache} = {}) ->

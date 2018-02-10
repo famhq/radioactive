@@ -6,12 +6,14 @@ ClashRoyaleAPIService = require '../services/clash_royale_api'
 r = require '../services/rethinkdb'
 Player = require '../models/player'
 User = require '../models/user'
+GroupUser = require '../models/group_user'
 ClashRoyaleMatch = require '../models/clash_royale_match'
 config = require '../config'
 
 HEALTHCHECK_TIMEOUT = 20000
 AUSTIN_TAG = '22CJ9CQC0'
 AUSTIN_USERNAME = 'austin'
+AUSTIN_ID = '0b2884ec-eb4b-432c-807a-f9879a65f0db'
 
 
 class HealthCtrl
@@ -46,6 +48,10 @@ class HealthCtrl
       .timeout HEALTHCHECK_TIMEOUT
       .catch -> null
 
+      GroupUser.getByGroupIdAndUserId config.GROUPS.PLAY_HARD, AUSTIN_ID
+      .timeout HEALTHCHECK_TIMEOUT
+      .catch -> null
+
       User.getByUsername AUSTIN_USERNAME
       .timeout HEALTHCHECK_TIMEOUT
       .catch -> null
@@ -54,7 +60,9 @@ class HealthCtrl
       .timeout HEALTHCHECK_TIMEOUT
       .catch -> null
     ]
-    .then ([rethink, apiData, apiMatches, legacyApi, player, user, matches]) ->
+    .then (responses) ->
+      [rethink, apiData, apiMatches, legacyApi,
+        player, groupUser, user, matches] = responses
       result =
         rethinkdb: Boolean rethink
         apiData: apiData?.tag is "##{AUSTIN_TAG}"
@@ -63,6 +71,7 @@ class HealthCtrl
         scyllaPlayer: player?.id is AUSTIN_TAG
         scyllaMatches: _.isArray matches?.rows
         rethinkUser: user?.username is AUSTIN_USERNAME
+        groupUser: "#{groupUser.userId}" is AUSTIN_ID
 
       result.healthy = _.every _.values result
       return result

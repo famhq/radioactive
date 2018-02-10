@@ -4,6 +4,7 @@ Promise = require 'bluebird'
 
 cknex = require '../services/cknex'
 CacheService = require '../services/cache'
+config = require '../config'
 
 USER_PLAYERS_TABLE = 'user_players'
 USER_ID_GAME_ID_INDEX = 'userIdGameId'
@@ -16,10 +17,23 @@ defaultUserPlayer = (userPlayer) ->
 
   _.defaults userPlayer, {
     userId: null
-    gameId: null
+    gameId: config.CLASH_ROYALE_ID
     playerId: null
     isVerified: false
   }
+
+defaultUserPlayerOutput = (userPlayer) ->
+  unless userPlayer?
+    return null
+
+  if userPlayer.userId
+    userPlayer.userId = "#{userPlayer.userId}"
+  if userPlayer.gameId
+    userPlayer.gameId = "#{userPlayer.gameId}"
+  if userPlayer.playerId
+    userPlayer.playerId = "#{userPlayer.playerId}"
+
+  userPlayer
 
 # scylla: user_players_by_userId, user_players_by_playerId
 
@@ -50,11 +64,16 @@ tables = [
   }
 ]
 
-class UserPlayer
+class UserPlayerModel
   SCYLLA_TABLES: tables
 
   upsert: (userPlayer) ->
     userPlayer = defaultUserPlayer userPlayer
+
+    delete userPlayer.get
+    delete userPlayer.values
+    delete userPlayer.keys
+    delete userPlayer.forEach
 
     Promise.all [
       cknex().update 'user_players_by_userId'
@@ -76,7 +95,9 @@ class UserPlayer
 
   deleteByUserIdAndGameId: (userId, gameId) =>
     @getByUserIdAndGameId userId, gameId
-    .then @deleteByUserPlayer
+    .then (userPlayer) =>
+      if userPlayer
+        @deleteByUserPlayer
 
   deleteByUserPlayer: (userPlayer) ->
     Promise.all [
@@ -106,13 +127,14 @@ class UserPlayer
   getVerifiedByPlayerIdAndGameId: (playerId, gameId) =>
     @getAllByPlayerIdAndGameId playerId, gameId
     .then (userPlayers) ->
-      _.filter userPlayers, {isVerified: true}
+      _.find userPlayers, {isVerified: true}
 
   setVerifiedByUserIdAndPlayerIdAndGameId: (userId, playerId, gameId) =>
     # mark others unverified
     @getVerifiedByPlayerIdAndGameId playerId, gameId
     .then (userPlayer) =>
-      @upsert _.defaults({isVerified: false}, userPlayer)
+      if userPlayer
+        @upsert _.defaults({isVerified: false}, userPlayer)
     .then =>
       @upsert {
         userId
@@ -152,52 +174,52 @@ class UserPlayer
     .run()
     .map defaultUserPlayer
 
-  migrateAll: =>
-    CacheService = require '../services/cache'
-    r = require '../services/rethinkdb'
-    start = Date.now()
-    Promise.all [
-      CacheService.get 'migrate_user_players_min_id3'
-      .then (minId) =>
-        minId ?= '0'
-        r.table 'user_players'
-        .between minId, 'zzzz'
-        .orderBy {index: r.asc('id')}
-        .limit 500
-        .then (userPlayers) =>
-          Promise.map userPlayers, (userPlayer) =>
-            userPlayer = _.pick userPlayer, ['userId', 'gameId', 'playerId', 'isVerified']
-            @upsert userPlayer
-          .catch (err) ->
-            console.log err
-          .then ->
-            console.log 'migrate user_player', Date.now() - start, minId, _.last(userPlayers)?.id
-            CacheService.set 'migrate_user_players_min_id3', _.last(userPlayers)?.id
-            .then ->
-              _.last(userPlayers)?.id
+  # migrateAll: =>
+  #   CacheService = require '../services/cache'
+  #   r = require '../services/rethinkdb'
+  #   start = Date.now()
+  #   Promise.all [
+  #     CacheService.get 'migrate_user_players_min_id3'
+  #     .then (minId) =>
+  #       minId ?= '0'
+  #       r.table 'user_players'
+  #       .between minId, 'zzzz'
+  #       .orderBy {index: r.asc('id')}
+  #       .limit 500
+  #       .then (userPlayers) =>
+  #         Promise.map userPlayers, (userPlayer) =>
+  #           userPlayer = _.pick userPlayer, ['userId', 'gameId', 'playerId', 'isVerified']
+  #           @upsert userPlayer
+  #         .catch (err) ->
+  #           console.log err
+  #         .then ->
+  #           console.log 'migrate user_player', Date.now() - start, minId, _.last(userPlayers)?.id
+  #           CacheService.set 'migrate_user_players_min_id3', _.last(userPlayers)?.id
+  #           .then ->
+  #             _.last(userPlayers)?.id
+  #
+  #     CacheService.get 'migrate_user_players_max_id3'
+  #     .then (maxId) =>
+  #       maxId ?= 'zzzz'
+  #       r.table 'user_players'
+  #       .between '0000', maxId
+  #       .orderBy {index: r.desc('id')}
+  #       .limit 500
+  #       .then (userPlayers) =>
+  #         Promise.map userPlayers, (userPlayer) =>
+  #           userPlayer = _.pick userPlayer, ['userId', 'gameId', 'playerId', 'isVerified']
+  #           @upsert userPlayer
+  #         .catch (err) ->
+  #           console.log err
+  #         .then ->
+  #           console.log 'migrate user_player desc', Date.now() - start, maxId, _.last(userPlayers)?.id
+  #           CacheService.set 'migrate_user_players_max_id3', _.last(userPlayers)?.id
+  #           .then ->
+  #             _.last(userPlayers)?.id
+  #       ]
+  #
+  #   .then ([l1, l2]) =>
+  #     if l1 and l2 and l1 < l2
+  #       @migrateAll()
 
-      CacheService.get 'migrate_user_players_max_id3'
-      .then (maxId) =>
-        maxId ?= 'zzzz'
-        r.table 'user_players'
-        .between '0000', maxId
-        .orderBy {index: r.desc('id')}
-        .limit 500
-        .then (userPlayers) =>
-          Promise.map userPlayers, (userPlayer) =>
-            userPlayer = _.pick userPlayer, ['userId', 'gameId', 'playerId', 'isVerified']
-            @upsert userPlayer
-          .catch (err) ->
-            console.log err
-          .then ->
-            console.log 'migrate user_player desc', Date.now() - start, maxId, _.last(userPlayers)?.id
-            CacheService.set 'migrate_user_players_max_id3', _.last(userPlayers)?.id
-            .then ->
-              _.last(userPlayers)?.id
-        ]
-
-    .then ([l1, l2]) =>
-      if l1 and l2 and l1 < l2
-        @migrateAll()
-
-module.exports = new UserPlayer()
+module.exports = new UserPlayerModel()

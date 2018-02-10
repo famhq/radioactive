@@ -68,7 +68,7 @@ class PushTokensCtrl
       }
       PushToken.getByToken token
       .then (pushToken) ->
-        PushToken.upsert _.defaults diff, pushToken
+        PushToken.upsert _.defaults(diff, pushToken)
     ]
     .then ->
       null

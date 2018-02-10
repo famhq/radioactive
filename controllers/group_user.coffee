@@ -123,6 +123,9 @@ class GroupUserCtrl
         }
 
   getOnlineCountByGroupId: ({groupId}) ->
-    GroupUsersOnline.getCountByGroupId groupId
+    if groupId
+      GroupUsersOnline.getCountByGroupId groupId
+    else
+      0
 
 module.exports = new GroupUserCtrl()

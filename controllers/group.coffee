@@ -57,7 +57,8 @@ class GroupCtrl
         }
         Conversation.upsert {
           groupId: id
-          name: 'general'
+          data:
+            name: 'general'
           type: 'channel'
         }
         Promise.map defaultGroupRecordTypes, ({name, timeScale}) ->

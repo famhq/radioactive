@@ -77,7 +77,8 @@ class ClanModel
           GroupUser.upsert {groupId: group.id, userId: userId}
         Conversation.upsert {
           groupId: group.id
-          name: 'general'
+          data:
+            name: 'general'
           type: 'channel'
         }
       ]

@@ -67,6 +67,7 @@ if config.DEV_USE_HTTPS
 
 MAX_FILE_SIZE_BYTES = 20 * 1000 * 1000 # 20MB
 MAX_FIELD_SIZE_BYTES = 100 * 1000 # 100KB
+FIVE_MINUTES_MS = 5 * 60 * 1000
 
 Promise.config {warnings: false}
 
@@ -241,20 +242,20 @@ app.get '/videoDiscovery', (req, res) ->
   VideoDiscoveryService.discover()
   res.status(200).send()
 
-app.get '/migrateConversations', (req, res) ->
-  Conversation = require './models/conversation'
-  Conversation.migrateAll()
-  res.status(200).send()
-
-app.get '/migratePushTokens', (req, res) ->
-  PushToken = require './models/push_token'
-  PushToken.migrateAll()
-  res.status(200).send()
-
-app.get '/migrateUserPlayers', (req, res) ->
-  UserPlayer = require './models/user_player'
-  UserPlayer.migrateAll()
-  res.status(200).send()
+# app.get '/migrateConversations', (req, res) ->
+#   Conversation = require './models/conversation'
+#   Conversation.migrateAll()
+#   res.status(200).send()
+#
+# app.get '/migratePushTokens', (req, res) ->
+#   PushToken = require './models/push_token'
+#   PushToken.migrateAll()
+#   res.status(200).send()
+#
+# app.get '/migrateUserPlayers', (req, res) ->
+#   UserPlayer = require './models/user_player'
+#   UserPlayer.migrateAll()
+#   res.status(200).send()
 
 app.get '/cleanKueFailed', (req, res) ->
   KueCreateService = require './services/kue_create'
@@ -309,7 +310,7 @@ io = socketIO.listen server
 # hits different pod so it works?
 setInterval ->
   console.log 'socket.io', io.engine.clientsCount
-, 10000
+, FIVE_MINUTES_MS
 
 # for now, this is unnecessary. lightning-rod is clientip,
 # and stickCluster handles the cpus

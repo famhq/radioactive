@@ -288,7 +288,7 @@ class ClashRoyalePlayerService
           ]
 
       .catch (err) ->
-        console.log 'caught updatePlayerId', err
+        console.log 'caught updatePlayerId'#, err
         throw err
     .then ->
       true # notify auto_refresher of success

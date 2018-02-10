@@ -49,13 +49,12 @@ class ConversationCtrl
             language: user.language
           }
         }
-      return conversation or Conversation.upsert {
+      return conversation or Conversation.upsert({
         userIds
         groupId
-        name
-        description
+        data: {name, description}
         type: if groupId then 'channel' else 'pm'
-      }, {userId}
+      }, {userId: user.id})
 
   updateById: ({id, name, description, isSlowMode, slowModeCooldown}, {user}) ->
     name = name and _.kebabCase(name.toLowerCase()).replace(/[^0-9a-z-]/gi, '')

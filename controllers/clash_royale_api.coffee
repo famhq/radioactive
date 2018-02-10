@@ -28,12 +28,12 @@ GAME_ID = config.CLASH_ROYALE_ID
 class ClashRoyaleAPICtrl
   setByPlayerId: ({playerId, isUpdate}, {user}) =>
     (if isUpdate
-      Player.removeUserId user.id, config.CLASH_ROYALE_ID
+      Player.removeUserId user.id, GAME_ID
     else
       Promise.resolve null
     )
     .then ->
-      Player.getByUserIdAndGameId user.id, config.CLASH_ROYALE_ID
+      Player.getByUserIdAndGameId user.id, GAME_ID
     .then (existingPlayer) =>
       @refreshByPlayerId {
         playerId, isUpdate, userId: user.id, priority: 'high'
@@ -57,11 +57,11 @@ class ClashRoyaleAPICtrl
     # to be duplicated
     CacheService.lock key, ->
       # console.log 'refresh', playerId
-      Player.getByUserIdAndGameId user.id, config.CLASH_ROYALE_ID
+      Player.getByUserIdAndGameId user.id, GAME_ID
       .then (mePlayer) ->
         if mePlayer?.id is playerId
           userId = user.id
-        Player.upsertByPlayerIdAndGameId playerId, config.CLASH_ROYALE_ID, {
+        Player.upsertByPlayerIdAndGameId playerId, GAME_ID, {
           lastQueuedTime: new Date()
         }
         ClashRoyalePlayerService.updatePlayerById playerId, {
@@ -77,9 +77,9 @@ class ClashRoyaleAPICtrl
     , {expireSeconds: 5, unlockWhenCompleted: true}
 
   refreshByClanId: ({clanId}, {user}) ->
-    Clan.getByClanIdAndGameId clanId, config.CLASH_ROYALE_ID
+    Clan.getByClanIdAndGameId clanId, GAME_ID
     .then (clan) ->
-      Clan.upsertByClanIdAndGameId clanId, config.CLASH_ROYALE_ID, {
+      Clan.upsertByClanIdAndGameId clanId, GAME_ID, {
         lastQueuedTime: new Date()
       }
     .then ->
@@ -159,7 +159,7 @@ class ClashRoyaleAPICtrl
           }
         else
           Promise.resolve null
-        Player.getByPlayerIdAndGameId playerId, config.CLASH_ROYALE_ID
+        Player.getByPlayerIdAndGameId playerId, GAME_ID
       ]
     .then (players) ->
       decks = _.map players, ([playerDecks, player]) ->
