@@ -4,6 +4,7 @@ Promise = require 'bluebird'
 
 User = require '../models/user'
 Addon = require '../models/addon'
+Group = require '../models/group'
 AddonVote = require '../models/addon_vote'
 CacheService = require '../services/cache'
 EmbedService = require '../services/embed'
@@ -16,12 +17,21 @@ defaultEmbed = [
 ]
 
 class AddonCtrl
-  getAll: ({language}) ->
-    Addon.getAll {language, preferCache: true}
-    .then (addons) ->
-      _.filter addons, (addon) ->
-        not addon.supportedLanguages or language in addon.supportedLanguages
-    .map Addon.sanitize null
+  getAllByGroupId: ({groupId}) ->
+    Group.getById groupId, {preferCache: true}
+    .then (group) ->
+      gameKeys = if _.isEmpty(group.gameKeys) \
+                 then ['clash-royale']
+                 else group.gameKeys
+      Promise.map gameKeys or ['clash-royale'], (gameKey) ->
+        Addon.getAllByGameKey gameKey, {preferCache: true}
+      .then (addons) ->
+        addons = _.flatten addons
+        language = group.language
+        _.filter addons, (addon) ->
+          not addon.data.supportedLanguages or
+            language in addon.data.supportedLanguages
+      .map Addon.sanitize null
 
   getById: ({id}, {user}) ->
     Addon.getById id, {preferCache: true}
@@ -34,8 +44,11 @@ class AddonCtrl
     .then Addon.sanitize null
 
   voteById: ({id, vote}, {user}) ->
-    AddonVote.getByCreatorIdAndAddonId user.id, id
-    .then (existingVote) ->
+    Promise.all [
+      Addon.getById id
+      AddonVote.getByCreatorIdAndAddonId user.id, id
+    ]
+    .then ([addon, existingVote]) ->
       voteNumber = if vote is 'up' then 1 else -1
 
       hasVotedUp = existingVote?.vote is 1
@@ -44,31 +57,22 @@ class AddonCtrl
         router.throw status: 400, info: 'already voted'
 
       if vote is 'up'
-        diff = {upvotes: r.row('upvotes').add(1)}
+        values = {upvotes: 1}
         if hasVotedDown
-          diff.downvotes = r.row('downvotes').sub(1)
-          diff.score = r.row('score').add(2)
-        else
-          diff.score = r.row('score').add(1)
+          values.downvotes = -1
       else if vote is 'down'
-        diff = {downvotes: r.row('downvotes').add(1)}
+        values = {downvotes: 1}
         if hasVotedUp
-          diff.upvotes = r.row('upvotes').sub(1)
-          diff.score = r.row('score').sub(2)
-        else
-          diff.score = r.row('score').sub(1)
+          values.upvotes = -1
+
+      voteTime = existingVote?.time or new Date()
 
       Promise.all [
-        if existingVote
-          AddonVote.updateById existingVote.id, {vote: voteNumber}
-        else
-          AddonVote.create {
-            creatorId: user.id
-            addonId: id
-            vote: voteNumber
-          }
+        AddonVote.upsertByCreatorIdAndAddonId(
+          user.id, id, {vote: voteNumber}
+        )
 
-        Addon.updateById id, diff
+        Addon.incrementByAddon addon, values
       ]
 
 module.exports = new AddonCtrl()

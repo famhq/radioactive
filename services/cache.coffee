@@ -38,7 +38,8 @@ PREFIXES =
   USER_DATA_CLASH_ROYALE_DECK_IDS: 'user_data:clash_royale_deck_ids6'
   USER_DAILY_DATA_PUSH: 'user_daily_data:push5'
   ADDON_ID: 'addon:id'
-  ADDON_KEY: 'addon:key3'
+  ADDON_KEY: 'addon:key4'
+  ADDON_GET_ALL_BY_GAME_KEY: 'addon:get_all69'
   CLASH_ROYALE_MATCHES_ID: 'clash_royale_matches:id52'
   CLASH_ROYALE_MATCHES_ID_EXISTS: 'clash_royale_matches:id:exists2'
   CLASH_ROYALE_INVALID_TAG: 'clash_royale:invalid_tag'
@@ -105,7 +106,6 @@ PREFIXES =
 
 class CacheService
   KEYS:
-    ADDON_GET_ALL: 'addon:get_all6'
     AUTO_REFRESH_MAX_REVERSED_PLAYER_ID: 'auto_refresh:max_reversed_player_id'
     AUTO_REFRESH_SUCCESS_COUNT: 'auto_refresh:success_count1'
     BROADCAST_FAILSAFE: 'broadcast:failsafe'
@@ -145,6 +145,7 @@ class CacheService
     GAME_TYPE_DECK_LEADERBOARD: 'gameType:deck_leaderboard'
     THREAD_GROUP_LEADERBOARD_BY_CATEGORY: 'thread:group_leaderboard:by_category'
     THREAD_GROUP_LEADERBOARD_ALL: 'thread:group_leaderboard:by_all'
+    ADDON_GAME_KEY_LEADERBOARD_ALL: 'addon:gameKey_leaderboard:by_all'
     PINNED_THREAD_IDS: 'pinned_thread_ids'
 
   constructor: ->

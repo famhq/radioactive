@@ -96,6 +96,7 @@ module.exports = router
   authed UserFollowerCtrl.unfollowByUserId
 
 .on 'addons.getAll', authed AddonCtrl.getAll
+.on 'addons.getAllByGroupId', authed AddonCtrl.getAllByGroupId
 .on 'addons.getById', authed AddonCtrl.getById
 .on 'addons.getByKey', authed AddonCtrl.getByKey
 .on 'addons.voteById', authed AddonCtrl.voteById

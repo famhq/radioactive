@@ -2,68 +2,57 @@ _ = require 'lodash'
 
 uuid = require 'node-uuid'
 
-r = require '../services/rethinkdb'
-User = require './user'
+cknex = require '../services/cknex'
 CacheService = require '../services/cache'
+
+DEFAULT_UUID = '00000000-0000-0000-0000-000000000000'
 
 defaultAddonVote = (addonVote) ->
   unless addonVote?
     return null
 
-  id = "#{addonVote.addonId}:#{addonVote.creatorId}"
-
   _.defaults addonVote, {
-    id: id
-    creatorId: null
-    addonId: null
     vote: 0 # -1 or 1
     time: new Date()
   }
 
-THREAD_VOTES_TABLE = 'addon_votes'
-CREATOR_ID_ADDON_ID_INDEX = 'creatorIdAddonId'
-MAX_MESSAGES = 30
+# with this structure we'd need another table to get votes by addonId
+tables = [
+  {
+    name: 'addon_votes_by_creatorId'
+    keyspace: 'starfire'
+    fields:
+      creatorId: 'uuid'
+      addonId: 'uuid'
+      vote: 'int'
+      time: 'timestamp'
+    primaryKey:
+      # a little uneven since some users will vote a lot, but small data overall
+      partitionKey: ['creatorId']
+      clusteringColumns: ['addonId']
+  }
+]
 
 class AddonVoteModel
-  RETHINK_TABLES: [
-    {
-      name: THREAD_VOTES_TABLE
-      indexes: [
-        {name: CREATOR_ID_ADDON_ID_INDEX, fn: (row) ->
-          [row('creatorId'), row('addonId')]}
-      ]
-    }
-  ]
+  SCYLLA_TABLES: tables
 
-  create: (addonVote) ->
+  upsertByCreatorIdAndAddonId: (creatorId, addonId, addonVote) ->
     addonVote = defaultAddonVote addonVote
 
-    r.table THREAD_VOTES_TABLE
-    .insert addonVote
+    cknex().update 'addon_votes_by_creatorId'
+    .set addonVote
+    .where 'creatorId', '=', creatorId
+    .andWhere 'addonId', '=', addonId
     .run()
     .then ->
       addonVote
 
-  updateById: (id, diff) ->
-    r.table THREAD_VOTES_TABLE
-    .get id
-    .update diff
-    .run()
-
   getByCreatorIdAndAddonId: (creatorId, addonId) ->
-    r.table THREAD_VOTES_TABLE
-    .getAll [creatorId, addonId], {
-      index: CREATOR_ID_ADDON_ID_INDEX
-    }
-    .nth 0
-    .default null
-    .run()
-    .then defaultAddonVote
+    cknex().select '*'
+    .from 'addon_votes_by_creatorId'
+    .where 'creatorId', '=', creatorId
+    .andWhere 'addonId', '=', addonId
+    .run {isSingle: true}
 
-  getById: (id) ->
-    r.table THREAD_VOTES_TABLE
-    .get id
-    .run()
-    .then defaultAddonVote
 
 module.exports = new AddonVoteModel()
