@@ -12,6 +12,7 @@ ClashRoyaleMatchCtrl = require './controllers/clash_royale_match'
 ClashRoyaleDeckCtrl = require './controllers/clash_royale_deck'
 ClashRoyalePlayerDeckCtrl = require './controllers/clash_royale_player_deck'
 ClashRoyaleCardCtrl = require './controllers/clash_royale_card'
+FortnitePlayerCtrl = require './controllers/fortnite_player'
 DynamicImageCtrl = require './controllers/dynamic_image'
 EventCtrl = require './controllers/event'
 ItemCtrl = require './controllers/item'
@@ -68,7 +69,7 @@ module.exports = router
 .on 'users.getById', authed UserCtrl.getById
 .on 'users.getByUsername', authed UserCtrl.getByUsername
 .on 'users.updateById', authed UserCtrl.updateById
-.on 'users.getAllByPlayerIdAndGameId', authed UserCtrl.getAllByPlayerIdAndGameId
+.on 'users.getAllByPlayerIdAndGameKey', authed UserCtrl.getAllByPlayerIdAndGameKey
 .on 'users.searchByUsername', authed UserCtrl.searchByUsername
 .on 'users.setUsername', authed UserCtrl.setUsername
 .on 'users.setLanguage', authed UserCtrl.setLanguage
@@ -104,8 +105,8 @@ module.exports = router
 .on 'appInstallActions.upsert', authed AppInstallActionCtrl.upsert
 .on 'appInstallActions.get', authed AppInstallActionCtrl.get
 
-.on 'clanRecordTypes.getAllByClanIdAndGameId',
-  authed ClanRecordTypeCtrl.getAllByClanIdAndGameId
+.on 'clanRecordTypes.getAllByClanIdAndGameKey',
+  authed ClanRecordTypeCtrl.getAllByClanIdAndGameKey
 
 .on 'chatMessages.create', authed ChatMessageCtrl.create
 .on 'chatMessages.deleteById', authed ChatMessageCtrl.deleteById
@@ -197,8 +198,8 @@ module.exports = router
 .on 'groupRecordTypes.create', authed GroupRecordTypeCtrl.create
 .on 'groupRecordTypes.deleteById', authed GroupRecordTypeCtrl.deleteById
 
-.on 'gameRecordTypes.getAllByPlayerIdAndGameId',
-  authed GameRecordTypeCtrl.getAllByPlayerIdAndGameId
+.on 'gameRecordTypes.getAllByPlayerIdAndGameKey',
+  authed GameRecordTypeCtrl.getAllByPlayerIdAndGameKey
 
 .on 'groupRoles.getAllByGroupId', authed GroupRoleCtrl.getAllByGroupId
 .on 'groupRoles.createByGroupId', authed GroupRoleCtrl.createByGroupId
@@ -222,22 +223,29 @@ module.exports = router
 .on 'userItems.consumeByItemKey', authed UserItemCtrl.consumeByItemKey
 .on 'userItems.scratchByItemKey', authed UserItemCtrl.scratchByItemKey
 
+
+# TODO: rm after 3/1/2018
 .on 'players.getByUserIdAndGameId',
-  authed PlayerCtrl.getByUserIdAndGameId
+  authed PlayerCtrl.getByUserIdAndGameKey
 .on 'players.getByPlayerIdAndGameId',
-  authed PlayerCtrl.getByPlayerIdAndGameId
+  authed PlayerCtrl.getByPlayerIdAndGameKey
+
+.on 'players.getByUserIdAndGameKey',
+  authed PlayerCtrl.getByUserIdAndGameKey
+.on 'players.getByPlayerIdAndGameKey',
+  authed PlayerCtrl.getByPlayerIdAndGameKey
 .on 'players.getTop', authed PlayerCtrl.getTop
 .on 'players.search', authed PlayerCtrl.search
 .on 'players.getMeFollowing', authed PlayerCtrl.getMeFollowing
 .on 'players.verifyMe', authed PlayerCtrl.verifyMe
 .on 'players.getVerifyDeckId', authed PlayerCtrl.getVerifyDeckId
-.on 'players.getIsAutoRefreshByPlayerIdAndGameId',
-  authed PlayerCtrl.getIsAutoRefreshByPlayerIdAndGameId
+.on 'players.getIsAutoRefreshByPlayerIdAndGameKey',
+  authed PlayerCtrl.getIsAutoRefreshByPlayerIdAndGameKey
 .on 'players.setAutoRefreshByGameId',
   authed PlayerCtrl.setAutoRefreshByGameId
 
 .on 'clan.getById', authed ClanCtrl.getById
-.on 'clan.getByClanIdAndGameId', authed ClanCtrl.getByClanIdAndGameId
+.on 'clan.getByClanIdAndGameKey', authed ClanCtrl.getByClanIdAndGameKey
 .on 'clan.claimById', authed ClanCtrl.claimById
 .on 'clan.joinById', authed ClanCtrl.joinById
 .on 'clan.updateById', authed ClanCtrl.updateById
@@ -277,6 +285,11 @@ module.exports = router
   authed ClashRoyaleMatchCtrl.getAllByUserId
 .on 'clashRoyaleMatches.getAllByPlayerId',
   authed ClashRoyaleMatchCtrl.getAllByPlayerId
+
+.on 'fortnitePlayers.setByPlayerId',
+  authed FortnitePlayerCtrl.setByPlayerId
+.on 'fortnitePlayers.refreshByPlayerId',
+  authed FortnitePlayerCtrl.refreshByPlayerId
 
 .on 'nps.create', authed NpsCtrl.create
 

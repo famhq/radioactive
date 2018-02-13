@@ -48,6 +48,8 @@ class AddonVoteModel
       addonVote
 
   getByCreatorIdAndAddonId: (creatorId, addonId) ->
+    unless creatorId and addonId and addonId isnt 'undefined'
+      return Promise.resolve null
     cknex().select '*'
     .from 'addon_votes_by_creatorId'
     .where 'creatorId', '=', creatorId

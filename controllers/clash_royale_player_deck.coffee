@@ -17,10 +17,10 @@ defaultEmbed = [
 class ClashRoyalePlayerDeckCtrl
   getAllByPlayerId: ({playerId, sort, type, limit}, {user}) ->
     # no one is using and it's an unnecessary perf hit
-    # Player.getByPlayerIdAndGameId playerId, config.CLASH_ROYALE_ID
+    # Player.getByPlayerIdAndGameKey playerId, 'clash-royale'
     # .then EmbedService.embed {
     #   embed: [EmbedService.TYPES.PLAYER.VERIFIED_USER]
-    #   gameId: config.CLASH_ROYALE_ID
+    #   gameKey: 'clash-royale'
     # }
     # .then (player) ->
     #   unless player

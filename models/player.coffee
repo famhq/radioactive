@@ -5,6 +5,7 @@ r = require '../services/rethinkdb'
 CacheService = require '../services/cache'
 UserPlayer = require './user_player'
 ClashRoyalePlayer = require './clash_royale_player'
+FortnitePlayer = require './fortnite_player'
 User = require './user' # TODO rm
 config = require '../config'
 
@@ -13,22 +14,24 @@ SIX_HOURS_S = 3600 * 6
 class PlayerModel
   constructor: ->
     @GamePlayers =
-      "#{config.CLASH_ROYALE_ID}": ClashRoyalePlayer
+      "#{'clash-royale'}": ClashRoyalePlayer
+      fortnite: FortnitePlayer
 
-  batchUpsertByGameId: (gameId, players) =>
-    @GamePlayers[gameId].batchUpsert players
 
-  getByUserIdAndGameId: (userId, gameId, {preferCache, retry} = {}) =>
+  batchUpsertByGameId: (gameKey, players) =>
+    @GamePlayers[gameKey].batchUpsert players
+
+  getByUserIdAndGameKey: (userId, gameKey, {preferCache, retry} = {}) =>
     get = =>
-      prefix = CacheService.PREFIXES.USER_PLAYER_USER_ID_GAME_ID
-      cacheKey = "#{prefix}:#{userId}:#{gameId}"
+      prefix = CacheService.PREFIXES.USER_PLAYER_USER_ID_GAME_KEY
+      cacheKey = "#{prefix}:#{userId}:#{gameKey}"
       CacheService.preferCache cacheKey, ->
-        UserPlayer.getByUserIdAndGameId userId, gameId
+        UserPlayer.getByUserIdAndGameKey userId, gameKey
       , {ignoreNull: true}
       .then (userPlayer) =>
         userPlayerExists = Boolean userPlayer?.playerId
         (if userPlayerExists
-          @GamePlayers[gameId].getById userPlayer?.playerId
+          @GamePlayers[gameKey].getById userPlayer?.playerId
         else
           Promise.resolve null
         )
@@ -37,69 +40,68 @@ class PlayerModel
             _.defaults {isVerified: userPlayer.isVerified}, player
 
     if preferCache
-      prefix = CacheService.PREFIXES.PLAYER_USER_ID_GAME_ID
-      cacheKey = "#{prefix}:#{userId}:#{gameId}"
+      prefix = CacheService.PREFIXES.PLAYER_USER_ID_GAME_KEY
+      cacheKey = "#{prefix}:#{userId}:#{gameKey}"
       CacheService.preferCache cacheKey, get, {expireSeconds: SIX_HOURS_S}
     else
       get()
 
-  getIsAutoRefreshByPlayerIdAndGameId: (playerId, gameId) =>
-    @GamePlayers[gameId].getIsAutoRefreshById playerId
+  getIsAutoRefreshByPlayerIdAndGameKey: (playerId, gameKey) =>
+    @GamePlayers[gameKey].getIsAutoRefreshById playerId
 
-  setAutoRefreshByPlayerIdAndGameId: (playerId, gameId) =>
-    @GamePlayers[gameId].setAutoRefreshById playerId
+  setAutoRefreshByPlayerIdAndGameKey: (playerId, gameKey) =>
+    @GamePlayers[gameKey].setAutoRefreshById playerId
 
-  getCountersByPlayerIdAndScaledTimeAndGameId: (playerId, scaledTime, gameId) =>
-    @GamePlayers[gameId].getCountersByPlayerIdAndScaledTime playerId, scaledTime
+  getCountersByPlayerIdAndScaledTimeAndGameKey: (playerId, scaledTime, gameKey) =>
+    @GamePlayers[gameKey].getCountersByPlayerIdAndScaledTime playerId, scaledTime
 
-  getAutoRefreshByGameId: (gameId, minReversedPlayerId) =>
-    @GamePlayers[gameId].getAutoRefresh minReversedPlayerId
+  getAutoRefreshByGameId: (gameKey, minReversedPlayerId) =>
+    @GamePlayers[gameKey].getAutoRefresh minReversedPlayerId
 
-  getAllByUserIdsAndGameId: (userIds, gameId) =>
+  getAllByUserIdsAndGameKey: (userIds, gameKey) =>
     # maybe fixes crashing scylla? cache hits goes up to 500k
     userIds = _.take userIds, 100
-    UserPlayer.getAllByUserIdsAndGameId userIds, gameId
+    UserPlayer.getAllByUserIdsAndGameKey userIds, gameKey
     .then (players) =>
       playerIds = _.map players, 'playerId'
-      @GamePlayers[gameId].getAllByIds playerIds
+      @GamePlayers[gameKey].getAllByIds playerIds
 
-  getByPlayerIdAndGameId: (playerId, gameId) =>
-    @GamePlayers[gameId].getById playerId
+  getByPlayerIdAndGameKey: (playerId, gameKey) =>
+    @GamePlayers[gameKey].getById playerId
 
-  getAllByPlayerIdsAndGameId: (playerIds, gameId) =>
+  getAllByPlayerIdsAndGameKey: (playerIds, gameKey) =>
     # maybe fixes crashing scylla? cache hits goes up to 500k
     playerIds = _.take playerIds, 100
-    @GamePlayers[gameId].getAllByIds playerIds
+    @GamePlayers[gameKey].getAllByIds playerIds
 
-  upsertByPlayerIdAndGameId: (playerId, gameId, diff, {userId} = {}) ->
+  upsertByPlayerIdAndGameKey: (playerId, gameKey, diff, {userId} = {}) ->
     clonedDiff = _.cloneDeep(diff)
 
     (if userId and playerId
-      prefix = CacheService.PREFIXES.USER_PLAYER_USER_ID_GAME_ID
-      cacheKey = "#{prefix}:#{userId}:#{gameId}"
-      CacheService.preferCache cacheKey, ->
-        UserPlayer.upsert {userId, gameId, playerId}
-      , {ignoreNull: true}
+      UserPlayer.upsert {userId, gameKey, playerId}
       .then ->
         prefix = CacheService.PREFIXES.PLAYER_USER_IDS
         key = prefix + ':' + playerId
         CacheService.deleteByKey key
+        prefix = CacheService.PREFIXES.USER_PLAYER_USER_ID_GAME_KEY
+        cacheKey = "#{prefix}:#{userId}:#{gameKey}"
+        CacheService.deleteByKey cacheKey
     else
       Promise.resolve null)
     .then =>
-      @GamePlayers[gameId].upsertById playerId, clonedDiff
+      @GamePlayers[gameKey].upsertById playerId, clonedDiff
 
-  removeUserId: (userId, gameId) ->
+  removeUserId: (userId, gameKey) ->
     unless userId
       console.log 'rm userId missing', userId
       return Promise.resolve null
-    UserPlayer.deleteByUserIdAndGameId userId, gameId
+    UserPlayer.deleteByUserIdAndGameKey userId, gameKey
     .tap ->
-      prefix = CacheService.PREFIXES.USER_PLAYER_USER_ID_GAME_ID
-      cacheKey = "#{prefix}:#{userId}:#{gameId}"
+      prefix = CacheService.PREFIXES.USER_PLAYER_USER_ID_GAME_KEY
+      cacheKey = "#{prefix}:#{userId}:#{gameKey}"
       CacheService.deleteByKey cacheKey
 
-  deleteByPlayerIdAndGameId: (playerId, gameId) =>
-    @GamePlayers[gameId].deleteById playerId
+  deleteByPlayerIdAndGameKey: (playerId, gameKey) =>
+    @GamePlayers[gameKey].deleteById playerId
 
 module.exports = new PlayerModel()

@@ -44,7 +44,7 @@ class HealthCtrl
       .timeout HEALTHCHECK_TIMEOUT
       .catch -> null
 
-      Player.getByPlayerIdAndGameId AUSTIN_TAG, config.CLASH_ROYALE_ID
+      Player.getByPlayerIdAndGameKey AUSTIN_TAG, 'clash-royale'
       .timeout HEALTHCHECK_TIMEOUT
       .catch -> null
 

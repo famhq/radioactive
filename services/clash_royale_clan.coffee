@@ -20,7 +20,7 @@ CLAN_STALE_TIME_S = 3600 * 12 # 12hr
 MIN_TIME_BETWEEN_UPDATES_MS = 60 * 20 * 1000 # 20min
 TWENTY_THREE_HOURS_S = 3600 * 23
 BATCH_REQUEST_SIZE = 50
-GAME_ID = config.CLASH_ROYALE_ID
+GAME_KEY = 'clash-royale'
 
 class ClashRoyaleClan
   updateClan: ({userId, clan, tag}) ->
@@ -34,7 +34,7 @@ class ClashRoyaleClan
       # players: players
     }
 
-    Clan.getByClanIdAndGameId tag, GAME_ID
+    Clan.getByClanIdAndGameKey tag, GAME_KEY
     .then (existingClan) ->
       ClashRoyaleClanRecord.upsert {
         clanId: tag
@@ -52,8 +52,8 @@ class ClashRoyaleClan
 
       playerIds = _.map clan.memberList, ({tag}) -> tag.replace '#', ''
       Promise.all [
-        UserPlayer.getAllByPlayerIdsAndGameId playerIds, GAME_ID
-        Player.getAllByPlayerIdsAndGameId playerIds, GAME_ID
+        UserPlayer.getAllByPlayerIdsAndGameKey playerIds, GAME_KEY
+        Player.getAllByPlayerIdsAndGameKey playerIds, GAME_KEY
       ]
       .then ([existingUserPlayers, existingPlayers]) ->
         _.map existingPlayers, (existingPlayer) ->
@@ -90,12 +90,12 @@ class ClashRoyaleClan
                   name: clan.name
                   tag: clan.tag
             }
-        Player.batchUpsertByGameId GAME_ID, newPlayers
+        Player.batchUpsertByGameId GAME_KEY, newPlayers
 
       (if existingClan
-        Clan.upsertByClanIdAndGameId tag, GAME_ID, diff
+        Clan.upsertByClanIdAndGameKey tag, GAME_KEY, diff
       else
-        Clan.upsertByClanIdAndGameId tag, GAME_ID, diff
+        Clan.upsertByClanIdAndGameKey tag, GAME_KEY, diff
         .then ->
           Clan.createGroup {
             userId: userId
@@ -103,7 +103,7 @@ class ClashRoyaleClan
             clanId: diff.clanId
           }
           .then (group) ->
-            GroupClan.updateByClanIdAndGameId tag, GAME_ID, {groupId: group.id}
+            GroupClan.updateByClanIdAndGameKey tag, GAME_KEY, {groupId: group.id}
       ).catch (err) ->
         console.log 'clan err', err
 
@@ -113,7 +113,7 @@ class ClashRoyaleClan
     .then (clan) =>
       @updateClan {userId: userId, tag: clanId, clan}
     .then ->
-      Clan.getByClanIdAndGameId clanId, config.CLASH_ROYALE_ID, {
+      Clan.getByClanIdAndGameKey clanId, 'clash-royale', {
         preferCache: true
       }
       .then (clan) ->

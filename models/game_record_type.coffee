@@ -3,8 +3,9 @@ _ = require 'lodash'
 uuid = require 'node-uuid'
 
 r = require '../services/rethinkdb'
+config = require '../config'
 
-GAME_ID_INDEX = 'gameId'
+GAME_KEY_INDEX = 'gameId'
 
 defaultGameRecordType = (gameRecordType) ->
   unless gameRecordType?
@@ -27,7 +28,7 @@ class GameRecordTypeModel
       name: GAME_RECORD_TYPES_TABLE
       indexes: [
         {
-          name: GAME_ID_INDEX
+          name: GAME_KEY_INDEX
         }
       ]
     }
@@ -38,9 +39,12 @@ class GameRecordTypeModel
     .run()
     .then defaultGameRecordType
 
-  getAllByGameId: (gameId) ->
+  getAllByGameId: (gameKey) ->
+    if gameKey is 'clash-royale'
+      gameKey = confing.LEGACY_CLASH_ROYALE_ID # FIXME: when migrating to scylla
+
     r.table GAME_RECORD_TYPES_TABLE
-    .getAll gameId, {index: GAME_ID_INDEX}
+    .getAll gameKey, {index: GAME_KEY_INDEX}
     .run()
 
 

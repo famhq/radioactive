@@ -4,19 +4,24 @@ Promise = require 'bluebird'
 
 r = require '../services/rethinkdb'
 CacheService = require '../services/cache'
+config = require '../config'
 
 GROUP_CLANS_TABLE = 'group_clans'
-CLAN_ID_GAME_ID_INDEX = 'clanIdGameId'
+CLAN_ID_GAME_KEY_INDEX = 'clanIdGameId'
 
 defaultGroupClan = (groupClan) ->
   unless groupClan?
     return null
 
+  if groupClan?.gameKey is 'clash-royale'
+    groupClan?.gameKey = config.LEGACY_CLASH_ROYALE_ID
+    groupClan?.gameId = config.LEGACY_CLASH_ROYALE_ID
+
   _.defaults groupClan, {
-    id: if groupClan?.gameId and groupClan?.clanId \
-        then "#{groupClan?.gameId}:#{groupClan?.clanId}"
+    id: if groupClan?.gameKey and groupClan?.clanId \
+        then "#{groupClan?.gameKey}:#{groupClan?.clanId}"
         else uuid.v4()
-    gameId: null
+    gameKey: null
     clanId: null
     groupId: null # can only be tied to 1 group
     mode: 'public'
@@ -59,20 +64,22 @@ class GroupClan
     .delete()
     .run()
 
-  getByClanIdAndGameId: (clanId, gameId) ->
+  getByClanIdAndGameKey: (clanId, gameKey) ->
+    if gameKey is 'clash-royale'
+      gameKey = config.LEGACY_CLASH_ROYALE_ID # FIXME when migrating to scylla
     r.table GROUP_CLANS_TABLE
-    .get "#{gameId}:#{clanId}"
+    .get "#{gameKey}:#{clanId}"
     .run()
     .then defaultGroupClan
 
-  updateByClanIdAndGameId: (clanId, gameId, diff) ->
-    prefix = CacheService.PREFIXES.GROUP_CLAN_CLAN_ID_GAME_ID
-    groupCacheKey = "#{prefix}:#{clanId}:#{gameId}"
-    prefix = CacheService.PREFIXES.CLAN_CLAN_ID_GAME_ID
-    cacheKey = "#{prefix}:#{clanId}:#{gameId}"
+  updateByClanIdAndGameKey: (clanId, gameKey, diff) ->
+    prefix = CacheService.PREFIXES.GROUP_CLAN_CLAN_ID_GAME_KEY
+    groupCacheKey = "#{prefix}:#{clanId}:#{gameKey}"
+    prefix = CacheService.PREFIXES.CLAN_CLAN_ID_GAME_KEY
+    cacheKey = "#{prefix}:#{clanId}:#{gameKey}"
 
     r.table GROUP_CLANS_TABLE
-    .get "#{gameId}:#{clanId}"
+    .get "#{gameKey}:#{clanId}"
     .update diff
     .run()
     .tap ->
@@ -81,9 +88,9 @@ class GroupClan
         CacheService.deleteByKey groupCacheKey
       ]
 
-  updateByClanIdsAndGameId: (clanIds, gameId, diff) ->
+  updateByClanIdsAndGameKey: (clanIds, gameKey, diff) ->
     # TODO: clear cache
-    clanIdGameIds = _.map clanIds, (clanId) -> "#{gameId}:#{clanId}"
+    clanIdGameIds = _.map clanIds, (clanId) -> "#{gameKey}:#{clanId}"
     r.table GROUP_CLANS_TABLE
     .getAll r.expr(clanIds)
     .update diff

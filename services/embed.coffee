@@ -152,7 +152,7 @@ getCachedChatUser = ({userId, username, groupId}) ->
     getFn userId or username, {preferCache: true}
     .then embedFn {
       embed: profileDialogUserEmbed
-      gameId: config.CLASH_ROYALE_ID
+      gameKey: 'clash-royale'
       groupId: groupId
     }
     .then User.sanitizeChat(null)
@@ -171,7 +171,7 @@ getCachedChatGroupUser = ({userId, groupId}) ->
   , {expireSeconds: FIVE_MINUTES_SECONDS}
 
 embedFn = _.curry (props, object) ->
-  {embed, user, clanId, groupId, gameId, userId, playerId} = props
+  {embed, user, clanId, groupId, gameKey, userId, playerId} = props
   embedded = _.cloneDeep object
   unless embedded
     return Promise.resolve null
@@ -206,8 +206,8 @@ embedFn = _.curry (props, object) ->
         )
 
       when TYPES.USER.GAME_DATA
-        embedded.gameData = Player.getByUserIdAndGameId(
-          embedded.id, gameId
+        embedded.gameData = Player.getByUserIdAndGameKey(
+          embedded.id, gameKey
         )
 
       when TYPES.USER.IS_ONLINE
@@ -354,9 +354,9 @@ embedFn = _.curry (props, object) ->
           embedded.players = CacheService.preferCache key, ->
             Promise.map embedded.data.memberList, (player) ->
               playerId = player.tag.replace('#', '')
-              Player.getByPlayerIdAndGameId playerId, embedded.gameId
+              Player.getByPlayerIdAndGameKey playerId, embedded.gameKey
               .then embedFn {
-                embed: [TYPES.PLAYER.VERIFIED_USER], gameId: embedded.gameId
+                embed: [TYPES.PLAYER.VERIFIED_USER], gameKey: embedded.gameKey
               }
               .then (playerObj) ->
                 playerObj = _.omit playerObj, ['data']
@@ -409,7 +409,7 @@ embedFn = _.curry (props, object) ->
         embedded.user = User.getById embedded.userId, {preferCache: true}
         .then embedFn {
           embed: profileDialogUserEmbed.concat [TYPES.USER.FOLLOWER_COUNT]
-          gameId: config.CLASH_ROYALE_ID
+          gameKey: 'clash-royale'
         }
         .then User.sanitizePublic null
 
@@ -424,7 +424,7 @@ embedFn = _.curry (props, object) ->
         embedded.user = User.getById embedded.userId, {preferCache: true}
         .then embedFn {
           embed: profileDialogUserEmbed
-          gameId: config.CLASH_ROYALE_ID
+          gameKey: 'clash-royale'
           groupId: groupId
         }
         .then User.sanitizePublic null
@@ -493,8 +493,8 @@ embedFn = _.curry (props, object) ->
 
       when TYPES.GROUP.CLAN
         if not _.isEmpty embedded.clanIds
-          embedded.clan = Clan.getByClanIdAndGameId(
-            embedded.clanIds[0], config.CLASH_ROYALE_ID
+          embedded.clan = Clan.getByClanIdAndGameKey(
+            embedded.clanIds[0], 'clash-royale'
           )
 
       when TYPES.GROUP_AUDIT_LOG.USER
@@ -671,10 +671,10 @@ embedFn = _.curry (props, object) ->
         )
 
       when TYPES.PLAYER.COUNTERS
-        embedded.counters = Player.getCountersByPlayerIdAndScaledTimeAndGameId(
+        embedded.counters = Player.getCountersByPlayerIdAndScaledTimeAndGameKey(
           embedded.id
           'all'
-          config.CLASH_ROYALE_ID
+          'clash-royale'
         )
 
       when TYPES.PLAYER.VERIFIED_USER
@@ -682,7 +682,7 @@ embedFn = _.curry (props, object) ->
         key = prefix + ':' + embedded.id
         embedded.verifiedUser =
           CacheService.preferCache key, ->
-            UserPlayer.getVerifiedByPlayerIdAndGameId embedded.id, gameId
+            UserPlayer.getVerifiedByPlayerIdAndGameKey embedded.id, gameKey
             .then (userPlayer) ->
               if userPlayer?.userId
                 User.getById userPlayer.userId, {preferCache: true}
@@ -696,7 +696,7 @@ embedFn = _.curry (props, object) ->
         key = prefix + ':' + embedded.id
         embedded.userIds =
           CacheService.preferCache key, ->
-            UserPlayer.getAllByPlayerIdAndGameId embedded.id, gameId
+            UserPlayer.getAllByPlayerIdAndGameKey embedded.id, gameKey
             .map ({userId}) -> userId
           , {expireSeconds: ONE_DAY_SECONDS, ignoreNull: true}
 

@@ -14,7 +14,7 @@ allowedClientEmbeds = ['meValues']
 
 class GameRecordTypeCtrl
 
-  getAllByPlayerIdAndGameId: ({playerId, gameId, embed}, {user}) ->
+  getAllByPlayerIdAndGameKey: ({playerId, gameKey, embed}, {user}) ->
     unless playerId
       return
     embed ?= []
@@ -23,25 +23,25 @@ class GameRecordTypeCtrl
     embed = _.map embed, (item) ->
       EmbedService.TYPES.GAME_RECORD_TYPE[_.snakeCase(item).toUpperCase()]
 
-    # GameRecordType.getAllByGameId gameId
+    # GameRecordType.getAllByGameId gameKey
     Promise.resolve([
       {
         id: config.CLASH_ROYALE_TROPHIES_RECORD_ID
         name: 'Trophies'
         timeScale: 'minutes'
-        gameId: config.CLASH_ROYALE_ID
+        gameKey: 'clash-royale'
       }
       {
         id: config.CLASH_ROYALE_DONATIONS_RECORD_ID
         name: 'Donations'
         timeScale: 'weeks'
-        gameId: config.CLASH_ROYALE_ID
+        gameKey: 'clash-royale'
       }
       {
         id: config.CLASH_ROYALE_CLAN_CROWNS_RECORD_ID
         name: 'Clan chest crowns'
         timeScale: 'weeks'
-        gameId: config.CLASH_ROYALE_ID
+        gameKey: 'clash-royale'
       }
     ])
     .map EmbedService.embed {embed, playerId}

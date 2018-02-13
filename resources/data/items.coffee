@@ -9,7 +9,7 @@ GROUPS =
   CLASH_ROYALE_ES: '4f26e51e-7f35-41dd-9f21-590c7bb9ce34'
   CLASH_ROYALE_PT: '68acb51a-3e5a-466a-9e31-c93aacd5919e'
   CLASH_ROYALE_PL: '22e9db0b-45be-4c6d-86a5-434b38684db9'
-  LEGACY: config.CLASH_ROYALE_ID
+  LEGACY: 'clash-royale'
 
 DEFAULT_STICKER_ODDS = [
   {type: 'sticker', rarity: 'common', odds: 0.8}

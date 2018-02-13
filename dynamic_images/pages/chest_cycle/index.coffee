@@ -23,7 +23,7 @@ module.exports = class ChestCyclePage extends Page
   renderHead: -> ''
 
   setup: =>
-    Player.getByPlayerIdAndGameId @playerId, config.CLASH_ROYALE_ID
+    Player.getByPlayerIdAndGameKey @playerId, 'clash-royale'
     .then (player) =>
       unless player
         return {}

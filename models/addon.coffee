@@ -117,7 +117,7 @@ class AddonModel
       .where 'key', '=', key
       .run {isSingle: true}
       .then (addon) =>
-        (if omitCounter
+        (if omitCounter or not addon
         then Promise.resolve(null)
         else @getCounterById addon.id)
         .then (addonCounter) ->

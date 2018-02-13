@@ -19,7 +19,7 @@ class ClashRoyaleDeckCtrl
   getAll: ({sort, filter}, {user}) ->
     if filter is 'mine'
       decks =
-        Player.getByUserIdAndGameId user.id, config.CLASH_ROYALE_ID
+        Player.getByUserIdAndGameKey user.id, 'clash-royale'
         .then (player) ->
           ClashRoyalePlayerDeck.getAllByPlayerId player.id
           .map EmbedService.embed {

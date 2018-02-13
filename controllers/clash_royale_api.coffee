@@ -23,24 +23,24 @@ PLAYER_MATCHES_TIMEOUT_MS = 10000
 PLAYER_DATA_TIMEOUT_MS = 10000
 
 WITH_ZACK_TAG = '89UC8VG'
-GAME_ID = config.CLASH_ROYALE_ID
+GAME_KEY = 'clash-royale'
 
 class ClashRoyaleAPICtrl
   setByPlayerId: ({playerId, isUpdate}, {user}) =>
     (if isUpdate
-      Player.removeUserId user.id, GAME_ID
+      Player.removeUserId user.id, GAME_KEY
     else
       Promise.resolve null
     )
     .then ->
-      Player.getByUserIdAndGameId user.id, GAME_ID
+      Player.getByUserIdAndGameKey user.id, GAME_KEY
     .then (existingPlayer) =>
       @refreshByPlayerId {
         playerId, isUpdate, userId: user.id, priority: 'high'
       }, {user}
       .then ->
         if existingPlayer?.id
-          Player.upsertByPlayerIdAndGameId existingPlayer.id, GAME_ID, {
+          Player.upsertByPlayerIdAndGameKey existingPlayer.id, GAME_KEY, {
             lastQueuedTime: new Date()
           }
 
@@ -57,11 +57,11 @@ class ClashRoyaleAPICtrl
     # to be duplicated
     CacheService.lock key, ->
       # console.log 'refresh', playerId
-      Player.getByUserIdAndGameId user.id, GAME_ID
+      Player.getByUserIdAndGameKey user.id, GAME_KEY
       .then (mePlayer) ->
         if mePlayer?.id is playerId
           userId = user.id
-        Player.upsertByPlayerIdAndGameId playerId, GAME_ID, {
+        Player.upsertByPlayerIdAndGameKey playerId, GAME_KEY, {
           lastQueuedTime: new Date()
         }
         ClashRoyalePlayerService.updatePlayerById playerId, {
@@ -77,9 +77,9 @@ class ClashRoyaleAPICtrl
     , {expireSeconds: 5, unlockWhenCompleted: true}
 
   refreshByClanId: ({clanId}, {user}) ->
-    Clan.getByClanIdAndGameId clanId, GAME_ID
+    Clan.getByClanIdAndGameKey clanId, GAME_KEY
     .then (clan) ->
-      Clan.upsertByClanIdAndGameId clanId, GAME_ID, {
+      Clan.upsertByClanIdAndGameKey clanId, GAME_KEY, {
         lastQueuedTime: new Date()
       }
     .then ->
@@ -159,7 +159,7 @@ class ClashRoyaleAPICtrl
           }
         else
           Promise.resolve null
-        Player.getByPlayerIdAndGameId playerId, GAME_ID
+        Player.getByPlayerIdAndGameKey playerId, GAME_KEY
       ]
     .then (players) ->
       decks = _.map players, ([playerDecks, player]) ->

@@ -27,7 +27,9 @@ defaultConversationOutput = (conversation) ->
   catch err
     {}
 
-  conversation.userIds ?= []
+  conversation.userIds = _.map conversation.userIds, (userId) -> "#{userId}"
+  if conversation.userId
+    conversation.userId = "#{conversation.userId}"
   if conversation.groupId
     conversation.groupId = "#{conversation.groupId}"
 

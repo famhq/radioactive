@@ -7,9 +7,9 @@ CacheService = require '../services/cache'
 config = require '../config'
 
 USER_PLAYERS_TABLE = 'user_players'
-USER_ID_GAME_ID_INDEX = 'userIdGameId'
-PLAYER_ID_GAME_ID_INDEX = 'playerIdGameId'
-PLAYER_ID_GAME_ID_IS_VERIFIED_INDEX = 'playerIdGameIdIsVerified'
+USER_ID_GAME_KEY_INDEX = 'userIdGameId'
+PLAYER_ID_GAME_KEY_INDEX = 'playerIdGameId'
+PLAYER_ID_GAME_KEY_IS_VERIFIED_INDEX = 'playerIdGameIdIsVerified'
 
 defaultUserPlayer = (userPlayer) ->
   unless userPlayer?
@@ -17,7 +17,7 @@ defaultUserPlayer = (userPlayer) ->
 
   _.defaults userPlayer, {
     userId: null
-    gameId: config.CLASH_ROYALE_ID
+    gameKey: 'clash-royale'
     playerId: null
     isVerified: false
   }
@@ -28,38 +28,36 @@ defaultUserPlayerOutput = (userPlayer) ->
 
   if userPlayer.userId
     userPlayer.userId = "#{userPlayer.userId}"
-  if userPlayer.gameId
-    userPlayer.gameId = "#{userPlayer.gameId}"
+  if userPlayer.gameKey
+    userPlayer.gameKey = "#{userPlayer.gameKey}"
   if userPlayer.playerId
     userPlayer.playerId = "#{userPlayer.playerId}"
 
   userPlayer
 
-# scylla: user_players_by_userId, user_players_by_playerId
-
 tables = [
   {
-    name: 'user_players_by_userId'
+    name: 'user_players_by_gameKey_and_userId'
     keyspace: 'starfire'
     fields:
+      gameKey: 'text'
       userId: 'uuid'
-      gameId: 'uuid'
       playerId: 'text'
       isVerified: 'boolean'
     primaryKey:
-      partitionKey: ['gameId', 'userId']
+      partitionKey: ['gameKey', 'userId']
       clusteringColumns: ['playerId']
   }
   {
-    name: 'user_players_by_playerId'
+    name: 'user_players_by_gameKey_and_playerId'
     keyspace: 'starfire'
     fields:
+      gameKey: 'text'
       userId: 'uuid'
-      gameId: 'uuid'
       playerId: 'text'
       isVerified: 'boolean'
     primaryKey:
-      partitionKey: ['gameId', 'playerId']
+      partitionKey: ['gameKey', 'playerId']
       clusteringColumns: ['userId']
   }
 ]
@@ -70,22 +68,24 @@ class UserPlayerModel
   upsert: (userPlayer) ->
     userPlayer = defaultUserPlayer userPlayer
 
-    delete userPlayer.get
-    delete userPlayer.values
-    delete userPlayer.keys
-    delete userPlayer.forEach
+    # HACK: FIXME: rm all craps cknex adds
+    set = _.omit userPlayer, ['gameKey', 'userId', 'playerId']
+    delete set.get
+    delete set.values
+    delete set.keys
+    delete set.forEach
 
     Promise.all [
-      cknex().update 'user_players_by_userId'
-      .set _.omit userPlayer, ['gameId', 'userId', 'playerId']
-      .where 'gameId', '=', userPlayer.gameId
+      cknex().update 'user_players_by_gameKey_and_userId'
+      .set set
+      .where 'gameKey', '=', userPlayer.gameKey
       .andWhere 'userId', '=', userPlayer.userId
       .andWhere 'playerId', '=', userPlayer.playerId
       .run()
 
-      cknex().update 'user_players_by_playerId'
-      .set _.omit userPlayer, ['gameId', 'playerId', 'userId']
-      .where 'gameId', '=', userPlayer.gameId
+      cknex().update 'user_players_by_gameKey_and_playerId'
+      .set set
+      .where 'gameKey', '=', userPlayer.gameKey
       .andWhere 'playerId', '=', userPlayer.playerId
       .andWhere 'userId', '=', userPlayer.userId
       .run()
@@ -93,8 +93,8 @@ class UserPlayerModel
     .then ->
       userPlayer
 
-  deleteByUserIdAndGameId: (userId, gameId) =>
-    @getByUserIdAndGameId userId, gameId
+  deleteByUserIdAndGameKey: (userId, gameKey) =>
+    @getByUserIdAndGameKey userId, gameKey
     .then (userPlayer) =>
       if userPlayer
         @deleteByUserPlayer
@@ -102,36 +102,56 @@ class UserPlayerModel
   deleteByUserPlayer: (userPlayer) ->
     Promise.all [
       cknex().delete()
-      .from 'user_players_by_userId'
-      .where 'gameId', '=', userPlayer.gameId
+      .from 'user_players_by_gameKey_and_userId'
+      .where 'gameKey', '=', userPlayer.gameKey
       .andWhere 'userId', '=', userPlayer.userId
       .andWhere 'playerId', '=', userPlayer.playerId
       .run()
 
       cknex().delete()
-      .from 'user_players_by_playerId'
-      .where 'gameId', '=', userPlayer.gameId
+      .from 'user_players_by_gameKey_and_playerId'
+      .where 'gameKey', '=', userPlayer.gameKey
       .andWhere 'playerId', '=', userPlayer.playerId
       .andWhere 'userId', '=', userPlayer.userId
       .run()
     ]
 
-  getByUserIdAndGameId: (userId, gameId) ->
+  getByUserIdAndGameKey: (userId, gameKey) =>
     cknex().select '*'
-    .from 'user_players_by_userId'
-    .where 'gameId', '=', gameId
+    .from 'user_players_by_gameKey_and_userId'
+    .where 'gameKey', '=', gameKey
     .andWhere 'userId', '=', userId
     .run {isSingle: true}
+
+    # TODO: rm after 3/1/2018
+    .then (userPlayer) =>
+      if userPlayer
+        return userPlayer
+      else
+        cknex().select '*'
+        .from 'user_players_by_userId'
+        .where 'gameId', '=', config.LEGACY_CLASH_ROYALE_ID
+        .andWhere 'userId', '=', userId
+        .run {isSingle: true}
+        .then (userPlayer) =>
+          unless userPlayer
+            return null
+          delete userPlayer.gameId
+          userPlayer.gameKey = 'clash-royale'
+          @upsert userPlayer
+          .then ->
+            userPlayer
+
     .then defaultUserPlayer
 
-  getVerifiedByPlayerIdAndGameId: (playerId, gameId) =>
-    @getAllByPlayerIdAndGameId playerId, gameId
+  getVerifiedByPlayerIdAndGameKey: (playerId, gameKey) =>
+    @getAllByPlayerIdAndGameKey playerId, gameKey
     .then (userPlayers) ->
       _.find userPlayers, {isVerified: true}
 
-  setVerifiedByUserIdAndPlayerIdAndGameId: (userId, playerId, gameId) =>
+  setVerifiedByUserIdAndPlayerIdAndGameKey: (userId, playerId, gameKey) =>
     # mark others unverified
-    @getVerifiedByPlayerIdAndGameId playerId, gameId
+    @getVerifiedByPlayerIdAndGameKey playerId, gameKey
     .then (userPlayer) =>
       if userPlayer
         @upsert _.defaults({isVerified: false}, userPlayer)
@@ -139,81 +159,147 @@ class UserPlayerModel
       @upsert {
         userId
         playerId
-        gameId
+        gameKey
         isVerified: true
       }
     .then ->
       key = CacheService.PREFIXES.PLAYER_VERIFIED_USER + ':' + playerId
       CacheService.deleteByKey key
 
-  getAllByPlayerIdAndGameId: (playerId, gameId) ->
-    cknex().select '*'
-    .from 'user_players_by_playerId'
-    .where 'gameId', '=', gameId
-    .andWhere 'playerId', '=', playerId
-    .run()
+  getAllByPlayerIdAndGameKey: (playerId, gameKey) =>
+    # TODO: rm user_players_by_userId part after 3/1/2018
+    Promise.all [
+      cknex().select '*'
+      .from 'user_players_by_gameKey_and_playerId'
+      .where 'gameKey', '=', gameKey
+      .andWhere 'playerId', '=', playerId
+      .run()
+
+      cknex().select '*'
+      .from 'user_players_by_playerId'
+      .where 'gameId', '=', config.LEGACY_CLASH_ROYALE_ID
+      .andWhere 'playerId', '=', playerId
+      .run()
+    ]
+    .then ([userPlayers, legacyUserPlayers]) =>
+      migratePlayers = _.differenceBy legacyUserPlayers, userPlayers, 'userId'
+      migratePlayers = _.map migratePlayers, (userPlayer) ->
+        delete userPlayer.gameId
+        userPlayer.gameKey = 'clash-royale'
+        userPlayer
+
+      userPlayers = (userPlayers or []).concat migratePlayers
+
+      Promise.map migratePlayers, @upsert
+      .then ->
+        userPlayers
+
     .map defaultUserPlayer
 
-  getAllByPlayerIdsAndGameId: (playerIds, gameId) ->
+  getAllByUserIdAndGameKey: (userId, gameKey) =>
+    # TODO: rm user_players_by_userId part after 3/1/2018
+    Promise.all [
+      cknex().select '*'
+      .from 'user_players_by_gameKey_and_userId'
+      .where 'gameKey', '=', gameKey
+      .andWhere 'userId', '=', userId
+      .run()
+
+      cknex().select '*'
+      .from 'user_players_by_userId'
+      .where 'gameId', '=', config.LEGACY_CLASH_ROYALE_ID
+      .andWhere 'userId', '=', userId
+      .run()
+    ]
+    .then ([userPlayers, legacyUserPlayers]) =>
+      migratePlayers = _.differenceBy legacyUserPlayers, userPlayers, 'playerId'
+      migratePlayers = _.map migratePlayers, (userPlayer) ->
+        delete userPlayer.gameId
+        userPlayer.gameKey = 'clash-royale'
+        userPlayer
+
+      userPlayers = (userPlayers or []).concat migratePlayers
+
+      Promise.map migratePlayers, @upsert
+      .then ->
+        userPlayers
+
+    .map defaultUserPlayer
+
+  getAllByPlayerIdsAndGameKey: (playerIds, gameKey) ->
     playerIds = _.take playerIds, 100 # just in case
 
-    cknex().select '*'
-    .from 'user_players_by_playerId'
-    .where 'gameId', '=', gameId
-    .andWhere 'playerId', 'in', playerIds
-    .run()
-    .map defaultUserPlayer
+    # TODO: use 'in' version after 3/1/2018
+    # cknex().select '*'
+    # .from 'user_players_by_gameKey_and_playerId'
+    # .where 'gameKey', '=', gameKey
+    # .andWhere 'playerId', 'in', playerIds
+    # .run()
+    # .map defaultUserPlayer
 
-  getAllByUserIdsAndGameId: (userIds, gameId) ->
+    Promise.map playerIds, (playerId) =>
+      @getAllByPlayerIdAndGameKey playerId, gameKey
+      .map _.concat
+
+  getAllByUserIdsAndGameKey: (userIds, gameKey) ->
     userIds = _.take userIds, 100 # just in case
 
-    cknex().select '*'
-    .from 'user_players_by_userId'
-    .where 'gameId', '=', gameId
-    .andWhere 'userId', 'in', userIds
-    .run()
-    .map defaultUserPlayer
+    # TODO: use 'in' version after 3/1/2018
+    # cknex().select '*'
+    # .from 'user_players_by_gameKey_and_userId'
+    # .where 'gameKey', '=', gameKey
+    # .andWhere 'userId', 'in', userIds
+    # .run()
+    # .map defaultUserPlayer
+
+    Promise.map userIds, (userId) =>
+      @getAllByUserIdAndGameKey userId, gameKey
+      .map _.concat
 
   # migrateAll: =>
   #   CacheService = require '../services/cache'
   #   r = require '../services/rethinkdb'
   #   start = Date.now()
   #   Promise.all [
-  #     CacheService.get 'migrate_user_players_min_id3'
+  #     CacheService.get 'migrate_user_players_min_id4'
   #     .then (minId) =>
   #       minId ?= '0'
-  #       r.table 'user_players'
-  #       .between minId, 'zzzz'
-  #       .orderBy {index: r.asc('id')}
-  #       .limit 500
+  #       cknex().select '*'
+  #       .from 'user_players_by_playerId'
+  #       .where 'gameId', '=', config.LEGACY_CLASH_ROYALE_ID
+  #       .andWhere 'playerId', '>', minId
+  #       .run()
   #       .then (userPlayers) =>
   #         Promise.map userPlayers, (userPlayer) =>
-  #           userPlayer = _.pick userPlayer, ['userId', 'gameId', 'playerId', 'isVerified']
+  #           delete userPlayer.gameId
+  #           userPlayer.gameKey = 'clash-royale'
   #           @upsert userPlayer
   #         .catch (err) ->
   #           console.log err
   #         .then ->
   #           console.log 'migrate user_player', Date.now() - start, minId, _.last(userPlayers)?.id
-  #           CacheService.set 'migrate_user_players_min_id3', _.last(userPlayers)?.id
+  #           CacheService.set 'migrate_user_players_min_id4', _.last(userPlayers)?.id
   #           .then ->
   #             _.last(userPlayers)?.id
   #
-  #     CacheService.get 'migrate_user_players_max_id3'
+  #     CacheService.get 'migrate_user_players_max_id4'
   #     .then (maxId) =>
   #       maxId ?= 'zzzz'
-  #       r.table 'user_players'
-  #       .between '0000', maxId
-  #       .orderBy {index: r.desc('id')}
-  #       .limit 500
+  #       cknex().select '*'
+  #       .from 'user_players_by_playerId'
+  #       .where 'gameId', '=', config.LEGACY_CLASH_ROYALE_ID
+  #       .andWhere 'playerId', '<', maxId
+  #       .run()
   #       .then (userPlayers) =>
   #         Promise.map userPlayers, (userPlayer) =>
-  #           userPlayer = _.pick userPlayer, ['userId', 'gameId', 'playerId', 'isVerified']
+  #           delete userPlayer.gameId
+  #           userPlayer.gameKey = 'clash-royale'
   #           @upsert userPlayer
   #         .catch (err) ->
   #           console.log err
   #         .then ->
   #           console.log 'migrate user_player desc', Date.now() - start, maxId, _.last(userPlayers)?.id
-  #           CacheService.set 'migrate_user_players_max_id3', _.last(userPlayers)?.id
+  #           CacheService.set 'migrate_user_players_max_id4', _.last(userPlayers)?.id
   #           .then ->
   #             _.last(userPlayers)?.id
   #       ]

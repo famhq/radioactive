@@ -38,11 +38,11 @@ class GroupCtrl
     creatorId = user.id
 
     # Game.getByKey 'clashRoyale'
-    Promise.resolve {id: config.CLASH_ROYALE_ID}
+    Promise.resolve {id: 'clash-royale'}
     .then ({id}) ->
       Group.create {
         name, description, badgeId, background, creatorId, mode
-        gameIds: [id]
+        gameKeys: [id]
         gameData:
           "#{id}":
             clanId: clanId

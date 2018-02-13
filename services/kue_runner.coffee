@@ -5,7 +5,8 @@ KueService = require './kue'
 KueCreateService = require './kue_create'
 BroadcastService = require './broadcast'
 ProductService = require './product'
-ClashRoyaleAPIService = require './clash_royale_api'
+ClashRoyaleApiService = require './clash_royale_api'
+FortniteApiService = require './fortnite_api'
 ClashRoyalePlayerService = require './clash_royale_player'
 config = require '../config'
 
@@ -42,7 +43,9 @@ TYPES =
   # 300 / 2 = 150 concurrent jobs. currently have 36 cpus. 150/36 = 4
 
   "#{KueCreateService.JOB_TYPES.API_REQUEST}":
-    {fn: ClashRoyaleAPIService.processRequest, concurrencyPerCpu: 2} # TODO: 4
+    {fn: ClashRoyaleApiService.processRequest, concurrencyPerCpu: 2} # TODO: 4
+  "#{KueCreateService.JOB_TYPES.FORTNITE_API_REQUEST}":
+    {fn: FortniteApiService.processRequest, concurrencyPerCpu: 2} # TODO: 4
 
 class KueRunnerService
   listen: ->

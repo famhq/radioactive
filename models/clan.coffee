@@ -11,7 +11,7 @@ ClashRoyaleClan = require './clash_royale_clan'
 config = require '../config'
 
 STALE_INDEX = 'stale'
-CLAN_ID_GAME_ID_INDEX = 'clanIdGameId'
+CLAN_ID_GAME_KEY_INDEX = 'clanIdGameId'
 
 ONE_DAY_S = 3600 * 24
 CODE_LENGTH = 6
@@ -19,14 +19,14 @@ CODE_LENGTH = 6
 class ClanModel
   constructor: ->
     @GameClans =
-      "#{config.CLASH_ROYALE_ID}": ClashRoyaleClan
+      "#{'clash-royale'}": ClashRoyaleClan
 
-  getByClanIdAndGameId: (clanId, gameId, {preferCache, retry} = {}) =>
+  getByClanIdAndGameKey: (clanId, gameKey, {preferCache, retry} = {}) =>
     get = =>
-      prefix = CacheService.PREFIXES.GROUP_CLAN_CLAN_ID_GAME_ID
-      cacheKey = "#{prefix}:#{clanId}:#{gameId}"
+      prefix = CacheService.PREFIXES.GROUP_CLAN_CLAN_ID_GAME_KEY
+      cacheKey = "#{prefix}:#{clanId}:#{gameKey}"
       getGroupClan = ->
-        GroupClan.getByClanIdAndGameId clanId, gameId
+        GroupClan.getByClanIdAndGameKey clanId, gameKey
       Promise.all [
         if preferCache
           CacheService.preferCache cacheKey, getGroupClan, {
@@ -35,29 +35,29 @@ class ClanModel
         else
           getGroupClan()
 
-        @GameClans[gameId].getById clanId
+        @GameClans[gameKey].getById clanId
       ]
       .then ([groupClan, gameClan]) ->
         if groupClan and gameClan
           _.merge groupClan, gameClan
 
     if preferCache
-      prefix = CacheService.PREFIXES.CLAN_CLAN_ID_GAME_ID
-      cacheKey = "#{prefix}:#{clanId}:#{gameId}"
+      prefix = CacheService.PREFIXES.CLAN_CLAN_ID_GAME_KEY
+      cacheKey = "#{prefix}:#{clanId}:#{gameKey}"
       CacheService.preferCache cacheKey, get, {
         expireSeconds: ONE_DAY_S, ignoreNull: true
       }
     else
       get()
 
-  upsertByClanIdAndGameId: (clanId, gameId, diff) =>
-    prefix = CacheService.PREFIXES.GROUP_CLAN_CLAN_ID_GAME_ID
-    cacheKey = "#{prefix}:#{clanId}:#{gameId}"
+  upsertByClanIdAndGameKey: (clanId, gameKey, diff) =>
+    prefix = CacheService.PREFIXES.GROUP_CLAN_CLAN_ID_GAME_KEY
+    cacheKey = "#{prefix}:#{clanId}:#{gameKey}"
     CacheService.preferCache cacheKey, ->
-      GroupClan.create {clanId, gameId}
+      GroupClan.create {clanId, gameKey}
     , {ignoreNull: true, expireSeconds: ONE_DAY_S}
     .then =>
-      @GameClans[gameId].upsertById clanId, diff
+      @GameClans[gameKey].upsertById clanId, diff
 
     # .tap ->
     #   key = CacheService.PREFIXES.CLAN_PLAYERS + ':' + clanId
@@ -68,7 +68,7 @@ class ClanModel
       name: name
       creatorId: creatorId
       mode: 'private'
-      gameIds: [config.CLASH_ROYALE_ID]
+      gameKeys: ['clash-royale']
       clanIds: [clanId]
     }
     .tap (group) ->
@@ -83,14 +83,14 @@ class ClanModel
         }
       ]
     .tap (group) ->
-      GroupClan.updateByClanIdAndGameId clanId, config.CLASH_ROYALE_ID, {
+      GroupClan.updateByClanIdAndGameKey clanId, 'clash-royale', {
         groupId: group.id
       }
 
   sanitizePublic: _.curry (requesterId, clan) ->
     sanitizedClan = _.pick clan, [
       'id'
-      'gameId'
+      'gameKey'
       'clanId'
       'groupId'
       'creatorId'
@@ -106,7 +106,7 @@ class ClanModel
   sanitize: _.curry (requesterId, clan) ->
     sanitizedClan = _.pick clan, [
       'id'
-      'gameId'
+      'gameKey'
       'clanId'
       'groupId'
       'creatorId'

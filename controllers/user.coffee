@@ -120,8 +120,8 @@ class UserCtrl
       .then ->
         null
 
-  getAllByPlayerIdAndGameId: ({playerId, gameId}) ->
-    UserPlayer.getAllByPlayerIdAndGameId playerId, gameId
+  getAllByPlayerIdAndGameKey: ({playerId, gameKey}) ->
+    UserPlayer.getAllByPlayerIdAndGameKey playerId, gameKey
     .then (userPlayers) ->
       userIds = _.map userPlayers, 'userId'
       verifiedUserPlayer = _.find userPlayers, {isVerified: true}

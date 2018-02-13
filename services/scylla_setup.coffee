@@ -9,7 +9,7 @@ config = require '../config'
 
 class ScyllaSetupService
   setup: (tables) =>
-    CacheService.runOnce 'scylla_setup0', =>
+    CacheService.runOnce 'scylla_setup2', =>
       Promise.all [
         @createKeyspaceIfNotExists 'starfire'
         @createKeyspaceIfNotExists 'clash_royale'
@@ -18,7 +18,7 @@ class ScyllaSetupService
         if config.ENV is config.ENVS.DEV
           createTables = _.map _.filter(tables, ({name}) ->
             name in [
-              'addons_counter_by_id'
+              'players_by_id'
               # 'addons_by_key'
               # 'addons_by_id'
               # 'addons_by_gameKey'
@@ -34,6 +34,9 @@ class ScyllaSetupService
     # TODO
     ###
     CREATE KEYSPACE clash_royale WITH replication = {
+      'class': 'NetworkTopologyStrategy', 'datacenter1': '3'
+    } AND durable_writes = true;
+    CREATE KEYSPACE fortnite WITH replication = {
       'class': 'NetworkTopologyStrategy', 'datacenter1': '3'
     } AND durable_writes = true;
     CREATE KEYSPACE starfire WITH replication = {

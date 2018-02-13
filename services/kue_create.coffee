@@ -17,6 +17,7 @@ JOB_TYPES =
   DEFAULT: 'radioactive:default'
   BATCH_NOTIFICATION: 'radioactive:batch_notification'
   API_REQUEST: 'radioactive:api_request'
+  FORTNITE_API_REQUEST: 'radioactive:fortnite_api_request'
   AUTO_REFRESH_PLAYER: 'radioactive:auto_refresh_player'
   PRODUCT_UNLOCKED: 'radioactive:product_unlocked'
 

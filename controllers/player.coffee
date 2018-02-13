@@ -34,7 +34,7 @@ userIdsEmbed = [
   EmbedService.TYPES.PLAYER.VERIFIED_USER
 ]
 
-GAME_ID = config.CLASH_ROYALE_ID
+GAME_KEY = 'clash-royale'
 TWELVE_HOURS_SECONDS = 12 * 3600
 TEN_MINUTES_SECONDS = 10 * 60
 ONE_MINUTE_SECONDS = 60
@@ -42,31 +42,33 @@ MAX_PLAYER_STALE_TIME_MS = 60 * 60 * 1000 # 1hr
 GET_UPDATED_PLAYER_TIMEOUT_MS = 15000 # 15s
 
 class PlayerCtrl
-  getByUserIdAndGameId: ({userId, gameId}, {user}) ->
+  getByUserIdAndGameKey: ({userId, gameKey}, {user}) ->
     unless userId
       return
 
-    gameId or= GAME_ID
+    gameKey or= GAME_KEY
 
     # TODO: cache, but need to clear the cache whenever player is updated...
-    Player.getByUserIdAndGameId userId, gameId #, {preferCache: true}
+    Player.getByUserIdAndGameKey userId, gameKey #, {preferCache: true}
     .then EmbedService.embed {embed: defaultEmbed}
 
-  getIsAutoRefreshByPlayerIdAndGameId: ({playerId, gameId}) ->
-    Player.getIsAutoRefreshByPlayerIdAndGameId playerId, gameId
+  getIsAutoRefreshByPlayerIdAndGameKey: ({playerId, gameKey}) ->
+    Player.getIsAutoRefreshByPlayerIdAndGameKey playerId, gameKey
 
-  getByPlayerIdAndGameId: ({playerId, gameId, refreshIfStale}, {user}) ->
+  getByPlayerIdAndGameKey: ({playerId, gameKey, refreshIfStale}, {user}) ->
     unless playerId
       return
+
+    gameKey or= GAME_KEY
 
     playerId = ClashRoyaleAPIService.formatHashtag playerId
 
     getUpdatedPlayer = ->
       ClashRoyalePlayerService.updatePlayerById playerId, {priority: 'normal'}
-      .then -> Player.getByPlayerIdAndGameId playerId, gameId
+      .then -> Player.getByPlayerIdAndGameKey playerId, gameKey
 
     # TODO: cache, but need to clear the cache whenever player is updated...
-    Player.getByPlayerIdAndGameId playerId, gameId #, {preferCache: true}
+    Player.getByPlayerIdAndGameKey playerId, gameKey #, {preferCache: true}
     .then (player) ->
       if player
         staleMs = Date.now() - (player.lastUpdateTime?.getTime() or 0)
@@ -78,27 +80,27 @@ class PlayerCtrl
             player
       else
         ClashRoyalePlayerService.updatePlayerById playerId, {priority: 'normal'}
-        .then -> Player.getByPlayerIdAndGameId playerId, gameId
+        .then -> Player.getByPlayerIdAndGameKey playerId, gameKey
     .then EmbedService.embed {embed: defaultEmbed}
 
-  setAutoRefreshByGameId: ({gameId}, {user}) ->
-    key = "#{CacheService.LOCK_PREFIXES.SET_AUTO_REFRESH}:#{gameId}:#{user.id}"
+  setAutoRefreshByGameId: ({gameKey}, {user}) ->
+    key = "#{CacheService.LOCK_PREFIXES.SET_AUTO_REFRESH}:#{gameKey}:#{user.id}"
     CacheService.lock key, ->
-      Player.getByUserIdAndGameId user.id, config.CLASH_ROYALE_ID
+      Player.getByUserIdAndGameKey user.id, 'clash-royale'
       .then EmbedService.embed {
         embed: [EmbedService.TYPES.PLAYER.VERIFIED_USER]
-        gameId: config.CLASH_ROYALE_ID
+        gameKey: 'clash-royale'
       }
       .then (player) ->
         if player?.verifiedUser?.id is user.id
-          Player.setAutoRefreshByPlayerIdAndGameId(
-            player.id, config.CLASH_ROYALE_ID
+          Player.setAutoRefreshByPlayerIdAndGameKey(
+            player.id, 'clash-royale'
           )
     , {expireSeconds: TEN_MINUTES_SECONDS}
 
 
   getVerifyDeckId: ({}, {user}) ->
-    Player.getByUserIdAndGameId user.id, GAME_ID
+    Player.getByUserIdAndGameKey user.id, GAME_KEY
     .then (player) ->
       unless player
         router.throw status: 404, info: 'player not found'
@@ -127,7 +129,7 @@ class PlayerCtrl
 
   verifyMe: ({}, {user}) =>
     Promise.all [
-      Player.getByUserIdAndGameId user.id, GAME_ID
+      Player.getByUserIdAndGameKey user.id, GAME_KEY
       @getVerifyDeckId {}, {user}
     ]
     .then ([player, verifyDeckId]) =>
@@ -142,17 +144,17 @@ class PlayerCtrl
         if not currentDeckId or "#{currentDeckId}" isnt "#{verifyDeckId.deckId}"
           router.throw {status: 400, info: 'invalid deck', ignoreLog: true}
 
-        UserPlayer.setVerifiedByUserIdAndPlayerIdAndGameId(
+        UserPlayer.setVerifiedByUserIdAndPlayerIdAndGameKey(
           user.id
           player.id
-          GAME_ID
+          GAME_KEY
         )
         .then =>
           clanId = playerData?.clan?.tag?.replace '#', ''
           @_addToClanGroup {clanId, userId: user.id, name: playerData.name}
 
   _addToClanGroup: ({clanId, userId, name}) =>
-    Clan.getByClanIdAndGameId clanId, GAME_ID, {
+    Clan.getByClanIdAndGameKey clanId, GAME_KEY, {
       preferCache: true
     }
     .then (clan) =>
@@ -211,10 +213,10 @@ class PlayerCtrl
 
     key = "#{CacheService.PREFIXES.PLAYER_SEARCH}:#{playerId}"
     CacheService.preferCache key, ->
-      Player.getByPlayerIdAndGameId playerId, GAME_ID
+      Player.getByPlayerIdAndGameKey playerId, GAME_KEY
       .then EmbedService.embed {
         embed: userIdsEmbed
-        gameId: GAME_ID
+        gameKey: GAME_KEY
       }
       .then (player) ->
         if player?.userIds?[0]
@@ -230,10 +232,10 @@ class PlayerCtrl
               priority: 'normal'
             }
             .then ->
-              Player.getByPlayerIdAndGameId playerId, GAME_ID
+              Player.getByPlayerIdAndGameKey playerId, GAME_KEY
               .then EmbedService.embed {
                 embed: userIdsEmbed
-                gameId: GAME_ID
+                gameKey: GAME_KEY
               }
               .then (player) ->
                 if player?.userIds?[0]
@@ -249,12 +251,12 @@ class PlayerCtrl
       ClashRoyaleTopPlayer.getAll()
       .then (topPlayers) ->
         playerIds = _.map topPlayers, 'playerId'
-        Player.getAllByPlayerIdsAndGameId(
-          playerIds, GAME_ID
+        Player.getAllByPlayerIdsAndGameKey(
+          playerIds, GAME_KEY
         )
         .map EmbedService.embed {
           embed: userIdsEmbed
-          gameId: GAME_ID
+          gameKey: GAME_KEY
         }
         .then (players) ->
           players = _.map players, (player) ->
@@ -275,12 +277,12 @@ class PlayerCtrl
       .map (userFollower) ->
         userFollower.followingId
       .then (followingIds) ->
-        Player.getAllByUserIdsAndGameId(
-          followingIds, GAME_ID
+        Player.getAllByUserIdsAndGameKey(
+          followingIds, GAME_KEY
         )
         .map EmbedService.embed {
           embed: userIdsEmbed
-          gameId: GAME_ID
+          gameKey: GAME_KEY
         }
         .then (players) ->
           players = _.map players, (player) ->

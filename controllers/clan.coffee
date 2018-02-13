@@ -24,7 +24,7 @@ groupEmbed = [
   EmbedService.TYPES.CLAN.GROUP
 ]
 
-GAME_ID = config.CLASH_ROYALE_ID
+GAME_KEY = 'clash-royale'
 TWELVE_HOURS_SECONDS = 12 * 3600
 ONE_MINUTE_SECONDS = 60
 MAX_CLAN_STALE_TIME_MS = 60 * 60 * 1000 # 1hr
@@ -33,15 +33,15 @@ GET_UPDATED_CLAN_TIMEOUT_MS = 15000 # 15s
 class ClanCtrl
   # legacy
   getById: ({id}, {user}) =>
-    @getByClanIdAndGameId {clanId: id, gameId: GAME_ID}, {user}
+    @getByClanIdAndGameKey {clanId: id, gameKey: GAME_KEY}, {user}
   # end legacy
 
-  getByClanIdAndGameId: ({clanId, gameId, refreshIfStale}, {user}) ->
+  getByClanIdAndGameKey: ({clanId, gameKey, refreshIfStale}, {user}) ->
     getUpdatedClan = ->
       ClashRoyaleClanService.updateClanById clanId, {priority: 'normal'}
-      .then -> Clan.getByClanIdAndGameId clanId, gameId
+      .then -> Clan.getByClanIdAndGameKey clanId, gameKey
 
-    Clan.getByClanIdAndGameId clanId, gameId
+    Clan.getByClanIdAndGameKey clanId, gameKey
     .then (clan) ->
       if clan
         staleMs = Date.now() - clan.lastUpdateTime?.getTime()
@@ -63,14 +63,14 @@ class ClanCtrl
         null
 
   claimById: ({id}, {user}) ->
-    Clan.getByClanIdAndGameId id, GAME_ID
+    Clan.getByClanIdAndGameKey id, GAME_KEY
     .then (clan) ->
       unless clan
         router.throw {status: 404, info: 'clan not found'}
 
       Promise.all [
         ClashRoyaleAPIService.getClanByTag clan.clanId
-        Player.getByUserIdAndGameId user.id, GAME_ID
+        Player.getByUserIdAndGameKey user.id, GAME_KEY
       ]
       .then ([updatedClan, player]) ->
         # replace capital O with 0
@@ -86,20 +86,20 @@ class ClanCtrl
 
         Promise.all [
           # reset code so others can't use
-          GroupClan.updateByClanIdAndGameId id, GAME_ID, {
+          GroupClan.updateByClanIdAndGameKey id, GAME_KEY, {
             creatorId: user.id
             code: GroupClan.generateCode()
           }
-          UserPlayer.setVerifiedByUserIdAndPlayerIdAndGameId(
+          UserPlayer.setVerifiedByUserIdAndPlayerIdAndGameKey(
             user.id
             player.id
-            GAME_ID
+            GAME_KEY
           )
           Group.updateById clan?.groupId, {creatorId: user.id}
         ]
 
   updateById: ({id, clanPassword}, {user}) ->
-    Clan.getByClanIdAndGameId id, GAME_ID
+    Clan.getByClanIdAndGameKey id, GAME_KEY
     .then (clan) ->
       if not clan?.creatorId or clan?.creatorId isnt user.id
         router.throw {status: 401, info: 'invalid permission'}
@@ -107,14 +107,14 @@ class ClanCtrl
       unless clanPassword
         router.throw {status: 400, info: 'must specify a password'}
 
-      GroupClan.updateByClanIdAndGameId id, GAME_ID, {password: clanPassword}
+      GroupClan.updateByClanIdAndGameKey id, GAME_KEY, {password: clanPassword}
 
   joinById: ({id, clanPassword}, {user}) ->
     Promise.all [
-      Clan.getByClanIdAndGameId id, GAME_ID
+      Clan.getByClanIdAndGameKey id, GAME_KEY
       .then EmbedService.embed {embed: groupEmbed}
 
-      Player.getByUserIdAndGameId user.id, GAME_ID
+      Player.getByUserIdAndGameKey user.id, GAME_KEY
     ]
     .then ([clan, player]) ->
       clanPlayer = _.find clan?.data?.memberList, {tag: "##{player?.id}"}
@@ -127,10 +127,10 @@ class ClanCtrl
       Promise.all [
         Group.updateById clan.groupId,
           userIds: r.row('userIds').append(user.id).distinct()
-        UserPlayer.setVerifiedByUserIdAndPlayerIdAndGameId(
+        UserPlayer.setVerifiedByUserIdAndPlayerIdAndGameKey(
           user.id
           player.id
-          GAME_ID
+          GAME_KEY
         )
       ]
 
@@ -146,7 +146,7 @@ class ClanCtrl
 
     key = "#{CacheService.PREFIXES.PLAYER_SEARCH}:#{clanId}"
     CacheService.preferCache key, ->
-      Clan.getByPlayerIdAndGameId clanId, config.CLASH_ROYALE_ID
+      Clan.getByPlayerIdAndGameKey clanId, 'clash-royale'
       .then Clan.sanitizePublic
     , {expireSeconds: TWELVE_HOURS_SECONDS}
 

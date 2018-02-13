@@ -33,7 +33,7 @@ ONE_DAY_S = 3600 * 24
 SIX_HOURS_S = 3600 * 6
 ONE_DAY_MS = 3600 * 24 * 1000
 CLAN_TIMEOUT_MS = 5000
-GAME_ID = config.CLASH_ROYALE_ID
+GAME_KEY = 'clash-royale'
 
 ALLOWED_GAME_TYPES = [
   'PvP', 'tournament',
@@ -51,7 +51,7 @@ class ClashRoyalePlayerService
     tags = if isBatched then _.map matches, 'tag' else [tag]
 
     # get before update so we have accurate lastMatchTime
-    Player.getAllByPlayerIdsAndGameId tags, GAME_ID
+    Player.getAllByPlayerIdsAndGameKey tags, GAME_KEY
     .then (players) =>
       if isBatched
         Promise.map(players, (player) =>
@@ -240,14 +240,14 @@ class ClashRoyalePlayerService
 
   updatePlayerMatches: ({matches, tag}) =>
     if _.isEmpty matches
-      Player.upsertByPlayerIdAndGameId tag, GAME_ID, {
+      Player.upsertByPlayerIdAndGameKey tag, GAME_KEY, {
         lastUpdateTime: new Date()
       }
 
     @processMatches {matches}
     .tap (matches) ->
       if tag
-        Player.getByPlayerIdAndGameId tag, GAME_ID
+        Player.getByPlayerIdAndGameKey tag, GAME_KEY
 
   updatePlayerById: (playerId, options = {}) =>
     {userId, isLegacy, priority, isAuto} = options
@@ -301,7 +301,7 @@ class ClashRoyalePlayerService
 
     clanId = playerData?.clan?.tag?.replace '#', ''
 
-    Player.getByPlayerIdAndGameId id, GAME_ID
+    Player.getByPlayerIdAndGameKey id, GAME_KEY
     .then (existingPlayer) =>
       # bug fix for merging legacy api chest cycle and new API
       if existingPlayer?.data?.upcomingChests and playerData?.upcomingChests
@@ -319,7 +319,7 @@ class ClashRoyalePlayerService
 
       # NOTE: any time you update, keep in mind scylla replaces
       # entire fields (data), so need to merge with old data manually
-      Player.upsertByPlayerIdAndGameId id, GAME_ID, diff, {userId}
+      Player.upsertByPlayerIdAndGameKey id, GAME_KEY, diff, {userId}
       .then =>
         if clanId and userId
           @_setClan {clanId, userId}
@@ -337,7 +337,7 @@ class ClashRoyalePlayerService
         null # don't need to block
 
   _setClan: ({clanId, userId}) ->
-    Clan.getByClanIdAndGameId clanId, GAME_ID, {
+    Clan.getByClanIdAndGameKey clanId, GAME_KEY, {
       preferCache: true
     }
     .then (clan) ->
@@ -356,7 +356,7 @@ class ClashRoyalePlayerService
       .then (minReversedPlayerId) ->
         minReversedPlayerId ?= '0'
         # TODO: add a check to make sure this is always running. healtcheck?
-        Player.getAutoRefreshByGameId GAME_ID, minReversedPlayerId
+        Player.getAutoRefreshByGameId GAME_KEY, minReversedPlayerId
         .then (players) ->
           console.log 'auto refreshing', minReversedPlayerId, players.length
           if _.isEmpty players
@@ -405,17 +405,17 @@ class ClashRoyalePlayerService
       'day'
       moment().subtract 1, 'day'
     )
-    # console.log 'sending daily push', playerId, isAuto, GAME_ID
+    # console.log 'sending daily push', playerId, isAuto, GAME_KEY
     Promise.all [
-      Player.getByPlayerIdAndGameId playerId, GAME_ID
+      Player.getByPlayerIdAndGameKey playerId, GAME_KEY
       .then EmbedService.embed {
         embed: [
           EmbedService.TYPES.PLAYER.USER_IDS
         ]
-        gameId: GAME_ID
+        gameKey: GAME_KEY
       }
-      Player.getCountersByPlayerIdAndScaledTimeAndGameId(
-        playerId, yesterday, GAME_ID
+      Player.getCountersByPlayerIdAndScaledTimeAndGameKey(
+        playerId, yesterday, GAME_KEY
       )
     ]
     .then ([player, playerCounters]) ->
@@ -463,10 +463,10 @@ class ClashRoyalePlayerService
       Promise.map topPlayers, (player, index) =>
         rank = index + 1
         playerId = ClashRoyaleAPIService.formatHashtag player.tag
-        Player.getByPlayerIdAndGameId playerId, GAME_ID
+        Player.getByPlayerIdAndGameKey playerId, GAME_KEY
         .then EmbedService.embed {
           embed: [EmbedService.TYPES.PLAYER.USER_IDS]
-          gameId: GAME_ID
+          gameKey: GAME_KEY
         }
         .then (existingPlayer) =>
           if existingPlayer?.data and not _.isEmpty existingPlayer?.userIds
@@ -477,7 +477,7 @@ class ClashRoyalePlayerService
             }, existingPlayer
             # NOTE: any time you update, keep in mind postgress replaces
             # entire fields (data), so need to merge with old data manually
-            Player.upsertByPlayerIdAndGameId playerId, GAME_ID, newPlayer
+            Player.upsertByPlayerIdAndGameKey playerId, GAME_KEY, newPlayer
           else
             @updatePlayerById playerId, {
               priority: 'normal'

@@ -11,26 +11,26 @@ allowedClientEmbeds = ['clanValues']
 
 class ClanRecordTypeCtrl
 
-  getAllByClanIdAndGameId: ({clanId, gameId, embed}, {user}) ->
+  getAllByClanIdAndGameKey: ({clanId, gameKey, embed}, {user}) ->
     embed ?= []
     embed = _.filter embed, (item) ->
       allowedClientEmbeds.indexOf(item) isnt -1
     embed = _.map embed, (item) ->
       EmbedService.TYPES.CLAN_RECORD_TYPE[_.snakeCase(item).toUpperCase()]
 
-    # ClanRecordType.getAllByGameId gameId
+    # ClanRecordType.getAllByGameId gameKey
     Promise.resolve([
       {
         id: config.CLASH_ROYALE_CLAN_TROPHIES_RECORD_ID
         name: 'Trophies'
         timeScale: 'weeks'
-        gameId: config.CLASH_ROYALE_ID
+        gameKey: 'clash-royale'
       }
       {
         id: config.CLASH_ROYALE_CLAN_DONATIONS_RECORD_ID
         name: 'Donations'
         timeScale: 'weeks'
-        gameId: config.CLASH_ROYALE_ID
+        gameKey: 'clash-royale'
       }
     ])
     .map EmbedService.embed {embed, clanId}

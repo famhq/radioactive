@@ -62,7 +62,7 @@ module.exports = class ForumSigPage extends Page
 
   setup: =>
     Promise.all [
-      Player.getByUserIdAndGameId @userId, config.CLASH_ROYALE_ID
+      Player.getByUserIdAndGameKey @userId, 'clash-royale'
       DynamicImage.getByUserIdAndImageKey @userId, IMAGE_KEY
     ]
     .then ([player, dynamicImage]) =>
