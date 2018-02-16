@@ -169,7 +169,7 @@ class ThreadCtrl
     if thread.id
       threadPromise = Thread.getById thread.id
       hasPermission = threadPromise.then (existingThread) ->
-        Thread.hasPermission thread, user, {
+        Thread.hasPermission existingThread, user, {
           level: 'member'
         }
     else

@@ -114,7 +114,7 @@ class ClashRoyaleAPIService
                        73001203, 72000051, 73001291\
                      ]
                      then 'touchdown2v2Draft'
-                     else if match.challengeId is 73001256
+                     else if match.challengeId is 73001324
                      then 'newCardChallenge'
                      else if match.challengeId is 73001287
                      then 'rampUp'

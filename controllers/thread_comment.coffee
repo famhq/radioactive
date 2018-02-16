@@ -6,6 +6,7 @@ ThreadComment = require '../models/thread_comment'
 ThreadVote = require '../models/thread_vote'
 Thread = require '../models/thread'
 GroupUser = require '../models/group_user'
+Group = require '../models/group'
 Ban = require '../models/ban'
 GroupUserXpTransaction = require '../models/group_user_xp_transaction'
 ProfanityService = require '../services/profanity'
@@ -137,8 +138,10 @@ class ThreadCommentCtrl
     prefix = CacheService.PREFIXES.THREAD_COMMENTS_THREAD_ID
     key = "#{prefix}:#{threadId}:#{sort}"
     CacheService.preferCache key, ->
-      ThreadComment.getAllByThreadId threadId
-      .map EmbedService.embed {embed: defaultEmbed, groupId}
+      Group.getById groupId, {preferCache: true}
+      .then ({gameKeys}) ->
+        ThreadComment.getAllByThreadId threadId
+        .map EmbedService.embed {embed: defaultEmbed, groupId, gameKeys}
       .then (allComments) ->
         getCommentsTree allComments, threadId, {sort, skip, limit}
     , {expireSeconds: TEN_MINUTES_SECONDS}

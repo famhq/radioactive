@@ -35,6 +35,7 @@ defaultThreadOutput = (thread) ->
   catch error
     {}
 
+  thread.creatorId = "#{thread.creatorId}"
   thread.time = thread.id.getDate()
 
   thread

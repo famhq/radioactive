@@ -83,7 +83,7 @@ class PlayerCtrl
         .then -> Player.getByPlayerIdAndGameKey playerId, gameKey
     .then EmbedService.embed {embed: defaultEmbed}
 
-  setAutoRefreshByGameId: ({gameKey}, {user}) ->
+  setAutoRefreshByGameKey: ({gameKey}, {user}) ->
     key = "#{CacheService.LOCK_PREFIXES.SET_AUTO_REFRESH}:#{gameKey}:#{user.id}"
     CacheService.lock key, ->
       Player.getByUserIdAndGameKey user.id, 'clash-royale'

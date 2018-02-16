@@ -37,7 +37,7 @@ defaultUserPlayerOutput = (userPlayer) ->
 
 tables = [
   {
-    name: 'user_players_by_gameKey_and_userId'
+    name: 'user_players_by_userId_new'
     keyspace: 'starfire'
     fields:
       gameKey: 'text'
@@ -45,8 +45,8 @@ tables = [
       playerId: 'text'
       isVerified: 'boolean'
     primaryKey:
-      partitionKey: ['gameKey', 'userId']
-      clusteringColumns: ['playerId']
+      partitionKey: ['userId']
+      clusteringColumns: ['gameKey', 'playerId']
   }
   {
     name: 'user_players_by_gameKey_and_playerId'
@@ -76,7 +76,7 @@ class UserPlayerModel
     delete set.forEach
 
     Promise.all [
-      cknex().update 'user_players_by_gameKey_and_userId'
+      cknex().update 'user_players_by_userId_new'
       .set set
       .where 'gameKey', '=', userPlayer.gameKey
       .andWhere 'userId', '=', userPlayer.userId
@@ -102,7 +102,7 @@ class UserPlayerModel
   deleteByUserPlayer: (userPlayer) ->
     Promise.all [
       cknex().delete()
-      .from 'user_players_by_gameKey_and_userId'
+      .from 'user_players_by_userId_new'
       .where 'gameKey', '=', userPlayer.gameKey
       .andWhere 'userId', '=', userPlayer.userId
       .andWhere 'playerId', '=', userPlayer.playerId
@@ -118,7 +118,7 @@ class UserPlayerModel
 
   getByUserIdAndGameKey: (userId, gameKey) =>
     cknex().select '*'
-    .from 'user_players_by_gameKey_and_userId'
+    .from 'user_players_by_userId_new'
     .where 'gameKey', '=', gameKey
     .andWhere 'userId', '=', userId
     .run {isSingle: true}
@@ -196,13 +196,12 @@ class UserPlayerModel
 
     .map defaultUserPlayer
 
-  getAllByUserIdAndGameKey: (userId, gameKey) =>
+  getAllByUserId: (userId) =>
     # TODO: rm user_players_by_userId part after 3/1/2018
     Promise.all [
       cknex().select '*'
-      .from 'user_players_by_gameKey_and_userId'
-      .where 'gameKey', '=', gameKey
-      .andWhere 'userId', '=', userId
+      .from 'user_players_by_userId_new'
+      .where 'userId', '=', userId
       .run()
 
       cknex().select '*'
@@ -246,14 +245,14 @@ class UserPlayerModel
 
     # TODO: use 'in' version after 3/1/2018
     # cknex().select '*'
-    # .from 'user_players_by_gameKey_and_userId'
+    # .from 'user_players_by_userId_new'
     # .where 'gameKey', '=', gameKey
     # .andWhere 'userId', 'in', userIds
     # .run()
     # .map defaultUserPlayer
 
     Promise.map userIds, (userId) =>
-      @getAllByUserIdAndGameKey userId, gameKey
+      @getByUserIdAndGameKey userId, gameKey
       .map _.concat
 
   # migrateAll: =>

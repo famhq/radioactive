@@ -133,7 +133,7 @@ class GroupModel
       get()
 
   getAllByIds: (ids, {limit} = {}) ->
-    limit ?= 10
+    limit ?= 50
 
     r.table GROUPS_TABLE
     # convert from scylla uuid type

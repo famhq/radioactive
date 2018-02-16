@@ -14,7 +14,7 @@ SIX_HOURS_S = 3600 * 6
 class PlayerModel
   constructor: ->
     @GamePlayers =
-      "#{'clash-royale'}": ClashRoyalePlayer
+      'clash-royale': ClashRoyalePlayer
       fortnite: FortnitePlayer
 
 
@@ -67,6 +67,9 @@ class PlayerModel
       @GamePlayers[gameKey].getAllByIds playerIds
 
   getByPlayerIdAndGameKey: (playerId, gameKey) =>
+    unless @GamePlayers[gameKey]
+      console.log 'gamekey not found', gameKey
+      throw new Error 'gamekey not found'
     @GamePlayers[gameKey].getById playerId
 
   getAllByPlayerIdsAndGameKey: (playerIds, gameKey) =>

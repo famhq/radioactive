@@ -241,8 +241,8 @@ module.exports = router
 .on 'players.getVerifyDeckId', authed PlayerCtrl.getVerifyDeckId
 .on 'players.getIsAutoRefreshByPlayerIdAndGameKey',
   authed PlayerCtrl.getIsAutoRefreshByPlayerIdAndGameKey
-.on 'players.setAutoRefreshByGameId',
-  authed PlayerCtrl.setAutoRefreshByGameId
+.on 'players.setAutoRefreshByGameKey',
+  authed PlayerCtrl.setAutoRefreshByGameKey
 
 .on 'clan.getById', authed ClanCtrl.getById
 .on 'clan.getByClanIdAndGameKey', authed ClanCtrl.getByClanIdAndGameKey

@@ -18,7 +18,7 @@ TRIMMABLE_LEADERBOARDS = _.flatten [
       key: "#{CacheService.STATIC_PREFIXES.GAME_TYPE_DECK_LEADERBOARD}:#{gameType}"
       trimLength: 20000
     }
-  _.map ['hunter', 'zappies', 'royal_ghost'], (cardKey) ->
+  _.map ['magic_archer', 'royal_ghost'], (cardKey) ->
     {
       key: "#{CacheService.STATIC_PREFIXES.CARD_DECK_LEADERBOARD}:#{cardKey}"
       trimLength: 20000

@@ -245,8 +245,6 @@ class ClashRoyaleCardModel
     .run()
 
   getKeyByName: (name) ->
-    unless name
-      return 'skeletonBarrel' # TODO: rm when api is fixed
     _.snakeCase name.replace /\./g, ''
 
   sanitize: _.curry (requesterId, clashRoyaleCard) ->

@@ -117,7 +117,7 @@ TYPES =
     FOLLOWER_COUNT: 'user:followerCount'
     GROUP_USER: 'user:groupUser'
     GROUP_USER_SETTINGS: 'user:groupUserSettings'
-    GAME_DATA: 'user:gameData'
+    MESSAGE_GAME_STAT: 'message:gameStat'
     IS_BANNED: 'user:isBanned'
     UPGRADES: 'user:upgrades'
   USER_ITEM:
@@ -137,10 +137,10 @@ NEWBIE_CHEST_COUNT = 0
 CHEST_COUNT = 300
 
 profileDialogUserEmbed = [
-  TYPES.USER.GAME_DATA, TYPES.USER.IS_BANNED, TYPES.USER.UPGRADES
+  TYPES.USER.MESSAGE_GAME_STAT, TYPES.USER.IS_BANNED, TYPES.USER.UPGRADES
 ]
 
-getCachedChatUser = ({userId, username, groupId}) ->
+getCachedChatUser = ({userId, username, groupId, gameKeys}) ->
   if userId
     key = "#{CacheService.PREFIXES.CHAT_USER}:#{userId}:#{groupId}"
     getFn = User.getById
@@ -152,7 +152,7 @@ getCachedChatUser = ({userId, username, groupId}) ->
     getFn userId or username, {preferCache: true}
     .then embedFn {
       embed: profileDialogUserEmbed
-      gameKey: 'clash-royale'
+      gameKeys: gameKeys or ['clash-royale']
       groupId: groupId
     }
     .then User.sanitizeChat(null)
@@ -171,7 +171,7 @@ getCachedChatGroupUser = ({userId, groupId}) ->
   , {expireSeconds: FIVE_MINUTES_SECONDS}
 
 embedFn = _.curry (props, object) ->
-  {embed, user, clanId, groupId, gameKey, userId, playerId} = props
+  {embed, user, clanId, groupId, gameKey, gameKeys, userId, playerId} = props
   embedded = _.cloneDeep object
   unless embedded
     return Promise.resolve null
@@ -205,10 +205,27 @@ embedFn = _.curry (props, object) ->
           groupId, embedded.id
         )
 
-      when TYPES.USER.GAME_DATA
-        embedded.gameData = Player.getByUserIdAndGameKey(
-          embedded.id, gameKey
-        )
+      when TYPES.USER.MESSAGE_GAME_STAT
+        gameKeys or= 'clash-royale'
+        embedded.gameStat = UserPlayer.getAllByUserId embedded.id
+        .then (userPlayers) ->
+          userPlayer = _.find userPlayers, (userPlayer) ->
+            if gameKeys
+              gameKeys.indexOf(userPlayer.gameKey) isnt -1
+            else
+              true
+          if userPlayer
+            {gameKey, playerId, isVerified} = userPlayer
+            Player.getByPlayerIdAndGameKey playerId, gameKey
+            .then (player) ->
+              {
+                isVerified
+                gameKey
+                statName: if gameKey is 'fortnite' then 'wins' else 'trophies'
+                statValue: if gameKey is 'fortnite' \
+                           then player?.data?.lifetimeStats?.wins
+                           else player?.data?.trophies
+              }
 
       when TYPES.USER.IS_ONLINE
         embedded.isOnline = moment(embedded.lastActiveTime)
@@ -350,13 +367,18 @@ embedFn = _.curry (props, object) ->
 
       when TYPES.CLAN.PLAYERS
         if embedded.data.memberList
+          # TODO: rm after group_clan migrated to scylla
+          gameKey = if embedded.gameKey is config.LEGACY_CLASH_ROYALE_ID \
+                    then 'clash-royale'
+                    else embedded.gameKey
+          gameKey ?= 'clash-royale'
           key = CacheService.PREFIXES.CLAN_PLAYERS + ':' + embedded.id
           embedded.players = CacheService.preferCache key, ->
             Promise.map embedded.data.memberList, (player) ->
               playerId = player.tag.replace('#', '')
-              Player.getByPlayerIdAndGameKey playerId, embedded.gameKey
+              Player.getByPlayerIdAndGameKey playerId, gameKey
               .then embedFn {
-                embed: [TYPES.PLAYER.VERIFIED_USER], gameKey: embedded.gameKey
+                embed: [TYPES.PLAYER.VERIFIED_USER], gameKey
               }
               .then (playerObj) ->
                 playerObj = _.omit playerObj, ['data']
@@ -409,7 +431,7 @@ embedFn = _.curry (props, object) ->
         embedded.user = User.getById embedded.userId, {preferCache: true}
         .then embedFn {
           embed: profileDialogUserEmbed.concat [TYPES.USER.FOLLOWER_COUNT]
-          gameKey: 'clash-royale'
+          gameKeys: gameKeys or ['clash-royale']
         }
         .then User.sanitizePublic null
 
@@ -424,7 +446,7 @@ embedFn = _.curry (props, object) ->
         embedded.user = User.getById embedded.userId, {preferCache: true}
         .then embedFn {
           embed: profileDialogUserEmbed
-          gameKey: 'clash-royale'
+          gameKeys: gameKeys or ['clash-royale']
           groupId: groupId
         }
         .then User.sanitizePublic null
@@ -583,6 +605,7 @@ embedFn = _.curry (props, object) ->
           embedded.creator = getCachedChatUser {
             userId: embedded.creatorId
             groupId: groupId
+            gameKeys: gameKeys
           }
         else
           embedded.creator = null
@@ -592,6 +615,7 @@ embedFn = _.curry (props, object) ->
           embedded.creator = getCachedChatUser {
             userId: embedded.creatorId
             groupId: groupId
+            gameKeys: gameKeys
           }
 
       when TYPES.THREAD_COMMENT.GROUP_USER
@@ -614,7 +638,7 @@ embedFn = _.curry (props, object) ->
 
       when TYPES.CHAT_MESSAGE.USER
         if embedded.userId
-          embedded.user = getCachedChatUser embedded
+          embedded.user = getCachedChatUser _.defaults embedded, {gameKeys}
         else
           embedded.user = null
 
@@ -630,7 +654,7 @@ embedFn = _.curry (props, object) ->
           find.replace '@', ''
         mentions = _.take mentions, 5 # so people don't abuse
         embedded.mentionedUsers = Promise.map mentions, (username) ->
-          getCachedChatUser {username, groupId: embedded.groupId}
+          getCachedChatUser {username, groupId: embedded.groupId, gameKeys}
 
       when TYPES.TRADE.ITEMS
         # can't cache long since the items change frequently (circulation #)

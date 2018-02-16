@@ -43,6 +43,7 @@ youtube = google.youtube {
 CHANNEL_IDS =
   "#{config.GROUPS.PLAY_HARD}": 'UC4IMfO_--bwBaNgWeoLxAgg'
   "#{config.GROUPS.ECLIHPSE}": 'UCLAOdac7WmMXQKhOP-8lmrQ'
+  "#{config.GROUPS.NICKATNYTE}": 'UCMxYQX1zaepCgmiSmwbT39w'
 
 class VideoDisoveryService
   updateGroupVideos: (groupId) ->

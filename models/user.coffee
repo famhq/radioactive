@@ -181,7 +181,7 @@ class UserModel
       'flags'
       'upgrades'
       'data'
-      'gameData'
+      'gameStat'
       'followerCount'
       'embedded'
     ]
@@ -197,13 +197,6 @@ class UserModel
     unless user
       return null
     sanitizedUser = module.exports.sanitizePublic requesterId, user
-    if sanitizedUser.gameData # trim it down a bunch
-      sanitizedUser.gameData = _.pick sanitizedUser.gameData, [
-        'isVerified', 'data'
-      ]
-      sanitizedUser.gameData.data = _.pick sanitizedUser.gameData.data, [
-        'trophies'
-      ]
     sanitizedUser
 
 module.exports = new UserModel()

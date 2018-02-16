@@ -56,9 +56,10 @@ RATE_LIMIT_CHAT_MESSAGES_MEDIA_EXPIRE_S = 10
 # LARGE_IMAGE_SIZE = 1000
 
 defaultConversationEmbed = [EmbedService.TYPES.CONVERSATION.USERS]
-prepareFn = (item) ->
+prepareFn = (item, {gameKeys} = {}) ->
   EmbedService.embed {
     embed: defaultEmbed
+    gameKeys
   }, ChatMessage.default(item)
   .then (item) ->
     # TODO: rm?
@@ -220,6 +221,7 @@ class ChatMessageCtrl
       .catch -> null
     )
 
+  # TODO: clean up big-time
   create: ({body, conversationId, clientId}, {user, headers, connection}) =>
     userAgent = headers['user-agent']
     ip = headers['x-forwarded-for'] or
@@ -274,78 +276,73 @@ class ChatMessageCtrl
           .then (hasPermission) ->
             unless hasPermission
               router.throw status: 400, info: 'no permission'
-
-      else Promise.resolve null)
-      .then ->
-        Conversation.hasPermission conversation, user.id
-      .then (hasPermission) =>
-        unless hasPermission
-          router.throw status: 401, info: 'unauthorized'
-
-        # TODO: allow images for certain group_user roles
-        # disable images unless it's a pm or giphy
-        # if conversation.type isnt 'pm' and conversation.groupId
-        #   matches = _.uniq body.match IMAGE_REGEX
-        #   body = _.reduce matches, (text, match) ->
-        #     # allow giphy gifs
-        #     if match.indexOf('giphy.com') is -1
-        #       text.replace match, ''
-        #     else
-        #       text
-        #   , body
-
-        @_checkStickers user.id, stickers
-      .then =>
-        chatMessageId = uuid.v4()
-
-        @_createCards body, isImage, chatMessageId
-        .then ({card} = {}) ->
-          body = body.replace CLASH_ROYALE_FRIEND_REGEX, ''
-          body = body.replace CLASH_ROYALE_CLAN_REGEX, ''
-          groupId = conversation.groupId or 'private'
-          StatsService.sendEvent(
-            user.id, 'chat_message', groupId, conversationId
-          )
-          ChatMessage.upsert {
-            id: chatMessageId
-            userId: user.id
-            body: body
-            clientId: clientId
-            conversationId: conversationId
-            groupId: conversation?.groupId
-            card: card
-          }, {
-            prepareFn: prepareFn
-          }
         .then ->
-          if conversation.data?.isSlowMode
-            ChatMessage.upsertSlowModeLog {
-              userId: user.id, conversationId: conversation.id
-            }
-        .then ->
-          if conversation.groupId
-            GroupUserXpTransaction.completeActionByGroupIdAndUserId(
-              conversation.groupId
-              user.id
-              'dailyChatMessage'
-            )
-            .catch -> null
+          if groupId
+            Group.getById groupId, {preferCache: true}
           else
             Promise.resolve null
-        .then (xpGained) ->
-          {xpGained}
-        .tap =>
-          userIds = conversation.userIds
-          pickedConversation = _.pick conversation, [
-            'userId', 'userIds', 'groupId', 'id'
-          ]
-          Conversation.upsert _.defaults(pickedConversation, {
-            lastUpdateTime: new Date()
-            isRead: false
-          }), {userId: user.id}
 
-          @_sendPushNotifications conversation, user, body, isImage
-          null # don't block
+
+      else Promise.resolve null)
+      .then (group) =>
+        Conversation.hasPermission conversation, user.id
+        .then (hasPermission) =>
+          unless hasPermission
+            router.throw status: 401, info: 'unauthorized'
+
+          @_checkStickers user.id, stickers
+        .then =>
+          chatMessageId = uuid.v4()
+
+          @_createCards body, isImage, chatMessageId
+          .then ({card} = {}) ->
+            body = body.replace CLASH_ROYALE_FRIEND_REGEX, ''
+            body = body.replace CLASH_ROYALE_CLAN_REGEX, ''
+            groupId = conversation.groupId or 'private'
+            StatsService.sendEvent(
+              user.id, 'chat_message', groupId, conversationId
+            )
+            ChatMessage.upsert {
+              id: chatMessageId
+              userId: user.id
+              body: body
+              clientId: clientId
+              conversationId: conversationId
+              groupId: conversation?.groupId
+              card: card
+            }, {
+              prepareFn: (item) ->
+                prepareFn item, {gameKeys: group?.gameKeys}
+            }
+      .then ->
+        if conversation.data?.isSlowMode
+          ChatMessage.upsertSlowModeLog {
+            userId: user.id, conversationId: conversation.id
+          }
+      .then ->
+        if conversation.groupId
+          GroupUserXpTransaction.completeActionByGroupIdAndUserId(
+            conversation.groupId
+            user.id
+            'dailyChatMessage'
+          )
+          .catch -> null
+        else
+          Promise.resolve null
+      .then (xpGained) ->
+        {xpGained}
+      .tap =>
+        userIds = conversation.userIds
+        pickedConversation = _.pick conversation, [
+          'userId', 'userIds', 'groupId', 'id'
+        ]
+        Conversation.upsert _.defaults(pickedConversation, {
+          lastUpdateTime: new Date()
+          isRead: false
+        }), {userId: user.id}
+
+        @_sendPushNotifications conversation, user, body, isImage
+        null # don't block
 
   deleteById: ({id}, {user}) ->
     ChatMessage.getById id
@@ -432,15 +429,22 @@ class ChatMessageCtrl
       if conversation.groupId
         GroupUsersOnline.upsert {userId: user.id, groupId: conversation.groupId}
 
-      (if conversation.groupId
-        groupId = conversation.groupId
-        permissions = [GroupUser.PERMISSIONS.READ_MESSAGE]
-        GroupUser.hasPermissionByGroupIdAndUser groupId, user, permissions, {
-          channelId: conversationId
-        }
-      else
-        Conversation.hasPermission conversation, user.id)
-      .then (hasPermission) =>
+      Promise.all [
+        if conversation.groupId
+          Group.getById conversation.groupId, {preferCache: true}
+        else
+          Promise.resolve null
+
+        (if conversation.groupId
+          groupId = conversation.groupId
+          permissions = [GroupUser.PERMISSIONS.READ_MESSAGE]
+          GroupUser.hasPermissionByGroupIdAndUser groupId, user, permissions, {
+            channelId: conversationId
+          }
+        else
+          Conversation.hasPermission conversation, user.id)
+      ]
+      .then ([group, hasPermission]) =>
         unless hasPermission
           router.throw status: 401, info: 'unauthorized'
 
@@ -454,7 +458,8 @@ class ChatMessageCtrl
           socket: socket
           route: route
           reverse: true
-          initialPostFn: prepareFn
+          initialPostFn: (item) ->
+            prepareFn item, {gameKeys: group?.gameKeys}
         }
         .then (chatMessages) =>
           # TODO: rm after 3/1/2018.
