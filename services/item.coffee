@@ -1,8 +1,12 @@
 log = require 'loga'
 _ = require 'lodash'
+deck = require 'deck'
 Promise = require 'bluebird'
 uuid = require 'node-uuid'
 
+Item = require '../models/item'
+UserItem = require '../models/user_item'
+GroupUser = require '../models/group_user'
 config = require '../config'
 
 class ItemService
@@ -67,5 +71,39 @@ class ItemService
     findFn = if findIndex then _.findIndex else _.find
     findFn items, (item) ->
       findItem.item.key is item.item.key
+
+  getItemsByGroupIdAndOdds: (groupId, {odds, count, itemKeys}) ->
+    Item.getAllByGroupId groupId
+    .then (items) ->
+      groupedItems = _.groupBy items, ({type, rarity}) -> "#{type}|#{rarity}"
+      if odds
+        odds = _.reduce odds, (obj, {type, rarity, odds}) ->
+          if groupedItems["#{type}|#{rarity}"]
+            obj["#{type}|#{rarity}"] = odds
+          obj
+        , {}
+        items = _.map _.range(count or 1), (i) ->
+          typeAndRarity = deck.pick odds
+          population = groupedItems[typeAndRarity]
+          _.sample population
+      else
+        items = _.map itemKeys, (itemKey) ->
+          _.find items, {key: itemKey}
+
+      items = _.shuffle items
+
+      _.filter items
+
+  incrementByGroupIdAndUserIdAndItems: (groupId, userId, items) ->
+    itemKeys = _.map items, 'key'
+    Item.batchIncrementCirculatingByItemKeys itemKeys
+
+    xpEarned = _.sumBy items, ({rarity}) ->
+      config.RARITY_XP[rarity]
+    GroupUser.incrementXpByGroupIdAndUserId(
+      groupId, userId, xpEarned
+    )
+
+    UserItem.batchIncrementByItemKeysAndUserId itemKeys, userId
 
 module.exports = new ItemService()

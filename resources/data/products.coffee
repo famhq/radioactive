@@ -101,40 +101,40 @@ products =
       count: 1
       itemKeys: ['ph_badge_7_days']
   }
-  ph_coin: {
-    name: 'PH Coin'
+  ph_key: {
+    name: 'PH Key'
     type: 'pack'
     groupId: GROUPS.PLAY_HARD
     cost: 50
     data:
-      backgroundImage: 'https://cdn.wtf/d/images/starfire/packs/ph_coin.png'
+      backgroundImage: 'https://cdn.wtf/d/images/starfire/packs/ph_key.png'
       backgroundColor: '#2196F3'
       count: 1
-      itemKeys: ['ph_coin']
+      itemKeys: ['ph_key']
   }
-  ph_scratch_free: {
+  ph_chest: {
     type: 'pack'
     groupId: GROUPS.PLAY_HARD
-    name: 'Free Scratch'
+    name: 'Free Chest'
     cost: 0
     data:
-      backgroundImage: 'https://cdn.wtf/d/images/starfire/packs/ph_scratch_free.png'
-      backgroundColor: '#F44336'
+      backgroundImage: 'https://cdn.wtf/d/images/starfire/packs/ph_chest.png'
+      backgroundColor: '#9C27B0'
       lockTime: ONE_DAY_SECONDS
       count: 1
-      itemKeys: ['ph_scratch']
+      itemKeys: ['ph_chest']
   }
-  ph_starter: {
+  ph_starter_chest: {
     type: 'pack'
     groupId: GROUPS.PLAY_HARD
     name: 'PH Starter Pack'
     cost: 0
     data:
-      backgroundImage: 'https://cdn.wtf/d/images/starfire/packs/ph_starter_scratch.png'
-      backgroundColor: '#9C27B0'
+      backgroundImage: 'https://cdn.wtf/d/images/starfire/packs/ph_starter_chest.png'
+      backgroundColor: '#F44336'
       lockTime: 'infinity'
       count: 2
-      itemKeys: ['ph_starter_scratch', 'ph_starter_coin']
+      itemKeys: ['ph_starter_chest', 'ph_starter_key']
   }
   # ph_send_message: {
   #   name: 'Envie uma mensagem para Bruno'
@@ -199,14 +199,12 @@ products =
   cr_es_pack_free: {
     type: 'pack'
     groupId: GROUPS.CLASH_ROYALE_ES
-    name: 'Gratis Pack de Stickers Clash Royale (1)'
+    name: 'Free Clash Royale Sticker Pack (1)'
     cost: 0
-    data:
+    data: _.defaults {
       backgroundImage: 'https://cdn.wtf/d/images/starfire/packs/cr_es_free.png'
       backgroundColor: '#9C27B0'
-      lockTime: ONE_DAY_SECONDS
-      count: 2
-      itemKeys: ['cr_es_scratch', 'cr_es_coin']
+    }, DEFAULT_FREE_PACK_DATA
   }
   # cr_es_pack1: {
   #   type: 'pack'

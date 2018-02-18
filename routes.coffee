@@ -221,7 +221,7 @@ module.exports = router
 .on 'userItems.getAllByUserId', authed UserItemCtrl.getAllByUserId
 # .on 'userItems.upgradeByItemKey', authed UserItemCtrl.upgradeByItemKey
 .on 'userItems.consumeByItemKey', authed UserItemCtrl.consumeByItemKey
-.on 'userItems.scratchByItemKey', authed UserItemCtrl.scratchByItemKey
+.on 'userItems.openByItemKey', authed UserItemCtrl.openByItemKey
 
 
 # TODO: rm after 3/1/2018

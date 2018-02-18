@@ -150,7 +150,7 @@ class ChatMessageCtrl
       }
 
   _sendPushNotifications: (conversation, user, body, isImage) ->
-    mentionUsernames = _.map _.uniq(body.match /\@[a-zA-Z0-9-]+/g), (find) ->
+    mentionUsernames = _.map _.uniq(body.match /\@[a-zA-Z0-9_-]+/g), (find) ->
       find.replace('@', '').toLowerCase()
     mentionUsernames = _.take mentionUsernames, 5 # so people don't abuse
 

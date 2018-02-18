@@ -39,27 +39,31 @@ items =
       duration: 3600 * 24 * 7
       upgradeType: 'fireBadge'
   }
-  ph_scratch: {
-    name: 'PH scratch off', groupId: GROUPS.PLAY_HARD, rarity: 'common', type: 'scratch'
+  ph_chest: {
+    name: 'PH Chest', groupId: GROUPS.PLAY_HARD, rarity: 'common', type: 'chest'
     data:
-      coinRequired: 'ph_coin'
+      keyRequired: 'ph_key'
       odds: DEFAULT_STICKER_ODDS
+      count: 3
+      backKey: 'ph'
   }
-  ph_coin: {
-    name: 'PH Coin', groupId: GROUPS.PLAY_HARD, rarity: 'common', type: 'coin'
+  ph_key: {
+    name: 'PH Key', groupId: GROUPS.PLAY_HARD, rarity: 'common', type: 'key'
     data:
-      scratchItemKey: 'ph_scratch'
+      chestKey: 'ph_chest'
   }
-  ph_starter_scratch: {
-    name: 'PH scratch off', groupId: GROUPS.PLAY_HARD, rarity: 'common', type: 'scratch'
+  ph_starter_chest: {
+    name: 'PH Starter Chest', groupId: GROUPS.PLAY_HARD, rarity: 'common', type: 'chest'
     data:
-      coinRequired: 'ph_starter_coin'
+      keyRequired: 'ph_starter_key'
       odds: [{type: 'sticker', rarity: 'starter', odds: 1}]
+      count: 1
+      backKey: 'ph'
   }
-  ph_starter_coin: {
-    name: 'PH Coin', groupId: GROUPS.PLAY_HARD, rarity: 'common', type: 'coin'
+  ph_starter_key: {
+    name: 'PH Starter Key', groupId: GROUPS.PLAY_HARD, rarity: 'common', type: 'key'
     data:
-      scratchItemKey: 'ph_starter_scratch'
+      chestKey: 'ph_starter_chest'
   }
 
   cr_en_starfire: {name: 'Starfire Logo', groupId: GROUPS.CLASH_ROYALE_EN, rarity: 'common', type: 'sticker'}
@@ -81,17 +85,17 @@ items =
   cr_es_thumbs_up: {name: 'CR Thumbs Up', groupId: GROUPS.CLASH_ROYALE_ES, rarity: 'common', type: 'sticker'}
   cr_es_thumb: {name: 'CR Thumb', groupId: GROUPS.CLASH_ROYALE_ES, rarity: 'common', type: 'sticker'}
   cr_es_trophy: {name: 'CR Trophy', groupId: GROUPS.CLASH_ROYALE_ES, rarity: 'common', type: 'sticker'}
-  cr_es_scratch: {
-    name: 'CR scratch', groupId: GROUPS.CLASH_ROYALE_ES, rarity: 'common', type: 'scratch'
-    data:
-      coinRequired: 'cr_es_coin'
-      odds: DEFAULT_STICKER_ODDS
-  }
-  cr_es_coin: {
-    name: 'CR Coin', groupId: GROUPS.CLASH_ROYALE_ES, rarity: 'common', type: 'coin'
-    data:
-      scratchItemKey: 'cr_es_scratch'
-  }
+  # cr_es_scratch: {
+  #   name: 'CR scratch', groupId: GROUPS.CLASH_ROYALE_ES, rarity: 'common', type: 'scratch'
+  #   data:
+  #     coinRequired: 'cr_es_coin'
+  #     odds: DEFAULT_STICKER_ODDS
+  # }
+  # cr_es_coin: {
+  #   name: 'CR Coin', groupId: GROUPS.CLASH_ROYALE_ES, rarity: 'common', type: 'coin'
+  #   data:
+  #     scratchItemKey: 'cr_es_scratch'
+  # }
 
 
 

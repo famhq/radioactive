@@ -1,6 +1,5 @@
 _ = require 'lodash'
 router = require 'exoid-router'
-deck = require 'deck'
 Promise = require 'bluebird'
 
 Product = require '../models/product'
@@ -9,6 +8,7 @@ UserItem = require '../models/user_item'
 User = require '../models/user'
 GroupUser = require '../models/group_user'
 GroupRecord = require '../models/group_record'
+ItemService = require '../services/item'
 KueCreateService = require '../services/kue_create'
 EmailService = require '../services/email'
 CacheService = require '../services/cache'
@@ -35,49 +35,24 @@ class ProductCtrl
   getByKey: ({key}) ->
     Product.getByKey key
 
-  getPackItems: (product) ->
-    Item.getAllByGroupId product.groupId
-    .then (items) ->
-      groupedItems = _.groupBy items, ({type, rarity}) -> "#{type}|#{rarity}"
-      if product.data.odds
-        odds = _.reduce product.data.odds, (obj, {type, rarity, odds}) ->
-          if groupedItems["#{type}|#{rarity}"]
-            obj["#{type}|#{rarity}"] = odds
-          obj
-        , {}
-        packItems = _.map _.range(product.data.count or 1), (i) ->
-          typeAndRarity = deck.pick odds
-          population = groupedItems[typeAndRarity]
-          _.sample population
-      else
-        packItems = _.map product.data.itemKeys, (itemKey) ->
-          _.find items, {key: itemKey}
-
-      packItems = _.shuffle packItems
-
-      _.filter packItems
-
-  # TODO move to separate file
-  openPackUnlocked: ({key}, {user}) =>
+  openPackUnlocked: ({key}, {user}) ->
     Product.getByKey key
-    .then (product) =>
-      @getPackItems product
-      .then (packItems) ->
-        if _.isEmpty packItems
+    .then (product) ->
+      {groupId} = product
+      ItemService.getItemsByGroupIdAndOdds groupId, {
+        odds: product.data.odds
+        count: product.data.count
+        itemKeys: product.data.itemKeys
+      }
+      .then (items) ->
+        if _.isEmpty items
           router.throw {status: 400, info: 'No items found'}
 
-        itemKeys = _.map packItems, 'key'
-        Item.batchIncrementCirculatingByItemKeys itemKeys
-
-        xpEarned = _.sumBy packItems, ({rarity}) ->
-          config.RARITY_XP[rarity]
-        GroupUser.incrementXpByGroupIdAndUserId(
-          product.groupId, user.id, xpEarned
+        ItemService.incrementByGroupIdAndUserIdAndItems(
+          product.groupId, user.id, items
         )
-
-        UserItem.batchIncrementByItemKeysAndUserId itemKeys, user.id
         .then ->
-          packItems
+          items
 
   openPack: ({key}, {user}) =>
     # if previous pack open is still going, don't allow another

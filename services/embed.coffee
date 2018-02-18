@@ -650,7 +650,7 @@ embedFn = _.curry (props, object) ->
 
       when TYPES.CHAT_MESSAGE.MENTIONED_USERS
         text = embedded.body
-        mentions = _.map _.uniq(text?.match /\@[a-zA-Z0-9-]+/g), (find) ->
+        mentions = _.map _.uniq(text?.match /\@[a-zA-Z0-9_-]+/g), (find) ->
           find.replace '@', ''
         mentions = _.take mentions, 5 # so people don't abuse
         embedded.mentionedUsers = Promise.map mentions, (username) ->
