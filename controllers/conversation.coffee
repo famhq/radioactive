@@ -78,9 +78,13 @@ class ConversationCtrl
             language: user.language
           }
         }
-        Conversation.updateById id, {
-          name, description
-          data: {isSlowMode, slowModeCooldown}
+        Conversation.upsert {
+          id: conversation.id
+          userId: conversation.userId
+          groupId: conversation.groupId
+          data: _.defaults {
+            name, description, isSlowMode, slowModeCooldown
+          }, conversation.data
         }
 
   getAll: ({}, {user}) ->

@@ -105,7 +105,7 @@ products =
     name: 'PH Key'
     type: 'pack'
     groupId: GROUPS.PLAY_HARD
-    cost: 50
+    cost: 200
     data:
       backgroundImage: 'https://cdn.wtf/d/images/starfire/packs/ph_key.png'
       backgroundColor: '#2196F3'

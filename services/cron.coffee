@@ -51,13 +51,12 @@ class CronService
         ClashRoyalePlayerService.updateTopPlayers()
 
     @addCron 'tenMin', '0 */10 * * * *', ->
-      Product.batchUpsert allProducts
-      Item.batchUpsert allItems
       SpecialOffer.batchUpsert allSpecialOffers
       Thread.updateScores 'time'
       NewsRoyaleService.scrape()
       VideoDiscoveryService.updateGroupVideos config.GROUPS.PLAY_HARD
       VideoDiscoveryService.updateGroupVideos config.GROUPS.ECLIHPSE
+      # VideoDiscoveryService.updateGroupVideos config.GROUPS.FERG
 
     @addCron 'oneHour', '0 0 * * * *', ->
       CleanupService.trimLeaderboards()

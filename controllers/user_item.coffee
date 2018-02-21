@@ -23,10 +23,15 @@ class UserItemCtrl
   getAll: ({}, {user}) ->
     UserItem.getAllByUserId user.id
     .map EmbedService.embed {embed: defaultEmbed}
+    .then (userItems) ->
+      _.filter userItems, 'item'
 
   getAllByUserId: ({userId}, {user}) ->
     UserItem.getAllByUserId userId
     .map EmbedService.embed {embed: defaultEmbed}
+    # filter out items that no longer exist (ph/cr_es coin//scratch)
+    .then (userItems) ->
+      _.filter userItems, 'item'
 
   # upgradeByItemKey: ({itemKey}, {user}) ->
   #   prefix = CacheService.LOCK_PREFIXES.UPGRADE_STICKER

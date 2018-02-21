@@ -289,6 +289,8 @@ class PlayerCtrl
             player.userId = player.verifiedUser?.id or player.userIds?[0]
             delete player.userIds
             {player}
+          console.log 'pppp', players
+          players
     , {expireSeconds: ONE_MINUTE_SECONDS}
 
 module.exports = new PlayerCtrl()

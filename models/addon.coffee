@@ -206,7 +206,7 @@ class AddonModel
   incrementByAddon: (addon, diff) ->
     prefix = CacheService.STATIC_PREFIXES.ADDON_GAME_KEY_LEADERBOARD_ALL
     cacheKey = "#{prefix}:#{addon.gameKey}"
-    amount = if diff.upvotes is 1 then 1 else -1
+    amount = (diff.upvotes or 0) - (diff.downvotes or 0)
     CacheService.leaderboardIncrement cacheKey, addon.id, amount
 
     q = cknex().update 'addons_counter_by_id'

@@ -44,6 +44,7 @@ CHANNEL_IDS =
   "#{config.GROUPS.PLAY_HARD}": 'UC4IMfO_--bwBaNgWeoLxAgg'
   "#{config.GROUPS.ECLIHPSE}": 'UCLAOdac7WmMXQKhOP-8lmrQ'
   "#{config.GROUPS.NICKATNYTE}": 'UCMxYQX1zaepCgmiSmwbT39w'
+  "#{config.GROUPS.FERG}": 'UCVYe9OwcrGrlRmlX8cSWgvg'
 
 class VideoDisoveryService
   updateGroupVideos: (groupId) ->

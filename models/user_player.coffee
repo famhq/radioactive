@@ -238,7 +238,9 @@ class UserPlayerModel
 
     Promise.map playerIds, (playerId) =>
       @getAllByPlayerIdAndGameKey playerId, gameKey
-      .map _.concat
+    .map _.concat
+    .then (users) ->
+      _.flatten users
 
   getAllByUserIdsAndGameKey: (userIds, gameKey) ->
     userIds = _.take userIds, 100 # just in case
@@ -253,7 +255,6 @@ class UserPlayerModel
 
     Promise.map userIds, (userId) =>
       @getByUserIdAndGameKey userId, gameKey
-      .map _.concat
 
   # migrateAll: =>
   #   CacheService = require '../services/cache'
