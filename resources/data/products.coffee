@@ -44,7 +44,7 @@ products =
   #   name: 'PlayHard Raffle Ticket'
   #   cost: 50 # 5c
   #   data:
-  #     backgroundImage: 'https://cdn.wtf/d/images/starfire/products/ph_shout_out_raffle.png'
+  #     backgroundImage: 'https://cdn.wtf/d/images/fam/products/ph_shout_out_raffle.png'
   #     backgroundColor: '#ff7f00'
   #     info: '1 raffle ticket. On Feburary 2nd, 1 ticket will be selected at random
   #           and the winning user will get a shoutout in Bruno\'s video on the 3rd'
@@ -56,7 +56,7 @@ products =
   #   name: 'Pacote de emojis PH (1)'
   #   cost: 100 # 10c
   #   data: _.defaults {
-  #     backgroundImage: 'https://cdn.wtf/d/images/starfire/packs/ph_1.png'
+  #     backgroundImage: 'https://cdn.wtf/d/images/fam/packs/ph_1.png'
   #     backgroundColor: '#F44336'
   #   }, DEFAULT_1_PACK_DATA
   # }
@@ -66,7 +66,7 @@ products =
   #   name: 'Pacote de emojis PH (3)'
   #   cost: 250 # 25c
   #   data: _.defaults {
-  #     backgroundImage: 'https://cdn.wtf/d/images/starfire/packs/ph_3.png'
+  #     backgroundImage: 'https://cdn.wtf/d/images/fam/packs/ph_3.png'
   #     backgroundColor: '#2196F3'
   #   }, DEFAULT_3_PACK_DATA
   # }
@@ -76,7 +76,7 @@ products =
     groupId: GROUPS.PLAY_HARD
     cost: 15000
     data: {
-      backgroundImage: 'https://cdn.wtf/d/images/starfire/products/google_play.png'
+      backgroundImage: 'https://cdn.wtf/d/images/fam/products/google_play.png'
       backgroundColor: '#4CAF50'
     }
   }
@@ -86,7 +86,7 @@ products =
     groupId: GROUPS.PLAY_HARD
     cost: 15000
     data: {
-      backgroundImage: 'https://cdn.wtf/d/images/starfire/products/visa.png'
+      backgroundImage: 'https://cdn.wtf/d/images/fam/products/visa.png'
       backgroundColor: '#FFC107'
     }
   }
@@ -96,7 +96,7 @@ products =
     groupId: GROUPS.PLAY_HARD
     cost: 200
     data:
-      backgroundImage: 'https://cdn.wtf/d/images/starfire/items/ph_badge_7_days_large.png'
+      backgroundImage: 'https://cdn.wtf/d/images/fam/items/ph_badge_7_days_large.png'
       backgroundColor: '#333'
       count: 1
       itemKeys: ['ph_badge_7_days']
@@ -107,7 +107,7 @@ products =
     groupId: GROUPS.PLAY_HARD
     cost: 200
     data:
-      backgroundImage: 'https://cdn.wtf/d/images/starfire/packs/ph_key.png'
+      backgroundImage: 'https://cdn.wtf/d/images/fam/packs/ph_key.png'
       backgroundColor: '#2196F3'
       count: 1
       itemKeys: ['ph_key']
@@ -118,7 +118,7 @@ products =
     name: 'Free Chest'
     cost: 0
     data:
-      backgroundImage: 'https://cdn.wtf/d/images/starfire/packs/ph_chest.png'
+      backgroundImage: 'https://cdn.wtf/d/images/fam/packs/ph_chest.png'
       backgroundColor: '#9C27B0'
       lockTime: ONE_DAY_SECONDS
       count: 1
@@ -130,7 +130,7 @@ products =
     name: 'PH Starter Pack'
     cost: 0
     data:
-      backgroundImage: 'https://cdn.wtf/d/images/starfire/packs/ph_starter_chest.png'
+      backgroundImage: 'https://cdn.wtf/d/images/fam/packs/ph_starter_chest.png'
       backgroundColor: '#F44336'
       lockTime: 'infinity'
       count: 2
@@ -150,7 +150,7 @@ products =
     name: 'Free Clash Royale Sticker Pack (1)'
     cost: 0
     data: _.defaults {
-      backgroundImage: 'https://cdn.wtf/d/images/starfire/packs/cr_en_free.png'
+      backgroundImage: 'https://cdn.wtf/d/images/fam/packs/cr_en_free.png'
       backgroundColor: '#9C27B0'
     }, DEFAULT_FREE_PACK_DATA
   }
@@ -160,7 +160,7 @@ products =
     name: 'Clash Royale Sticker Pack (1)'
     cost: 100 # 10c
     data: _.defaults {
-      backgroundImage: 'https://cdn.wtf/d/images/starfire/packs/cr_en_1.png'
+      backgroundImage: 'https://cdn.wtf/d/images/fam/packs/cr_en_1.png'
       backgroundColor: '#F44336'
     }, DEFAULT_1_PACK_DATA
   }
@@ -170,7 +170,7 @@ products =
     name: 'Clash Royale Sticker Pack (3)'
     cost: 250 # 25c
     data: _.defaults {
-      backgroundImage: 'https://cdn.wtf/d/images/starfire/packs/cr_en_3.png'
+      backgroundImage: 'https://cdn.wtf/d/images/fam/packs/cr_en_3.png'
       backgroundColor: '#2196F3'
     }, DEFAULT_3_PACK_DATA
   }
@@ -180,7 +180,7 @@ products =
     groupId: GROUPS.CLASH_ROYALE_EN
     cost: 15000
     data: {
-      backgroundImage: 'https://cdn.wtf/d/images/starfire/products/google_play.png'
+      backgroundImage: 'https://cdn.wtf/d/images/fam/products/google_play.png'
       backgroundColor: '#4CAF50'
     }
   }
@@ -190,7 +190,7 @@ products =
     groupId: GROUPS.CLASH_ROYALE_EN
     cost: 15000
     data: {
-      backgroundImage: 'https://cdn.wtf/d/images/starfire/products/visa.png'
+      backgroundImage: 'https://cdn.wtf/d/images/fam/products/visa.png'
       backgroundColor: '#FFC107'
     }
   }
@@ -202,7 +202,7 @@ products =
     name: 'Free Clash Royale Sticker Pack (1)'
     cost: 0
     data: _.defaults {
-      backgroundImage: 'https://cdn.wtf/d/images/starfire/packs/cr_es_free.png'
+      backgroundImage: 'https://cdn.wtf/d/images/fam/packs/cr_es_free.png'
       backgroundColor: '#9C27B0'
     }, DEFAULT_FREE_PACK_DATA
   }
@@ -212,7 +212,7 @@ products =
   #   name: 'Pack de Stickers Clash Royale (1)'
   #   cost: 100 # 10c
   #   data: _.defaults {
-  #     backgroundImage: 'https://cdn.wtf/d/images/starfire/packs/cr_es_1.png'
+  #     backgroundImage: 'https://cdn.wtf/d/images/fam/packs/cr_es_1.png'
   #     backgroundColor: '#F44336'
   #   }, DEFAULT_1_PACK_DATA
   # }
@@ -222,7 +222,7 @@ products =
   #   groupId: GROUPS.CLASH_ROYALE_ES
   #   cost: 250 # 25c
   #   data: _.defaults {
-  #     backgroundImage: 'https://cdn.wtf/d/images/starfire/packs/cr_es_3.png'
+  #     backgroundImage: 'https://cdn.wtf/d/images/fam/packs/cr_es_3.png'
   #     backgroundColor: '#2196F3'
   #   }, DEFAULT_3_PACK_DATA
   # }
@@ -232,7 +232,7 @@ products =
     groupId: GROUPS.CLASH_ROYALE_ES
     cost: 15000
     data: {
-      backgroundImage: 'https://cdn.wtf/d/images/starfire/products/google_play.png'
+      backgroundImage: 'https://cdn.wtf/d/images/fam/products/google_play.png'
       backgroundColor: '#4CAF50'
     }
   }
@@ -242,7 +242,7 @@ products =
     groupId: GROUPS.CLASH_ROYALE_ES
     cost: 15000
     data: {
-      backgroundImage: 'https://cdn.wtf/d/images/starfire/products/visa.png'
+      backgroundImage: 'https://cdn.wtf/d/images/fam/products/visa.png'
       backgroundColor: '#FFC107'
     }
   }
@@ -254,7 +254,7 @@ products =
     name: 'Clash Royale Sticker Pack (1)'
     cost: 100 # 10c
     data: _.defaults {
-      backgroundImage: 'https://cdn.wtf/d/images/starfire/packs/cr_pt_1.png'
+      backgroundImage: 'https://cdn.wtf/d/images/fam/packs/cr_pt_1.png'
       backgroundColor: '#F44336'
     }, DEFAULT_1_PACK_DATA
   }
@@ -264,7 +264,7 @@ products =
     name: 'Clash Royale Sticker Pack (3)'
     cost: 250 # 25c
     data: _.defaults {
-      backgroundImage: 'https://cdn.wtf/d/images/starfire/packs/cr_pt_3.png'
+      backgroundImage: 'https://cdn.wtf/d/images/fam/packs/cr_pt_3.png'
       backgroundColor: '#2196F3'
     }, DEFAULT_3_PACK_DATA
   }
@@ -274,7 +274,7 @@ products =
     groupId: GROUPS.CLASH_ROYALE_PT
     cost: 15000
     data: {
-      backgroundImage: 'https://cdn.wtf/d/images/starfire/products/google_play.png'
+      backgroundImage: 'https://cdn.wtf/d/images/fam/products/google_play.png'
       backgroundColor: '#4CAF50'
     }
   }
@@ -284,7 +284,7 @@ products =
     groupId: GROUPS.CLASH_ROYALE_PT
     cost: 15000
     data: {
-      backgroundImage: 'https://cdn.wtf/d/images/starfire/products/visa.png'
+      backgroundImage: 'https://cdn.wtf/d/images/fam/products/visa.png'
       backgroundColor: '#FFC107'
     }
   }
@@ -296,7 +296,7 @@ products =
     name: 'Clash Royale Sticker Pack (1)'
     cost: 100 # 10c
     data: _.defaults {
-      backgroundImage: 'https://cdn.wtf/d/images/starfire/packs/cr_pl_1.png'
+      backgroundImage: 'https://cdn.wtf/d/images/fam/packs/cr_pl_1.png'
       backgroundColor: '#F44336'
     }, DEFAULT_1_PACK_DATA
   }
@@ -306,7 +306,7 @@ products =
     name: 'Clash Royale Sticker Pack (3)'
     cost: 250 # 25c
     data: _.defaults {
-      backgroundImage: 'https://cdn.wtf/d/images/starfire/packs/cr_pl_3.png'
+      backgroundImage: 'https://cdn.wtf/d/images/fam/packs/cr_pl_3.png'
       backgroundColor: '#2196F3'
     }, DEFAULT_3_PACK_DATA
   }
@@ -316,7 +316,7 @@ products =
   #   groupId: GROUPS.CLASH_ROYALE_PL
   #   cost: 15000
   #   data: {
-  #     backgroundImage: 'https://cdn.wtf/d/images/starfire/products/google_play.png'
+  #     backgroundImage: 'https://cdn.wtf/d/images/fam/products/google_play.png'
   #     backgroundColor: '#4CAF50'
   #   }
   # }
@@ -326,7 +326,7 @@ products =
     groupId: GROUPS.CLASH_ROYALE_PL
     cost: 15000
     data: {
-      backgroundImage: 'https://cdn.wtf/d/images/starfire/products/visa.png'
+      backgroundImage: 'https://cdn.wtf/d/images/fam/products/visa.png'
       backgroundColor: '#FFC107'
     }
   }

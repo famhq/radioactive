@@ -108,7 +108,7 @@ class ProductCtrl
 
         EmailService.send {
           to: EmailService.EMAILS.EVERYONE
-          subject: "Starfire Product Purchase: #{key}"
+          subject: "Fam Product Purchase: #{key}"
           text: """
           Username: #{user?.username}
 

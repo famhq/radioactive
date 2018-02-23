@@ -57,8 +57,8 @@ class NewsRoyaleService
               $post = cheerio.load response
               body = $post('.article-detail').html()
               imageUrl = $post('.hero-wrapper').find('source').attr('data-srcset')?.split(' ')?[0]
-              if body.indexOf('Starfire') isnt -1
-                return
+              # if body.indexOf('Fam ') isnt -1
+              #   return
               markdown = turndown.turndown body
               markdownLines = markdown.split('\n')
               title = markdownLines[2]

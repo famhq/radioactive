@@ -61,8 +61,8 @@ ChestCyclePage = require './dynamic_images/pages/chest_cycle'
 if config.DEV_USE_HTTPS
   https = require 'https'
   fs = require 'fs'
-  privateKey  = fs.readFileSync './bin/starfire-dev.key'
-  certificate = fs.readFileSync './bin/starfire-dev.crt'
+  privateKey  = fs.readFileSync './bin/fam-dev.key'
+  certificate = fs.readFileSync './bin/fam-dev.crt'
   credentials = {key: privateKey, cert: certificate}
 
 MAX_FILE_SIZE_BYTES = 20 * 1000 * 1000 # 20MB

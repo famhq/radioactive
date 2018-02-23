@@ -28,7 +28,7 @@ config =
     'PvP', 'classicChallenge', 'grandChallenge', 'tournament', '2v2'
     # 'newCardChallenge'
   ]
-  # ALSO IN STARFIRE
+  # also in fam
   DEFAULT_PERMISSIONS:
     readMessage: true
     manageChannel: false
@@ -40,18 +40,18 @@ config =
   DEFAULT_NOTIFICATIONS:
     chatMessage: true
     chatMention: true
-  # also in starfire
+  # also in fam
   LANGUAGES: [
     'en', 'es', 'it', 'fr', 'zh', 'ja', 'ko', 'de', 'pt', 'pl', 'ru'
     'id', 'tr', 'tl'
   ]
-  # also in starfire
+  # also in fam
   ITEM_LEVEL_REQUIREMENTS: [
     {level: 3, countRequired: 100}
     {level: 2, countRequired: 10}
     {level: 1, countRequired: 0}
   ]
-  # also in starfire TODO: shared config file
+  # also in fam TODO: shared config file
   XP_LEVEL_REQUIREMENTS: [
     {level: 1, xpRequired: 0}
     {level: 2, xpRequired: 20}

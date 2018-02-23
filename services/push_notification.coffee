@@ -42,7 +42,7 @@ defaultUserEmbed = [
   EmbedService.TYPES.USER.DATA
   EmbedService.TYPES.USER.GROUP_USER_SETTINGS
 ]
-cdnUrl = "https://#{config.CDN_HOST}/d/images/starfire"
+cdnUrl = "https://#{config.CDN_HOST}/d/images/fam"
 
 class PushNotificationService
   constructor: ->
@@ -193,7 +193,7 @@ class PushNotificationService
         text: if group or event \
               then "#{User.getDisplayName(meUser)}: #{text}"
               else text
-        url: "https://#{config.STARFIRE_HOST}"
+        url: "https://#{config.FAM_HOST}"
         icon: if group \
               then "#{cdnUrl}/groups/badges/#{group.badgeId}.png"
               else meUser?.avatarImage?.versions[0].url

@@ -29,7 +29,7 @@ specialOffers = [
     name: 'Final Fantasy XV: A New Empire'
     iOSPackage: 'com.mobile-softing.coinmaster'
     androidPackage: 'com.epicactiononline.ffxv.ane'
-    backgroundImage: 'https://cdn.wtf/d/images/starfire/offers/com_epicactiononline_ffxv_ane.jpg'
+    backgroundImage: 'https://cdn.wtf/d/images/fam/offers/com_epicactiononline_ffxv_ane.jpg'
     backgroundColor: '#35b3c8'
     textColor: '#000000'
     countryData:
@@ -61,7 +61,7 @@ specialOffers = [
     name: 'Freestreet'
     iOSPackage: ''
     androidPackage: 'mappstreet.freestreet'
-    backgroundImage: 'https://cdn.wtf/d/images/starfire/offers/mappstreet_freestreet.jpg'
+    backgroundImage: 'https://cdn.wtf/d/images/fam/offers/mappstreet_freestreet.jpg'
     backgroundColor: '#7a2cc3'
     textColor: '#ffffff'
     countryData:
@@ -104,7 +104,7 @@ specialOffers = [
     name: 'Sokoban'
     iOSPackage: ''
     androidPackage: 'mappstreet.sokoban'
-    backgroundImage: 'https://cdn.wtf/d/images/starfire/offers/mappstreet_sokoban.jpg'
+    backgroundImage: 'https://cdn.wtf/d/images/fam/offers/mappstreet_sokoban.jpg'
     backgroundColor: '#8c8270'
     textColor: '#ffffff'
     countryData:
@@ -147,7 +147,7 @@ specialOffers = [
     name: 'Mahjong Solitaire'
     iOSPackage: ''
     androidPackage: 'mappstreet.mohjong_solitaire'
-    backgroundImage: 'https://cdn.wtf/d/images/starfire/offers/mappstreet_mohjong_solitaire.jpg'
+    backgroundImage: 'https://cdn.wtf/d/images/fam/offers/mappstreet_mohjong_solitaire.jpg'
     backgroundColor: '#f9e3da'
     textColor: '#000000'
     countryData:
@@ -190,7 +190,7 @@ specialOffers = [
     name: 'Silent Manager'
     iOSPackage: ''
     androidPackage: 'mappstreet.silentmanager'
-    backgroundImage: 'https://cdn.wtf/d/images/starfire/offers/mappstreet_silentmanager.jpg'
+    backgroundImage: 'https://cdn.wtf/d/images/fam/offers/mappstreet_silentmanager.jpg'
     backgroundColor: '#008c6d'
     textColor: '#ffffff'
     countryData:
@@ -233,7 +233,7 @@ specialOffers = [
     name: 'Horoscope'
     iOSPackage: ''
     androidPackage: 'mappstreet.horoscope'
-    backgroundImage: 'https://cdn.wtf/d/images/starfire/offers/mappstreet_horoscope.jpg'
+    backgroundImage: 'https://cdn.wtf/d/images/fam/offers/mappstreet_horoscope.jpg'
     backgroundColor: '#240046'
     textColor: '#ffffff'
     countryData:
@@ -276,7 +276,7 @@ specialOffers = [
     name: 'Future SMS'
     iOSPackage: ''
     androidPackage: 'mappstreet.futuresms'
-    backgroundImage: 'https://cdn.wtf/d/images/starfire/offers/mappstreet_futuresms.jpg'
+    backgroundImage: 'https://cdn.wtf/d/images/fam/offers/mappstreet_futuresms.jpg'
     backgroundColor: '#9cf49c'
     textColor: '#000000'
     countryData:

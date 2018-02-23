@@ -22,7 +22,7 @@ Match = require '../models/clash_royale_match'
 User = require '../models/user'
 config = require '../config'
 
-# for now we're not storing user deck info of players that aren't on starfire.
+# for now we're not storing user deck info of players that aren't on fam.
 # should re-enable if we can handle the added load from it.
 # big issue is 2v2
 ENABLE_ANON_PLAYER_DECKS = false

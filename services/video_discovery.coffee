@@ -113,7 +113,7 @@ class VideoDisoveryService
             key = "#{CacheService.PREFIXES.VIDEOS_GROUP_ID}:#{groupId}:1"
             CacheService.deleteByKey key
 
-            keyPrefix = "images/starfire/vt/#{video.id}"
+            keyPrefix = "images/fam/vt/#{video.id}"
             ImageService.getYoutubePreview keyPrefix, video.sourceId
             .then (thumbnailImage) ->
               Video.upsert _.defaults {

@@ -14,7 +14,7 @@ class NpsCtrl
       googleTranslate.translate comment, 'en', (err, translation) ->
         EmailService.send {
           to: EmailService.EMAILS.EVERYONE
-          subject: "Starfire NPS (#{score})"
+          subject: "Fam NPS (#{score})"
           text: """
           #{user?.username}:
 

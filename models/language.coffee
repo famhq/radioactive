@@ -1,7 +1,7 @@
 _ = require 'lodash'
 config = require '../config'
 
-# overlaps with language model in starfire
+# overlaps with language model in fam
 class Language
   constructor: ->
     files = {

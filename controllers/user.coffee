@@ -32,7 +32,7 @@ class UserCtrl
             connection.remoteAddress
       isRecent =
         user.lastActiveTime.getTime() < Date.now() - LAST_ACTIVE_UPDATE_FREQ_MS
-      # rendered via starfire server (wrong ip)
+      # rendered via fam server (wrong ip)
       isServerSide = ip?.indexOf('::ffff:10.') isnt -1
       if (isRecent or not user.ip) and not isServerSide
         @updateLastActiveTime user, ip
@@ -42,7 +42,7 @@ class UserCtrl
   getCountry: ({}, {headers, connection}) ->
     ip = headers['x-forwarded-for'] or
           connection.remoteAddress
-    # rendered via starfire server (wrong ip)
+    # rendered via fam server (wrong ip)
     isServerSide = ip?.indexOf('::ffff:10.') isnt -1
     if isServerSide then null else geoip.lookup(ip)?.country?.toLowerCase()
 
@@ -187,7 +187,7 @@ class UserCtrl
     }
 
     # bust cache
-    keyPrefix = "images/starfire/u/#{user.id}/avatar_#{Date.now()}"
+    keyPrefix = "images/fam/u/#{user.id}/avatar_#{Date.now()}"
 
     Promise.all [
       ImageService.uploadImage

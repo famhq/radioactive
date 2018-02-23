@@ -495,7 +495,7 @@ class ChatMessageCtrl
     ImageService.getSizeByBuffer (file.buffer)
     .then (size) ->
       key = "#{user.id}_#{uuid.v4()}"
-      keyPrefix = "images/starfire/cm/#{key}"
+      keyPrefix = "images/fam/cm/#{key}"
 
       aspectRatio = size.width / size.height
       # 10 is to prevent super wide/tall images from being uploaded

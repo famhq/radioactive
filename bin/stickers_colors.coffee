@@ -9,8 +9,8 @@ Image = Canvas.Image
 
 setTimeout ->
   Promise.each [
-    # ['ph', '../starfire-assets/stickers/ph_large.png']
-    # ['ph_bruno', '../starfire-assets/stickers/bruno_large.png']
+    # ['ph', '../fam-assets/stickers/ph_large.png']
+    # ['ph_bruno', '../fam-assets/stickers/bruno_large.png']
     # ['ph_love', '../../Downloads/ph_love.png']
     # ['ph_hmm', '../../Downloads/ph_hmm.png']
     # ['ph_uau', '../../Downloads/ph_uau.png']
@@ -23,61 +23,61 @@ setTimeout ->
     # ['ph_assustadao', '../../Downloads/ph_assustadao.png']
     # ['ph_aleluia', '../../Downloads/ph_aleluia.png']
     # ['ph_tenso', '../../Downloads/ph_tenso.png']
-    # ['bruno', '../starfire-assets/stickers/bruno_large.png']
-    # ['cr_laughing', '../starfire-assets/stickers/cr_laughing_large.png']
-    # ['cr_crying', '../starfire-assets/stickers/cr_crying_large.png']
-    # ['cr_angry', '../starfire-assets/stickers/cr_angry_large.png']
-    # ['cr_thumbs_up', '../starfire-assets/stickers/cr_thumbs_up_large.png']
-    # ['cr_blue_king', '../starfire-assets/clash_royale/cr_blue_king.png']
-    # ['cr_barbarian', '../starfire-assets/clash_royale/cr_barbarian.png']
-    # # ['cr_epic_chest', '../starfire-assets/clash_royale/cr_epic_chest.png']
-    # # ['cr_giant_chest', '../starfire-assets/clash_royale/cr_giant_chest.png']
-    # ['cr_goblin', '../starfire-assets/clash_royale/cr_goblin.png']
-    # # ['cr_gold_chest', '../starfire-assets/clash_royale/cr_gold_chest.png']
-    # ['cr_knight', '../starfire-assets/clash_royale/cr_knight.png']
-    # # ['cr_magical_chest', '../starfire-assets/clash_royale/cr_magical_chest.png']
-    # ['cr_red_king', '../starfire-assets/clash_royale/cr_red_king.png']
-    # ['cr_shop_goblin', '../starfire-assets/clash_royale/cr_shop_goblin.png']
-    # # ['cr_silver_chest', '../starfire-assets/clash_royale/cr_silver_chest.png']
-    # # ['cr_smc', '../starfire-assets/clash_royale/cr_smc.png']
-    # ['cr_thumb', '../starfire-assets/clash_royale/cr_thumb.png']
-    # ['cr_trophy', '../starfire-assets/clash_royale/cr_trophy.png']
+    # ['bruno', '../fam-assets/stickers/bruno_large.png']
+    # ['cr_laughing', '../fam-assets/stickers/cr_laughing_large.png']
+    # ['cr_crying', '../fam-assets/stickers/cr_crying_large.png']
+    # ['cr_angry', '../fam-assets/stickers/cr_angry_large.png']
+    # ['cr_thumbs_up', '../fam-assets/stickers/cr_thumbs_up_large.png']
+    # ['cr_blue_king', '../fam-assets/clash_royale/cr_blue_king.png']
+    # ['cr_barbarian', '../fam-assets/clash_royale/cr_barbarian.png']
+    # # ['cr_epic_chest', '../fam-assets/clash_royale/cr_epic_chest.png']
+    # # ['cr_giant_chest', '../fam-assets/clash_royale/cr_giant_chest.png']
+    # ['cr_goblin', '../fam-assets/clash_royale/cr_goblin.png']
+    # # ['cr_gold_chest', '../fam-assets/clash_royale/cr_gold_chest.png']
+    # ['cr_knight', '../fam-assets/clash_royale/cr_knight.png']
+    # # ['cr_magical_chest', '../fam-assets/clash_royale/cr_magical_chest.png']
+    # ['cr_red_king', '../fam-assets/clash_royale/cr_red_king.png']
+    # ['cr_shop_goblin', '../fam-assets/clash_royale/cr_shop_goblin.png']
+    # # ['cr_silver_chest', '../fam-assets/clash_royale/cr_silver_chest.png']
+    # # ['cr_smc', '../fam-assets/clash_royale/cr_smc.png']
+    # ['cr_thumb', '../fam-assets/clash_royale/cr_thumb.png']
+    # ['cr_trophy', '../fam-assets/clash_royale/cr_trophy.png']
 
-    # ['cr_en_starfire', '../starfire-assets/stickers/sf_logo_large.png']
-    # ['cr_en_angry', '../starfire-assets/stickers/cr_angry_large.png']
-    # ['cr_en_crying', '../starfire-assets/stickers/cr_crying_large.png']
-    # ['cr_en_laughing', '../starfire-assets/stickers/cr_laughing_large.png']
-    # ['cr_en_shop_goblin', '../starfire-assets/clash_royale/cr_shop_goblin.png']
-    # ['cr_en_thumbs_up', '../starfire-assets/stickers/cr_thumbs_up_large.png']
-    # ['cr_en_thumb', '../starfire-assets/clash_royale/cr_thumb.png']
-    # ['cr_en_trophy', '../starfire-assets/clash_royale/cr_trophy.png']
+    # ['cr_en_fam', '../fam-assets/stickers/sf_logo_large.png']
+    # ['cr_en_angry', '../fam-assets/stickers/cr_angry_large.png']
+    # ['cr_en_crying', '../fam-assets/stickers/cr_crying_large.png']
+    # ['cr_en_laughing', '../fam-assets/stickers/cr_laughing_large.png']
+    # ['cr_en_shop_goblin', '../fam-assets/clash_royale/cr_shop_goblin.png']
+    # ['cr_en_thumbs_up', '../fam-assets/stickers/cr_thumbs_up_large.png']
+    # ['cr_en_thumb', '../fam-assets/clash_royale/cr_thumb.png']
+    # ['cr_en_trophy', '../fam-assets/clash_royale/cr_trophy.png']
     #
-    # ['cr_es_starfire', '../starfire-assets/stickers/sf_logo_large.png']
-    # ['cr_es_angry', '../starfire-assets/stickers/cr_angry_large.png']
-    # ['cr_es_crying', '../starfire-assets/stickers/cr_crying_large.png']
-    # ['cr_es_laughing', '../starfire-assets/stickers/cr_laughing_large.png']
-    # ['cr_es_shop_goblin', '../starfire-assets/clash_royale/cr_shop_goblin.png']
-    # ['cr_es_thumbs_up', '../starfire-assets/stickers/cr_thumbs_up_large.png']
-    # ['cr_es_thumb', '../starfire-assets/clash_royale/cr_thumb.png']
-    # ['cr_es_trophy', '../starfire-assets/clash_royale/cr_trophy.png']
+    # ['cr_es_fam', '../fam-assets/stickers/sf_logo_large.png']
+    # ['cr_es_angry', '../fam-assets/stickers/cr_angry_large.png']
+    # ['cr_es_crying', '../fam-assets/stickers/cr_crying_large.png']
+    # ['cr_es_laughing', '../fam-assets/stickers/cr_laughing_large.png']
+    # ['cr_es_shop_goblin', '../fam-assets/clash_royale/cr_shop_goblin.png']
+    # ['cr_es_thumbs_up', '../fam-assets/stickers/cr_thumbs_up_large.png']
+    # ['cr_es_thumb', '../fam-assets/clash_royale/cr_thumb.png']
+    # ['cr_es_trophy', '../fam-assets/clash_royale/cr_trophy.png']
     #
-    # ['cr_pt_starfire', '../starfire-assets/stickers/sf_logo_large.png']
-    # ['cr_pt_angry', '../starfire-assets/stickers/cr_angry_large.png']
-    # ['cr_pt_crying', '../starfire-assets/stickers/cr_crying_large.png']
-    # ['cr_pt_laughing', '../starfire-assets/stickers/cr_laughing_large.png']
-    # ['cr_pt_shop_goblin', '../starfire-assets/clash_royale/cr_shop_goblin.png']
-    # ['cr_pt_thumbs_up', '../starfire-assets/stickers/cr_thumbs_up_large.png']
-    # ['cr_pt_thumb', '../starfire-assets/clash_royale/cr_thumb.png']
-    # ['cr_pt_trophy', '../starfire-assets/clash_royale/cr_trophy.png']
+    # ['cr_pt_fam', '../fam-assets/stickers/sf_logo_large.png']
+    # ['cr_pt_angry', '../fam-assets/stickers/cr_angry_large.png']
+    # ['cr_pt_crying', '../fam-assets/stickers/cr_crying_large.png']
+    # ['cr_pt_laughing', '../fam-assets/stickers/cr_laughing_large.png']
+    # ['cr_pt_shop_goblin', '../fam-assets/clash_royale/cr_shop_goblin.png']
+    # ['cr_pt_thumbs_up', '../fam-assets/stickers/cr_thumbs_up_large.png']
+    # ['cr_pt_thumb', '../fam-assets/clash_royale/cr_thumb.png']
+    # ['cr_pt_trophy', '../fam-assets/clash_royale/cr_trophy.png']
 
-    ['cr_pl_starfire', '../starfire-assets/stickers/sf_logo_large.png']
-    ['cr_pl_angry', '../starfire-assets/stickers/cr_angry_large.png']
-    ['cr_pl_crying', '../starfire-assets/stickers/cr_crying_large.png']
-    ['cr_pl_laughing', '../starfire-assets/stickers/cr_laughing_large.png']
-    ['cr_pl_shop_goblin', '../starfire-assets/clash_royale/cr_shop_goblin.png']
-    ['cr_pl_thumbs_up', '../starfire-assets/stickers/cr_thumbs_up_large.png']
-    ['cr_pl_thumb', '../starfire-assets/clash_royale/cr_thumb.png']
-    ['cr_pl_trophy', '../starfire-assets/clash_royale/cr_trophy.png']
+    ['cr_pl_fam', '../fam-assets/stickers/sf_logo_large.png']
+    ['cr_pl_angry', '../fam-assets/stickers/cr_angry_large.png']
+    ['cr_pl_crying', '../fam-assets/stickers/cr_crying_large.png']
+    ['cr_pl_laughing', '../fam-assets/stickers/cr_laughing_large.png']
+    ['cr_pl_shop_goblin', '../fam-assets/clash_royale/cr_shop_goblin.png']
+    ['cr_pl_thumbs_up', '../fam-assets/stickers/cr_thumbs_up_large.png']
+    ['cr_pl_thumb', '../fam-assets/clash_royale/cr_thumb.png']
+    ['cr_pl_trophy', '../fam-assets/clash_royale/cr_trophy.png']
 
   ], (args) ->
     generate.apply this, args
@@ -95,9 +95,9 @@ generate = (key, path) ->
         resize image, 30, 30
       ]
     .then ([large, small, tiny]) ->
-      fs.writeFileSync "../starfire-assets/stickers/#{key}_1_large.png", large.toBuffer()
-      fs.writeFileSync "../starfire-assets/stickers/#{key}_1_small.png", small.toBuffer()
-      fs.writeFileSync "../starfire-assets/stickers/#{key}_1_tiny.png", tiny.toBuffer()
+      fs.writeFileSync "../fam-assets/stickers/#{key}_1_large.png", large.toBuffer()
+      fs.writeFileSync "../fam-assets/stickers/#{key}_1_small.png", small.toBuffer()
+      fs.writeFileSync "../fam-assets/stickers/#{key}_1_tiny.png", tiny.toBuffer()
 
     # level 2 (color)
     loadImageFromPath path
@@ -109,9 +109,9 @@ generate = (key, path) ->
         resize image, 30, 30
       ]
     .then ([large, small, tiny]) ->
-      fs.writeFileSync "../starfire-assets/stickers/#{key}_2_large.png", large.toBuffer()
-      fs.writeFileSync "../starfire-assets/stickers/#{key}_2_small.png", small.toBuffer()
-      fs.writeFileSync "../starfire-assets/stickers/#{key}_2_tiny.png", tiny.toBuffer()
+      fs.writeFileSync "../fam-assets/stickers/#{key}_2_large.png", large.toBuffer()
+      fs.writeFileSync "../fam-assets/stickers/#{key}_2_small.png", small.toBuffer()
+      fs.writeFileSync "../fam-assets/stickers/#{key}_2_tiny.png", tiny.toBuffer()
 
     # level 3 (gold)
     loadImageFromPath path
@@ -125,33 +125,33 @@ generate = (key, path) ->
         resize image, 30, 30
       ]
     .then ([large, small, tiny]) ->
-      fs.writeFileSync "../starfire-assets/stickers/#{key}_3_large.png", large.toBuffer()
-      fs.writeFileSync "../starfire-assets/stickers/#{key}_3_small.png", small.toBuffer()
-      fs.writeFileSync "../starfire-assets/stickers/#{key}_3_tiny.png", tiny.toBuffer()
+      fs.writeFileSync "../fam-assets/stickers/#{key}_3_large.png", large.toBuffer()
+      fs.writeFileSync "../fam-assets/stickers/#{key}_3_small.png", small.toBuffer()
+      fs.writeFileSync "../fam-assets/stickers/#{key}_3_tiny.png", tiny.toBuffer()
   ]
   #
   #
   # getImage().modulate 100, 0, 0
   # .resize 100, 100
-  # .write "../starfire-assets/stickers/#{key}_1_small.png", _.noop
+  # .write "../fam-assets/stickers/#{key}_1_small.png", _.noop
   #
   # getImage().modulate 100, 0, 0
   # .resize 30, 30
-  # .write "../starfire-assets/stickers/#{key}_1_tiny.png", _.noop
+  # .write "../fam-assets/stickers/#{key}_1_tiny.png", _.noop
   #
   # getImage()
   # .resize 300, 300
-  # .write "../starfire-assets/stickers/#{key}_2_large.png", _.noop
+  # .write "../fam-assets/stickers/#{key}_2_large.png", _.noop
   #
   # getImage().resize 100, 100
-  # .write "../starfire-assets/stickers/#{key}_2_small.png", _.noop
+  # .write "../fam-assets/stickers/#{key}_2_small.png", _.noop
   #
   # getImage().resize 30, 30
-  # .write "../starfire-assets/stickers/#{key}_2_tiny.png", _.noop
+  # .write "../fam-assets/stickers/#{key}_2_tiny.png", _.noop
   #
-  # large3Path = "../starfire-assets/stickers/#{key}_3_large.png"
+  # large3Path = "../fam-assets/stickers/#{key}_3_large.png"
   # getImage()
-  # .composite '../starfire-assets/stickers/sparkle.png'
+  # .composite '../fam-assets/stickers/sparkle.png'
   # .write large3Path, (err) ->
   #   console.log err
   #   goldImage = gm large3Path
@@ -163,10 +163,10 @@ generate = (key, path) ->
   #     maskImage large3Path, path
   #     .then ->
   #       gm(large3Path).resize 100, 100
-  #       .write "../starfire-assets/stickers/#{key}_3_small.png", _.noop
+  #       .write "../fam-assets/stickers/#{key}_3_small.png", _.noop
   #
   #       gm(large3Path).resize 30, 30
-  #       .write "../starfire-assets/stickers/#{key}_3_tiny.png", _.noop
+  #       .write "../fam-assets/stickers/#{key}_3_tiny.png", _.noop
 
 loadImageFromPath = (path) ->
   console.log 'load from path', path
@@ -231,7 +231,7 @@ goldify = (image, path) ->
       x += 1
     y += 1
   ctx.putImageData imgPixels, 0, 0, 0, 0, imgPixels.width, imgPixels.height
-  loadImageFromPath '../starfire-assets/stickers/sparkle.png'
+  loadImageFromPath '../fam-assets/stickers/sparkle.png'
   .then (sparkleImage) ->
     ctx.drawImage sparkleImage, 0, 0
     canvas
