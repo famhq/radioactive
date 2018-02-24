@@ -160,10 +160,8 @@ class PlayerCtrl
     .then (clan) =>
       if clan?.groupId
         Group.getById clan.groupId
-        .then EmbedService.embed {embed: [EmbedService.TYPES.GROUP.USER_IDS]}
         .then (group) =>
-          if group?.userIds and group.userIds.indexOf(userId) is -1
-            @_addGroupUser {clan, group, userId, name}
+          @_addGroupUser {clan, group, userId, name}
         .catch (err) ->
           console.log err
 
@@ -194,7 +192,7 @@ class PlayerCtrl
             params:
               groupId: group.key or group.id
 
-      PushNotificationService.sendToGroup group, message, {
+      PushNotificationService.sendToGroupTopic group, message, {
         skipMe: true, userId
       }
 

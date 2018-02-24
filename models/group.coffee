@@ -96,10 +96,9 @@ class GroupModel
     if group.type is 'public'
       return Promise.resolve true
 
-    GroupUser.getAllByGroupId group.id
-    .map ({userId}) -> "#{userId}"
-    .then (userIds) ->
-      userIds and userIds.indexOf(user.id) isnt -1
+    GroupUser.getByGroupIdAndUserId group.id, user.id
+    .then (user) ->
+      Boolean user
 
   getById: (id, {preferCache} = {}) ->
     get = ->

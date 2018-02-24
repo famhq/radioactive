@@ -19,7 +19,6 @@ config = require '../config'
 defaultEmbed = [
   EmbedService.TYPES.GROUP.ME_GROUP_USER
   EmbedService.TYPES.GROUP.CONVERSATIONS
-  EmbedService.TYPES.GROUP.USER_IDS
   EmbedService.TYPES.GROUP.STAR
   EmbedService.TYPES.GROUP.USER_COUNT
 ]
@@ -156,7 +155,7 @@ class GroupCtrl
       name = User.getDisplayName user
 
       if group.type isnt 'public'
-        PushNotificationService.sendToGroup(group, {
+        PushNotificationService.sendToGroupTopic(group, {
           titleObj:
             key: 'newGroupMember.title'
           textObj:

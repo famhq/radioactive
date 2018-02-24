@@ -143,19 +143,10 @@ class PushNotificationService
     mentionUserIds ?= []
     (if conversation.groupId
       Group.getById "#{conversation.groupId}"
-      .then (group) ->
-        if group.type is 'public'
-          {group, userIds: []}
-        else
-          GroupUser.getAllByGroupId conversation.groupId
-          .map (groupUser) ->
-            groupUser.userId
-          .then (userIds) ->
-            {group, userIds}
     else if conversation.eventId
       Event.getById conversation.eventId
       .then (event) ->
-        {event, userIds: event.userIds}
+        {event}
     else
       Promise.resolve {userIds: conversation.userIds}
     ).then ({group, event, userIds}) =>
@@ -209,13 +200,18 @@ class PushNotificationService
         @sendToUserIds mentionUserIds, mentionMessage, {
           skipMe, meUserId: meUser.id, groupId: conversation.groupId
         }
+
         @sendToUserIds userIds, message, {
           skipMe, meUserId: meUser.id, groupId: conversation.groupId
         }
-      ]
 
-  sendToGroup: (group, message, {skipMe, meUserId, groupId} = {}) =>
-    @sendToUserIds group.userIds, message, {skipMe, meUserId, groupId}
+        # TODO: have users subscribe to conversation
+        # and send to subs of conversation
+        if group?.type and group.type isnt 'public'
+          @sendToGroupTopic group, message
+        else
+          Promise.resolve null
+      ]
 
   sendToGroupTopic: (group, message) =>
     topic = "group-#{group.id}"

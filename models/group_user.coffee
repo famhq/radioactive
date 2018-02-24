@@ -10,6 +10,8 @@ config = require '../config'
 ONE_DAY_SECONDS = 3600 * 24
 ONE_HOUR_SECONDS = 3600
 
+# don't run get all by groupId since some groups have 1m users
+
 defaultGroupUser = (groupUser) ->
   unless groupUser?
     return null
@@ -207,49 +209,14 @@ class GroupUserModel
       categoryCacheKey = "#{categoryPrefix}:#{groupUser.userId}"
       CacheService.deleteByCategory categoryCacheKey
 
-  getAllByGroupId: (groupId) ->
-    cknex().select '*'
-    .from 'group_users_by_groupId'
-    .where 'groupId', '=', groupId
-    .limit 5000 # for sanity. really this shouldn't be used in large groups
-    .run()
-    .catch (err) ->
-      console.log 'err getallgid groupUser', groupId
-      throw err
-
-  # TODO: rm ~march 2018
-  getLegacyCountByGroupId: (groupId, {preferCache} = {}) ->
+  getCountByGroupId: (groupId, {preferCache} = {}) ->
     get = ->
-      cknex().select()
-      .count '*'
-      .from 'group_users_by_groupId'
-      .where 'groupId', '=', groupId
-      .run {isSingle: true}
-      .then (response) ->
-        response?.count or 0
-
-    if preferCache
-      cacheKey = "#{CacheService.PREFIXES.GROUP_USER_COUNT}:#{groupId}"
-      CacheService.preferCache cacheKey, get, {
-        expireSeconds: ONE_HOUR_SECONDS
-      }
-    else
-      get()
-
-  getCountByGroupId: (groupId, {preferCache} = {}) =>
-    get = =>
       cknex().select '*'
       .from 'group_users_counter_by_groupId'
       .where 'groupId', '=', groupId
       .run {isSingle: true}
-      .then (response) =>
-        if response
-          response.userCount
-        else
-          @getLegacyCountByGroupId groupId, {preferCache}
-          .then (count) =>
-            @incrementCountByGroupId groupId, count
-            count
+      .then (response) ->
+        response.userCount
 
     if preferCache
       cacheKey = "#{CacheService.PREFIXES.GROUP_USER_COUNT}:#{groupId}"

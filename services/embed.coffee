@@ -71,7 +71,6 @@ TYPES =
     USER: 'star:user'
     GROUP: 'star:group'
   GROUP:
-    USER_IDS: 'group:userIds'
     USER_COUNT: 'group:userCount'
     USERS: 'group:users'
     ME_GROUP_USER: 'group:group_user'
@@ -473,11 +472,6 @@ embedFn = _.curry (props, object) ->
             Star.getById embedded.starId
             .then embedFn {embed: [TYPES.STAR.USER]}
           , {expireSeconds: ONE_HOUR_SECONDS}
-
-      when TYPES.GROUP.USER_IDS
-        if embedded.type isnt 'public'
-          embedded.userIds = GroupUser.getAllByGroupId embedded.id
-                              .map ({userId}) -> userId
 
       when TYPES.GROUP.USER_COUNT
         if embedded.type isnt 'public' and embedded.userIds?.then
