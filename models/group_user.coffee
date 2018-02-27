@@ -216,7 +216,7 @@ class GroupUserModel
       .where 'groupId', '=', groupId
       .run {isSingle: true}
       .then (response) ->
-        response.userCount
+        response?.userCount or 0
 
     if preferCache
       cacheKey = "#{CacheService.PREFIXES.GROUP_USER_COUNT}:#{groupId}"

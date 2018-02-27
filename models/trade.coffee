@@ -12,8 +12,10 @@ defaultTrade = (trade) ->
   unless trade?
     return null
 
-  trade.sendItemKeys = JSON.stringify trade.sendItemKeys
-  trade.receiveItemKeys = JSON.stringify trade.receiveItemKeys
+  if trade.sendItemKeys
+    trade.sendItemKeys = JSON.stringify trade.sendItemKeys
+  if trade.receiveItemKeys
+    trade.receiveItemKeys = JSON.stringify trade.receiveItemKeys
 
   _.assign {
     id: cknex.getTimeUuid()
@@ -28,12 +30,12 @@ defaultTradeOutput = (trade) ->
     return null
 
   trade.sendItemKeys = try
-    JSON.parse trade.sendItemKeys
+    JSON.parse(trade.sendItemKeys) or []
   catch error
     []
 
   trade.receiveItemKeys = try
-    JSON.parse trade.receiveItemKeys
+    JSON.parse(trade.receiveItemKeys) or []
   catch error
     []
 

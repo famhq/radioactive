@@ -107,6 +107,8 @@ class PlayerCtrl
       seed = user.id + ':' + player.id
       rand = randomSeed.create seed
       cardCount = player.data.cards?.length or 0
+      playerCardNames = _.orderBy _.map(player.data.cards, 'name')
+
       usedIds = []
       getRandomUniqueIndex = (tries = 0) ->
         id = rand(cardCount)
@@ -116,10 +118,10 @@ class PlayerCtrl
         else if tries < 20
           getRandomUniqueIndex tries + 1
       cards = _.map _.range(8), ->
-        card = player.data.cards[getRandomUniqueIndex()]
+        cardName = playerCardNames[getRandomUniqueIndex()]
         {
-          key: ClashRoyaleCard.getKeyByName card.name
-          id: cardIds[ClashRoyaleCard.getKeyByName(card.name)]
+          key: ClashRoyaleCard.getKeyByName cardName
+          id: cardIds[ClashRoyaleCard.getKeyByName(cardName)]
         }
 
       {

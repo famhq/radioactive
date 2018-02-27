@@ -6,7 +6,6 @@ cknex = require '../services/cknex'
 CacheService = require '../services/cache'
 config = require '../config'
 
-USER_PLAYERS_TABLE = 'user_players'
 USER_ID_GAME_KEY_INDEX = 'userIdGameId'
 PLAYER_ID_GAME_KEY_INDEX = 'playerIdGameId'
 PLAYER_ID_GAME_KEY_IS_VERIFIED_INDEX = 'playerIdGameIdIsVerified'
@@ -19,7 +18,7 @@ defaultUserPlayer = (userPlayer) ->
     userId: null
     gameKey: 'clash-royale'
     playerId: null
-    isVerified: false
+    # isVerified: false
   }
 
 defaultUserPlayerOutput = (userPlayer) ->
@@ -75,21 +74,41 @@ class UserPlayerModel
     delete set.keys
     delete set.forEach
 
-    Promise.all [
-      cknex().update 'user_players_by_userId_new'
-      .set set
-      .where 'gameKey', '=', userPlayer.gameKey
-      .andWhere 'userId', '=', userPlayer.userId
-      .andWhere 'playerId', '=', userPlayer.playerId
-      .run()
+    (if _.keys(set).length > 0
+      Promise.all [
+        cknex().update 'user_players_by_userId_new'
+        .set set
+        .where 'gameKey', '=', userPlayer.gameKey
+        .andWhere 'userId', '=', userPlayer.userId
+        .andWhere 'playerId', '=', userPlayer.playerId
+        .run()
 
-      cknex().update 'user_players_by_gameKey_and_playerId'
-      .set set
-      .where 'gameKey', '=', userPlayer.gameKey
-      .andWhere 'playerId', '=', userPlayer.playerId
-      .andWhere 'userId', '=', userPlayer.userId
-      .run()
-    ]
+        cknex().update 'user_players_by_gameKey_and_playerId'
+        .set set
+        .where 'gameKey', '=', userPlayer.gameKey
+        .andWhere 'playerId', '=', userPlayer.playerId
+        .andWhere 'userId', '=', userPlayer.userId
+        .run()
+      ]
+    else
+      Promise.all [
+        cknex().insert {
+          gameKey: userPlayer.gameKey
+          userId: userPlayer.userId
+          playerId: userPlayer.playerId
+        }
+        .into 'user_players_by_userId_new'
+        .run()
+
+        cknex().insert {
+          gameKey: userPlayer.gameKey
+          userId: userPlayer.userId
+          playerId: userPlayer.playerId
+        }
+        .into 'user_players_by_gameKey_and_playerId'
+        .run()
+      ]
+    )
     .then ->
       userPlayer
 
@@ -163,8 +182,14 @@ class UserPlayerModel
         isVerified: true
       }
     .then ->
-      key = CacheService.PREFIXES.PLAYER_VERIFIED_USER + ':' + playerId
-      CacheService.deleteByKey key
+      prefix = CacheService.PREFIXES.PLAYER_VERIFIED_USER
+      playerCacheKey = "#{prefix}:#{playerId}"
+      prefix = CacheService.PREFIXES.USER_PLAYER_USER_ID_GAME_KEY
+      userCacheKey = "#{prefix}:#{userId}:#{gameKey}"
+      Promise.all [
+        CacheService.deleteByKey playerCacheKey
+        CacheService.deleteByKey userCacheKey
+      ]
 
   getAllByPlayerIdAndGameKey: (playerId, gameKey) =>
     # TODO: rm user_players_by_userId part after 3/1/2018

@@ -1,7 +1,6 @@
 _ = require 'lodash'
 Promise = require 'bluebird'
 
-r = require '../services/rethinkdb'
 CacheService = require '../services/cache'
 GroupClan = require './group_clan'
 Group = require './group'
