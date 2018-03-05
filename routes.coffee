@@ -146,6 +146,8 @@ module.exports = router
   authed ThreadCommentCtrl.getAllByThreadId
 .on 'threadComments.deleteByThreadComment',
   authed ThreadCommentCtrl.deleteByThreadComment
+.on 'threadComments.deleteAllByGroupIdAndUserId',
+  authed ThreadCommentCtrl.deleteAllByGroupIdAndUserId
 
 .on 'events.create', authed EventCtrl.create
 .on 'events.updateById', authed EventCtrl.updateById
@@ -234,6 +236,10 @@ module.exports = router
   authed PlayerCtrl.getByUserIdAndGameKey
 .on 'players.getByPlayerIdAndGameKey',
   authed PlayerCtrl.getByPlayerIdAndGameKey
+.on 'players.getAllByMe',
+  authed PlayerCtrl.getAllByMe
+.on 'players.unlinkByMeAndGameKey',
+  authed PlayerCtrl.unlinkByMeAndGameKey
 .on 'players.getTop', authed PlayerCtrl.getTop
 .on 'players.search', authed PlayerCtrl.search
 .on 'players.getMeFollowing', authed PlayerCtrl.getMeFollowing

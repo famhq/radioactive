@@ -19,7 +19,7 @@ class ScyllaSetupService
           createTables = _.map _.filter(tables, ({name}) ->
             name in [
               # 'matches_by_playerId'
-              'group_users_online'
+              'push_topics_by_userId'
               # 'addons_by_key'
               # 'addons_by_id'
               # 'addons_by_gameKey'

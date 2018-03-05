@@ -116,7 +116,10 @@ class UserPlayerModel
     @getByUserIdAndGameKey userId, gameKey
     .then (userPlayer) =>
       if userPlayer
-        @deleteByUserPlayer
+        @deleteByUserPlayer userPlayer
+        .tap ->
+          prefix = CacheService.PREFIXES.USER_PLAYER_USER_ID_GAME_KEY
+          CacheService.deleteByKey "#{prefix}:#{userId}:#{gameKey}"
 
   deleteByUserPlayer: (userPlayer) ->
     Promise.all [

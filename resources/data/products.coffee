@@ -4,13 +4,7 @@ _ = require 'lodash'
 config = require '../../config'
 
 ONE_DAY_SECONDS = 3600 * 24
-GROUPS =
-  PLAY_HARD: 'ad25e866-c187-44fc-bdb5-df9fcc4c6a42'
-  CLASH_ROYALE_EN: '73ed4af0-a2f2-4371-a893-1360d3989708'
-  CLASH_ROYALE_ES: '4f26e51e-7f35-41dd-9f21-590c7bb9ce34'
-  CLASH_ROYALE_PT: '68acb51a-3e5a-466a-9e31-c93aacd5919e'
-  CLASH_ROYALE_PL: '22e9db0b-45be-4c6d-86a5-434b38684db9'
-
+GROUPS = config.GROUPS
 DEFAULT_FREE_PACK_DATA =
   lockTime: ONE_DAY_SECONDS
   count: 1
@@ -40,7 +34,7 @@ DEFAULT_3_PACK_DATA =
 products =
   # ph_shout_out_raffle: {
   #   type: 'raffle'
-  #   groupId: GROUPS.PLAY_HARD
+  #   groupId: GROUPS.PLAY_HARD.ID
   #   name: 'PlayHard Raffle Ticket'
   #   cost: 50 # 5c
   #   data:
@@ -52,7 +46,7 @@ products =
 
   # ph_pack1: {
   #   type: 'pack'
-  #   groupId: GROUPS.PLAY_HARD
+  #   groupId: GROUPS.PLAY_HARD.ID
   #   name: 'Pacote de emojis PH (1)'
   #   cost: 100 # 10c
   #   data: _.defaults {
@@ -62,7 +56,7 @@ products =
   # }
   # ph_pack3: {
   #   type: 'pack'
-  #   groupId: GROUPS.PLAY_HARD
+  #   groupId: GROUPS.PLAY_HARD.ID
   #   name: 'Pacote de emojis PH (3)'
   #   cost: 250 # 25c
   #   data: _.defaults {
@@ -73,7 +67,7 @@ products =
   ph_google_play_30: {
     name: '30 BRL Google Play'
     type: 'general'
-    groupId: GROUPS.PLAY_HARD
+    groupId: GROUPS.PLAY_HARD.ID
     cost: 15000
     data: {
       backgroundImage: 'https://cdn.wtf/d/images/fam/products/google_play.png'
@@ -83,7 +77,7 @@ products =
   ph_visa_10: {
     name: '$10 USD Visa Gift Card'
     type: 'general'
-    groupId: GROUPS.PLAY_HARD
+    groupId: GROUPS.PLAY_HARD.ID
     cost: 15000
     data: {
       backgroundImage: 'https://cdn.wtf/d/images/fam/products/visa.png'
@@ -93,7 +87,7 @@ products =
   ph_badge: {
     name: 'Distintivo "fire" no nome'
     type: 'pack'
-    groupId: GROUPS.PLAY_HARD
+    groupId: GROUPS.PLAY_HARD.ID
     cost: 200
     data:
       backgroundImage: 'https://cdn.wtf/d/images/fam/items/ph_badge_7_days_large.png'
@@ -104,7 +98,7 @@ products =
   ph_key: {
     name: 'PH Key'
     type: 'pack'
-    groupId: GROUPS.PLAY_HARD
+    groupId: GROUPS.PLAY_HARD.ID
     cost: 200
     data:
       backgroundImage: 'https://cdn.wtf/d/images/fam/packs/ph_key.png'
@@ -114,7 +108,7 @@ products =
   }
   ph_chest: {
     type: 'pack'
-    groupId: GROUPS.PLAY_HARD
+    groupId: GROUPS.PLAY_HARD.ID
     name: 'Free Chest'
     cost: 0
     data:
@@ -126,7 +120,7 @@ products =
   }
   ph_starter_chest: {
     type: 'pack'
-    groupId: GROUPS.PLAY_HARD
+    groupId: GROUPS.PLAY_HARD.ID
     name: 'PH Starter Pack'
     cost: 0
     data:
@@ -139,14 +133,51 @@ products =
   # ph_send_message: {
   #   name: 'Envie uma mensagem para Bruno'
   #   type: 'general'
-  #   groupId: GROUPS.PLAY_HARD
+  #   groupId: GROUPS.PLAY_HARD.ID
   #   cost: 1000
   # }
+
+  # NICKATNYTE
+  nan_key: {
+    name: 'NickAtNyte Key'
+    type: 'pack'
+    groupId: GROUPS.NICKATNYTE.ID
+    cost: 200
+    data:
+      backgroundImage: 'https://cdn.wtf/d/images/fam/packs/nan_key.png'
+      backgroundColor: '#2196F3'
+      count: 1
+      itemKeys: ['nan_key']
+  }
+  nan_chest: {
+    type: 'pack'
+    groupId: GROUPS.NICKATNYTE.ID
+    name: 'Free Chest'
+    cost: 0
+    data:
+      backgroundImage: 'https://cdn.wtf/d/images/fam/packs/nan_chest.png'
+      backgroundColor: '#9C27B0'
+      lockTime: ONE_DAY_SECONDS
+      count: 1
+      itemKeys: ['nan_chest']
+  }
+  nan_starter_chest: {
+    type: 'pack'
+    groupId: GROUPS.NICKATNYTE.ID
+    name: 'NickAtNyte Starter Pack'
+    cost: 0
+    data:
+      backgroundImage: 'https://cdn.wtf/d/images/fam/packs/nan_starter_chest.png'
+      backgroundColor: '#F44336'
+      lockTime: 'infinity'
+      count: 2
+      itemKeys: ['nan_starter_chest', 'nan_starter_key']
+  }
 
   # CLASH ROYALE ENGLISH
   cr_en_pack_free: {
     type: 'pack'
-    groupId: GROUPS.CLASH_ROYALE_EN
+    groupId: GROUPS.CLASH_ROYALE_EN.ID
     name: 'Free Clash Royale Sticker Pack (1)'
     cost: 0
     data: _.defaults {
@@ -156,7 +187,7 @@ products =
   }
   cr_en_pack1: {
     type: 'pack'
-    groupId: GROUPS.CLASH_ROYALE_EN
+    groupId: GROUPS.CLASH_ROYALE_EN.ID
     name: 'Clash Royale Sticker Pack (1)'
     cost: 100 # 10c
     data: _.defaults {
@@ -166,7 +197,7 @@ products =
   }
   cr_en_pack3: {
     type: 'pack'
-    groupId: GROUPS.CLASH_ROYALE_EN
+    groupId: GROUPS.CLASH_ROYALE_EN.ID
     name: 'Clash Royale Sticker Pack (3)'
     cost: 250 # 25c
     data: _.defaults {
@@ -177,7 +208,7 @@ products =
   cr_en_google_play_10: {
     type: 'general'
     name: '$10 Google Play Gift Card'
-    groupId: GROUPS.CLASH_ROYALE_EN
+    groupId: GROUPS.CLASH_ROYALE_EN.ID
     cost: 15000
     data: {
       backgroundImage: 'https://cdn.wtf/d/images/fam/products/google_play.png'
@@ -187,7 +218,7 @@ products =
   cr_en_visa_10: {
     type: 'general'
     name: '$10 Visa Gift Card'
-    groupId: GROUPS.CLASH_ROYALE_EN
+    groupId: GROUPS.CLASH_ROYALE_EN.ID
     cost: 15000
     data: {
       backgroundImage: 'https://cdn.wtf/d/images/fam/products/visa.png'
@@ -198,7 +229,7 @@ products =
   # CLASH ROYALE SPANISH
   cr_es_pack_free: {
     type: 'pack'
-    groupId: GROUPS.CLASH_ROYALE_ES
+    groupId: GROUPS.CLASH_ROYALE_ES.ID
     name: 'Free Clash Royale Sticker Pack (1)'
     cost: 0
     data: _.defaults {
@@ -208,7 +239,7 @@ products =
   }
   # cr_es_pack1: {
   #   type: 'pack'
-  #   groupId: GROUPS.CLASH_ROYALE_ES
+  #   groupId: GROUPS.CLASH_ROYALE_ES.ID
   #   name: 'Pack de Stickers Clash Royale (1)'
   #   cost: 100 # 10c
   #   data: _.defaults {
@@ -219,7 +250,7 @@ products =
   # cr_es_pack3: {
   #   type: 'pack'
   #   name: 'Pack de Stickers Clash Royale (3)'
-  #   groupId: GROUPS.CLASH_ROYALE_ES
+  #   groupId: GROUPS.CLASH_ROYALE_ES.ID
   #   cost: 250 # 25c
   #   data: _.defaults {
   #     backgroundImage: 'https://cdn.wtf/d/images/fam/packs/cr_es_3.png'
@@ -229,7 +260,7 @@ products =
   cr_es_google_play_10: {
     type: 'general'
     name: '$10 USD Google Play Gift Card'
-    groupId: GROUPS.CLASH_ROYALE_ES
+    groupId: GROUPS.CLASH_ROYALE_ES.ID
     cost: 15000
     data: {
       backgroundImage: 'https://cdn.wtf/d/images/fam/products/google_play.png'
@@ -239,7 +270,7 @@ products =
   cr_es_visa_10: {
     type: 'general'
     name: '$10 USD Visa Gift Card'
-    groupId: GROUPS.CLASH_ROYALE_ES
+    groupId: GROUPS.CLASH_ROYALE_ES.ID
     cost: 15000
     data: {
       backgroundImage: 'https://cdn.wtf/d/images/fam/products/visa.png'
@@ -250,7 +281,7 @@ products =
   # CLASH ROYALE PORTUGUESE
   cr_pt_pack1: {
     type: 'pack'
-    groupId: GROUPS.CLASH_ROYALE_PT
+    groupId: GROUPS.CLASH_ROYALE_PT.ID
     name: 'Clash Royale Sticker Pack (1)'
     cost: 100 # 10c
     data: _.defaults {
@@ -260,7 +291,7 @@ products =
   }
   cr_pt_pack3: {
     type: 'pack'
-    groupId: GROUPS.CLASH_ROYALE_PT
+    groupId: GROUPS.CLASH_ROYALE_PT.ID
     name: 'Clash Royale Sticker Pack (3)'
     cost: 250 # 25c
     data: _.defaults {
@@ -271,7 +302,7 @@ products =
   cr_pt_google_play_10: {
     type: 'general'
     name: '30 BRL Google Play Gift Card'
-    groupId: GROUPS.CLASH_ROYALE_PT
+    groupId: GROUPS.CLASH_ROYALE_PT.ID
     cost: 15000
     data: {
       backgroundImage: 'https://cdn.wtf/d/images/fam/products/google_play.png'
@@ -281,7 +312,7 @@ products =
   cr_pt_visa_10: {
     type: 'general'
     name: '$10 USD Visa Gift Card'
-    groupId: GROUPS.CLASH_ROYALE_PT
+    groupId: GROUPS.CLASH_ROYALE_PT.ID
     cost: 15000
     data: {
       backgroundImage: 'https://cdn.wtf/d/images/fam/products/visa.png'
@@ -292,7 +323,7 @@ products =
   # CLASH ROYALE POLISH
   cr_pl_pack1: {
     type: 'pack'
-    groupId: GROUPS.CLASH_ROYALE_PL
+    groupId: GROUPS.CLASH_ROYALE_PL.ID
     name: 'Clash Royale Sticker Pack (1)'
     cost: 100 # 10c
     data: _.defaults {
@@ -302,7 +333,7 @@ products =
   }
   cr_pl_pack3: {
     type: 'pack'
-    groupId: GROUPS.CLASH_ROYALE_PL
+    groupId: GROUPS.CLASH_ROYALE_PL.ID
     name: 'Clash Royale Sticker Pack (3)'
     cost: 250 # 25c
     data: _.defaults {
@@ -313,7 +344,7 @@ products =
   # cr_pl_google_play_10: {
   #   type: 'general'
   #   name: '30 BRL Google Play Gift Card'
-  #   groupId: GROUPS.CLASH_ROYALE_PL
+  #   groupId: GROUPS.CLASH_ROYALE_PL.ID
   #   cost: 15000
   #   data: {
   #     backgroundImage: 'https://cdn.wtf/d/images/fam/products/google_play.png'
@@ -323,7 +354,7 @@ products =
   cr_pl_visa_10: {
     type: 'general'
     name: '$10 USD Visa Gift Card'
-    groupId: GROUPS.CLASH_ROYALE_PL
+    groupId: GROUPS.CLASH_ROYALE_PL.ID
     cost: 15000
     data: {
       backgroundImage: 'https://cdn.wtf/d/images/fam/products/visa.png'

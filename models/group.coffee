@@ -175,7 +175,7 @@ class GroupModel
         if group
           return group
         else
-          @getById config.GROUPS.CLASH_ROYALE_EN
+          @getById config.GROUPS.CLASH_ROYALE_EN.ID
     if preferCache
       prefix = CacheService.PREFIXES.GROUP_GAME_KEY_LANGUAGE
       key = "#{prefix}:#{gameKey}:#{language}"

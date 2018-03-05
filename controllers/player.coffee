@@ -293,4 +293,12 @@ class PlayerCtrl
           players
     , {expireSeconds: ONE_MINUTE_SECONDS}
 
+  getAllByMe: ({}, {user}) ->
+    UserPlayer.getAllByUserId user.id
+    .map EmbedService.embed {embed: [EmbedService.TYPES.USER_PLAYER.PLAYER]}
+
+  unlinkByMeAndGameKey: ({gameKey}, {user}) ->
+    console.log 'delete', user.id, gameKey
+    UserPlayer.deleteByUserIdAndGameKey user.id, gameKey
+
 module.exports = new PlayerCtrl()

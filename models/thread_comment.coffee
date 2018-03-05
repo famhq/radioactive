@@ -1,12 +1,15 @@
 _ = require 'lodash'
 Promise = require 'bluebird'
-
 uuid = require 'node-uuid'
+moment = require 'moment'
 
 cknex = require '../services/cknex'
 CacheService = require '../services/cache'
 TimeService = require '../services/time'
 User = require './user'
+
+# TODO: add groupId and thread_comments_by_groupId_by_creatorId to allow
+# deleteAllByGroupIdAndUserId. should also rename creatorId to userId
 
 tables = [
   # sorting done in node
@@ -185,6 +188,13 @@ class ThreadCommentModel
     .run()
     .then (threads) -> threads.length
 
+  getAllByCreatorIdAndTimeBucket: (creatorId, timeBucket) ->
+    cknex().select '*'
+    .from 'thread_comments_by_creatorId'
+    .where 'creatorId', '=', creatorId
+    .andWhere 'timeBucket', '=', timeBucket
+    .run()
+
   deleteByThreadComment: (threadComment) ->
     Promise.all [
       cknex().delete()
@@ -216,6 +226,17 @@ class ThreadCommentModel
       .run()
     ]
 
+
+  deleteAllByCreatorId: (creatorId, {duration} = {}) =>
+    del = (timeBucket) =>
+      @getAllByCreatorIdAndTimeBucket creatorId, timeBucket
+      .map @deleteByThreadComment
+
+    del TimeService.getScaledTimeByTimeScale 'month'
+    del TimeService.getScaledTimeByTimeScale(
+      'month'
+      moment().subtract(1, 'month')
+    )
 
   # would need another table to grab by id
   # getById: (id) ->

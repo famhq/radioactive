@@ -48,7 +48,7 @@ class HealthCtrl
       .timeout HEALTHCHECK_TIMEOUT
       .catch -> null
 
-      GroupUser.getByGroupIdAndUserId config.GROUPS.PLAY_HARD, AUSTIN_ID
+      GroupUser.getByGroupIdAndUserId config.GROUPS.PLAY_HARD.ID, AUSTIN_ID
       .timeout HEALTHCHECK_TIMEOUT
       .catch -> null
 

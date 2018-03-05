@@ -12,6 +12,7 @@ EmbedService = require './embed'
 User = require '../models/user'
 Notification = require '../models/notification'
 PushToken = require '../models/push_token'
+PushTopic = require '../models/push_topic'
 Event = require '../models/event'
 Group = require '../models/group'
 GroupUser = require '../models/group_user'
@@ -213,9 +214,22 @@ class PushNotificationService
           Promise.resolve null
       ]
 
-  sendToGroupTopic: (group, message) =>
-    topic = "group-#{group.id}"
-    language = group.language
+  # topics are NOT secure. anyone can subscribe. for secure messaging, always
+  # use the deviceToken. for private channels, use deviceToken
+
+  ###
+      // topics:
+      // store subscriptions in database
+        // <userId>, <groupId, appKey, subType, subId>
+        // topic structure: groupId:appKey:subType:subId
+        // eg: 12345:conversation:54321
+
+      // when subscribing to group topic, unsubscribe from the main app one
+      // only subscribe to group topics in group app
+  ###
+
+  sendToPushTopic: (pushTopic, message, {language} = {}) =>
+    topic = @getTopicStrFromPushTopic pushTopic
     if message.titleObj
       message.title = Language.get message.titleObj.key, {
         file: 'pushNotifications'
@@ -238,10 +252,14 @@ class PushNotificationService
     }
 
     if config.ENV isnt config.ENVS.PROD or config.IS_STAGING
-      console.log 'send notification', group.id, JSON.stringify message
+      console.log 'send notification', pushTopic, JSON.stringify message
       return Promise.resolve()
 
     @sendFcm topic, message
+
+
+  sendToGroupTopic: (group, message) =>
+    @sendToPushTopic {groupId: group.id}, message, {language: group.language}
 
   sendToEvent: (event, message, {skipMe, meUserId, eventId} = {}) =>
     @sendToUserIds event.userIds, message, {skipMe, meUserId, eventId}
@@ -310,65 +328,206 @@ class PushNotificationService
     successfullyPushedToNative = false
 
     PushToken.getAllByUserId user.id
-    .map (pushToken) =>
-      {id, sourceType, token, errorCount} = pushToken
-      fn = if sourceType is 'web' \
-           then @sendWeb
-           else if sourceType in ['android', 'ios-fcm', 'web-fcm']
-           then @sendFcm
+    .then (pushTokens) =>
+      pushTokens = _.filter pushTokens, (pushToken) ->
+        pushToken.isActive
 
-      unless fn
-        console.log 'no fn', sourceType
-        return
+      pushTokenDevices = _.groupBy pushTokens, 'deviceId'
+      pushTokens = _.map pushTokenDevices, (tokens) ->
+        if message.groupId
+          groupAppKey = _.find(config.GROUPS, {ID: message.groupId})?.APP_KEY
+          groupAppToken = _.find tokens, {appKey: config.GROUPS.MAIN.APP_KEY}
+          if groupAppToken
+            return groupAppToken
+        mainAppToken = _.find tokens, {appKey: config.GROUPS.MAIN.APP_KEY}
+        if mainAppToken
+          return mainAppToken
+        return tokens[0]
 
-      fn token, message, {isiOS: sourceType is 'ios-fcm'}
-      .then ->
-        successfullyPushedToNative = true
-        if errorCount
-          PushToken.upsert _.defaults({
-            errorCount: 0
-          }, pushToken)
-      .catch (err) ->
-        newErrorCount = errorCount + 1
-        PushToken.upsert _.defaults({
-          errorCount: newErrorCount
-          isActive: newErrorCount < CONSECUTIVE_ERRORS_UNTIL_INACTIVE
-        }, pushToken)
 
-        if newErrorCount >= CONSECUTIVE_ERRORS_UNTIL_INACTIVE
-          PushToken.getAllByUserId user.id
-          .then (tokens) ->
-            if _.isEmpty tokens
-              User.updateById user.id, {
-                hasPushToken: false
-              }
+      Promise.map pushTokens, (pushToken) =>
+        {id, sourceType, token, errorCount} = pushToken
+        fn = if sourceType is 'web' \
+             then @sendWeb
+             else if sourceType in ['android', 'ios-fcm', 'web-fcm']
+             then @sendFcm
 
-  subscribeToTopicByUserId: (userId, topic) ->
-    # console.log 'subscribeTopic', topic
-    PushToken.getAllByUserId userId
-    .map ({sourceType, token}) ->
-      unless sourceType in ['android', 'ios-fcm', 'web-fcm']
-        return
-      base = 'https://iid.googleapis.com/iid/v1'
-      request "#{base}/#{token}/rel/topics/#{topic}", {
-        json: true
-        method: 'POST'
-        headers:
-          'Authorization': "key=#{config.GOOGLE_API_KEY}"
-        body: {}
-      }
-      .catch (err) ->
-        console.log 'sub topic err'
+        unless fn
+          console.log 'no fn', sourceType
+          return
 
-  subscribeToAllTopicsByUser: (user, {language} = {}) =>
+        fn token, message, {isiOS: sourceType is 'ios-fcm'}
+        .then ->
+          successfullyPushedToNative = true
+          if errorCount
+            PushToken.upsert _.defaults({
+              errorCount: 0
+            }, pushToken)
+        .catch (err) ->
+          newErrorCount = errorCount + 1
+          if newErrorCount >= CONSECUTIVE_ERRORS_UNTIL_INACTIVE
+            Promise.all [
+              PushToken.deleteByPushToken pushToken
+              PushTopic.deleteByPushToken pushToken
+            ]
+          else
+            PushToken.upsert _.defaults({
+              errorCount: newErrorCount
+            }, pushToken)
+
+          if newErrorCount >= CONSECUTIVE_ERRORS_UNTIL_INACTIVE
+            PushToken.getAllByUserId user.id
+            .then (tokens) ->
+              if _.isEmpty tokens
+                User.updateById user.id, {
+                  hasPushToken: false
+                }
+
+  migratePushTopicsByUserId: (userId, {appKey, token, deviceId}) ->
+    isMainApp = appKey is config.GROUPS.MAIN.APP_KEY
+    appGroupId = _.find(config.GROUPS, {APP_KEY: appKey})?.ID
+
     Promise.all [
-      @subscribeToTopicByUserId user.id, 'all'
-      @subscribeToTopicByUserId user.id, (language or user.language)
+      PushToken.getAllByUserId userId
+      PushTopic.getAllByUserId userId
+    ]
+    .then ([pushTokens, pushTopics]) =>
+      appKeyPushTokens = _.filter pushTokens, {appKey}
+      appKeyPushTopics = _.filter pushTopics, {appKey}
 
-      GroupUser.getAllByUserId user.id
-      .map ({groupId}) =>
-        @subscribeToTopicByUserId user.id, "group-#{groupId}"
+      if isMainApp
+        mainAppTopics = _.filter pushTopics, {
+          appKey: config.GROUPS.MAIN.APP_KEY
+        }
+        uniqueMainAppTopics = _.uniqBy mainAppTopics, (topic) ->
+          _.omit topic, ['token']
+        Promise.map uniqueMainAppTopics, (topic) =>
+          @subscribeToTopicByToken token, topic
+          .then ->
+            PushTopic.upsert _.defaults {
+              token: token
+              deviceId: deviceId
+            }, topic
+      else if appGroupId
+        mainAppGroupTopics = _.filter pushTopics, {
+          appKey: config.GROUPS.MAIN.APP_KEY
+          groupId: appGroupId
+        }
+        uniqueMainAppGroupTopics = _.uniqBy mainAppGroupTopics, (topic) ->
+          _.omit topic, ['token']
+        # move main app subscription topics to this appKey
+        # delete/unsub all main app id ones
+        Promise.map mainAppGroupTopics, (topic) =>
+          @unsubscribeToTopicByPushTopic topic
+          .then ->
+            PushTopic.deleteByPushTopic topic
+
+        # move main app id ones to group app
+        Promise.map uniqueMainAppGroupTopics, (topic) =>
+          newTopic = _.defaults {appKey}, topic
+          Promise.map appKeyPushTokens, (pushToken) =>
+            @subscribeToTopicByToken pushToken.token, topic
+            .then ->
+              PushTopic.upsert _.defaults {
+                token: pushToken.token
+                deviceId: pushToken.deviceId
+              }, newTopic
+
+
+
+  subscribeToPushTopic: (topic) =>
+    {userId, groupId, appKey, sourceType, sourceId} = topic
+    isMainApp = appKey is config.GROUPS.MAIN.APP_KEY
+    groupAppKey = _.find(config.GROUPS, {ID: groupId})?.APP_KEY
+    isGroupApp = appKey is groupAppKey
+
+    Promise.all [
+      PushToken.getAllByUserId userId
+      PushTopic.getAllByUserId userId
+    ]
+    .then ([pushTokens, topics]) =>
+      if isMainApp
+        existingTopics = _.filter topics, {groupId}
+        isSubscribedToGroupApp = _.find existingTopics, {
+          groupId
+          appKey: groupAppKey
+        }
+        if isSubscribedToGroupApp
+          return null
+
+      appKeyPushTokens = _.filter pushTokens, {appKey}
+      Promise.map appKeyPushTokens, (pushToken) =>
+        @subscribeToTopicByToken pushToken.token, topic
+        .then ->
+          PushTopic.upsert _.defaults {
+            token: pushToken.token
+            deviceId: pushToken.deviceId
+          }, topic
+
+  subscribeToTopicByToken: (token, topic) =>
+    if typeof topic is 'object'
+      topic = @getTopicStrFromPushTopic topic
+    base = 'https://iid.googleapis.com/iid/v1'
+    request "#{base}/#{token}/rel/topics/#{topic}", {
+      json: true
+      method: 'POST'
+      headers:
+        'Authorization': "key=#{config.GOOGLE_API_KEY}"
+      body: {}
+    }
+    .catch (err) ->
+      console.log 'sub topic err'
+
+  unsubscribeToTopicByPushTopic: (pushTopic) =>
+    topic = @getTopicStrFromPushTopic pushTopic
+    base = 'https://iid.googleapis.com/iid/v1'
+    request "#{base}/#{pushTopic.token}/rel/topics/#{topic}", {
+      json: true
+      method: 'DELETE'
+      headers:
+        'Authorization': "key=#{config.GOOGLE_API_KEY}"
+      body: {}
+    }
+    .catch (err) ->
+      console.log 'sub topic err'
+
+  subscribeToAllTopicsByUser: (user, {appKey, deviceId, language} = {}) =>
+    appGroupId = _.find(config.GROUPS, {APP_KEY: appKey})?.ID
+
+    Promise.all [
+      @subscribeToPushTopic {
+        appKey
+        deviceId
+        groupId: config.EMPTY_UUID
+        userId: user.id
+        sourceType: 'language'
+        sourceId: (language or user.language)
+      }
+
+      # shouldn't force people back into all group topics
+      # if appKey is config.GROUPS.MAIN.APP_KEY
+      #   GroupUser.getAllByUserId user.id
+      #   .map ({groupId}) =>
+      #     @subscribeToPushTopic {
+      #       appKey
+      #       deviceId
+      #       groupId
+      #       userId: user.id
+      #     }
+      # else if appGroupId
+      if appGroupId
+        @subscribeToPushTopic {
+          appKey
+          deviceId
+          groupId: appGroupId
+          userId: user.id
+        }
     ]
 
+  getTopicStrFromPushTopic: ({groupId, sourceType, sourceId}) ->
+    sourceType ?= 'all'
+    sourceId ?= 'all'
+    # : not a valid topic character
+    "#{groupId}~#{sourceType}~#{sourceId}"
 
 module.exports = new PushNotificationService()

@@ -27,7 +27,7 @@ class AuthCtrl
     .tap (user) ->
       if language is 'pt'
         # put all portuguese users in bruno's group
-        GroupCtrl.joinById {id: config.GROUPS.PLAY_HARD}, {user}
+        GroupCtrl.joinById {id: config.GROUPS.PLAY_HARD.ID}, {user}
     .then (user) ->
       Auth.fromUserId user.id
 

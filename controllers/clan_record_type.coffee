@@ -2,7 +2,7 @@ _ = require 'lodash'
 router = require 'exoid-router'
 Promise = require 'bluebird'
 
-ClanRecordType = require '../models/game_record_type'
+# ClanRecordType = require '../models/game_record_type'
 Clan = require '../models/clan'
 EmbedService = require '../services/embed'
 config = require '../config'

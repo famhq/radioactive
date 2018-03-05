@@ -159,7 +159,7 @@ class ThreadCtrl
             else
               Thread.upsert _.defaults thread, {
                 creatorId: user.id
-                groupId: group?.id or config.GROUPS.CLASH_ROYALE_EN
+                groupId: group?.id or config.GROUPS.CLASH_ROYALE_EN.ID
               }
       .tap ->
         # TODO: groupId

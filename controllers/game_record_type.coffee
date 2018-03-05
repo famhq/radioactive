@@ -5,7 +5,7 @@ Promise = require 'bluebird'
 CacheService = require '../services/cache' # FIXME rm
 
 ClashRoyalePlayerRecord = require '../models/clash_royale_player_record'
-GameRecordType = require '../models/game_record_type'
+# GameRecordType = require '../models/game_record_type'
 User = require '../models/user'
 EmbedService = require '../services/embed'
 config = require '../config'

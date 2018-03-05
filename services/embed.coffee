@@ -94,6 +94,8 @@ TYPES =
     TRANSACTION: 'specialOffer:transaction'
   SPECIAL_OFFER_TRANSACTION:
     SPECIAL_OFFER: 'specialOfferTransaction:specialOffer'
+  USER_PLAYER:
+    PLAYER: 'userPlayer:player'
   PLAYER:
     VERIFIED_USER: 'player:verifiedUser'
     HI: 'player:hi'
@@ -682,6 +684,10 @@ embedFn = _.curry (props, object) ->
         embedded.to = if toId \
                       then User.getById(toId).then User.sanitizePublic(null)
                       else null
+
+      when TYPES.USER_PLAYER.PLAYER
+        {gameKey, playerId, isVerified} = embedded
+        embedded.player = Player.getByPlayerIdAndGameKey playerId, gameKey
 
       when TYPES.PLAYER.HI
         embedded.hi = Promise.resolve(

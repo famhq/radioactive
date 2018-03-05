@@ -318,49 +318,4 @@ class ChatMessageModel extends Stream
       moment().subtract(1, 'week')
     )
 
-  # migrateAll: (order) =>
-  #   start = Date.now()
-  #   Promise.all [
-  #     CacheService.get 'migrate_chat_messages_min_id7'
-  #     .then (minId) =>
-  #       minId ?= '0'
-  #       r.table 'chat_messages'
-  #       .between minId, 'ZZZZ'
-  #       .orderBy {index: r.asc('id')}
-  #       .limit 500
-  #       .then (chatMessages) =>
-  #         Promise.map chatMessages, (chatMessage) =>
-  #           chatMessage.timeUuid = cknex.getTimeUuid chatMessage.time
-  #           chatMessage.timeBucket = TimeService.getScaledTimeByTimeScale 'week', moment(chatMessage.time)
-  #           delete chatMessage.time
-  #           @upsert chatMessage
-  #         .catch (err) ->
-  #           console.log err
-  #         .then ->
-  #           console.log 'migrate time', Date.now() - start, minId, _.last(chatMessages).id
-  #           CacheService.set 'migrate_chat_messages_min_id7', _.last(chatMessages).id
-  #
-  #     CacheService.get 'migrate_chat_messages_max_id7'
-  #     .then (maxId) =>
-  #       maxId ?= 'ZZZZ'
-  #       r.table 'chat_messages'
-  #       .between '0000', maxId
-  #       .orderBy {index: r.desc('id')}
-  #       .limit 500
-  #       .then (chatMessages) =>
-  #         Promise.map chatMessages, (chatMessage) =>
-  #           chatMessage.timeUuid = cknex.getTimeUuid chatMessage.time
-  #           chatMessage.timeBucket = TimeService.getScaledTimeByTimeScale 'week', moment(chatMessage.time)
-  #           delete chatMessage.time
-  #           @upsert chatMessage
-  #         .catch (err) ->
-  #           console.log err
-  #         .then ->
-  #           console.log 'migrate time', Date.now() - start, maxId, _.last(chatMessages).id
-  #           CacheService.set 'migrate_chat_messages_max_id7', _.last(chatMessages).id
-  #       ]
-  #
-  #   .then =>
-  #     @migrateAll()
-
 module.exports = new ChatMessageModel()

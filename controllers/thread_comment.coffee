@@ -103,7 +103,7 @@ class ThreadCommentCtrl
 
     Thread.getById threadId, {preferCache: true, omitCounter: true}
     .then (thread) =>
-      @checkIfBanned config.EMPTY_UUID, ip, user.id, router
+      @checkIfBanned thread.groupId, ip, user.id, router
       .then ->
         ThreadComment.upsert
           creatorId: user.id
@@ -175,5 +175,21 @@ class ThreadCommentCtrl
           CacheService.deleteByKey "#{prefix}:#{threadComment.threadId}:popular"
           CacheService.deleteByKey "#{prefix}:#{threadComment.threadId}:new"
         ]
+
+  deleteAllByGroupIdAndUserId: ({groupId, userId, threadId}, {user}) ->
+    permission = GroupUser.PERMISSIONS.DELETE_FORUM_COMMENT
+    GroupUser.hasPermissionByGroupIdAndUser groupId, user, [permission]
+    .then (hasPermission) ->
+      unless hasPermission
+        router.throw status: 400, info: 'no permission'
+
+      ThreadComment.deleteAllByCreatorId userId
+      .tap ->
+        if threadId
+          prefix = CacheService.PREFIXES.THREAD_COMMENTS_THREAD_ID
+          Promise.all [
+            CacheService.deleteByKey "#{prefix}:#{threadId}:popular"
+            CacheService.deleteByKey "#{prefix}:#{threadId}:new"
+          ]
 
 module.exports = new ThreadCommentCtrl()

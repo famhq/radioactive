@@ -70,14 +70,20 @@ setTimeout ->
     # ['cr_pt_thumb', '../fam-assets/clash_royale/cr_thumb.png']
     # ['cr_pt_trophy', '../fam-assets/clash_royale/cr_trophy.png']
 
-    ['cr_pl_fam', '../fam-assets/stickers/sf_logo_large.png']
-    ['cr_pl_angry', '../fam-assets/stickers/cr_angry_large.png']
-    ['cr_pl_crying', '../fam-assets/stickers/cr_crying_large.png']
-    ['cr_pl_laughing', '../fam-assets/stickers/cr_laughing_large.png']
-    ['cr_pl_shop_goblin', '../fam-assets/clash_royale/cr_shop_goblin.png']
-    ['cr_pl_thumbs_up', '../fam-assets/stickers/cr_thumbs_up_large.png']
-    ['cr_pl_thumb', '../fam-assets/clash_royale/cr_thumb.png']
-    ['cr_pl_trophy', '../fam-assets/clash_royale/cr_trophy.png']
+    # ['cr_pl_fam', '../fam-assets/stickers/sf_logo_large.png']
+    # ['cr_pl_angry', '../fam-assets/stickers/cr_angry_large.png']
+    # ['cr_pl_crying', '../fam-assets/stickers/cr_crying_large.png']
+    # ['cr_pl_laughing', '../fam-assets/stickers/cr_laughing_large.png']
+    # ['cr_pl_shop_goblin', '../fam-assets/clash_royale/cr_shop_goblin.png']
+    # ['cr_pl_thumbs_up', '../fam-assets/stickers/cr_thumbs_up_large.png']
+    # ['cr_pl_thumb', '../fam-assets/clash_royale/cr_thumb.png']
+    # ['cr_pl_trophy', '../fam-assets/clash_royale/cr_trophy.png']
+
+    ['nan_gg', '../../Downloads/nan_gg.png']
+    ['nan_get_rekt', '../../Downloads/nan_get_rekt.png']
+    ['nan_gfuel', '../../Downloads/nan_gfuel.png']
+    ['nan_wow', '../../Downloads/nan_wow.png']
+    ['nan', '../../Downloads/nickatnytefish-300.png']
 
   ], (args) ->
     generate.apply this, args

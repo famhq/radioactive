@@ -4,6 +4,7 @@ router = require 'exoid-router'
 User = require '../models/user'
 GroupUser = require '../models/group_user'
 ChatMessage = require '../models/chat_message'
+ThreadComment = require '../models/thread_comment'
 GroupAuditLog = require '../models/group_audit_log'
 Ban = require '../models/ban'
 Language = require '../models/language'
@@ -66,7 +67,10 @@ class BanCtrl
         }
     .then ->
       if groupId
-        ChatMessage.deleteAllByGroupIdAndUserId groupId, userId
+        Promise.all [
+          ChatMessage.deleteAllByGroupIdAndUserId groupId, userId
+          ThreadComment.deleteAllByCreatorId userId
+        ]
 
   unbanByGroupIdAndUserId: ({userId, groupId}, {user}) ->
     GroupUser.hasPermissionByGroupIdAndUser groupId, user, [

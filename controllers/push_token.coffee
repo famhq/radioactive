@@ -11,7 +11,7 @@ schemas = require '../schemas'
 config = require '../config'
 
 class PushTokensCtrl
-  create: ({token, sourceType, language}, {user}) ->
+  create: ({token, sourceType, language, deviceId}, {user, appKey}) ->
     userId = user.id
     valid = Joi.validate {userId, token, sourceType},
       userId: schemas.user.id.optional()
@@ -26,55 +26,58 @@ class PushTokensCtrl
         status: 400
         info: valid.error.message
 
-    PushToken.getByToken token
-    .then (sameToken) ->
-      if sameToken
-        router.throw
-          status: 400
-          info: 'pushToken exists'
-          ignoreLog: true
+    Promise.all [
+      User.updateById userId, {
+        hasPushToken: true
+      }
 
-      Promise.all [
-        User.updateById userId, {
-          hasPushToken: true
+      PushToken.upsert {
+        userId: userId
+        token: token
+        sourceType: sourceType
+        appKey: appKey
+        deviceId: deviceId
+      }
+      .then ->
+        PushNotificationService.subscribeToAllTopicsByUser user, {
+          language
+          appKey
+          deviceId
         }
-
-        PushToken.upsert {
-          userId: userId
-          token: token
-          sourceType: sourceType
-        }
-        .then PushToken.sanitizePublic
-
-        PushNotificationService.subscribeToAllTopicsByUser user, {language}
-      ]
+    ]
 
 
-  updateByToken: ({token}, {user}) ->
+  updateByToken: ({token, language, deviceId}, {user, appKey}) ->
     userId = user.id
-
-    updateSchema =
-      userId: schemas.user.id
-
-    diff = {userId}
-    updateValid = Joi.validate diff, updateSchema
-
-    if updateValid.error
-      router.throw status: 400, info: updateValid.error.message
 
     Promise.all [
       User.updateById userId, {
         hasPushToken: true
       }
-      PushToken.getByToken token
-      .then (pushToken) ->
-        PushToken.upsert _.defaults(diff, pushToken)
+      PushToken.getAllByToken token
+      .then (pushTokens) ->
+        _.map pushTokens, PushToken.deleteByPushToken
+        PushToken.upsert {
+          token, deviceId, appKey
+          userId: user.id
+          sourceType: pushTokens?[0]?.sourceType or 'android'
+        }
+      .then ->
+        Promise.all [
+          PushNotificationService.subscribeToAllTopicsByUser user, {
+            language
+            appKey
+            deviceId
+          }
+          PushNotificationService.migratePushTopicsByUserId user.id, {
+            token
+            appKey
+            deviceId
+          }
+        ]
     ]
     .then ->
       null
-
-  subscribeToTopic: ({topic}, {user}) ->
-    PushNotificationService.subscribeToTopicByUserId user.id, topic
 
 
 module.exports = new PushTokensCtrl()

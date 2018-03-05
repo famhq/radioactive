@@ -137,7 +137,7 @@ class GroupCtrl
 
       Group.removeUser groupId, userId
 
-  joinById: ({id}, {user}) ->
+  joinById: ({id}, {user, appKey}) ->
     groupId = id
     userId = user.id
 
@@ -172,8 +172,11 @@ class GroupCtrl
 
       Group.addUser groupId, userId
       .then ->
-        topic = "group-#{groupId}"
-        PushNotificationService.subscribeToTopicByUserId user.id, topic
+        PushNotificationService.subscribeToPushTopic {
+          userId: user.id
+          groupId
+          appKey
+        }
 
         prefix = CacheService.PREFIXES.GROUP_GET_ALL_CATEGORY
         category = "#{prefix}:#{userId}"

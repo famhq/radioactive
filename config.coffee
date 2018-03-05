@@ -11,12 +11,36 @@ config =
   LEGACY_CLASH_ROYALE_ID: '319a9065-e3dc-4d02-ad30-62047716a88f'
   DEFAULT_GAME_KEY: 'clash-royale'
   GROUPS:
-    PLAY_HARD: 'ad25e866-c187-44fc-bdb5-df9fcc4c6a42'
-    STARFIRE: '319a9065-e3dc-4d02-ad30-62047716a88f'
-    CLASH_ROYALE_EN: '73ed4af0-a2f2-4371-a893-1360d3989708'
-    ECLIHPSE: '137ec250-0941-4d72-8074-b257e0966c17'
-    NICKATNYTE: 'b8e3e948-6f9a-4f7d-a6ef-7b0b35f3a523'
-    FERG: '2a2c1d78-33e1-4d32-b483-83074935db2c'
+    PLAY_HARD:
+      ID: 'ad25e866-c187-44fc-bdb5-df9fcc4c6a42'
+      APP_KEY: ''
+    STARFIRE:
+      ID: '319a9065-e3dc-4d02-ad30-62047716a88f'
+      APP_KEY: 'openfam'
+    MAIN:
+      ID: '319a9065-e3dc-4d02-ad30-62047716a88f'
+      APP_KEY: 'openfam'
+    ECLIHPSE:
+      ID: '137ec250-0941-4d72-8074-b257e0966c17'
+      APP_KEY: ''
+    NICKATNYTE:
+      ID: 'b8e3e948-6f9a-4f7d-a6ef-7b0b35f3a523'
+      APP_KEY: 'nickatnyte'
+    FERG:
+      ID: '2a2c1d78-33e1-4d32-b483-83074935db2c'
+      APP_KEY: ''
+    CLASH_ROYALE_EN:
+      ID: '73ed4af0-a2f2-4371-a893-1360d3989708'
+      APP_KEY: ''
+    CLASH_ROYALE_ES:
+      ID: '4f26e51e-7f35-41dd-9f21-590c7bb9ce34'
+      APP_KEY: 'clashroyalees'
+    CLASH_ROYALE_PT:
+      ID: '68acb51a-3e5a-466a-9e31-c93aacd5919e'
+      APP_KEY: ''
+    CLASH_ROYALE_PL:
+      ID: '22e9db0b-45be-4c6d-86a5-434b38684db9'
+      APP_KEY: ''
   CLASH_ROYALE_TROPHIES_RECORD_ID: 'ed3b3643-039b-4a3f-9d44-0742b86e0a2c'
   CLASH_ROYALE_DONATIONS_RECORD_ID: '3b87da6c-7a2b-42c1-a59d-7354acaf80b0'
   CLASH_ROYALE_CLAN_CROWNS_RECORD_ID: 'aee6d338-2d6e-4b9a-af65-a48674bce3ef'

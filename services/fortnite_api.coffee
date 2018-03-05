@@ -10,7 +10,7 @@ config = require '../config'
 
 API_REQUEST_TIMEOUT_MS = 10000
 ONE_DAY_SECONDS = 3600 * 24
-IS_DEBUG = true
+IS_DEBUG = false
 
 class FortniteApiService
   constructor: ->
@@ -43,8 +43,9 @@ class FortniteApiService
 
     @fortniteApi[method] username, network
     .then (response) ->
-      console.log 'got', response
       response
+    .catch (err) ->
+      console.log 'fornite get err', err
 
   getNetworkAndUsernameById: (id) ->
     index = id.indexOf(':')
