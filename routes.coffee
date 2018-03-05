@@ -12,7 +12,6 @@ ClashRoyaleMatchCtrl = require './controllers/clash_royale_match'
 ClashRoyaleDeckCtrl = require './controllers/clash_royale_deck'
 ClashRoyalePlayerDeckCtrl = require './controllers/clash_royale_player_deck'
 ClashRoyaleCardCtrl = require './controllers/clash_royale_card'
-FortnitePlayerCtrl = require './controllers/fortnite_player'
 DynamicImageCtrl = require './controllers/dynamic_image'
 EventCtrl = require './controllers/event'
 ItemCtrl = require './controllers/item'
@@ -225,13 +224,6 @@ module.exports = router
 .on 'userItems.consumeByItemKey', authed UserItemCtrl.consumeByItemKey
 .on 'userItems.openByItemKey', authed UserItemCtrl.openByItemKey
 
-
-# TODO: rm after 3/1/2018
-.on 'players.getByUserIdAndGameId',
-  authed PlayerCtrl.getByUserIdAndGameKey
-.on 'players.getByPlayerIdAndGameId',
-  authed PlayerCtrl.getByPlayerIdAndGameKey
-
 .on 'players.getByUserIdAndGameKey',
   authed PlayerCtrl.getByUserIdAndGameKey
 .on 'players.getByPlayerIdAndGameKey',
@@ -249,6 +241,10 @@ module.exports = router
   authed PlayerCtrl.getIsAutoRefreshByPlayerIdAndGameKey
 .on 'players.setAutoRefreshByGameKey',
   authed PlayerCtrl.setAutoRefreshByGameKey
+.on 'players.setByPlayerIdAndGameKey',
+  authed PlayerCtrl.setByPlayerIdAndGameKey
+.on 'players.refreshByPlayerIdAndGameKey',
+  authed PlayerCtrl.refreshByPlayerIdAndGameKey
 
 .on 'clan.getById', authed ClanCtrl.getById
 .on 'clan.getByClanIdAndGameKey', authed ClanCtrl.getByClanIdAndGameKey
@@ -265,10 +261,6 @@ module.exports = router
 .on 'conversations.getAll', authed ConversationCtrl.getAll
 .on 'conversations.getById', authed ConversationCtrl.getById
 
-.on 'clashRoyaleAPI.setByPlayerId',
-  authed ClashRoyaleAPICtrl.setByPlayerId
-.on 'clashRoyaleAPI.refreshByPlayerId',
-  authed ClashRoyaleAPICtrl.refreshByPlayerId
 .on 'clashRoyaleAPI.refreshByClanId',
   authed ClashRoyaleAPICtrl.refreshByClanId
 
@@ -291,11 +283,6 @@ module.exports = router
   authed ClashRoyaleMatchCtrl.getAllByUserId
 .on 'clashRoyaleMatches.getAllByPlayerId',
   authed ClashRoyaleMatchCtrl.getAllByPlayerId
-
-.on 'fortnitePlayers.setByPlayerId',
-  authed FortnitePlayerCtrl.setByPlayerId
-.on 'fortnitePlayers.refreshByPlayerId',
-  authed FortnitePlayerCtrl.refreshByPlayerId
 
 .on 'nps.create', authed NpsCtrl.create
 

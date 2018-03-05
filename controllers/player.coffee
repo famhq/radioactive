@@ -6,7 +6,6 @@ randomSeed = require 'random-seed'
 User = require '../models/user'
 UserFollower = require '../models/user_follower'
 Player = require '../models/player'
-ClashRoyalePlayer = require '../models/clash_royale_player'
 ClashRoyaleTopPlayer = require '../models/clash_royale_top_player'
 ClashRoyaleDeck = require '../models/clash_royale_deck'
 ClashRoyaleCard = require '../models/clash_royale_card'
@@ -16,8 +15,7 @@ Group = require '../models/group'
 ChatMessage = require '../models/chat_message'
 Conversation = require '../models/conversation'
 Language = require '../models/language'
-ClashRoyaleAPIService = require '../services/clash_royale_api'
-ClashRoyalePlayerService = require '../services/clash_royale_player'
+GameService = require '../services/game'
 CacheService = require '../services/cache'
 TagConverterService = require '../services/tag_converter'
 PushNotificationService = require '../services/push_notification'
@@ -61,10 +59,12 @@ class PlayerCtrl
 
     gameKey or= GAME_KEY
 
-    playerId = ClashRoyaleAPIService.formatHashtag playerId
+    playerId = GameService.formatByPlayerIdAndGameKey playerId, gameKey
 
     getUpdatedPlayer = ->
-      ClashRoyalePlayerService.updatePlayerById playerId, {priority: 'normal'}
+      GameService.updatePlayerByPlayerIdAndGameKey playerId, {
+        priority: 'normal'
+      }
       .then -> Player.getByPlayerIdAndGameKey playerId, gameKey
 
     # TODO: cache, but need to clear the cache whenever player is updated...
@@ -79,22 +79,26 @@ class PlayerCtrl
           .catch (err) ->
             player
       else
-        ClashRoyalePlayerService.updatePlayerById playerId, {priority: 'normal'}
+        GameService.updatePlayerByPlayerIdAndGameKey playerId, gameKey, {
+          priority: 'normal'
+        }
         .then -> Player.getByPlayerIdAndGameKey playerId, gameKey
     .then EmbedService.embed {embed: defaultEmbed}
 
   setAutoRefreshByGameKey: ({gameKey}, {user}) ->
+    unless gameKey is 'clash-royale'
+      return
     key = "#{CacheService.LOCK_PREFIXES.SET_AUTO_REFRESH}:#{gameKey}:#{user.id}"
     CacheService.lock key, ->
-      Player.getByUserIdAndGameKey user.id, 'clash-royale'
+      Player.getByUserIdAndGameKey user.id, gameKey
       .then EmbedService.embed {
         embed: [EmbedService.TYPES.PLAYER.VERIFIED_USER]
-        gameKey: 'clash-royale'
+        gameKey: gameKey
       }
       .then (player) ->
         if player?.verifiedUser?.id is user.id
           Player.setAutoRefreshByPlayerIdAndGameKey(
-            player.id, 'clash-royale'
+            player.id, gameKey
           )
     , {expireSeconds: TEN_MINUTES_SECONDS}
 
@@ -135,7 +139,7 @@ class PlayerCtrl
       @getVerifyDeckId {}, {user}
     ]
     .then ([player, verifyDeckId]) =>
-      ClashRoyaleAPIService.getPlayerDataByTag player.id, {
+      GameService.getPlayerDataByPlayerIdAndGameKey player.id, {
         priority: 'high', skipCache: true
       }
       .then (playerData) =>
@@ -154,6 +158,52 @@ class PlayerCtrl
         .then =>
           clanId = playerData?.clan?.tag?.replace '#', ''
           @_addToClanGroup {clanId, userId: user.id, name: playerData.name}
+
+  setByPlayerIdAndGameKey: ({playerId, gameKey, isUpdate}, {user}) =>
+    gameKey ?= config.DEFAULT_GAME_KEY
+    (if isUpdate
+      Player.removeUserId user.id, gameKey
+    else
+      Promise.resolve null
+    )
+    .then ->
+      Player.getByUserIdAndGameKey user.id, gameKey
+    .then (existingPlayer) =>
+      @refreshByPlayerIdAndGameKey {
+        playerId, gameKey, isUpdate, userId: user.id, priority: 'high'
+      }, {user}
+
+  refreshByPlayerIdAndGameKey: (options, {user}) ->
+    {playerId, gameKey, userId, priority} = options
+
+    playerId = GameService.formatByPlayerIdAndGameKey playerId, gameKey
+    gameKey ?= config.DEFAULT_GAME_KEY
+
+    isValidId = GameService.isValidByPlayerIdAndGameKey playerId, gameKey
+    unless isValidId
+      router.throw {status: 400, info: 'invalid tag', ignoreLog: true}
+
+    prefix = CacheService.PREFIXES.REFRESH_PLAYER_ID_LOCK
+    key = "#{prefix}:#{playerId}:#{gameKey}"
+    CacheService.lock key, ->
+      Player.getByUserIdAndGameKey user.id, gameKey
+      .then (mePlayer) ->
+        if mePlayer?.id is playerId
+          userId = user.id
+        Player.upsertByPlayerIdAndGameKey playerId, gameKey, {
+          lastQueuedTime: new Date()
+        }
+        GameService.updatePlayerByPlayerIdAndGameKey playerId, gameKey, {
+          userId, priority
+        }
+        .catch ->
+          router.throw {
+            status: 400, info: 'unable to find that tag (typo?)'
+            ignoreLog: true
+          }
+      .then ->
+        return null
+    , {expireSeconds: 5, unlockWhenCompleted: true}
 
   _addToClanGroup: ({clanId, userId, name}) =>
     Clan.getByClanIdAndGameKey clanId, GAME_KEY, {
@@ -206,7 +256,7 @@ class PlayerCtrl
                 .replace '#', ''
                 .replace /O/g, '0' # replace capital O with zero
 
-    isValidTag = ClashRoyaleAPIService.isValidTag playerId
+    isValidTag = GameService.isValidByPlayerIdAndGameKey playerId, 'clash-royale'
     console.log 'search', playerId, ip
     unless isValidTag
       router.throw {status: 400, info: 'invalid tag', ignoreLog: true}
@@ -227,7 +277,9 @@ class PlayerCtrl
           User.create {}
           .then ({id}) ->
             start = Date.now()
-            ClashRoyalePlayerService.updatePlayerById playerId, {
+            GameService.updatePlayerByPlayerIdAndGameKey playerId, {
+
+
               userId: id
               priority: 'normal'
             }

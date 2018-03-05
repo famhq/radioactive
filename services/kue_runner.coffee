@@ -5,9 +5,8 @@ KueService = require './kue'
 KueCreateService = require './kue_create'
 BroadcastService = require './broadcast'
 ProductService = require './product'
-ClashRoyaleApiService = require './clash_royale_api'
-FortniteApiService = require './fortnite_api'
-ClashRoyalePlayerService = require './clash_royale_player'
+ClashRoyaleService = require './game_clash_royale'
+FortniteService = require './game_fortnite'
 config = require '../config'
 
 # TODO: make separate lib, used by cr-api
@@ -26,7 +25,7 @@ TYPES =
   "#{KueCreateService.JOB_TYPES.AUTO_REFRESH_PLAYER}":
     {
       fn: ({playerId}) ->
-        ClashRoyalePlayerService.updatePlayerById playerId, {
+        ClashRoyaleService.updatePlayerByPlayerId playerId, {
           priority: 'normal'
           isAuto: true
         }
@@ -43,9 +42,9 @@ TYPES =
   # 300 / 2 = 150 concurrent jobs. currently have 36 cpus. 150/36 = 4
 
   "#{KueCreateService.JOB_TYPES.API_REQUEST}":
-    {fn: ClashRoyaleApiService.processRequest, concurrencyPerCpu: 2} # TODO: 4
+    {fn: ClashRoyaleService.processRequest, concurrencyPerCpu: 2} # TODO: 4
   "#{KueCreateService.JOB_TYPES.FORTNITE_API_REQUEST}":
-    {fn: FortniteApiService.processRequest, concurrencyPerCpu: 2} # TODO: 4
+    {fn: FortniteService.processRequest, concurrencyPerCpu: 2} # TODO: 4
 
 class KueRunnerService
   listen: ->

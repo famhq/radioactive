@@ -4,10 +4,8 @@ request = require 'request-promise'
 router = require 'exoid-router'
 basicAuth = require 'basic-auth'
 
-ClashRoyaleAPIService = require '../services/clash_royale_api'
-ClashRoyalePlayerService = require '../services/clash_royale_player'
+ClashRoyaleService = require '../services/game_clash_royale'
 ClashRoyaleClanService = require '../services/clash_royale_clan'
-ClashRoyaleAPIService = require '../services/clash_royale_api'
 CacheService = require '../services/cache'
 User = require '../models/user'
 ClashRoyaleDeck = require '../models/clash_royale_deck'
@@ -26,56 +24,6 @@ WITH_ZACK_TAG = '89UC8VG'
 GAME_KEY = 'clash-royale'
 
 class ClashRoyaleAPICtrl
-  setByPlayerId: ({playerId, isUpdate}, {user}) =>
-    (if isUpdate
-      Player.removeUserId user.id, GAME_KEY
-    else
-      Promise.resolve null
-    )
-    .then ->
-      Player.getByUserIdAndGameKey user.id, GAME_KEY
-    .then (existingPlayer) =>
-      @refreshByPlayerId {
-        playerId, isUpdate, userId: user.id, priority: 'high'
-      }, {user}
-      .then ->
-        if existingPlayer?.id
-          Player.upsertByPlayerIdAndGameKey existingPlayer.id, GAME_KEY, {
-            lastQueuedTime: new Date()
-          }
-
-  refreshByPlayerId: ({playerId, userId, isLegacy, priority}, {user}) ->
-    playerId = ClashRoyaleAPIService.formatHashtag playerId
-
-    isValidId = playerId and playerId.match /^[0289PYLQGRJCUV]+$/
-    unless isValidId
-      router.throw {status: 400, info: 'invalid tag', ignoreLog: true}
-
-    key = "#{CacheService.PREFIXES.REFRESH_PLAYER_ID_LOCK}:#{playerId}"
-    # getting logs of multiple refreshes in same second - not sure why. this
-    # should "fix". multiple at same time causes actions on matches
-    # to be duplicated
-    CacheService.lock key, ->
-      # console.log 'refresh', playerId
-      Player.getByUserIdAndGameKey user.id, GAME_KEY
-      .then (mePlayer) ->
-        if mePlayer?.id is playerId
-          userId = user.id
-        Player.upsertByPlayerIdAndGameKey playerId, GAME_KEY, {
-          lastQueuedTime: new Date()
-        }
-        ClashRoyalePlayerService.updatePlayerById playerId, {
-          userId, isLegacy, priority
-        }
-        .catch ->
-          router.throw {
-            status: 400, info: 'unable to find that tag (typo?)'
-            ignoreLog: true
-          }
-      .then ->
-        return null
-    , {expireSeconds: 5, unlockWhenCompleted: true}
-
   refreshByClanId: ({clanId}, {user}) ->
     Clan.getByClanIdAndGameKey clanId, GAME_KEY
     .then (clan) ->
@@ -92,7 +40,7 @@ class ClashRoyaleAPICtrl
   #     {tag, playerData} = body
   #     unless tag
   #       return
-  #     ClashRoyalePlayerService.updatePlayerData {id: tag, playerData}
+  #     ClashRoyaleService.updatePlayerData {id: tag, playerData}
   #
   # updateClan: ({body, params, headers}) ->
   #   radioactiveHost = config.RADIOACTIVE_API_URL.replace /https?:\/\//i, ''
@@ -110,10 +58,10 @@ class ClashRoyaleAPICtrl
   #     {matches} = body
   #     unless matches
   #       return
-  #     ClashRoyalePlayerService.filterMatches {matches, isBatched: true}
+  #     ClashRoyaleService.filterMatches {matches, isBatched: true}
   #     .then (filteredMatches) ->
   #       # this doesn't set lastMatchTime for players...
-  #       ClashRoyalePlayerService.updatePlayerMatches filteredMatches
+  #       ClashRoyaleService.updatePlayerMatches filteredMatches
 
   queueTop200: ({params}) ->
     ClashRoyaleTopPlayer.getAll()
@@ -134,7 +82,7 @@ class ClashRoyaleAPICtrl
       }
 
   updateTopPlayers: ->
-    ClashRoyalePlayerService.updateTopPlayers()
+    ClashRoyaleService.updateTopPlayers()
 
   top200Decks: (req, res) ->
     credentials = basicAuth req
@@ -190,6 +138,6 @@ class ClashRoyaleAPICtrl
     console.log '============='
     console.log 'process url called'
     console.log '============='
-    ClashRoyalePlayerService.updateAutoRefreshPlayers()
+    ClashRoyaleService.updateAutoRefreshPlayers()
 
 module.exports = new ClashRoyaleAPICtrl()

@@ -6,13 +6,14 @@ Fortnite = require 'fortnite-api'
 
 KueCreateService = require './kue_create'
 CacheService = require './cache'
+Player = require '../models/player'
 config = require '../config'
 
 API_REQUEST_TIMEOUT_MS = 10000
 ONE_DAY_SECONDS = 3600 * 24
-IS_DEBUG = false
+IS_DEBUG = true
 
-class FortniteApiService
+class FortniteService
   constructor: ->
     if IS_DEBUG or config.ENV is config.ENVS.PROD and not config.IS_STAGING
       @fortniteApi = new Fortnite [
@@ -25,8 +26,10 @@ class FortniteApiService
       .catch (err) ->
         console.log 'fortnite err', err
 
-  isValidId: (id) ->
+  isValidByPlayerId: (id) ->
     id.match /^(pc|ps4|xb1)\:(.*?)+$/
+
+  formatByPlayerId: (playerId) -> playerId
 
   request: ({method, username, network, priority} = {}) ->
     KueCreateService.createJob {
@@ -53,8 +56,8 @@ class FortniteApiService
     username = id.substr index + 1
     {network, username}
 
-  getPlayerDataById: (id, {priority, skipCache} = {}) =>
-    unless @isValidId id
+  getPlayerDataByPlayerId: (id, {priority, skipCache} = {}) =>
+    unless @isValidByPlayerId id
       throw new Error 'invalid tag'
 
     {network, username} = @getNetworkAndUsernameById id
@@ -63,4 +66,26 @@ class FortniteApiService
       method: 'getStatsBR', username, network
     }
 
-module.exports = new FortniteApiService()
+  updatePlayerByPlayerId: (playerId, {userId} = {}) =>
+    Promise.all [
+      @getPlayerDataByPlayerId playerId
+      Player.getByPlayerIdAndGameKey playerId, 'fortnite'
+    ]
+    .then ([playerData, existingPlayer]) ->
+      unless playerData
+        throw new Error 'username not found'
+      diff = {
+        data: _.defaultsDeep(
+          playerData
+          existingPlayer?.data or {}
+        )
+        lastUpdateTime: new Date()
+      }
+      # NOTE: any time you update, keep in mind scylla replaces
+      # entire fields (data), so need to merge with old data manually
+      Player.upsertByPlayerIdAndGameKey playerId, 'fortnite', diff, {userId}
+      .catch (err) ->
+        console.log 'upsert err', err
+        null
+
+module.exports = new FortniteService()

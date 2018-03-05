@@ -11,7 +11,7 @@ ClashRoyalePlayerRecord = require '../models/clash_royale_player_record'
 UserPlayer = require '../models/user_player'
 # ClashRoyaleTopClan = require '../models/clash_royale_top_clan'
 CacheService = require './cache'
-ClashRoyaleAPIService = require './clash_royale_api'
+ClashRoyaleService = require './game_clash_royale'
 PushNotificationService = require './push_notification'
 config = require '../config'
 
@@ -109,7 +109,7 @@ class ClashRoyaleClan
 
 
   updateClanById: (clanId, {userId, priority} = {}) =>
-    ClashRoyaleAPIService.getClanByTag clanId, {priority}
+    ClashRoyaleService.getClanByTag clanId, {priority}
     .then (clan) =>
       @updateClan {userId: userId, tag: clanId, clan}
     .then ->

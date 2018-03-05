@@ -2,7 +2,7 @@ _ = require 'lodash'
 Promise = require 'bluebird'
 router = require 'exoid-router'
 
-ClashRoyaleAPIService = require '../services/clash_royale_api'
+ClashRoyaleService = require '../services/game_clash_royale'
 r = require '../services/rethinkdb'
 Player = require '../models/player'
 User = require '../models/user'
@@ -23,20 +23,20 @@ class HealthCtrl
 
       # Kue.getCount()
 
-      ClashRoyaleAPIService.getPlayerDataByTag AUSTIN_TAG, {
+      ClashRoyaleService.getPlayerDataByPlayerId AUSTIN_TAG, {
         priority: 'high'
         skipCache: true
       }
       .timeout HEALTHCHECK_TIMEOUT
       .catch -> null
 
-      ClashRoyaleAPIService.getPlayerMatchesByTag AUSTIN_TAG, {
+      ClashRoyaleService.getPlayerMatchesByTag AUSTIN_TAG, {
         priority: 'high'
       }
       .timeout HEALTHCHECK_TIMEOUT
       .catch -> null
 
-      ClashRoyaleAPIService.getPlayerDataByTag AUSTIN_TAG, {
+      ClashRoyaleService.getPlayerDataByPlayerId AUSTIN_TAG, {
         priority: 'high'
         skipCache: true
         isLegacy: true

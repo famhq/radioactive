@@ -12,11 +12,12 @@ ClashRoyaleDeck = require '../models/clash_royale_deck'
 ClashRoyaleCard = require '../models/clash_royale_card'
 ClashRoyaleTopPlayer = require '../models/clash_royale_top_player'
 ClashRoyaleClanService = require './clash_royale_clan'
+ClashRoyaleService = require './game_clash_royale'
+ClashRoyalePlayerRecord = require '../models/clash_royale_player_record'
 CacheService = require './cache'
 KueCreateService = require './kue_create'
-ClashRoyalePlayerRecord = require '../models/clash_royale_player_record'
 PushNotificationService = require './push_notification'
-ClashRoyaleAPIService = require './clash_royale_api'
+TagConverterService = require './tag_converter'
 EmbedService = require './embed'
 Match = require '../models/clash_royale_match'
 User = require '../models/user'
@@ -28,6 +29,7 @@ config = require '../config'
 ENABLE_ANON_PLAYER_DECKS = false
 
 AUTO_REFRESH_PLAYER_TIMEOUT_MS = 30 * 1000
+API_REQUEST_TIMEOUT_MS = 10000
 ONE_MINUTE_SECONDS = 60
 ONE_DAY_S = 3600 * 24
 SIX_HOURS_S = 3600 * 6
@@ -46,7 +48,7 @@ ALLOWED_GAME_TYPES = [
 DEBUG = false or config.ENV is config.ENVS.DEV
 IS_TEST_RUN = false and config.ENV is config.ENVS.DEV
 
-class ClashRoyalePlayerService
+class ClashRoyaleService
   filterMatches: ({matches, tag, isBatched}) =>
     tags = if isBatched then _.map matches, 'tag' else [tag]
 
@@ -161,12 +163,12 @@ class ClashRoyalePlayerService
         losers = null
         draws = team.concat opponent
 
-      winningPlayerIds = _.map winners, (player) ->
-        ClashRoyaleAPIService.formatHashtag player.tag
-      losingPlayerIds = _.map losers, (player) ->
-        ClashRoyaleAPIService.formatHashtag player.tag
-      drawPlayerIds = _.map draws, (player) ->
-        ClashRoyaleAPIService.formatHashtag player.tag
+      winningPlayerIds = _.map winners, (player) =>
+        @formatByPlayerId player.tag
+      losingPlayerIds = _.map losers, (player) =>
+        @formatByPlayerId player.tag
+      drawPlayerIds = _.map draws, (player) =>
+        @formatByPlayerId player.tag
 
       prefix = CacheService.PREFIXES.CLASH_ROYALE_MATCHES_ID_EXISTS
       key = "#{prefix}:#{matchId}"
@@ -249,14 +251,14 @@ class ClashRoyalePlayerService
       if tag
         Player.getByPlayerIdAndGameKey tag, GAME_KEY
 
-  updatePlayerById: (playerId, options = {}) =>
+  updatePlayerByPlayerId: (playerId, options = {}) =>
     {userId, isLegacy, priority, isAuto} = options
     start = Date.now()
-    ClashRoyaleAPIService.isInvalidTagInCache 'player', playerId
+    @isInvalidTagInCache 'player', playerId
     .then (isInvalid) =>
       if isInvalid
         throw new Error 'invalid tag'
-      ClashRoyaleAPIService.getPlayerMatchesByTag playerId, {
+      @getPlayerMatchesByTag playerId, {
         priority
         skipThrow: not isAuto # don't throw 404 if matches are empty
       }
@@ -268,7 +270,7 @@ class ClashRoyalePlayerService
         if DEBUG
           console.log 'filtered', matches.length
         (if not isAuto or not _.isEmpty matches
-          ClashRoyaleAPIService.getPlayerDataByTag playerId, {
+          @getPlayerDataByPlayerId playerId, {
             priority, isLegacy
           }
         else
@@ -454,15 +456,12 @@ class ClashRoyalePlayerService
             }
         null
 
-  getTopPlayers: ->
-    ClashRoyaleAPIService.getTopPlayers()
-
   updateTopPlayers: =>
     @getTopPlayers().then (response) =>
       topPlayers = response?.items
       Promise.map topPlayers, (player, index) =>
         rank = index + 1
-        playerId = ClashRoyaleAPIService.formatHashtag player.tag
+        playerId = @formatByPlayerId player.tag
         Player.getByPlayerIdAndGameKey playerId, GAME_KEY
         .then EmbedService.embed {
           embed: [EmbedService.TYPES.PLAYER.USER_IDS]
@@ -479,7 +478,7 @@ class ClashRoyalePlayerService
             # entire fields (data), so need to merge with old data manually
             Player.upsertByPlayerIdAndGameKey playerId, GAME_KEY, newPlayer
           else
-            @updatePlayerById playerId, {
+            @updatePlayerByPlayerId playerId, {
               priority: 'normal'
             }
 
@@ -489,4 +488,129 @@ class ClashRoyalePlayerService
             playerId: playerId
           }
 
-module.exports = new ClashRoyalePlayerService()
+  formatByPlayerId: (hashtag) ->
+    unless hashtag
+      return null
+    return hashtag.trim().toUpperCase()
+            .replace '#', ''
+            .replace /O/g, '0' # replace capital O with zero
+
+  isValidByPlayerId: (hashtag) ->
+    hashtag.match /^[0289PYLQGRJCUV]+$/
+
+  isInvalidTagInCache: (type, tag) ->
+    unless type or tag
+      return Promise.resolve false
+    key = "#{CacheService.PREFIXES.CLASH_ROYALE_INVALID_TAG}:#{type}:#{tag}"
+    CacheService.get key
+
+  setInvalidTag: (type, tag) ->
+    unless type or tag
+      return
+    key = "#{CacheService.PREFIXES.CLASH_ROYALE_INVALID_TAG}:#{type}:#{tag}"
+    CacheService.set key, true, {expireSeconds: ONE_DAY_S}
+
+  request: (path, {tag, type, method, body, qs, priority} = {}) ->
+    method ?= 'GET'
+
+    KueCreateService.createJob {
+      job: {path, tag, type, method, body, qs}
+      type: KueCreateService.JOB_TYPES.API_REQUEST
+      ttlMs: API_REQUEST_TIMEOUT_MS
+      priority: priority
+      waitForCompletion: true
+    }
+
+  processRequest: ({path, tag, type, method, body, qs}) =>
+    # start = Date.now()
+    request "#{config.CLASH_ROYALE_API_URL}#{path}", {
+      json: true
+      method: method
+      headers:
+        'Authorization': "Bearer #{config.CLASH_ROYALE_API_KEY}"
+      body: body
+    }
+    .then (response) ->
+      # console.log 'realAPIreq', Date.now() - start
+      response
+    .catch (err) =>
+      if err.statusCode is 404
+        @setInvalidTag type, tag
+        .then ->
+          throw err
+      else
+        throw err
+
+  getPlayerDataByPlayerId: (tag, {priority, skipCache, isLegacy} = {}) =>
+    tag = @formatByPlayerId tag
+
+    unless @isValidByPlayerId tag
+      throw new Error 'invalid tag'
+
+    if not isLegacy
+      Promise.all [
+        @request "/players/%23#{tag}", {type: 'player', tag, priority}
+        @request "/players/%23#{tag}/upcomingchests", {type: 'player', tag}
+      ]
+      .then ([player, upcomingChests]) ->
+        player.upcomingChests = upcomingChests
+        player
+    else # verifying with gold or getting shop offers
+      request "#{config.CR_API_URL}/players/#{tag}", {
+        json: true
+        qs:
+          priority: priority
+          skipCache: skipCache
+      }
+      .then (responses) ->
+        responses?[0]
+
+  getPlayerMatchesByTag: (tag, {priority, skipThrow} = {}) =>
+    tag = @formatByPlayerId tag
+
+    unless @isValidByPlayerId tag
+      throw new Error 'invalid tag'
+
+    @request "/players/%23#{tag}/battlelog", {type: 'player', tag, priority}
+    .then (matches) ->
+      if not skipThrow and _.isEmpty matches
+        throw new Error '404' # api should do this, but just does empty arr
+      _.map matches, (match) ->
+        match.id = "#{match.battleTime}:" +
+                    "#{match.team[0].tag}:#{match.opponent[0].tag}"
+        match.battleTime = moment(match.battleTime).toDate()
+        match.battleType = if match.challengeId is 65000000 \
+                     then 'grandChallenge'
+                     else if match.challengeId is 65000001
+                     then 'classicChallenge'
+                     else if match.challengeId is 73001201
+                     then 'touchdown2v2DraftPractice'
+                     else if match.challengeId in [\
+                       73001203, 72000051, 73001291\
+                     ]
+                     then 'touchdown2v2Draft'
+                     else if match.challengeId is 73001324
+                     then 'newCardChallenge'
+                     else if match.challengeId is 73001287
+                     then 'rampUp'
+                     else if match.challengeId is 73001263
+                     then '3xChallenge'
+                     else if match.challengeId is 73001299
+                     then 'youtubeDecks'
+                     else match.type
+        match
+
+  getClanByTag: (tag, {priority} = {}) =>
+    tag = @formatByPlayerId tag
+
+    unless @isValidByPlayerId tag
+      throw new Error 'invalid tag'
+
+    @request "/clans/%23#{tag}", {type: 'clan', tag}
+    .catch (err) ->
+      console.log 'err clanByTag', err
+
+  getTopPlayers: (locationId) =>
+    @request '/locations/global/rankings/players'
+
+module.exports = new ClashRoyaleService()

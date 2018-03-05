@@ -6,7 +6,7 @@ CacheService = require './cache'
 VideoDiscoveryService = require './video_discovery'
 EventService = require './event'
 CleanupService = require './cleanup'
-ClashRoyalePlayerService = require './clash_royale_player'
+ClashRoyaleService = require './game_clash_royale'
 ClashRoyaleClanService = require './clash_royale_clan'
 Thread = require '../models/thread'
 Item = require '../models/item'
@@ -38,7 +38,7 @@ class CronService
         .then (successCount) ->
           unless successCount
             console.log 'starting auto refresh'
-            ClashRoyalePlayerService.updateAutoRefreshPlayers()
+            ClashRoyaleService.updateAutoRefreshPlayers()
 
     @addCron 'quarterMinute', '15 * * * * *', ->
       Product.batchUpsert allProducts
@@ -48,7 +48,7 @@ class CronService
 
     @addCron 'fiveMinute', '30 */5 * * * *', ->
       if config.ENV is config.ENVS.PROD
-        ClashRoyalePlayerService.updateTopPlayers()
+        ClashRoyaleService.updateTopPlayers()
 
     @addCron 'tenMin', '0 */10 * * * *', ->
       SpecialOffer.batchUpsert allSpecialOffers

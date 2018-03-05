@@ -10,7 +10,7 @@ Player = require '../models/player'
 UserPlayer = require '../models/user_player'
 Conversation = require '../models/conversation'
 ClashRoyaleClanService = require '../services/clash_royale_clan'
-ClashRoyaleAPIService = require '../services/clash_royale_api'
+ClashRoyaleService = require '../services/game_clash_royale'
 CacheService = require '../services/cache'
 EmbedService = require '../services/embed'
 r = require '../services/rethinkdb'
@@ -69,7 +69,7 @@ class ClanCtrl
         router.throw {status: 404, info: 'clan not found'}
 
       Promise.all [
-        ClashRoyaleAPIService.getClanByTag clan.clanId
+        ClashRoyaleService.getClanByTag clan.clanId
         Player.getByUserIdAndGameKey user.id, GAME_KEY
       ]
       .then ([updatedClan, player]) ->
@@ -140,7 +140,7 @@ class ClanCtrl
                 .replace '#', ''
                 .replace /O/g, '0' # replace capital O with zero
 
-    isValidTag = ClashRoyaleAPIService.isValidTag clanId
+    isValidTag = ClashRoyaleService.isValidByPlayerIdAndGameKey clanId
     unless isValidTag
       router.throw {status: 400, info: 'invalid tag', ignoreLog: true}
 
