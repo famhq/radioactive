@@ -118,13 +118,16 @@ class ThreadCtrl
       unless thread.id
         thread.category ?= 'general'
 
+      if user.flags?.isStar
+        thread.category = 'news'
+
       images = new RegExp('\\!\\[(.*?)\\]\\((.*?)\\)', 'gi').exec(
         thread.data.body
       )
       firstImageSrc = images?[2]
       # for header image
-      thread.data.attachments ?= []
-      if _.isEmpty(thread.data.attachments) and firstImageSrc
+      thread.data.attachments = []
+      if firstImageSrc
         thread.data.attachments.push {
           type: 'image', src: firstImageSrc.replace(/^<|>$/g, '')
         }
