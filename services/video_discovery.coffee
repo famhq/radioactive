@@ -45,9 +45,11 @@ CHANNEL_IDS =
   "#{config.GROUPS.ECLIHPSE.ID}": 'UCLAOdac7WmMXQKhOP-8lmrQ'
   "#{config.GROUPS.NICKATNYTE.ID}": 'UCMxYQX1zaepCgmiSmwbT39w'
   "#{config.GROUPS.FERG.ID}": 'UCVYe9OwcrGrlRmlX8cSWgvg'
+  "#{config.GROUPS.TEAM_QUESO.ID}": 'UCfmUGIBVMlnjGoIm4RY00UA'
 
 class VideoDisoveryService
   updateGroupVideos: (groupId) ->
+    console.log 'go', groupId, CHANNEL_IDS[groupId]
     hasSentPushNotification = false
     Promise.promisify(youtube.search.list) {
       part: 'snippet'

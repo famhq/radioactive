@@ -5,7 +5,6 @@ router = require 'exoid-router'
 basicAuth = require 'basic-auth'
 
 ClashRoyaleService = require '../services/game_clash_royale'
-ClashRoyaleClanService = require '../services/clash_royale_clan'
 CacheService = require '../services/cache'
 User = require '../models/user'
 ClashRoyaleDeck = require '../models/clash_royale_deck'
@@ -31,7 +30,7 @@ class ClashRoyaleAPICtrl
         lastQueuedTime: new Date()
       }
     .then ->
-      ClashRoyaleClanService.updateClanById clanId
+      ClashRoyaleService.updateClanById clanId
 
   # updatePlayerData: ({body, params, headers}) ->
   #   radioactiveHost = config.RADIOACTIVE_API_URL.replace /https?:\/\//i, ''
@@ -49,7 +48,7 @@ class ClashRoyaleAPICtrl
   #     {tag, clan} = body
   #     unless tag
   #       return
-  #     ClashRoyaleClanService.updateClan {tag, clan}
+  #     ClashRoyaleService.updateClan {tag, clan}
   #
   # updatePlayerMatches: ({body, params, headers}) ->
   #   radioactiveHost = config.RADIOACTIVE_API_URL.replace /https?:\/\//i, ''

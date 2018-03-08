@@ -9,7 +9,6 @@ Group = require '../models/group'
 Player = require '../models/player'
 UserPlayer = require '../models/user_player'
 Conversation = require '../models/conversation'
-ClashRoyaleClanService = require '../services/clash_royale_clan'
 ClashRoyaleService = require '../services/game_clash_royale'
 CacheService = require '../services/cache'
 EmbedService = require '../services/embed'
@@ -38,7 +37,7 @@ class ClanCtrl
 
   getByClanIdAndGameKey: ({clanId, gameKey, refreshIfStale}, {user}) ->
     getUpdatedClan = ->
-      ClashRoyaleClanService.updateClanById clanId, {priority: 'normal'}
+      ClashRoyaleService.updateClanById clanId, {priority: 'normal'}
       .then -> Clan.getByClanIdAndGameKey clanId, gameKey
 
     Clan.getByClanIdAndGameKey clanId, gameKey

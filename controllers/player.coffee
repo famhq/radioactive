@@ -62,7 +62,7 @@ class PlayerCtrl
     playerId = GameService.formatByPlayerIdAndGameKey playerId, gameKey
 
     getUpdatedPlayer = ->
-      GameService.updatePlayerByPlayerIdAndGameKey playerId, {
+      GameService.updatePlayerByPlayerIdAndGameKey playerId, gameKey, {
         priority: 'normal'
       }
       .then -> Player.getByPlayerIdAndGameKey playerId, gameKey
@@ -139,7 +139,7 @@ class PlayerCtrl
       @getVerifyDeckId {}, {user}
     ]
     .then ([player, verifyDeckId]) =>
-      GameService.getPlayerDataByPlayerIdAndGameKey player.id, {
+      GameService.getPlayerDataByPlayerIdAndGameKey player.id, GAME_KEY, {
         priority: 'high', skipCache: true
       }
       .then (playerData) =>
@@ -256,7 +256,9 @@ class PlayerCtrl
                 .replace '#', ''
                 .replace /O/g, '0' # replace capital O with zero
 
-    isValidTag = GameService.isValidByPlayerIdAndGameKey playerId, 'clash-royale'
+    isValidTag = GameService.isValidByPlayerIdAndGameKey(
+      playerId, 'clash-royale'
+    )
     console.log 'search', playerId, ip
     unless isValidTag
       router.throw {status: 400, info: 'invalid tag', ignoreLog: true}
@@ -277,12 +279,9 @@ class PlayerCtrl
           User.create {}
           .then ({id}) ->
             start = Date.now()
-            GameService.updatePlayerByPlayerIdAndGameKey playerId, {
-
-
-              userId: id
-              priority: 'normal'
-            }
+            GameService.updatePlayerByPlayerIdAndGameKey(
+              playerId, 'clash-royale', {userId: id, priority: 'normal'}
+            )
             .then ->
               Player.getByPlayerIdAndGameKey playerId, GAME_KEY
               .then EmbedService.embed {

@@ -7,7 +7,7 @@ VideoDiscoveryService = require './video_discovery'
 EventService = require './event'
 CleanupService = require './cleanup'
 ClashRoyaleService = require './game_clash_royale'
-ClashRoyaleClanService = require './clash_royale_clan'
+FortniteService = require './game_fortnite'
 Thread = require '../models/thread'
 Item = require '../models/item'
 Product = require '../models/product'
@@ -54,8 +54,10 @@ class CronService
       SpecialOffer.batchUpsert allSpecialOffers
       Thread.updateScores 'time'
       NewsRoyaleService.scrape()
+      FortniteService.syncNews()
       VideoDiscoveryService.updateGroupVideos config.GROUPS.PLAY_HARD.ID
-      VideoDiscoveryService.updateGroupVideos config.GROUPS.ECLIHPSE.ID
+      VideoDiscoveryService.updateGroupVideos config.GROUPS.NICKATNYTE.ID
+      # VideoDiscoveryService.updateGroupVideos config.GROUPS.TEAM_QUESO.ID
       # VideoDiscoveryService.updateGroupVideos config.GROUPS.FERG.ID
 
     @addCron 'oneHour', '0 0 * * * *', ->

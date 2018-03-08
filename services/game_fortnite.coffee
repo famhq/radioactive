@@ -7,6 +7,8 @@ Fortnite = require 'fortnite-api'
 KueCreateService = require './kue_create'
 CacheService = require './cache'
 Player = require '../models/player'
+Thread = require '../models/thread'
+cknex = require '../services/cknex'
 config = require '../config'
 
 API_REQUEST_TIMEOUT_MS = 10000
@@ -15,7 +17,7 @@ IS_DEBUG = true
 
 class FortniteService
   constructor: ->
-    if IS_DEBUG or config.ENV is config.ENVS.PROD and not config.IS_STAGING
+    if IS_DEBUG or (config.ENV is config.ENVS.PROD and not config.IS_STAGING)
       @fortniteApi = new Fortnite [
         config.FORTNITE_EMAIL
         config.FORTNITE_PASSWORD
@@ -87,5 +89,36 @@ class FortniteService
       .catch (err) ->
         console.log 'upsert err', err
         null
+
+  syncNews: =>
+    Promise.all [
+      @fortniteApi.getFortniteNews 'es'
+
+      Thread.getAll {
+        groupId: config.GROUPS.FORTNITE_ES.ID
+        category: 'news'
+        sort: 'new'
+        # maxTimeUuid: cknex.getTimeUuid new Date(lastPost.timestamp)
+        limit: 10
+      }
+    ]
+    .then ([news, existingThreads]) ->
+      posts = news?.br
+      Promise.map posts, (post) ->
+        exists = Boolean _.find existingThreads, (thread) ->
+          thread.data?.attachments?[0]?.src is post.image
+        unless exists
+          thread = {
+            id: cknex.getTimeUuid(new Date(post.timestamp))
+            groupId: config.GROUPS.FORTNITE_ES.ID
+            category: 'news'
+            creatorId: '0b2884ec-eb4b-432c-807a-f9879a65f0db'
+            data:
+              title: post.title
+              body: post.body
+              attachments: [{type: 'image', src: post.image}]
+          }
+          Thread.upsert thread
+
 
 module.exports = new FortniteService()

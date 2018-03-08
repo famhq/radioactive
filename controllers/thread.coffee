@@ -28,7 +28,7 @@ playerDeckEmbed = [
   EmbedService.TYPES.THREAD.PLAYER_DECK
 ]
 
-MAX_LENGTH = 5000
+MAX_LENGTH = 100000
 ONE_MINUTE_SECONDS = 60
 IMAGE_REGEX = /\!\[(.*?)\]\((.*?)\)/gi
 YOUTUBE_ID_REGEX = ///

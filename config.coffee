@@ -14,6 +14,9 @@ config =
     PLAY_HARD:
       ID: 'ad25e866-c187-44fc-bdb5-df9fcc4c6a42'
       APP_KEY: ''
+    TEAM_QUESO:
+      ID: '4e825b23-5bad-4f0a-9463-e41eee588a95'
+      APP_KEY: 'teamqueso'
     STARFIRE:
       ID: '319a9065-e3dc-4d02-ad30-62047716a88f'
       APP_KEY: 'openfam'
@@ -41,6 +44,9 @@ config =
     CLASH_ROYALE_PL:
       ID: '22e9db0b-45be-4c6d-86a5-434b38684db9'
       APP_KEY: ''
+    FORTNITE_ES:
+      ID: '308783ea-02d5-4d3a-8357-6efd369cf01d'
+      APP_KEY: 'fortnitees'
   CLASH_ROYALE_TROPHIES_RECORD_ID: 'ed3b3643-039b-4a3f-9d44-0742b86e0a2c'
   CLASH_ROYALE_DONATIONS_RECORD_ID: '3b87da6c-7a2b-42c1-a59d-7354acaf80b0'
   CLASH_ROYALE_CLAN_CROWNS_RECORD_ID: 'aee6d338-2d6e-4b9a-af65-a48674bce3ef'

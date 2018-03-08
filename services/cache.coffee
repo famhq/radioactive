@@ -39,7 +39,7 @@ PREFIXES =
   USER_DAILY_DATA_PUSH: 'user_daily_data:push5'
   ADDON_ID: 'addon:id'
   ADDON_KEY: 'addon:key4'
-  ADDON_GET_ALL_BY_GAME_KEY: 'addon:get_all1'
+  ADDON_GET_ALL_BY_GAME_KEY: 'addon:get_all12'
   CLASH_ROYALE_MATCHES_ID: 'clash_royale_matches:id52'
   CLASH_ROYALE_MATCHES_ID_EXISTS: 'clash_royale_matches:id:exists2'
   CLASH_ROYALE_INVALID_TAG: 'clash_royale:invalid_tag'
@@ -62,8 +62,8 @@ PREFIXES =
   CLASH_ROYALE_PLAYER_DECK_PLAYER_ID:
     'clash_royale_player_deck:player_id2'
   CLASH_ROYALE_API_GET_PLAYER_ID: 'clash_royale_api:get_tag'
-  GROUP_ID: 'group:id4'
-  GROUP_KEY: 'group:key3'
+  GROUP_ID: 'group:id5'
+  GROUP_KEY: 'group:key5'
   GROUP_GET_ALL: 'group:getAll16'
   GROUP_GET_ALL_CATEGORY: 'group:getAll:category9'
   GROUP_GAME_KEY_LANGUAGE: 'group:game_key_language1'
@@ -103,7 +103,7 @@ PREFIXES =
   REWARD_INCREMENT: 'reward:increment'
   REWARD_ATTEMPT_TIME: 'reward_attempt:time1'
   SPECIAL_OFFER_ID: 'special_offer:id'
-  USER_SPECIAL_OFFERS: 'user_special_offers9'
+  USER_SPECIAL_OFFERS: 'user_special_offers10'
 
 class CacheService
   KEYS:

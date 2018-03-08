@@ -139,10 +139,7 @@ products =
 
   # NICKATNYTE
   nan_key: {
-    name: 'NickAtNyte Key'
-    type: 'pack'
-    groupId: GROUPS.NICKATNYTE.ID
-    cost: 200
+    name: 'NickAtNyte Key', type: 'pack', groupId: GROUPS.NICKATNYTE.ID, cost: 200
     data:
       backgroundImage: 'https://cdn.wtf/d/images/fam/packs/nan_key.png'
       backgroundColor: '#2196F3'
@@ -150,10 +147,7 @@ products =
       itemKeys: ['nan_key']
   }
   nan_chest: {
-    type: 'pack'
-    groupId: GROUPS.NICKATNYTE.ID
-    name: 'Free Chest'
-    cost: 0
+    type: 'pack', groupId: GROUPS.NICKATNYTE.ID, name: 'Free Chest', cost: 0
     data:
       backgroundImage: 'https://cdn.wtf/d/images/fam/packs/nan_chest.png'
       backgroundColor: '#9C27B0'
@@ -162,16 +156,41 @@ products =
       itemKeys: ['nan_chest']
   }
   nan_starter_chest: {
-    type: 'pack'
-    groupId: GROUPS.NICKATNYTE.ID
-    name: 'NickAtNyte Starter Pack'
-    cost: 0
+    type: 'pack', groupId: GROUPS.NICKATNYTE.ID, name: 'NickAtNyte Starter Pack', cost: 0
     data:
       backgroundImage: 'https://cdn.wtf/d/images/fam/packs/nan_starter_chest.png'
       backgroundColor: '#F44336'
       lockTime: 'infinity'
       count: 2
       itemKeys: ['nan_starter_chest', 'nan_starter_key']
+  }
+
+  # TEAM QUESO
+  tq_key: {
+    name: 'Team Queso Key', type: 'pack', groupId: GROUPS.TEAM_QUESO.ID, cost: 200
+    data:
+      backgroundImage: 'https://cdn.wtf/d/images/fam/packs/tq_key.png'
+      backgroundColor: '#2196F3'
+      count: 1
+      itemKeys: ['tq_key']
+  }
+  tq_chest: {
+    type: 'pack', groupId: GROUPS.TEAM_QUESO.ID, name: 'Team Queso Chest', cost: 0
+    data:
+      backgroundImage: 'https://cdn.wtf/d/images/fam/packs/tq_chest.png'
+      backgroundColor: '#9C27B0'
+      lockTime: ONE_DAY_SECONDS
+      count: 1
+      itemKeys: ['tq_chest']
+  }
+  tq_starter_chest: {
+    type: 'pack', groupId: GROUPS.TEAM_QUESO.ID, name: 'Team Queso Starter Pack', cost: 0
+    data:
+      backgroundImage: 'https://cdn.wtf/d/images/fam/packs/tq_starter_chest.png'
+      backgroundColor: '#F44336'
+      lockTime: 'infinity'
+      count: 2
+      itemKeys: ['tq_starter_chest', 'tq_starter_key']
   }
 
   # CLASH ROYALE ENGLISH

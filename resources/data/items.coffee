@@ -46,6 +46,39 @@ items =
       chestKey: 'nan_starter_chest'
   }
 
+
+
+
+  tq: {name: 'Team Queso', groupId: GROUPS.TEAM_QUESO.ID, rarity: 'starter', type: 'sticker'}
+  tq_chest: {
+    name: 'Team Queso Chest', groupId: GROUPS.TEAM_QUESO.ID, rarity: 'common', type: 'chest'
+    data:
+      keyRequired: 'tq_key'
+      odds: DEFAULT_STICKER_ODDS
+      count: 3
+      backKey: 'tq'
+  }
+  tq_key: {
+    name: 'Team Queso Key', groupId: GROUPS.TEAM_QUESO.ID, rarity: 'common', type: 'key'
+    data:
+      chestKey: 'tq_chest'
+  }
+  tq_starter_chest: {
+    name: 'Team Queso Starter Chest', groupId: GROUPS.TEAM_QUESO.ID, rarity: 'common', type: 'chest'
+    data:
+      keyRequired: 'tq_starter_key'
+      odds: [{type: 'sticker', rarity: 'starter', odds: 1}]
+      count: 1
+      backKey: 'tq'
+  }
+  tq_starter_key: {
+    name: 'Team Queso Starter Key', groupId: GROUPS.TEAM_QUESO.ID, rarity: 'common', type: 'key'
+    data:
+      chestKey: 'tq_starter_chest'
+  }
+
+
+
   ph: {name: 'PlayHard', groupId: GROUPS.PLAY_HARD.ID, rarity: 'starter', type: 'sticker'}
   ph_bruno: {name: 'Bruno', groupId: GROUPS.PLAY_HARD.ID, rarity: 'common', type: 'sticker'}
   ph_huum: {name: 'Huum', groupId: GROUPS.PLAY_HARD.ID, rarity: 'common', type: 'sticker'}

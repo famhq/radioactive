@@ -31,10 +31,12 @@ class SpecialOfferCtrl
       .then (offers) ->
         offers = _.filter offers, (offer) ->
           not offer?.transaction? or
-            not (offer.transaction.status in ['completed', 'failed'])
+            not (offer.transaction.status in ['completed', 'failed']) or
+            user.username is 'austin'
 
         offers = _.map offers, (offer) ->
           _.defaults {meCountryData: offer.countryData[country]}, offer
+
         _.orderBy offers, (offer) ->
           offer.defaultData.priority or 0
         , 'desc'

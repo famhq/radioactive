@@ -79,11 +79,13 @@ setTimeout ->
     # ['cr_pl_thumb', '../fam-assets/clash_royale/cr_thumb.png']
     # ['cr_pl_trophy', '../fam-assets/clash_royale/cr_trophy.png']
 
-    ['nan_gg', '../../Downloads/nan_gg.png']
-    ['nan_get_rekt', '../../Downloads/nan_get_rekt.png']
-    ['nan_gfuel', '../../Downloads/nan_gfuel.png']
-    ['nan_wow', '../../Downloads/nan_wow.png']
-    ['nan', '../../Downloads/nickatnytefish-300.png']
+    # ['nan_gg', '../../Downloads/nan_gg.png']
+    # ['nan_get_rekt', '../../Downloads/nan_get_rekt.png']
+    # ['nan_gfuel', '../../Downloads/nan_gfuel.png']
+    # ['nan_wow', '../../Downloads/nan_wow.png']
+    # ['nan', '../../Downloads/nickatnytefish-300.png']
+
+    ['tq', '../../Downloads/tq.png']
 
   ], (args) ->
     generate.apply this, args

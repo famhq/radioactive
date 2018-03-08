@@ -14,6 +14,7 @@ ClashRoyalePlayerDeckCtrl = require './controllers/clash_royale_player_deck'
 ClashRoyaleCardCtrl = require './controllers/clash_royale_card'
 DynamicImageCtrl = require './controllers/dynamic_image'
 EventCtrl = require './controllers/event'
+FortniteWeaponCtrl = require './controllers/fortnite_weapon'
 ItemCtrl = require './controllers/item'
 BanCtrl = require './controllers/ban'
 NpsCtrl = require './controllers/nps'
@@ -155,6 +156,8 @@ module.exports = router
 .on 'events.joinById', authed EventCtrl.joinById
 .on 'events.leaveById', authed EventCtrl.leaveById
 .on 'events.deleteById', authed EventCtrl.deleteById
+
+.on 'fortniteWeapons.getAll', authed FortniteWeaponCtrl.getAll
 
 .on 'groups.create', authed GroupCtrl.create
 .on 'groups.updateById', authed GroupCtrl.updateById
