@@ -17,6 +17,7 @@ Event = require '../models/event'
 Group = require '../models/group'
 GroupUser = require '../models/group_user'
 Language = require '../models/language'
+UserBlock = require '../models/user_block'
 StatsService = require './stats'
 
 ONE_DAY_SECONDS = 3600 * 24
@@ -40,7 +41,6 @@ TYPES =
   VIDEO: 'video'
 
 defaultUserEmbed = [
-  EmbedService.TYPES.USER.DATA
   EmbedService.TYPES.USER.GROUP_USER_SETTINGS
 ]
 cdnUrl = "https://#{config.CDN_HOST}/d/images/fam"
@@ -199,11 +199,11 @@ class PushNotificationService
 
       Promise.all [
         @sendToUserIds mentionUserIds, mentionMessage, {
-          skipMe, meUserId: meUser.id, groupId: conversation.groupId
+          skipMe, fromUserId: meUser.id, groupId: conversation.groupId
         }
 
         @sendToUserIds userIds, message, {
-          skipMe, meUserId: meUser.id, groupId: conversation.groupId
+          skipMe, fromUserId: meUser.id, groupId: conversation.groupId
         }
 
         # TODO: have users subscribe to conversation
@@ -261,24 +261,21 @@ class PushNotificationService
   sendToGroupTopic: (group, message) =>
     @sendToPushTopic {groupId: group.id}, message, {language: group.language}
 
-  sendToEvent: (event, message, {skipMe, meUserId, eventId} = {}) =>
-    @sendToUserIds event.userIds, message, {skipMe, meUserId, eventId}
+  sendToEvent: (event, message, {skipMe, fromUserId, eventId} = {}) =>
+    @sendToUserIds event.userIds, message, {skipMe, fromUserId, eventId}
 
-  sendToUserIds: (userIds, message, {skipMe, meUserId, groupId} = {}) ->
+  sendToUserIds: (userIds, message, {skipMe, fromUserId, groupId} = {}) ->
     Promise.each userIds, (userId) =>
-      unless userId is meUserId
+      unless userId is fromUserId
         user = User.getById userId, {preferCache: true}
         if groupId
           user = user.then EmbedService.embed {embed: defaultUserEmbed, groupId}
         user
         .then (user) =>
-          if not user or (
-            user.data and user.data.blockedUserIds.indexOf(meUserId) isnt -1
-          )
-            return
-          @send user, message
+          @send user, message, {fromUserId}
 
-  send: (user, message) =>
+  send: (user, message, {fromUserId} = {}) =>
+    console.log 'send', fromUserId
     unless message and (
       message.title or message.text or message.titleObj or message.textObj
     )
@@ -311,9 +308,6 @@ class PushNotificationService
     #     userId: user.id
     #   }
 
-    if user.flags.blockedNotifications?[message.type] is true
-      return Promise.resolve null
-
     if user.groupUserSettings
       settings = _.defaults(
         user.groupUserSettings.globalNotifications, config.DEFAULT_NOTIFICATIONS
@@ -321,13 +315,15 @@ class PushNotificationService
       if not settings?[message.type]
         return Promise.resolve null
 
-    if config.ENV is config.ENVS.DEV and not message.forceDevSend
+    if false and config.ENV is config.ENVS.DEV and not message.forceDevSend
       console.log 'send notification', user.id, message
       return Promise.resolve()
 
     successfullyPushedToNative = false
 
-    PushToken.getAllByUserId user.id
+    @_checkIfBlocked user, fromUserId
+    .then ->
+      PushToken.getAllByUserId user.id
     .then (pushTokens) =>
       pushTokens = _.filter pushTokens, (pushToken) ->
         pushToken.isActive
@@ -382,6 +378,16 @@ class PushNotificationService
                 User.updateById user.id, {
                   hasPushToken: false
                 }
+
+  _checkIfBlocked: (user, fromUserId) ->
+    if fromUserId
+      UserBlock.getAllByUserId user.id
+      .then (blockedUsers) ->
+        isBlocked = _.find blockedUsers, {blockedId: fromUserId}
+        if isBlocked
+          throw new Error 'user blocked'
+    else
+      Promise.resolve()
 
   migratePushTopicsByUserId: (userId, {appKey, token, deviceId}) ->
     isMainApp = appKey is config.GROUPS.MAIN.APP_KEY

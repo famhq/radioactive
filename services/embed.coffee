@@ -5,7 +5,6 @@ moment = require 'moment'
 config = require '../config'
 cknex = require '../services/cknex'
 User = require '../models/user'
-UserData = require '../models/user_data'
 UserUpgrade = require '../models/user_upgrade'
 AddonVote = require '../models/addon_vote'
 Ban = require '../models/ban'
@@ -123,11 +122,6 @@ TYPES =
     UPGRADES: 'user:upgrades'
   USER_ITEM:
     ITEM: 'userItem:item'
-  USER_DATA:
-    CONVERSATION_USERS: 'userData:conversationUsers'
-    FOLLOWERS: 'userData:followers'
-    FOLLOWING: 'userData:following'
-    BLOCKED_USERS: 'userData:blockedUsers'
 
 ONE_HOUR_SECONDS = 3600
 ONE_DAY_SECONDS = 3600 * 24
@@ -184,10 +178,6 @@ embedFn = _.curry (props, object) ->
         embedded.myVote = AddonVote.getByCreatorIdAndAddonId(
           user.id, embedded.id
         )
-      when TYPES.USER.DATA
-        embedded.data = UserData.getByUserId(embedded.id, {preferCache: true})
-        .then (userData) ->
-          _.defaults {userId: embedded.id}, userData
 
       when TYPES.USER.FOLLOWER_COUNT
         key = CacheService.PREFIXES.USER_FOLLOWER_COUNT + ':' + embedded.id
@@ -244,52 +234,6 @@ embedFn = _.curry (props, object) ->
         )
         .then (ban) ->
           Boolean ban?.userId
-
-      when TYPES.USER_DATA.FOLLOWING
-        #
-        # NOTE: friend's gold, items, etc... will be stale by a day
-        #
-        key = CacheService.PREFIXES.USER_DATA_FOLLOWING + ':' + embedded.userId
-        mmt = moment()
-        mmtMidnight = mmt.clone().utcOffset(config.PT_UTC_OFFSET).startOf('day')
-        secondsSinceMidnightPt = mmt.clone().utcOffset(config.PT_UTC_OFFSET)
-          .diff(mmtMidnight, 'seconds')
-        secondsUntilMidnight = ONE_DAY_SECONDS - secondsSinceMidnightPt
-
-        embedded.following = CacheService.preferCache key, ->
-          Promise.map(
-            _.takeRight(embedded.followingIds, MAX_FRIENDS), (userId) ->
-              User.getById userId, {preferCache: true}
-          )
-          .filter (user) -> Boolean user
-          .map (user) ->
-            User.sanitizePublic(null, user)
-        # CLEARED AT MIDNIGHT FOR GITING DAILY DATA INFO
-        , {expireSeconds: secondsUntilMidnight}
-
-      when TYPES.USER_DATA.FOLLOWERS
-        key = CacheService.PREFIXES.USER_DATA_FOLLOWERS + ':' + embedded.userId
-        embedded.followers = CacheService.preferCache key, ->
-          Promise.map(
-            _.takeRight(embedded.followerIds, MAX_FRIENDS), (userId) ->
-              User.getById userId, {preferCache: true}
-          )
-          .filter (user) -> Boolean user
-          .map (user) ->
-            User.sanitizePublic(null, user)
-        , {expireSeconds: ONE_DAY_SECONDS}
-
-      when TYPES.USER_DATA.BLOCKED_USERS
-        key = CacheService.PREFIXES.USER_BLOCKED_USERS + ':' + embedded.userId
-        embedded.blockedUsers = CacheService.preferCache key, ->
-          Promise.map(
-            _.takeRight(embedded.blockedUserIds, MAX_FRIENDS), (userId) ->
-              User.getById userId, {preferCache: true}
-          )
-          .filter (user) -> Boolean user
-          .map (user) ->
-            User.sanitizePublic(null, user)
-        , {expireSeconds: ONE_DAY_SECONDS}
 
       when TYPES.GROUP_RECORD_TYPE.USER_VALUES
         embedded.userValues = GroupRecord.getAllRecordsByTypeAndTime {

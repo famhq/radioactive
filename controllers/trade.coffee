@@ -5,7 +5,6 @@ Promise = require 'bluebird'
 
 Trade = require '../models/trade'
 User = require '../models/user'
-UserData = require '../models/user_data'
 PushNotificationService = require '../services/push_notification'
 TradeService = require '../services/trade'
 EmbedService = require '../services/embed'

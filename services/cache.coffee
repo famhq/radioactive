@@ -90,6 +90,7 @@ PREFIXES =
   THREAD_COMMENTS_THREAD_ID: 'thread_comments:thread_id17'
   TRADE_SEND_ITEMS: 'trade:send_items5'
   TRADE_RECEIVE_ITEMS: 'trade:receive_items5'
+  USER_BLOCKS: 'user_blocks:all'
   USER_DECKS_MIGRATE: 'user_decks:migrate16'
   USER_RECORDS_MIGRATE: 'user_records:migrate11'
   USER_PLAYER_USER_ID_GAME_KEY: 'user_player:user_id_game_id1'

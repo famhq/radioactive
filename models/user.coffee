@@ -4,7 +4,6 @@ PcgRandom = require 'pcg-random'
 
 r = require '../services/rethinkdb'
 CacheService = require '../services/cache'
-UserData = require './user_data'
 schemas = require '../schemas'
 config = require '../config'
 

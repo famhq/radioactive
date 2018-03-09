@@ -38,8 +38,8 @@ ThreadCommentCtrl = require './controllers/thread_comment'
 ThreadVoteCtrl = require './controllers/thread_vote'
 TradeCtrl = require './controllers/trade'
 UserCtrl = require './controllers/user'
+UserBlockCtrl = require './controllers/user_block'
 UserFollowerCtrl = require './controllers/user_follower'
-UserDataCtrl = require './controllers/user_data'
 UserItemCtrl = require './controllers/user_item'
 VideoCtrl = require './controllers/video'
 StreamService = require './services/stream'
@@ -78,15 +78,6 @@ module.exports = router
 .on 'users.setFlagsById', authed UserCtrl.setFlagsById
 .on 'users.getCountry', authed UserCtrl.getCountry
 
-.on 'userData.getMe', authed UserDataCtrl.getMe
-.on 'userData.getByUserId', authed UserDataCtrl.getByUserId
-.on 'userData.setAddress', authed UserDataCtrl.setAddress
-.on 'userData.updateMe', authed UserDataCtrl.updateMe
-.on 'userData.blockByUserId', authed UserDataCtrl.blockByUserId
-.on 'userData.unblockByUserId', authed UserDataCtrl.unblockByUserId
-.on 'userData.deleteConversationByUserId',
-  authed UserDataCtrl.deleteConversationByUserId
-
 .on 'userFollowers.getAllFollowingIds',
   authed UserFollowerCtrl.getAllFollowingIds
 .on 'userFollowers.getAllFollowerIds',
@@ -95,6 +86,13 @@ module.exports = router
   authed UserFollowerCtrl.followByUserId
 .on 'userFollowers.unfollowByUserId',
   authed UserFollowerCtrl.unfollowByUserId
+
+.on 'userBlocks.getAll',
+  authed UserBlockCtrl.getAll
+.on 'userBlocks.blockByUserId',
+  authed UserBlockCtrl.blockByUserId
+.on 'userBlocks.unblockByUserId',
+  authed UserBlockCtrl.unblockByUserId
 
 .on 'addons.getAll', authed AddonCtrl.getAll
 .on 'addons.getAllByGroupId', authed AddonCtrl.getAllByGroupId

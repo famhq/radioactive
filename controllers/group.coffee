@@ -3,7 +3,6 @@ router = require 'exoid-router'
 Promise = require 'bluebird'
 
 User = require '../models/user'
-UserData = require '../models/user_data'
 Group = require '../models/group'
 GroupUser = require '../models/group_user'
 GroupRole = require '../models/group_role'

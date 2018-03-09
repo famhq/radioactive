@@ -5,7 +5,6 @@ request = require 'request-promise'
 uuid = require 'uuid'
 
 User = require '../models/user'
-UserData = require '../models/user_data'
 Group = require '../models/group'
 GroupUser = require '../models/group_user'
 Thread = require '../models/thread'

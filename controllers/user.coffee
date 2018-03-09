@@ -4,7 +4,6 @@ Joi = require 'joi'
 geoip = require 'geoip-lite'
 
 User = require '../models/user'
-UserData = require '../models/user_data'
 UserPlayer = require '../models/user_player'
 Player = require '../models/player'
 EmbedService = require '../services/embed'
