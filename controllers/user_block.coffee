@@ -8,20 +8,19 @@ EmbedService = require '../services/embed'
 schemas = require '../schemas'
 config = require '../config'
 
-defaultEmbed = []
+defaultEmbed = [EmbedService.TYPES.USER_BLOCK.USER]
 
 class UserBlocksCtrl
   getAll: ({userId}, {user}) ->
     userId ?= user.id
     UserBlock.getAllByUserId userId, {preferCache: true}
+    .map EmbedService.embed {embed: defaultEmbed}
+
+  getAllIds: ({userId}, {user}) ->
+    userId ?= user.id
+    UserBlock.getAllByUserId userId, {preferCache: true}
     .map (userBlock) ->
       userBlock.blockedId
-
-  getAllFollowerIds: ({userId, embed}, {user}) ->
-    userId ?= user.id
-    UserBlock.getAllByFollowerId userId
-    .map (userBlock) ->
-      userBlock.userId
 
   blockByUserId: ({userId}, {user}) ->
     blockedId = userId

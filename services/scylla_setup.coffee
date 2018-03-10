@@ -9,7 +9,7 @@ config = require '../config'
 
 class ScyllaSetupService
   setup: (tables) =>
-    CacheService.runOnce 'scylla_setup9', =>
+    CacheService.runOnce 'scylla_setup1', =>
       Promise.all [
         @createKeyspaceIfNotExists 'starfire'
         @createKeyspaceIfNotExists 'clash_royale'
@@ -18,12 +18,12 @@ class ScyllaSetupService
         if config.ENV is config.ENVS.DEV
           createTables = _.map _.filter(tables, ({name}) ->
             name in [
-              # 'matches_by_playerId'
-              'user_blocks_by_userId'
-              # 'addons_by_key'
-              # 'addons_by_id'
-              # 'addons_by_gameKey'
-              # 'addon_votes_by_creatorId'
+              'user_followers_by_userId'
+              'user_followers_by_followedId'
+              'user_followers_by_userId_sort_time'
+              'user_followers_by_followedId_sort_time'
+              'user_followers_counter'
+              'user_following_counter'
             ]
           )
           Promise.each createTables, @createTableIfNotExist

@@ -122,6 +122,11 @@ TYPES =
     UPGRADES: 'user:upgrades'
   USER_ITEM:
     ITEM: 'userItem:item'
+  USER_FOLLOWER:
+    USER: 'userFollower:user'
+    FOLLOWED: 'userFollower:followed'
+  USER_BLOCK:
+    USER: 'userBlock:user'
 
 ONE_HOUR_SECONDS = 3600
 ONE_DAY_SECONDS = 3600 * 24
@@ -182,7 +187,7 @@ embedFn = _.curry (props, object) ->
       when TYPES.USER.FOLLOWER_COUNT
         key = CacheService.PREFIXES.USER_FOLLOWER_COUNT + ':' + embedded.id
         embedded.followerCount = CacheService.preferCache key, ->
-          UserFollower.getCountByFollowingId embedded.id
+          UserFollower.getFollowerCountByUserId embedded.id
         , {expireSeconds: FIVE_MINUTES_SECONDS}
 
       when TYPES.USER.GROUP_USER
@@ -353,25 +358,6 @@ embedFn = _.curry (props, object) ->
           .then (deck) ->
             _.defaults {deck}, popularDeck
 
-      # when TYPES.CLASH_ROYALE_CARD.BEST_DECKS
-      #   # FIXME FIXME: cache
-      #   embedded.popularDecks = ClashRoyaleCard.getPopularDecksByKey(
-      #     embedded.key, {preferCache: true, limit: 200}
-      #   ).map (popularDeck) ->
-      #     ClashRoyaleDeck.getById popularDeck.deckId
-      #     .then embedFn {
-      #       embed: [
-      #         TYPES.CLASH_ROYALE_DECK.CARDS
-      #         TYPES.CLASH_ROYALE_DECK.STATS
-      #       ]
-      #     }
-      #     .then (deck) ->
-      #       _.defaults {deck}, popularDeck
-      #   .then (decks) ->
-      #     _.orderBy decks, (deck) ->
-      #       console.log deck
-      #       deck
-
       when TYPES.STAR.USER
         embedded.user = User.getById embedded.userId, {preferCache: true}
         .then embedFn {
@@ -395,6 +381,24 @@ embedFn = _.curry (props, object) ->
           groupId: groupId
         }
         .then User.sanitizePublic null
+
+      when TYPES.USER_FOLLOWER.USER
+        embedded.user = getCachedChatUser {
+          userId: embedded.userId
+          groupId, gameKeys
+        }
+
+      when TYPES.USER_FOLLOWER.FOLLOWED
+        embedded.user = getCachedChatUser {
+          userId: embedded.followedId
+          groupId, gameKeys
+        }
+
+      when TYPES.USER_BLOCK.USER
+        embedded.user = getCachedChatUser {
+          userId: embedded.blockedId
+          groupId, gameKeys
+        }
 
       when TYPES.CONVERSATION.USERS
         if embedded.userIds

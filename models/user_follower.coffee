@@ -1,76 +1,239 @@
 _ = require 'lodash'
 uuid = require 'node-uuid'
+Promise = require 'bluebird'
+moment = require 'moment'
 
-r = require '../services/rethinkdb'
+cknex = require '../services/cknex'
+CacheService = require '../services/cache'
+config = require '../config'
 
-FOLLOWING_ID = 'followingId'
-USER_ID_INDEX = 'userId'
+tables = [
+  {
+    name: 'user_followers_by_userId_sort_time'
+    keyspace: 'starfire'
+    fields:
+      id: 'timeuuid'
+      userId: 'uuid'
+      followedId: 'uuid'
+    primaryKey:
+      partitionKey: ['userId']
+      clusteringColumns: ['id', 'followedId']
+    withClusteringOrderBy: ['id', 'desc']
+  }
+  {
+    name: 'user_followers_by_followedId_sort_time'
+    keyspace: 'starfire'
+    fields:
+      id: 'timeuuid'
+      userId: 'uuid'
+      followedId: 'uuid'
+    primaryKey:
+      partitionKey: ['followedId']
+      clusteringColumns: ['id', 'userId']
+    withClusteringOrderBy: ['id', 'desc']
+  }
+  {
+    name: 'user_followers_by_userId'
+    keyspace: 'starfire'
+    fields:
+      id: 'timeuuid'
+      userId: 'uuid'
+      followedId: 'uuid'
+    primaryKey:
+      partitionKey: ['userId']
+      clusteringColumns: ['followedId']
+  }
+  {
+    name: 'user_followers_by_followedId'
+    keyspace: 'starfire'
+    fields:
+      id: 'timeuuid'
+      userId: 'uuid'
+      followedId: 'uuid'
+    primaryKey:
+      partitionKey: ['followedId']
+      clusteringColumns: ['userId']
+  }
+  {
+    name: 'user_followers_counter'
+    keyspace: 'starfire'
+    fields:
+      userId: 'uuid'
+      count: 'counter'
+    primaryKey:
+      partitionKey: ['userId']
+  }
+  {
+    name: 'user_following_counter'
+    keyspace: 'starfire'
+    fields:
+      userId: 'uuid'
+      count: 'counter'
+    primaryKey:
+      partitionKey: ['userId']
+  }
+]
 
 defaultUserFollower = (userFollower) ->
   unless userFollower?
     return null
 
-  if userFollower.followingId and userFollower.userId
-    id = "#{userFollower.userId}:#{userFollower.followingId}"
-  else
-    id = uuid.v4()
+  _.defaults {id: cknex.getTimeUuid()}, userFollower
 
-  _.defaults userFollower, {
-    id: id
-    userId: null
-    followingId: null
-    time: new Date()
-  }
+defaultUserFollowerOutput = (userFollower) ->
+  unless userFollower?
+    return null
 
-USER_FOLLOWERS_TABLE = 'user_followers'
+  userFollower.userId = "#{userFollower.userId}"
+  userFollower.followedId = "#{userFollower.followedId}"
+  userFollower.time = userFollower.id.getDate()
+
+  userFollower
+
+ONE_HOUR_SECONDS = 60
 
 class UserFollowerModel
-  RETHINK_TABLES: [
-    {
-      name: USER_FOLLOWERS_TABLE
-      indexes: [
-        {name: FOLLOWING_ID}
-        {name: USER_ID_INDEX}
-      ]
-    }
-  ]
-  # 07e8ada2-359b-4d42-99d1-f8fa4043b8f0 -> 613e4fce-8ec5-4e75-b134-6bdab30f217f
+  SCYLLA_TABLES: tables
 
-  create: (userFollower) ->
+  getAllFollowingByUserId: (userId, {preferCache} = {}) ->
+    get = ->
+      cknex().select '*'
+      .from 'user_followers_by_userId'
+      .where 'userId', '=', userId
+      .limit 100
+      .run()
+      .map defaultUserFollowerOutput
+
+    if preferCache
+      cacheKey = "#{CacheService.PREFIXES.USER_FOLLOWING}:#{userId}"
+      CacheService.preferCache cacheKey, get, {
+        expireSeconds: ONE_HOUR_SECONDS
+      }
+    else
+      get()
+
+  getAllFollowersByUserId: (followedId, {preferCache} = {}) ->
+    get = ->
+      cknex().select '*'
+      .from 'user_followers_by_followedId'
+      .where 'followedId', '=', followedId
+      .limit 100
+      .run()
+      .map defaultUserFollowerOutput
+
+    if preferCache
+      cacheKey = "#{CacheService.PREFIXES.USER_FOLLOWERS}:#{followedId}"
+      CacheService.preferCache cacheKey, get, {
+        expireSeconds: ONE_HOUR_SECONDS
+      }
+    else
+      get()
+
+  getFollowerCountByUserId: (userId) ->
+    cknex().select '*'
+    .from 'user_followers_counter'
+    .where 'userId', '=', userId
+    .run {isSingle: true}
+
+  getFollowingCountByUserId: (userId) ->
+    cknex().select '*'
+    .from 'user_following_counter'
+    .where 'userId', '=', userId
+    .run {isSingle: true}
+
+  getByUserIdAndFollowedId: (userId, followedId) ->
+    cknex().select '*'
+    .from 'user_followers_by_userId'
+    .where 'userId', '=', userId
+    .andWhere 'followedId', '=', followedId
+    .run {isSingle: true}
+
+  create: (userFollower) =>
     userFollower = defaultUserFollower userFollower
+    insertObj = {
+      id: userFollower.id
+      userId: userFollower.userId
+      followedId: userFollower.followedId
+    }
 
-    r.table USER_FOLLOWERS_TABLE
-    .insert userFollower
-    .run()
-    .then ->
-      userFollower
+    Promise.all [
+      cknex().insert insertObj
+      .into 'user_followers_by_userId_sort_time'
+      .run()
 
-  getAllByFollowingId: (followingId) ->
-    r.table USER_FOLLOWERS_TABLE
-    .getAll followingId, {index: FOLLOWING_ID}
-    .run()
+      cknex().insert insertObj
+      .into 'user_followers_by_followedId_sort_time'
+      .run()
 
-  getCountByFollowingId: (followingId) ->
-    r.table USER_FOLLOWERS_TABLE
-    .getAll followingId, {index: FOLLOWING_ID}
-    .count()
-    .run()
+      cknex().insert insertObj
+      .into 'user_followers_by_userId'
+      .run()
 
-  getAllByUserId: (userId) ->
-    r.table USER_FOLLOWERS_TABLE
-    .getAll userId, {index: USER_ID_INDEX}
-    .run()
+      cknex().insert insertObj
+      .into 'user_followers_by_followedId'
+      .run()
 
-  deleteByFollowingIdAndUserId: (followingId, userId) ->
-    r.table USER_FOLLOWERS_TABLE
-    .get "#{userId}:#{followingId}"
-    .delete()
-    .run()
+      @incrementCountByUserFollower userFollower, 1
+    ]
+    .tap ->
+      prefix = CacheService.PREFIXES.USER_FOLLOWING
+      followedPrefix = CacheService.PREFIXES.USER_FOLLOWERS
+      Promise.all [
+        CacheService.deleteByKey "#{prefix}:#{userFollower.userId}"
+        CacheService.deleteByKey "#{followedPrefix}:#{userFollower.followedId}"
+      ]
 
-  updateById: (id, diff) ->
-    r.table USER_FOLLOWERS_TABLE
-    .get id
-    .update diff
-    .run()
+  incrementCountByUserFollower: (userFollower, amount) ->
+    Promise.all [
+      cknex().update 'user_followers_counter'
+      .increment 'count', amount
+      .where 'userId', '=', userFollower.followedId
+      .run()
 
+      cknex().update 'user_following_counter'
+      .increment 'count', amount
+      .where 'userId', '=', userFollower.userId
+      .run()
+    ]
+
+  deleteByUserFollower: (userFollower) =>
+    Promise.all [
+      cknex().delete()
+      .from 'user_followers_by_userId_sort_time'
+      .where 'userId', '=', userFollower.userId
+      .andWhere 'followedId', '=', userFollower.followedId
+      .andWhere 'id', '=', userFollower.id
+      .run()
+
+      cknex().delete()
+      .from 'user_followers_by_followedId_sort_time'
+      .where 'followedId', '=', userFollower.followedId
+      .andWhere 'userId', '=', userFollower.userId
+      .andWhere 'id', '=', userFollower.id
+      .run()
+
+      cknex().delete()
+      .from 'user_followers_by_userId'
+      .where 'userId', '=', userFollower.userId
+      .andWhere 'followedId', '=', userFollower.followedId
+      .run()
+
+      cknex().delete()
+      .from 'user_followers_by_followedId'
+      .where 'followedId', '=', userFollower.followedId
+      .andWhere 'userId', '=', userFollower.userId
+      .run()
+
+      @incrementCountByUserFollower userFollower, -1
+    ]
+
+  deleteByUserIdAndFollowedId: (userId, followedId) =>
+    @getByUserIdAndFollowedId userId, followedId
+    .then (userFollower) =>
+      if userFollower
+        @deleteByUserFollower userFollower
+        .tap ->
+          prefix = CacheService.PREFIXES.USER_FOLLOWERS
+          CacheService.deleteByKey "#{prefix}:#{userId}"
+  
 module.exports = new UserFollowerModel()

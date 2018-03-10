@@ -82,6 +82,10 @@ module.exports = router
   authed UserFollowerCtrl.getAllFollowingIds
 .on 'userFollowers.getAllFollowerIds',
   authed UserFollowerCtrl.getAllFollowerIds
+.on 'userFollowers.getAllFollowing',
+  authed UserFollowerCtrl.getAllFollowing
+.on 'userFollowers.getAllFollowers',
+  authed UserFollowerCtrl.getAllFollowers
 .on 'userFollowers.followByUserId',
   authed UserFollowerCtrl.followByUserId
 .on 'userFollowers.unfollowByUserId',
@@ -89,6 +93,8 @@ module.exports = router
 
 .on 'userBlocks.getAll',
   authed UserBlockCtrl.getAll
+.on 'userBlocks.getAllIds',
+  authed UserBlockCtrl.getAllIds
 .on 'userBlocks.blockByUserId',
   authed UserBlockCtrl.blockByUserId
 .on 'userBlocks.unblockByUserId',

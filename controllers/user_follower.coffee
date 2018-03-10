@@ -9,35 +9,40 @@ PushNotificationService = require '../services/push_notification'
 schemas = require '../schemas'
 config = require '../config'
 
-defaultEmbed = []
+defaultEmbed = [EmbedService.TYPES.USER_FOLLOWER.USER]
+followedEmbed = [EmbedService.TYPES.USER_FOLLOWER.FOLLOWED]
 
 class UserFollowerCtrl
   getAllFollowingIds: ({userId, embed}, {user}) ->
     userId ?= user.id
-    UserFollower.getAllByUserId userId
+    UserFollower.getAllFollowingByUserId userId
     .map (userFollower) ->
-      userFollower.followingId
+      userFollower.followedId
 
   getAllFollowerIds: ({userId, embed}, {user}) ->
     userId ?= user.id
-    UserFollower.getAllByFollowerId userId
+    UserFollower.getAllFollowersByUserId userId
     .map (userFollower) ->
       userFollower.userId
 
+  getAllFollowing: ({userId, embed}, {user}) ->
+    userId ?= user.id
+    UserFollower.getAllFollowingByUserId userId
+    .map EmbedService.embed {embed: followedEmbed}
+
+  getAllFollowers: ({userId, embed}, {user}) ->
+    userId ?= user.id
+    UserFollower.getAllFollowersByUserId userId
+    .map EmbedService.embed {embed: defaultEmbed}
+
   followByUserId: ({userId}, {user}) ->
-    followingId = userId
-    valid = Joi.validate {followingId}, {
-      followingId: schemas.user.id
-    }, {presence: 'required'}
-
-    if valid.error
-      router.throw {
-        status: 400, info: valid.error.message, ignoreLog: true
-      }
-
-    UserFollower.create {userId: user.id, followingId: followingId}
+    followedId = userId
+    UserFollower.getByUserIdAndFollowedId user.id, followedId
+    .then (userFollower) ->
+      unless userFollower
+        UserFollower.create {userId: user.id, followedId: followedId}
     # .then ->
-    #   User.getById followingId
+    #   User.getById followedId
     #   .then (otherUser) ->
     #     PushNotificationService.send otherUser, {
     #       titleObj:
@@ -53,28 +58,12 @@ class UserFollowerCtrl
     #           key: 'friends'
     #           params: {gameKey: config.DEFAULT_GAME_KEY}
     #     }
-      .catch -> null
-      # key = "#{CacheService.PREFIXES.USER_DATA_FOLLOWING_PLAYERS}:#{user.id}"
-      # CacheService.deleteByKey key
+      # .catch -> null
       null
 
   unfollowByUserId: ({userId}, {user}) ->
-    followingId = userId
-    valid = Joi.validate {followingId}, {
-      followingId: schemas.user.id
-    }, {presence: 'required'}
-
-    if valid.error
-      router.throw {
-        status: 400
-        info: valid.error.message
-        ignoreLog: true
-      }
-
-    UserFollower.deleteByFollowingIdAndUserId followingId, user.id
-    # key = "#{CacheService.PREFIXES.USER_DATA_FOLLOWING}:#{user.id}"
-    # CacheService.deleteByKey key
-    # null
+    followedId = userId
+    UserFollower.deleteByUserIdAndFollowedId user.id, followedId
 
 
 module.exports = new UserFollowerCtrl()

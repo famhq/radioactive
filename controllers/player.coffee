@@ -324,9 +324,9 @@ class PlayerCtrl
     key = "#{CacheService.PREFIXES.USER_DATA_FOLLOWING_PLAYERS}:#{user.id}"
 
     CacheService.preferCache key, ->
-      UserFollower.getAllByUserId user.id
+      UserFollower.getAllFollowingByUserId user.id
       .map (userFollower) ->
-        userFollower.followingId
+        userFollower.followedId
       .then (followingIds) ->
         Player.getAllByUserIdsAndGameKey(
           followingIds, GAME_KEY
