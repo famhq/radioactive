@@ -112,6 +112,7 @@ tables = [
 
 PERMISSIONS =
   MANAGE_CHANNEL: 'manageChannel'
+  MANAGE_PAGE: 'managePage'
   READ_MESSAGE: 'readMessage'
   DELETE_MESSAGE: 'deleteMessage'
   DELETE_FORUM_THREAD: 'deleteForumThread'

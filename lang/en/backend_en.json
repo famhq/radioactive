@@ -9,6 +9,7 @@
   "audit.unban": "unbanned {name}",
   "audit.deleteMessage": "deleted a message by {name}",
   "audit.deleteMessagesLast7d": "deleted last 7 days of messages by {name}",
+  "audit.editPage": "Edited the page: {key}",
   "audit.addRole": "gave the role: {roleName} to {name}",
   "audit.deleteRole": "removed the role: {roleName} from {name}",
   "audit.giveRole": "gave the role: {roleName} to {name}",

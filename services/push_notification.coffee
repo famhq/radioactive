@@ -217,19 +217,12 @@ class PushNotificationService
   # topics are NOT secure. anyone can subscribe. for secure messaging, always
   # use the deviceToken. for private channels, use deviceToken
 
-  ###
-      // topics:
-      // store subscriptions in database
-        // <userId>, <groupId, appKey, subType, subId>
-        // topic structure: groupId:appKey:subType:subId
-        // eg: 12345:conversation:54321
-
-      // when subscribing to group topic, unsubscribe from the main app one
-      // only subscribe to group topics in group app
-  ###
-
   sendToPushTopic: (pushTopic, message, {language} = {}) =>
     topic = @getTopicStrFromPushTopic pushTopic
+
+    # legacy
+    # topic = "group-#{pushTopic.groupId}"
+
     if message.titleObj
       message.title = Language.get message.titleObj.key, {
         file: 'pushNotifications'
@@ -275,7 +268,6 @@ class PushNotificationService
           @send user, message, {fromUserId}
 
   send: (user, message, {fromUserId} = {}) =>
-    console.log 'send', fromUserId
     unless message and (
       message.title or message.text or message.titleObj or message.textObj
     )

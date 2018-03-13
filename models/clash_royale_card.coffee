@@ -245,6 +245,8 @@ class ClashRoyaleCardModel
     .run()
 
   getKeyByName: (name) ->
+    unless name
+      return ''
     _.snakeCase name.replace /\./g, ''
 
   sanitize: _.curry (requesterId, clashRoyaleCard) ->

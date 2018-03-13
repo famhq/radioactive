@@ -227,10 +227,7 @@ class UserCtrl
             url: largeUrl
           }
         ]
-      Promise.all [
-        User.updateById user.id, {avatarImage: avatarImage}
-        UserData.upsertByUserId user.id, {presetAvatarId: null}
-      ]
+      User.updateById user.id, {avatarImage: avatarImage}
     .then (response) ->
       key = "#{CacheService.PREFIXES.CHAT_USER}:#{user.id}"
       CacheService.deleteByKey key

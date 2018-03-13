@@ -117,7 +117,6 @@ class ClashRoyalePlayerModel
     .map defaultClashRoyalePlayer
 
   upsertById: (id, diff, {skipRun} = {}) =>
-    console.log 'ups', id, diff
     table = _.find @SCYLLA_TABLES, {name: 'players_by_id'}
     validKeys = _.filter _.keys(table.fields), (key) -> key isnt 'id'
 

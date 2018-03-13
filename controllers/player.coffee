@@ -2,6 +2,7 @@ _ = require 'lodash'
 router = require 'exoid-router'
 Joi = require 'joi'
 randomSeed = require 'random-seed'
+Promise = require 'bluebird'
 
 User = require '../models/user'
 UserFollower = require '../models/user_follower'

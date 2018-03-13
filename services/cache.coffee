@@ -69,7 +69,7 @@ PREFIXES =
   GROUP_KEY: 'group:key5'
   GROUP_GET_ALL: 'group:getAll16'
   GROUP_GET_ALL_CATEGORY: 'group:getAll:category9'
-  GROUP_GAME_KEY_LANGUAGE: 'group:game_key_language1'
+  GROUP_GAME_KEY_LANGUAGE: 'group:game_key_language2'
   GROUP_STAR: 'group:star2'
   GROUP_USER_COUNT: 'group:user_count1'
   GROUP_ROLE_GROUP_ID_USER_ID: 'group_role:groupId:userId3'

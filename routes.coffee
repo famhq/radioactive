@@ -28,6 +28,7 @@ GroupRecordCtrl = require './controllers/group_record'
 GroupRecordTypeCtrl = require './controllers/group_record_type'
 GameRecordTypeCtrl = require './controllers/game_record_type'
 GroupRoleCtrl = require './controllers/group_role'
+GroupPageCtrl = require './controllers/group_page'
 GroupUserXpTransactionCtrl = require './controllers/group_user_xp_transaction'
 ProductCtrl = require './controllers/product'
 RewardCtrl = require './controllers/reward'
@@ -197,6 +198,15 @@ module.exports = router
   authed GroupUserXpTransactionCtrl.getAllByGroupId
 .on 'groupUserXpTransactions.incrementByGroupIdAndActionKey',
   authed GroupUserXpTransactionCtrl.incrementByGroupIdAndActionKey
+
+.on 'groupPages.getAllByGroupId',
+  authed GroupPageCtrl.getAllByGroupId
+.on 'groupPages.upsert',
+  authed GroupPageCtrl.upsert
+.on 'groupPages.deleteByGroupIdAndKey',
+  authed GroupPageCtrl.deleteByGroupIdAndKey
+.on 'groupPages.getByGroupIdAndKey',
+  authed GroupPageCtrl.getByGroupIdAndKey
 
 .on 'groupRecords.getAllByGroupIdAndRecordTypeKey',
   authed GroupRecordCtrl.getAllByGroupIdAndRecordTypeKey

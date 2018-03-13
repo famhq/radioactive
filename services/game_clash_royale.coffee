@@ -367,7 +367,6 @@ class ClashRoyaleService
         # TODO: add a check to make sure this is always running. healtcheck?
         Player.getAutoRefreshByGameId GAME_KEY, minReversedPlayerId
         .then (players) ->
-          console.log 'auto refreshing', minReversedPlayerId, players.length
           if _.isEmpty players
             buckets = '0289PYLQGRJCUV'.split ''
             currentBucket = minReversedPlayerId.substr 0, 1
@@ -401,7 +400,6 @@ class ClashRoyaleService
       else
         # always be truthy for cron-check
         successes = _.filter(responses).length or 1
-        console.log 'refreshing success', successes, 'time', Date.now() - start
         key = CacheService.KEYS.AUTO_REFRESH_SUCCESS_COUNT
         CacheService.set key, successes, {expireSeconds: ONE_MINUTE_SECONDS}
         # TODO: make sure this doesn't cause memory leak.

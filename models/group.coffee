@@ -170,8 +170,7 @@ class GroupModel
       r.table GROUPS_TABLE
       .getAll ['public', language], {index: TYPE_LANGUAGE_INDEX}
       .then (groups) =>
-        group = _.find groups, ({gameKeys}) ->
-          gameKeys and gameKeys.indexOf(gameKey) isnt -1
+        group = _.find groups, {gameKey}
         if group
           return group
         else
