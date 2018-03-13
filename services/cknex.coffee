@@ -120,6 +120,7 @@ cknex.batchRun = (queries) ->
       cassanknexInstance()
       .batch {prepare: true, logged: false}, queries, (err, result) ->
         if err
+          console.log 'batch scylla err', err
           reject err
         else
           resolve result

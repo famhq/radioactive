@@ -12,6 +12,8 @@ config = require '../config'
 CLASH_ROYALE_ES_GROUP_ID = '4f26e51e-7f35-41dd-9f21-590c7bb9ce34'
 CLASH_ROYALE_ES_USER_ID = 'c38537b8-4831-4c58-b230-08df67cdfcd2'
 
+# FIXME FIXME: grab thumbnail from post and use as attachment
+
 class NewsRoyaleService
   scrape: ->
     console.log 'scrape'
@@ -20,11 +22,13 @@ class NewsRoyaleService
       # console.log response
       $ = cheerio.load response
       posts = $('article').not('.hidden').map (i, el) ->
-        # console.log $(el).html()
+        thumbnail = $(el).find('source').attr('data-srcset')
+        thumbnail = thumbnail?.split(' ')?[0]
         {
           id: $(el).attr('data-post-id')
           url: $(el).find('a').attr('href')
           timestamp: $(el).find('.article-date').attr('data-timestamp')
+          thumbnail: thumbnail
         }
       .get()
 
@@ -73,7 +77,11 @@ class NewsRoyaleService
                   title: title
                   body: markdown
                   attachments: if imageUrl
-                    [{type: 'image', src: imageUrl}]
+                    _.filter [
+                      if post.thumbnail
+                        {type: 'image', src: post.thumbnail}
+                      {type: 'image', src: imageUrl}
+                    ]
                   extras:
                     newsRoyalePostId: post.id
               }
