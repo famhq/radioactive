@@ -193,6 +193,34 @@ products =
       itemKeys: ['tq_starter_chest', 'tq_starter_key']
   }
 
+  # NINJA
+  ninja_key: {
+    name: 'Ninja Key', type: 'pack', groupId: GROUPS.NINJA.ID, cost: 200
+    data:
+      backgroundImage: 'https://cdn.wtf/d/images/fam/packs/ninja_key.png'
+      backgroundColor: '#2196F3'
+      count: 1
+      itemKeys: ['ninja_key']
+  }
+  ninja_chest: {
+    type: 'pack', groupId: GROUPS.NINJA.ID, name: 'Ninja Chest', cost: 0
+    data:
+      backgroundImage: 'https://cdn.wtf/d/images/fam/packs/ninja_chest.png'
+      backgroundColor: '#9C27B0'
+      lockTime: ONE_DAY_SECONDS
+      count: 1
+      itemKeys: ['ninja_chest']
+  }
+  ninja_starter_chest: {
+    type: 'pack', groupId: GROUPS.NINJA.ID, name: 'Ninja Starter Pack', cost: 0
+    data:
+      backgroundImage: 'https://cdn.wtf/d/images/fam/packs/ninja_starter_chest.png'
+      backgroundColor: '#F44336'
+      lockTime: 'infinity'
+      count: 2
+      itemKeys: ['ninja_starter_chest', 'ninja_starter_key']
+  }
+
   # CLASH ROYALE ENGLISH
   cr_en_pack_free: {
     type: 'pack'

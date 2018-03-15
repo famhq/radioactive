@@ -79,7 +79,7 @@ class NewsRoyaleService
                   attachments: if imageUrl
                     _.filter [
                       if post.thumbnail
-                        {type: 'image', src: post.thumbnail}
+                        {type: 'image', src: post.thumbnail, persist: true}
                       {type: 'image', src: imageUrl}
                     ]
                   extras:

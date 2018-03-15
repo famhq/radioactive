@@ -73,7 +73,6 @@ TYPES =
     USER_COUNT: 'group:userCount'
     USERS: 'group:users'
     ME_GROUP_USER: 'group:group_user'
-    CONVERSATIONS: 'group:conversations'
     STAR: 'group:star'
   GROUP_AUDIT_LOG:
     USER: 'groupAuditLog:user'
@@ -445,17 +444,6 @@ embedFn = _.curry (props, object) ->
           embedded.id, user.id
         )
         .then embedFn {embed: [TYPES.GROUP_USER.ROLES]}
-
-      when TYPES.GROUP.CONVERSATIONS
-        embedded.conversations = embedded.meGroupUser.then (meGroupUser) ->
-          Conversation.getAllByGroupId embedded.id
-          .then (conversations) ->
-            _.filter conversations, (conversation) ->
-              GroupUser.hasPermission {
-                meGroupUser
-                permissions: [GroupUser.PERMISSIONS.READ_MESSAGE]
-                channelId: conversation.id
-              }
 
       when TYPES.GROUP.CLAN
         if not _.isEmpty embedded.clanIds

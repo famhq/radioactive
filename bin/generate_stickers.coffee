@@ -85,7 +85,13 @@ setTimeout ->
     # ['nan_wow', '../../Downloads/nan_wow.png']
     # ['nan', '../../Downloads/nickatnytefish-300.png']
 
-    ['tq', '../../Downloads/tq.png']
+    # ['tq', '../../Downloads/tq.png']
+
+    ['ninja', '../../Downloads/ninja_k.png']
+    ['ninja_pon', '../../Downloads/ninja_pon.png']
+    ['ninja_hype', '../../Downloads/ninja_hype.png']
+    ['ninja_blast', '../../Downloads/ninja_blast.png']
+    ['ninja_creep', '../../Downloads/ninja_creep.png']
 
   ], (args) ->
     generate.apply this, args

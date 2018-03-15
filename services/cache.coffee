@@ -42,7 +42,7 @@ PREFIXES =
   USER_DAILY_DATA_PUSH: 'user_daily_data:push5'
   ADDON_ID: 'addon:id'
   ADDON_KEY: 'addon:key4'
-  ADDON_GET_ALL_BY_GAME_KEY: 'addon:get_all12'
+  ADDON_GET_ALL_BY_GAME_KEY: 'addon:get_all13'
   CLASH_ROYALE_MATCHES_ID: 'clash_royale_matches:id52'
   CLASH_ROYALE_MATCHES_ID_EXISTS: 'clash_royale_matches:id:exists2'
   CLASH_ROYALE_INVALID_TAG: 'clash_royale:invalid_tag'

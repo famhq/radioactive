@@ -92,6 +92,22 @@ class ConversationCtrl
     .map EmbedService.embed {embed: lastMessageEmbed}
     .map Conversation.sanitize null
 
+  getAllByGroupId: ({groupId}, {user}) ->
+    Promise.all [
+      GroupUser.getByGroupIdAndUserId groupId, user.id
+      .then EmbedService.embed {embed: [EmbedService.TYPES.GROUP_USER.ROLES]}
+
+      Conversation.getAllByGroupId groupId
+    ]
+    .then ([meGroupUser, conversations]) ->
+      conversations = _.filter conversations, (conversation) ->
+        GroupUser.hasPermission {
+          meGroupUser
+          permissions: [GroupUser.PERMISSIONS.READ_MESSAGE]
+          channelId: conversation.id
+        }
+      _.map conversations, Conversation.sanitize null
+
   getById: ({id}, {user}) ->
     Conversation.getById id
     .then EmbedService.embed {embed: defaultEmbed}

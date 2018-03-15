@@ -79,6 +79,42 @@ items =
 
 
 
+
+
+  ninja: {name: 'Ninja', groupId: GROUPS.NINJA.ID, rarity: 'starter', type: 'sticker'}
+  ninja_hype: {name: 'Ninja Hype', groupId: GROUPS.NINJA.ID, rarity: 'common', type: 'sticker'}
+  ninja_blast: {name: 'Ninja Blast', groupId: GROUPS.NINJA.ID, rarity: 'rare', type: 'sticker'}
+  ninja_pon: {name: 'Ninja Pon', groupId: GROUPS.NINJA.ID, rarity: 'epic', type: 'sticker'}
+  ninja_creep: {name: 'Ninja Creep', groupId: GROUPS.NINJA.ID, rarity: 'legendary', type: 'sticker'}
+  ninja_chest: {
+    name: 'Ninja Chest', groupId: GROUPS.NINJA.ID, rarity: 'common', type: 'chest'
+    data:
+      keyRequired: 'ninja_key'
+      odds: DEFAULT_STICKER_ODDS
+      count: 3
+      backKey: 'ninja'
+  }
+  ninja_key: {
+    name: 'Ninja Key', groupId: GROUPS.NINJA.ID, rarity: 'common', type: 'key'
+    data:
+      chestKey: 'ninja_chest'
+  }
+  ninja_starter_chest: {
+    name: 'Ninja Starter Chest', groupId: GROUPS.NINJA.ID, rarity: 'common', type: 'chest'
+    data:
+      keyRequired: 'ninja_starter_key'
+      odds: [{type: 'sticker', rarity: 'starter', odds: 1}]
+      count: 1
+      backKey: 'ninja'
+  }
+  ninja_starter_key: {
+    name: 'Ninja Starter Key', groupId: GROUPS.NINJA.ID, rarity: 'common', type: 'key'
+    data:
+      chestKey: 'ninja_starter_chest'
+  }
+
+
+
   ph: {name: 'PlayHard', groupId: GROUPS.PLAY_HARD.ID, rarity: 'starter', type: 'sticker'}
   ph_bruno: {name: 'Bruno', groupId: GROUPS.PLAY_HARD.ID, rarity: 'common', type: 'sticker'}
   ph_huum: {name: 'Huum', groupId: GROUPS.PLAY_HARD.ID, rarity: 'common', type: 'sticker'}

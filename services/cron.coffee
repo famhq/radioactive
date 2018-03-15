@@ -53,12 +53,13 @@ class CronService
     @addCron 'tenMin', '0 */10 * * * *', ->
       SpecialOffer.batchUpsert allSpecialOffers
       Thread.updateScores 'time'
-      NewsRoyaleService.scrape()
-      FortniteService.syncNews()
       VideoDiscoveryService.updateGroupVideos config.GROUPS.PLAY_HARD.ID
       VideoDiscoveryService.updateGroupVideos config.GROUPS.NICKATNYTE.ID
-      # VideoDiscoveryService.updateGroupVideos config.GROUPS.TEAM_QUESO.ID
+      VideoDiscoveryService.updateGroupVideos config.GROUPS.NINJA.ID
       # VideoDiscoveryService.updateGroupVideos config.GROUPS.FERG.ID
+      if config.ENV is config.ENVS.PROD and not config.IS_STAGING
+        NewsRoyaleService.scrape()
+        FortniteService.syncNews()
 
     @addCron 'oneHour', '0 0 * * * *', ->
       CleanupService.trimLeaderboards()

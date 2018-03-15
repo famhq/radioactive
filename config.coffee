@@ -17,6 +17,9 @@ config =
     TEAM_QUESO:
       ID: '4e825b23-5bad-4f0a-9463-e41eee588a95'
       APP_KEY: 'teamqueso'
+    NINJA:
+      ID: 'c03872fa-6b0d-4bf7-93cd-9b8091a6894b'
+      APP_KEY: 'ninja'
     STARFIRE:
       ID: '319a9065-e3dc-4d02-ad30-62047716a88f'
       APP_KEY: 'openfam'
