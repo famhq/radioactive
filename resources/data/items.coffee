@@ -50,6 +50,9 @@ items =
 
 
   tq: {name: 'Team Queso', groupId: GROUPS.TEAM_QUESO.ID, rarity: 'starter', type: 'sticker'}
+  tq_adrian_piedra: {name: 'TQ Adrian Piedra', groupId: GROUPS.TEAM_QUESO.ID, rarity: 'common', type: 'sticker'}
+  tq_coltonw83: {name: 'TQ DiegoB', groupId: GROUPS.TEAM_QUESO.ID, rarity: 'common', type: 'sticker'}
+  tq_diegob: {name: 'TQ Coltonw83', groupId: GROUPS.TEAM_QUESO.ID, rarity: 'common', type: 'sticker'}
   tq_chest: {
     name: 'Team Queso Chest', groupId: GROUPS.TEAM_QUESO.ID, rarity: 'common', type: 'chest'
     data:

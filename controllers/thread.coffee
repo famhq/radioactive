@@ -120,15 +120,19 @@ class ThreadCtrl
       if user.flags?.isStar
         thread.category = 'news'
 
-      images = new RegExp('\\!\\[(.*?)\\]\\((.*?)\\)', 'gi').exec(
+      images = new RegExp('\\!\\[(.*?)\\]\\(<?(.*?)( |\\))', 'gi').exec(
         thread.data.body
       )
       firstImageSrc = images?[2]
       thread.data.attachments = _.filter thread.data.attachments, ({persist}) ->
         not persist
       if firstImageSrc
+        largeCdnImgRegex = /https:\/\/cdn\.wtf\/images\/fam\/cm\/(.*?)\.large/i
+        firstImageSrc = firstImageSrc.replace(
+          largeCdnImgRegex, 'https://cdn.wtf/images/fam/cm/$1.small'
+        )
         thread.data.attachments.push {
-          type: 'image', src: 'https://inbox.clashroyale.com/uploaded-images/_220x220_crop_center-center_60/it_20180307_cr_league_announcement_small_thumbnail.jpg?mtime=20180313124524', persist: true
+          type: 'image', src: firstImageSrc
         }
 
       Promise.all [

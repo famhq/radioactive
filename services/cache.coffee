@@ -26,6 +26,7 @@ PREFIXES =
   CONVERSATION_ID: 'conversation:id5'
   VIDEO_DAILY_XP: 'video:daily_xp'
   VIDEOS_GROUP_ID: 'videos:group_id3'
+  LFG_GET_ALL: 'lfg:get_all'
   USER_ID: 'user:id'
   USER_USERNAME: 'user:username'
   USER_FOLLOWER_COUNT: 'user:follower_count'
