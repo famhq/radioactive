@@ -31,6 +31,7 @@
     "stopwords-es": "^0.3.0",
     "tabletojson": "^0.4.0",
     "traceur": "0.0.111",
+    "twit": "^2.2.9",
     "wordcloud": "^1.0.6",
     "x-ray": "^2.3.2"
   },

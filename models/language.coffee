@@ -12,6 +12,7 @@ class Language
       languages: null
       pushNotifications: null
       backend: null
+      fortnite: null
     }
 
     @files = _.mapValues files, (val, file) ->
