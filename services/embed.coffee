@@ -88,6 +88,8 @@ TYPES =
     USER_VALUES: 'groupRecordType:userValues'
   GAME_RECORD_TYPE:
     ME_VALUES: 'gameRecordType:playerValues'
+  LFG:
+    USER: 'lfg:user'
   SPECIAL_OFFER:
     TRANSACTION: 'specialOffer:transaction'
   SPECIAL_OFFER_TRANSACTION:
@@ -380,6 +382,12 @@ embedFn = _.curry (props, object) ->
           groupId: groupId
         }
         .then User.sanitizePublic null
+
+      when TYPES.LFG.USER
+        embedded.user = getCachedChatUser {
+          userId: embedded.userId
+          groupId, gameKeys
+        }
 
       when TYPES.USER_FOLLOWER.USER
         embedded.user = getCachedChatUser {

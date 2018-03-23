@@ -2,29 +2,52 @@ _ = require 'lodash'
 Joi = require 'joi'
 router = require 'exoid-router'
 
-UserBlock = require '../models/user_block'
+Lfg = require '../models/lfg'
 User = require '../models/user'
+Group = require '../models/group'
+GroupUser = require '../models/group_user'
 EmbedService = require '../services/embed'
 schemas = require '../schemas'
 config = require '../config'
 
-defaultEmbed = [EmbedService.TYPES.USER_BLOCK.USER]
+defaultEmbed = [EmbedService.TYPES.LFG.USER]
 
 class LfgCtrl
-  getAll: ({userId}, {user}) ->
-    userId ?= user.id
-    UserBlock.getAllByUserId userId, {preferCache: true}
-    .map EmbedService.embed {embed: defaultEmbed}
+  getByGroupIdAndMe: ({groupId}, {user}) ->
+    Group.getById groupId, {preferCache: true}
+    .then (group) ->
+      Lfg.getByGroupIdAndUserId groupId, user.id, {preferCache: true}
+      .map EmbedService.embed {
+        embed: defaultEmbed
+        gameKeys: group?.gameKeys
+      }
 
-  getAllIds: ({userId}, {user}) ->
-    userId ?= user.id
-    UserBlock.getAllByUserId userId, {preferCache: true}
-    .map (userBlock) ->
-      userBlock.blockedId
+  getAllByGroupId: ({groupId}, {user}) ->
+    Group.getById groupId, {preferCache: true}
+    .then (group) ->
+      Lfg.getAllByGroupIdAndHashtag groupId, '', {preferCache: true}
+      .map EmbedService.embed {
+        embed: defaultEmbed
+        gameKeys: group?.gameKeys
+      }
 
-  upsert: ({groupId, userId, text}, {user}) ->
-    # TODO: check for existing
-    UserBlock.upsert {groupId, userId, text}
+  upsert: ({groupId, text}, {user}) ->
+    Lfg.getByGroupIdAndUserId groupId, user.id, {preferCache: true}
+    .then (existingLfg) ->
+      if existingLfg
+        Lfg.deleteByLfg existingLfg
+    .then ->
+      Lfg.upsert {groupId, userId: user.id, text}
 
+  deleteByGroupIdAndUserId: ({groupId, userId}, {user}) ->
+    GroupUser.hasPermissionByGroupIdAndUser groupId, user, [
+      GroupUser.PERMISSIONS.DELETE_MESSAGE
+    ]
+    .then (hasPermission) ->
+      unless hasPermission
+        router.throw status: 400, info: 'no permission'
+
+      Lfg.getByGroupIdAndUserId groupId, userId, {preferCache: true}
+      .then Lfg.deleteByLfg
 
 module.exports = new LfgCtrl()

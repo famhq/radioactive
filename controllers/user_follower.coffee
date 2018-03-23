@@ -41,24 +41,23 @@ class UserFollowerCtrl
     .then (userFollower) ->
       unless userFollower
         UserFollower.create {userId: user.id, followedId: followedId}
-    # .then ->
-    #   User.getById followedId
-    #   .then (otherUser) ->
-    #     PushNotificationService.send otherUser, {
-    #       titleObj:
-    #         key: 'newFollower.title'
-    #       type: PushNotificationService.TYPES.NEW_FRIEND
-    #       url: "https://#{config.SUPERNOVA_HOST}"
-    #       textObj:
-    #         key: 'newFollower.text'
-    #         replacements:
-    #           name: User.getDisplayName(user)
-    #       data:
-    #         path:
-    #           key: 'friends'
-    #           params: {gameKey: config.DEFAULT_GAME_KEY}
-    #     }
-      # .catch -> null
+    .then ->
+      User.getById followedId
+      .then (otherUser) ->
+        PushNotificationService.send otherUser, {
+          titleObj:
+            key: 'newFollower.title'
+          type: PushNotificationService.TYPES.NEW_FRIEND
+          url: "https://#{config.SUPERNOVA_HOST}"
+          textObj:
+            key: 'newFollower.text'
+            replacements:
+              name: User.getDisplayName(user)
+          data:
+            path:
+              key: 'people'
+        }
+      .catch -> null
       null
 
   unfollowByUserId: ({userId}, {user}) ->

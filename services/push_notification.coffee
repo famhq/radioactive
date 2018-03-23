@@ -217,7 +217,7 @@ class PushNotificationService
   # topics are NOT secure. anyone can subscribe. for secure messaging, always
   # use the deviceToken. for private channels, use deviceToken
 
-  sendToPushTopic: (pushTopic, message, {language} = {}) =>
+  sendToPushTopic: (pushTopic, message, {language, forceDevSend} = {}) =>
     topic = @getTopicStrFromPushTopic pushTopic
 
     # legacy
@@ -244,7 +244,8 @@ class PushNotificationService
       data: message.data
     }
 
-    if config.ENV isnt config.ENVS.PROD or config.IS_STAGING
+    if (config.ENV isnt config.ENVS.PROD or config.IS_STAGING) and
+        not forceDevSend
       console.log 'send notification', pushTopic, JSON.stringify message
       return Promise.resolve()
 

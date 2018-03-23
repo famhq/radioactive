@@ -171,6 +171,7 @@ class GroupCtrl
       Group.addUser groupId, userId
       .then ->
         # TODO sub to group topics
+        # PushNotificationService.subscribeToGroupTopics {userId, groupId, appKey}
         PushNotificationService.subscribeToPushTopic {
           userId: user.id
           groupId

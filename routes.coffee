@@ -30,6 +30,7 @@ GameRecordTypeCtrl = require './controllers/game_record_type'
 GroupRoleCtrl = require './controllers/group_role'
 GroupPageCtrl = require './controllers/group_page'
 GroupUserXpTransactionCtrl = require './controllers/group_user_xp_transaction'
+LfgCtrl = require './controllers/lfg'
 ProductCtrl = require './controllers/product'
 RewardCtrl = require './controllers/reward'
 SpecialOfferCtrl = require './controllers/special_offer'
@@ -313,6 +314,11 @@ module.exports = router
 
 .on 'products.getAllByGroupId', authed ProductCtrl.getAllByGroupId
 .on 'products.buy', authed ProductCtrl.buy
+
+.on 'lfg.getAllByGroupId', authed LfgCtrl.getAllByGroupId
+.on 'lfg.getByGroupIdAndMe', authed LfgCtrl.getByGroupIdAndMe
+.on 'lfg.deleteByGroupIdAndUserId', authed LfgCtrl.deleteByGroupIdAndUserId
+.on 'lfg.upsert', authed LfgCtrl.upsert
 
 .on 'rewards.setup', authed RewardCtrl.setup
 .on 'rewards.getAll', authed RewardCtrl.getAll

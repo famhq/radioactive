@@ -57,6 +57,7 @@ defaultLfgOutput = (lfg) ->
 
   lfg.userId = "#{lfg.userId}"
   lfg.groupId = "#{lfg.groupId}"
+  lfg.time = lfg.id.getDate()
 
   lfg
 
@@ -67,23 +68,24 @@ class LfgModel
   SCYLLA_TABLES: tables
 
   getHashtagsByText: (text) ->
-    matches = text.match /\B#\w*[a-zA-Z]+\w*/
+    matches = text.match /\B#\w*[a-zA-Z]+\w*/g
     matches or []
 
-  getAllByUserId: (userId) ->
+  getByGroupIdAndUserId: (groupId, userId) ->
     cknex().select '*'
     .from 'lfg_by_groupId_and_userId'
     .where 'userId', '=', userId
     .andWhere 'groupId', '=', groupId
-    .run()
-    .map defaultLfgOutput
+    .run {isSingle: true}
+    .then defaultLfgOutput
 
-  getAllByGroupId: (groupId, hashtag, {preferCache} = {}) ->
+  getAllByGroupIdAndHashtag: (groupId, hashtag, {preferCache} = {}) ->
     get = ->
       cknex().select '*'
       .from 'lfg_by_groupId'
       .where 'groupId', '=', groupId
       .andWhere 'hashtag', '=', hashtag
+      .limit 30 # FIXME
       .run()
       .map defaultLfgOutput
 
@@ -101,13 +103,13 @@ class LfgModel
     hashtags = @getHashtagsByText lfg.text
 
     Promise.all _.flatten [
-      cknex().update 'lfg_by_groupId'
-      .set _.omit lfg, ['userId', 'groupId']
+      cknex().update 'lfg_by_groupId_and_userId'
+      .set _.omit lfg, ['userId', 'groupId', 'hashtag']
       .where 'userId', '=', lfg.userId
       .andWhere 'groupId', '=', lfg.groupId
       .run()
 
-      _.map hashtags, (hashtag) ->
+      _.map hashtags.concat(['']), (hashtag) ->
         cknex().update 'lfg_by_groupId'
         .set _.omit lfg, ['groupId', 'hashtag', 'id']
         .where 'groupId', '=', lfg.groupId
@@ -118,7 +120,7 @@ class LfgModel
     ]
     .tap ->
       prefix = CacheService.PREFIXES.LFG_GET_ALL
-      Promise.map hashtags, (hashtag) ->
+      Promise.map hashtags.concat(['']), (hashtag) ->
         CacheService.deleteByKey "#{prefix}:#{lfg.groupId}:#{hashtag}"
 
   deleteByLfg: (lfg) =>
@@ -126,12 +128,12 @@ class LfgModel
 
     Promise.all _.flatten [
       cknex().delete()
-      .from 'lfg_by_groupId'
+      .from 'lfg_by_groupId_and_userId'
       .where 'userId', '=', lfg.userId
       .andWhere 'groupId', '=', lfg.groupId
       .run()
 
-      _.map hashtags, (hashtag) ->
+      _.map hashtags.concat(['']), (hashtag) ->
         cknex().delete()
         .from 'lfg_by_groupId'
         .where 'groupId', '=', lfg.groupId
@@ -141,7 +143,7 @@ class LfgModel
     ]
     .tap ->
       prefix = CacheService.PREFIXES.LFG_GET_ALL
-      Promise.map hashtags, (hashtag) ->
+      Promise.map hashtags.concat(['']), (hashtag) ->
         CacheService.deleteByKey "#{prefix}:#{lfg.groupId}:#{hashtag}"
 
 
