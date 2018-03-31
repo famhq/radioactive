@@ -333,7 +333,6 @@ class PushNotificationService
           return mainAppToken
         return tokens[0]
 
-
       Promise.map pushTokens, (pushToken) =>
         {id, sourceType, token, errorCount} = pushToken
         fn = if sourceType is 'web' \

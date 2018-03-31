@@ -22,10 +22,14 @@ class LfgCtrl
         gameKeys: group?.gameKeys
       }
 
-  getAllByGroupId: ({groupId}, {user}) ->
+  getAllByGroupIdAndHashtag: ({groupId, hashtag}, {user}) ->
+    if hashtag
+      hashtag = "##{hashtag}"
+    else
+      hashtag = ''
     Group.getById groupId, {preferCache: true}
     .then (group) ->
-      Lfg.getAllByGroupIdAndHashtag groupId, '', {preferCache: true}
+      Lfg.getAllByGroupIdAndHashtag groupId, hashtag, {preferCache: true}
       .map EmbedService.embed {
         embed: defaultEmbed
         gameKeys: group?.gameKeys

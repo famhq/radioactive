@@ -165,7 +165,7 @@ class GroupModel
     .run()
     .map defaultGroup
 
-  getByGameKeyAndLanguage: (gameKey, language, {preferCache} = {}) ->
+  getByGameKeyAndLanguage: (gameKey, language, {preferCache} = {}) =>
     get = =>
       r.table GROUPS_TABLE
       .getAll ['public', language], {index: TYPE_LANGUAGE_INDEX}
@@ -173,6 +173,8 @@ class GroupModel
         group = _.find groups, {gameKey}
         if group
           return group
+        else if language isnt 'en'
+          @getByGameKeyAndLanguage gameKey, 'en'
         else
           @getById config.GROUPS.CLASH_ROYALE_EN.ID
     if preferCache
@@ -231,6 +233,7 @@ class GroupModel
       'iosAppId'
       'googlePlayAppId'
       'mode'
+      'language'
       'gameKeys'
       'type'
       'userIds'
@@ -257,6 +260,7 @@ class GroupModel
       'iosAppId'
       'googlePlayAppId'
       'mode'
+      'language'
       'gameKeys'
       'type'
       'userIds'

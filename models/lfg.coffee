@@ -61,7 +61,7 @@ defaultLfgOutput = (lfg) ->
 
   lfg
 
-ONE_DAY_SECONDS = 3600 * 24
+TWO_DAYS_SECONDS = 3600 * 24 * 2
 ONE_MINUTE_SECONDS = 60
 
 class LfgModel
@@ -115,7 +115,7 @@ class LfgModel
         .where 'groupId', '=', lfg.groupId
         .andWhere 'hashtag', '=', hashtag
         .andWhere 'id', '=', lfg.id
-        .usingTTL ONE_DAY_SECONDS
+        .usingTTL TWO_DAYS_SECONDS
         .run()
     ]
     .tap ->

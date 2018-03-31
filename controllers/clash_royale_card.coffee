@@ -111,7 +111,7 @@ class ClashRoyaleCardCtrl
     .then (allCards) ->
       allCards = _.filter allCards, (card) ->
         not (card.key in ['golemite', 'lava_pup'])
-      allCards = _.groupBy allCards, (card) -> card.data.rarity.toLowerCase()
+      allCards = _.groupBy allCards, (card) -> card.data.rarity?.toLowerCase()
 
       chestInfo = chests[arena][chest]
       {common, rare, epic, legendary, cards, gold,

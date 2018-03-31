@@ -315,7 +315,7 @@ module.exports = router
 .on 'products.getAllByGroupId', authed ProductCtrl.getAllByGroupId
 .on 'products.buy', authed ProductCtrl.buy
 
-.on 'lfg.getAllByGroupId', authed LfgCtrl.getAllByGroupId
+.on 'lfg.getAllByGroupIdAndHashtag', authed LfgCtrl.getAllByGroupIdAndHashtag
 .on 'lfg.getByGroupIdAndMe', authed LfgCtrl.getByGroupIdAndMe
 .on 'lfg.deleteByGroupIdAndUserId', authed LfgCtrl.deleteByGroupIdAndUserId
 .on 'lfg.upsert', authed LfgCtrl.upsert
