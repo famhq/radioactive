@@ -4,6 +4,7 @@ router = require 'exoid-router'
 
 Lfg = require '../models/lfg'
 User = require '../models/user'
+Ban = require '../models/ban'
 Group = require '../models/group'
 GroupUser = require '../models/group_user'
 EmbedService = require '../services/embed'
@@ -13,6 +14,19 @@ config = require '../config'
 defaultEmbed = [EmbedService.TYPES.LFG.USER]
 
 class LfgCtrl
+  _checkIfBanned: (groupId, ipAddr, userId, router) ->
+    ipAddr ?= 'n/a'
+    Promise.all [
+      Ban.getByGroupIdAndIp groupId, ipAddr, {preferCache: true}
+      Ban.getByGroupIdAndUserId groupId, userId, {preferCache: true}
+      Ban.isHoneypotBanned ipAddr, {preferCache: true}
+    ]
+    .then ([bannedIp, bannedUserId, isHoneypotBanned]) ->
+      if bannedIp?.ip or bannedUserId?.userId or isHoneypotBanned
+        router.throw
+          status: 403
+          info: "unable to post, banned #{userId}, #{ipAddr}"
+
   getByGroupIdAndMe: ({groupId}, {user}) ->
     Group.getById groupId, {preferCache: true}
     .then (group) ->
@@ -35,8 +49,12 @@ class LfgCtrl
         gameKeys: group?.gameKeys
       }
 
-  upsert: ({groupId, text}, {user}) ->
-    Lfg.getByGroupIdAndUserId groupId, user.id, {preferCache: true}
+  upsert: ({groupId, text}, {user, headers, connection}) =>
+    ip = headers['x-forwarded-for'] or
+          connection.remoteAddress
+    @_checkIfBanned groupId, ip, user.id, router
+    .then ->
+      Lfg.getByGroupIdAndUserId groupId, user.id, {preferCache: true}
     .then (existingLfg) ->
       if existingLfg
         Lfg.deleteByLfg existingLfg

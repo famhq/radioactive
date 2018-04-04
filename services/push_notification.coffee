@@ -222,6 +222,7 @@ class PushNotificationService
 
     # legacy
     # topic = "group-#{pushTopic.groupId}"
+    # topic = 'es'
 
     if message.titleObj
       message.title = Language.get message.titleObj.key, {

@@ -29,7 +29,7 @@ class StreamService
   deleteById: (id, channels) ->
     PubSubService.publish channels, {id, action: 'delete'}
 
-  # postFn called whene received (many times)
+  # postFn called when received (many times)
   # best to put in the create method if possible
   stream: ({emit, socket, route, channel, initial, postFn}) =>
     initial

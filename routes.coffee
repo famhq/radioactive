@@ -31,6 +31,7 @@ GroupRoleCtrl = require './controllers/group_role'
 GroupPageCtrl = require './controllers/group_page'
 GroupUserXpTransactionCtrl = require './controllers/group_user_xp_transaction'
 LfgCtrl = require './controllers/lfg'
+PollCtrl = require './controllers/poll'
 ProductCtrl = require './controllers/product'
 RewardCtrl = require './controllers/reward'
 SpecialOfferCtrl = require './controllers/special_offer'
@@ -311,6 +312,12 @@ module.exports = router
 .on 'bans.banByGroupIdAndIp', authed BanCtrl.banByGroupIdAndIp
 .on 'bans.banByGroupIdAndUserId', authed BanCtrl.banByGroupIdAndUserId
 .on 'bans.unbanByGroupIdAndUserId', authed BanCtrl.unbanByGroupIdAndUserId
+
+.on 'polls.getById', authed PollCtrl.getById
+.on 'polls.getAllByGroupId', authed PollCtrl.getAllByGroupId
+.on 'polls.getAllVotesById', authed PollCtrl.getAllVotesById
+.on 'polls.resetById', authed PollCtrl.resetById
+.on 'polls.voteById', authed PollCtrl.voteById
 
 .on 'products.getAllByGroupId', authed ProductCtrl.getAllByGroupId
 .on 'products.buy', authed ProductCtrl.buy

@@ -44,10 +44,13 @@ class ThreadCtrl
     Promise.all [
       Ban.getByGroupIdAndIp groupId, ipAddr, {preferCache: true}
       Ban.getByGroupIdAndUserId groupId, userId, {preferCache: true}
+      Ban.isHoneypotBanned ipAddr, {preferCache: true}
     ]
-    .then ([bannedIp, bannedUserId]) ->
-      if bannedIp?.ip or bannedUserId?.userId
-        router.throw status: 403, 'unable to post'
+    .then ([bannedIp, bannedUserId, isHoneypotBanned]) ->
+      if bannedIp?.ip or bannedUserId?.userId or isHoneypotBanned
+        router.throw
+          status: 403
+          info: "unable to post, banned #{userId}, #{ipAddr}"
 
   getAttachment: (body) ->
     if youtubeId = body?.match(YOUTUBE_ID_REGEX)?[1]

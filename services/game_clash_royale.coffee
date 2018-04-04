@@ -30,7 +30,6 @@ config = require '../config'
 # big issue is 2v2
 ENABLE_ANON_PLAYER_DECKS = false
 
-MAX_TIME_TO_COMPLETE_MS = 60 * 30 * 1000 # 30min
 CLAN_STALE_TIME_S = 3600 * 12 # 12hr
 MIN_TIME_BETWEEN_UPDATES_MS = 60 * 20 * 1000 # 20min
 TWENTY_THREE_HOURS_S = 3600 * 23
@@ -364,7 +363,6 @@ class ClashRoyaleService
       CacheService.get key
       .then (minReversedPlayerId) ->
         minReversedPlayerId ?= '0'
-        # TODO: add a check to make sure this is always running. healtcheck?
         Player.getAutoRefreshByGameId GAME_KEY, minReversedPlayerId
         .then (players) ->
           if _.isEmpty players
@@ -404,7 +402,11 @@ class ClashRoyaleService
         CacheService.set key, successes, {expireSeconds: ONE_MINUTE_SECONDS}
         # TODO: make sure this doesn't cause memory leak.
         # i think the null prevents it
-        @updateAutoRefreshPlayers()
+        setTimeout =>
+          @updateAutoRefreshPlayers()
+        , 1000 # don't really need the timeout, i'm just adding to see if
+        # it magically fixes scylla crashing when sending some push notifs to
+        # forum. we process 1,000 at a time
       null
 
   sendDailyPush: ({playerId, isAuto}) ->
