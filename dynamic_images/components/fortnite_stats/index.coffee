@@ -39,7 +39,7 @@ module.exports = class FortniteStats extends Component
           width: '573'
           height: '300'
           fill: 'black'
-          'fill-opacity': '0.6'
+          'fill-opacity': '0.4'
         }
 
        s 'g', {
