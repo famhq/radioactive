@@ -14,6 +14,9 @@ config = require '../config'
 BANNED_LIMIT = 15
 
 class BanCtrl
+  getByGroupIdAndUserId: ({groupId, userId} = {}, {user}) ->
+    Ban.getByGroupIdAndUserId groupId, userId
+
   getAllByGroupId: ({groupId, duration} = {}, {user}) ->
     GroupUser.hasPermissionByGroupIdAndUser groupId, user, [
       GroupUser.PERMISSIONS.TEMP_BAN_USER

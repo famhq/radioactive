@@ -309,6 +309,7 @@ module.exports = router
 .on 'items.getAllByGroupId', authed ItemCtrl.getAllByGroupId
 
 .on 'bans.getAllByGroupId', authed BanCtrl.getAllByGroupId
+.on 'bans.getByGroupIdAndUserId', authed BanCtrl.getByGroupIdAndUserId
 .on 'bans.banByGroupIdAndIp', authed BanCtrl.banByGroupIdAndIp
 .on 'bans.banByGroupIdAndUserId', authed BanCtrl.banByGroupIdAndUserId
 .on 'bans.unbanByGroupIdAndUserId', authed BanCtrl.unbanByGroupIdAndUserId
