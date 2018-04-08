@@ -69,6 +69,7 @@ products =
     type: 'general'
     groupId: GROUPS.PLAY_HARD.ID
     cost: 15000
+    currency: 'fire'
     data: {
       backgroundImage: 'https://cdn.wtf/d/images/fam/products/google_play.png'
       backgroundColor: '#4CAF50'
@@ -79,6 +80,7 @@ products =
     type: 'general'
     groupId: GROUPS.PLAY_HARD.ID
     cost: 15000
+    currency: 'fire'
     data: {
       backgroundImage: 'https://cdn.wtf/d/images/fam/products/visa.png'
       backgroundColor: '#FFC107'
@@ -89,6 +91,7 @@ products =
     type: 'pack'
     groupId: GROUPS.PLAY_HARD.ID
     cost: 200
+    currency: 'fire'
     data:
       backgroundImage: 'https://cdn.wtf/d/images/fam/items/ph_badge_7_days_large.png'
       backgroundColor: '#333'
@@ -100,6 +103,7 @@ products =
     type: 'pack'
     groupId: GROUPS.PLAY_HARD.ID
     cost: 200
+    currency: 'fire'
     data:
       backgroundImage: 'https://cdn.wtf/d/images/fam/packs/ph_key.png'
       backgroundColor: '#2196F3'
@@ -111,6 +115,7 @@ products =
     groupId: GROUPS.PLAY_HARD.ID
     name: 'Free Chest'
     cost: 0
+    currency: 'fire'
     data:
       backgroundImage: 'https://cdn.wtf/d/images/fam/packs/ph_chest.png'
       backgroundColor: '#9C27B0'
@@ -123,6 +128,7 @@ products =
     groupId: GROUPS.PLAY_HARD.ID
     name: 'PH Starter Pack'
     cost: 0
+    currency: 'fire'
     data:
       backgroundImage: 'https://cdn.wtf/d/images/fam/packs/ph_starter_chest.png'
       backgroundColor: '#F44336'
@@ -139,35 +145,34 @@ products =
 
   # NICKATNYTE
   nan_key: {
-    name: 'NickAtNyte Key', type: 'pack', groupId: GROUPS.NICKATNYTE.ID, cost: 200
+    name: 'NickAtNyte Premium Key', type: 'pack', groupId: GROUPS.NICKATNYTE.ID, cost: 200, currency: 'fire'
     data:
-      backgroundImage: 'https://cdn.wtf/d/images/fam/packs/nan_key.png'
+      backgroundImage: 'https://cdn.wtf/d/images/fam/packs/nan/nan_key.png'
       backgroundColor: '#2196F3'
       count: 1
       itemKeys: ['nan_key']
   }
-  nan_chest: {
-    type: 'pack', groupId: GROUPS.NICKATNYTE.ID, name: 'Free Chest', cost: 0
+  nan_base_key: {
+    name: 'NickAtNyte Base Key', type: 'pack', groupId: GROUPS.NICKATNYTE.ID, cost: 200, currency: 'nan_currency'
     data:
-      backgroundImage: 'https://cdn.wtf/d/images/fam/packs/nan_chest.png'
+      backgroundImage: 'https://cdn.wtf/d/images/fam/packs/nan/nan_base_key.png'
+      backgroundColor: '#F44336'
+      count: 1
+      itemKeys: ['nan_base_key']
+  }
+  nan_base_chest: {
+    type: 'pack', groupId: GROUPS.NICKATNYTE.ID, name: 'Daily Pack', cost: 0, currency: 'fire'
+    data:
+      backgroundImage: 'https://cdn.wtf/d/images/fam/packs/nan/nan_base_chest.png'
       backgroundColor: '#9C27B0'
       lockTime: ONE_DAY_SECONDS
-      count: 1
-      itemKeys: ['nan_chest']
-  }
-  nan_starter_chest: {
-    type: 'pack', groupId: GROUPS.NICKATNYTE.ID, name: 'NickAtNyte Starter Pack', cost: 0
-    data:
-      backgroundImage: 'https://cdn.wtf/d/images/fam/packs/nan_starter_chest.png'
-      backgroundColor: '#F44336'
-      lockTime: 'infinity'
       count: 2
-      itemKeys: ['nan_starter_chest', 'nan_starter_key']
+      itemKeys: ['nan_chest', 'nan_base_chest', 'nan_base_key']
   }
 
   # TEAM QUESO
   tq_key: {
-    name: 'Team Queso Key', type: 'pack', groupId: GROUPS.TEAM_QUESO.ID, cost: 200
+    name: 'Team Queso Key', type: 'pack', groupId: GROUPS.TEAM_QUESO.ID, cost: 200, currency: 'fire'
     data:
       backgroundImage: 'https://cdn.wtf/d/images/fam/packs/tq_key.png'
       backgroundColor: '#2196F3'
@@ -175,7 +180,7 @@ products =
       itemKeys: ['tq_key']
   }
   tq_chest: {
-    type: 'pack', groupId: GROUPS.TEAM_QUESO.ID, name: 'Team Queso Chest', cost: 0
+    type: 'pack', groupId: GROUPS.TEAM_QUESO.ID, name: 'Team Queso Chest', cost: 0, currency: 'fire'
     data:
       backgroundImage: 'https://cdn.wtf/d/images/fam/packs/tq_chest.png'
       backgroundColor: '#9C27B0'
@@ -184,7 +189,7 @@ products =
       itemKeys: ['tq_chest']
   }
   tq_starter_chest: {
-    type: 'pack', groupId: GROUPS.TEAM_QUESO.ID, name: 'Team Queso Starter Pack', cost: 0
+    type: 'pack', groupId: GROUPS.TEAM_QUESO.ID, name: 'Team Queso Starter Pack', cost: 0, currency: 'fire'
     data:
       backgroundImage: 'https://cdn.wtf/d/images/fam/packs/tq_starter_chest.png'
       backgroundColor: '#F44336'
@@ -195,7 +200,7 @@ products =
 
   # NINJA
   ninja_key: {
-    name: 'Ninja Key', type: 'pack', groupId: GROUPS.NINJA.ID, cost: 200
+    name: 'Ninja Key', type: 'pack', groupId: GROUPS.NINJA.ID, cost: 200, currency: 'fire'
     data:
       backgroundImage: 'https://cdn.wtf/d/images/fam/packs/ninja_key.png'
       backgroundColor: '#2196F3'
@@ -203,7 +208,7 @@ products =
       itemKeys: ['ninja_key']
   }
   ninja_chest: {
-    type: 'pack', groupId: GROUPS.NINJA.ID, name: 'Ninja Chest', cost: 0
+    type: 'pack', groupId: GROUPS.NINJA.ID, name: 'Ninja Chest', cost: 0, currency: 'fire'
     data:
       backgroundImage: 'https://cdn.wtf/d/images/fam/packs/ninja_chest.png'
       backgroundColor: '#9C27B0'
@@ -212,7 +217,7 @@ products =
       itemKeys: ['ninja_chest']
   }
   ninja_starter_chest: {
-    type: 'pack', groupId: GROUPS.NINJA.ID, name: 'Ninja Starter Pack', cost: 0
+    type: 'pack', groupId: GROUPS.NINJA.ID, name: 'Ninja Starter Pack', cost: 0, currency: 'fire'
     data:
       backgroundImage: 'https://cdn.wtf/d/images/fam/packs/ninja_starter_chest.png'
       backgroundColor: '#F44336'
@@ -227,6 +232,7 @@ products =
     groupId: GROUPS.CLASH_ROYALE_EN.ID
     name: 'Free Clash Royale Sticker Pack (1)'
     cost: 0
+    currency: 'fire'
     data: _.defaults {
       backgroundImage: 'https://cdn.wtf/d/images/fam/packs/cr_en_free.png'
       backgroundColor: '#9C27B0'
@@ -237,6 +243,7 @@ products =
     groupId: GROUPS.CLASH_ROYALE_EN.ID
     name: 'Clash Royale Sticker Pack (1)'
     cost: 100 # 10c
+    currency: 'fire'
     data: _.defaults {
       backgroundImage: 'https://cdn.wtf/d/images/fam/packs/cr_en_1.png'
       backgroundColor: '#F44336'
@@ -247,6 +254,7 @@ products =
     groupId: GROUPS.CLASH_ROYALE_EN.ID
     name: 'Clash Royale Sticker Pack (3)'
     cost: 250 # 25c
+    currency: 'fire'
     data: _.defaults {
       backgroundImage: 'https://cdn.wtf/d/images/fam/packs/cr_en_3.png'
       backgroundColor: '#2196F3'
@@ -257,6 +265,7 @@ products =
     name: '$10 Google Play Gift Card'
     groupId: GROUPS.CLASH_ROYALE_EN.ID
     cost: 15000
+    currency: 'fire'
     data: {
       backgroundImage: 'https://cdn.wtf/d/images/fam/products/google_play.png'
       backgroundColor: '#4CAF50'
@@ -267,6 +276,7 @@ products =
     name: '$10 Visa Gift Card'
     groupId: GROUPS.CLASH_ROYALE_EN.ID
     cost: 15000
+    currency: 'fire'
     data: {
       backgroundImage: 'https://cdn.wtf/d/images/fam/products/visa.png'
       backgroundColor: '#FFC107'
@@ -279,6 +289,7 @@ products =
     groupId: GROUPS.CLASH_ROYALE_ES.ID
     name: 'Free Clash Royale Sticker Pack (1)'
     cost: 0
+    currency: 'fire'
     data: _.defaults {
       backgroundImage: 'https://cdn.wtf/d/images/fam/packs/cr_es_free.png'
       backgroundColor: '#9C27B0'
@@ -309,6 +320,7 @@ products =
     name: '$10 USD Google Play Gift Card'
     groupId: GROUPS.CLASH_ROYALE_ES.ID
     cost: 15000
+    currency: 'fire'
     data: {
       backgroundImage: 'https://cdn.wtf/d/images/fam/products/google_play.png'
       backgroundColor: '#4CAF50'
@@ -319,6 +331,7 @@ products =
     name: '$10 USD Visa Gift Card'
     groupId: GROUPS.CLASH_ROYALE_ES.ID
     cost: 15000
+    currency: 'fire'
     data: {
       backgroundImage: 'https://cdn.wtf/d/images/fam/products/visa.png'
       backgroundColor: '#FFC107'
@@ -331,6 +344,7 @@ products =
     groupId: GROUPS.CLASH_ROYALE_PT.ID
     name: 'Clash Royale Sticker Pack (1)'
     cost: 100 # 10c
+    currency: 'fire'
     data: _.defaults {
       backgroundImage: 'https://cdn.wtf/d/images/fam/packs/cr_pt_1.png'
       backgroundColor: '#F44336'
@@ -341,6 +355,7 @@ products =
     groupId: GROUPS.CLASH_ROYALE_PT.ID
     name: 'Clash Royale Sticker Pack (3)'
     cost: 250 # 25c
+    currency: 'fire'
     data: _.defaults {
       backgroundImage: 'https://cdn.wtf/d/images/fam/packs/cr_pt_3.png'
       backgroundColor: '#2196F3'
@@ -351,6 +366,7 @@ products =
     name: '30 BRL Google Play Gift Card'
     groupId: GROUPS.CLASH_ROYALE_PT.ID
     cost: 15000
+    currency: 'fire'
     data: {
       backgroundImage: 'https://cdn.wtf/d/images/fam/products/google_play.png'
       backgroundColor: '#4CAF50'
@@ -361,6 +377,7 @@ products =
     name: '$10 USD Visa Gift Card'
     groupId: GROUPS.CLASH_ROYALE_PT.ID
     cost: 15000
+    currency: 'fire'
     data: {
       backgroundImage: 'https://cdn.wtf/d/images/fam/products/visa.png'
       backgroundColor: '#FFC107'
@@ -373,6 +390,7 @@ products =
     groupId: GROUPS.CLASH_ROYALE_PL.ID
     name: 'Clash Royale Sticker Pack (1)'
     cost: 100 # 10c
+    currency: 'fire'
     data: _.defaults {
       backgroundImage: 'https://cdn.wtf/d/images/fam/packs/cr_pl_1.png'
       backgroundColor: '#F44336'
@@ -383,6 +401,7 @@ products =
     groupId: GROUPS.CLASH_ROYALE_PL.ID
     name: 'Clash Royale Sticker Pack (3)'
     cost: 250 # 25c
+    currency: 'fire'
     data: _.defaults {
       backgroundImage: 'https://cdn.wtf/d/images/fam/packs/cr_pl_3.png'
       backgroundColor: '#2196F3'

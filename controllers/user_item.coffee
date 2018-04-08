@@ -33,6 +33,9 @@ class UserItemCtrl
     .then (userItems) ->
       _.filter userItems, 'item'
 
+  getByItemKey: ({itemKey}, {user}) ->
+    UserItem.getByUserIdAndItemKey user.id, itemKey
+
   # upgradeByItemKey: ({itemKey}, {user}) ->
   #   prefix = CacheService.LOCK_PREFIXES.UPGRADE_STICKER
   #   key = "#{prefix}:#{user.id}:#{itemKey}"

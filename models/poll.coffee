@@ -15,10 +15,24 @@ defaultPoll = (poll) ->
   unless poll?
     return null
 
+  poll.data = JSON.stringify poll.data
+
   _.defaults {
     id: uuid.v4()
     name: ''
   }, poll
+
+defaultPollOutput = (poll) ->
+  unless poll?
+    return null
+
+  if poll.data
+    poll.data = try
+      JSON.parse poll.data
+    catch err
+      {}
+
+  poll
 
 class PollModel extends Stream
   TABLE_NAME: 'polls_by_id'
@@ -35,6 +49,7 @@ class PollModel extends Stream
           id: 'uuid'
           groupId: 'uuid'
           name: 'text'
+          data: 'text'
         primaryKey:
           partitionKey: ['id']
           clusteringColumns: null
@@ -46,6 +61,7 @@ class PollModel extends Stream
           id: 'uuid'
           groupId: 'uuid'
           name: 'text'
+          data: 'text'
         primaryKey:
           partitionKey: ['groupId']
           clusteringColumns: ['id']

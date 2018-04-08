@@ -8,7 +8,7 @@ Thread = require '../models/thread'
 GroupUser = require '../models/group_user'
 Group = require '../models/group'
 Ban = require '../models/ban'
-GroupUserXpTransaction = require '../models/group_user_xp_transaction'
+EarnAction = require '../models/earn_action'
 ProfanityService = require '../services/profanity'
 CacheService = require '../services/cache'
 EmbedService = require '../services/embed'
@@ -116,15 +116,15 @@ class ThreadCommentCtrl
         Promise.all [
           CacheService.deleteByKey "#{prefix}:#{threadId}:popular"
           CacheService.deleteByKey "#{prefix}:#{threadId}:new"
-          GroupUserXpTransaction.completeActionByGroupIdAndUserId(
+          EarnAction.completeActionByGroupIdAndUserId(
             thread.groupId
             user.id
-            'dailyForumComment'
+            'forumComment'
           )
           .catch -> null
         ]
-        .then ([cache1, cache2, xpGained]) ->
-          {xpGained}
+        .then ([cache1, cache2, rewards]) ->
+          {rewards}
 
   getAllByThreadId: ({threadId, sort, skip, limit, groupId}, {user}) ->
     # legacy. rm in mid feb 2018

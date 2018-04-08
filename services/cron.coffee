@@ -11,6 +11,7 @@ FortniteService = require './game_fortnite'
 Thread = require '../models/thread'
 Item = require '../models/item'
 Product = require '../models/product'
+EarnAction = require '../models/earn_action'
 SpecialOffer = require '../models/special_offer'
 ClashRoyaleDeck = require '../models/clash_royale_deck'
 ClashRoyaleCard = require '../models/clash_royale_card'
@@ -20,6 +21,7 @@ Ban = require '../models/ban'
 NewsRoyaleService = require '../services/news_royale'
 allItems = require '../resources/data/items'
 allProducts = require '../resources/data/products'
+allEarnActions = require '../resources/data/earn_actions'
 allSpecialOffers = require '../resources/data/special_offers'
 r = require './rethinkdb'
 config = require '../config'
@@ -41,8 +43,9 @@ class CronService
             ClashRoyaleService.updateAutoRefreshPlayers()
 
     @addCron 'quarterMinute', '15 * * * * *', ->
-      # Product.batchUpsert allProducts
-      # Item.batchUpsert allItems
+      Product.batchUpsert allProducts
+      Item.batchUpsert allItems
+      EarnAction.batchUpsert allEarnActions
       CleanupService.clean()
       Thread.updateScores 'stale'
 
@@ -51,6 +54,8 @@ class CronService
         ClashRoyaleService.updateTopPlayers()
 
     @addCron 'tenMin', '0 */10 * * * *', ->
+      Product.batchUpsert allProducts
+      Item.batchUpsert allItems
       SpecialOffer.batchUpsert allSpecialOffers
       Thread.updateScores 'time'
       VideoDiscoveryService.updateGroupVideos config.GROUPS.PLAY_HARD.ID

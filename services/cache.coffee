@@ -78,6 +78,7 @@ PREFIXES =
   GROUP_USER_USER_ID: 'group_user:user_id10'
   GROUP_USER_TOP: 'group_user:top3'
   GROUP_USERS_ONLINE: 'group_users:online2'
+  EARN_COMPLETE_TRANSACTION: 'earnAction:completeTransaction2'
   GROUP_USER_XP_COMPLETE_TRANSACTION: 'groupUserXp:completeTransaction'
   USERNAME_SEARCH: 'username:search1'
   RATE_LIMIT_CHAT_MESSAGES_TEXT: 'rate_limit:chat_messages:text'

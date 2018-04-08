@@ -2,7 +2,7 @@ _ = require 'lodash'
 router = require 'exoid-router'
 
 Video = require '../models/video'
-GroupUserXpTransaction = require '../models/group_user_xp_transaction'
+EarnAction = require '../models/earn_action'
 EmbedService = require '../services/embed'
 CacheService = require '../services/cache'
 
@@ -26,13 +26,13 @@ class VideoCtrl
   logViewById: ({id}, {user}) ->
     Video.getById id
     .then (video) ->
-      GroupUserXpTransaction.completeActionByGroupIdAndUserId(
+      EarnAction.completeActionByGroupIdAndUserId(
         video.groupId
         user.id
-        GroupUserXpTransaction.ACTIONS.dailyVideoView
+        'videoView'
       )
       .catch -> null
-    .then (xpGained) ->
-      {xpGained}
+    .then (rewards) ->
+      {rewards}
 
 module.exports = new VideoCtrl()

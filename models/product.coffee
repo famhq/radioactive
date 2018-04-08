@@ -5,6 +5,9 @@ Promise = require 'bluebird'
 cknex = require '../services/cknex'
 config = require '../config'
 
+# ALTER TABLE starfire."products_by_groupId" ADD currency text;
+# ALTER TABLE starfire."products_by_key" ADD currency text;
+
 tables = [
   {
     name: 'products_by_groupId'
@@ -14,6 +17,7 @@ tables = [
       key: 'text'
       name: 'text'
       type: 'text' # pack | general
+      currency: 'text'
       data: 'text'
       cost: 'int'
     primaryKey:
@@ -28,6 +32,7 @@ tables = [
       key: 'text'
       name: 'text'
       type: 'text' # pack | general
+      currency: 'text'
       data: 'text'
       cost: 'int'
     primaryKey:

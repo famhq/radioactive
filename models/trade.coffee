@@ -19,8 +19,6 @@ defaultTrade = (trade) ->
 
   _.assign {
     id: cknex.getTimeUuid()
-    sendItemKeys: []
-    receiveItemKeys: []
     status: 'pending'
     expireTime: null
   }, trade

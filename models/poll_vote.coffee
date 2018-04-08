@@ -1,5 +1,5 @@
 _ = require 'lodash'
-
+Promise = require 'bluebird'
 uuid = require 'node-uuid'
 
 cknex = require '../services/cknex'
@@ -106,6 +106,12 @@ class PollVoteModel extends Stream
     .run {isSingle: true}
     .then defaultPollVoteOutput
 
+  getCountByPollId: (pollId) =>
+    cknex().select()
+    .count '*'
+    .from 'poll_votes_by_pollId'
+    .andWhere 'pollId', '=', pollId
+    .run()
 
   getAllByPollId: (pollId, options = {}) =>
     {limit, isStreamed, emit, socket, route,
@@ -116,16 +122,36 @@ class PollVoteModel extends Stream
     .andWhere 'pollId', '=', pollId
     .run()
 
-    @stream {
-      emit
-      socket
-      route
+    if isStreamed
+      @stream {
+        emit
+        socket
+        route
+        initial
+        initialPostFn: defaultPollVoteOutput
+        postFn: postFn
+        channelBy: 'pollId'
+        channelById: pollId
+      }
+    else
       initial
-      initialPostFn: defaultPollVoteOutput
-      postFn: postFn
-      channelBy: 'pollId'
-      channelById: pollId
-    }
+
+  deleteByPollVote: (pollVote) =>
+    Promise.all [
+      cknex().delete()
+      .from 'poll_votes_by_userId'
+      .where 'userId', '=', pollVote.userId
+      .andWhere 'pollId', '=', pollVote.pollId
+      .run()
+
+      cknex().delete()
+      .from 'poll_votes_by_pollId'
+      .where 'userId', '=', pollVote.userId
+      .andWhere 'pollId', '=', pollVote.pollId
+      .run()
+    ]
+    .tap =>
+      @streamDeleteById pollVote.id, pollVote
 
 
 module.exports = new PollVoteModel()

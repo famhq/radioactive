@@ -84,11 +84,25 @@ setTimeout ->
     # ['nan_gfuel', '../../Downloads/nan_gfuel.png']
     # ['nan_wow', '../../Downloads/nan_wow.png']
     # ['nan', '../../Downloads/nickatnytefish-300.png']
+    # ['nan_wow', '../../Downloads/nan_wow.png']
+
+    ['nan_geet', '../fam_sticker_base/nan_geet.png']
+    ['nan_ice_fish', '../fam_sticker_base/nan_ice_fish.png']
+    ['nan_cheezeit', '../fam_sticker_base/nan_cheezeit.png']
+    ['nan_kiss', '../fam_sticker_base/nan_kiss.png']
+    ['nan_shook', '../fam_sticker_base/nan_shook.png']
+    ['nan_nuts', '../fam_sticker_base/nan_nuts.png']
+    ['nan_nytewitch', '../fam_sticker_base/nan_nytewitch.png']
+    ['nan_ah', '../fam_sticker_base/nan_ah.png']
+    ['nan_terrify', '../fam_sticker_base/nan_terrify.png']
+    ['nan_unicorn', '../fam_sticker_base/nan_unicorn.png']
+
+
 
     # ['tq', '../../Downloads/tq.png']
-    ['tq_diegob', '../../Downloads/diegob.png']
-    ['tq_adrian_piedra', '../../Downloads/adrian_piedra.png']
-    ['tq_coltonw83', '../../Downloads/coltonw83.png']
+    # ['tq_diegob', '../../Downloads/diegob.png']
+    # ['tq_adrian_piedra', '../../Downloads/adrian_piedra.png']
+    # ['tq_coltonw83', '../../Downloads/coltonw83.png']
 
     # ['ninja', '../../Downloads/ninja_k.png']
     # ['ninja_pon', '../../Downloads/ninja_pon.png']
@@ -100,6 +114,7 @@ setTimeout ->
     generate.apply this, args
 
 generate = (key, path) ->
+  dir = key.split('_')?[0]
   Promise.all [
     # level 1 (b&w)
     loadImageFromPath path
@@ -112,9 +127,9 @@ generate = (key, path) ->
         resize image, 30, 30
       ]
     .then ([large, small, tiny]) ->
-      fs.writeFileSync "../fam-assets/stickers/#{key}_1_large.png", large.toBuffer()
-      fs.writeFileSync "../fam-assets/stickers/#{key}_1_small.png", small.toBuffer()
-      fs.writeFileSync "../fam-assets/stickers/#{key}_1_tiny.png", tiny.toBuffer()
+      fs.writeFileSync "../fam-assets/stickers/#{dir}/#{key}_1_large.png", large.toBuffer()
+      fs.writeFileSync "../fam-assets/stickers/#{dir}/#{key}_1_small.png", small.toBuffer()
+      fs.writeFileSync "../fam-assets/stickers/#{dir}/#{key}_1_tiny.png", tiny.toBuffer()
 
     # level 2 (color)
     loadImageFromPath path
@@ -126,9 +141,9 @@ generate = (key, path) ->
         resize image, 30, 30
       ]
     .then ([large, small, tiny]) ->
-      fs.writeFileSync "../fam-assets/stickers/#{key}_2_large.png", large.toBuffer()
-      fs.writeFileSync "../fam-assets/stickers/#{key}_2_small.png", small.toBuffer()
-      fs.writeFileSync "../fam-assets/stickers/#{key}_2_tiny.png", tiny.toBuffer()
+      fs.writeFileSync "../fam-assets/stickers/#{dir}/#{key}_2_large.png", large.toBuffer()
+      fs.writeFileSync "../fam-assets/stickers/#{dir}/#{key}_2_small.png", small.toBuffer()
+      fs.writeFileSync "../fam-assets/stickers/#{dir}/#{key}_2_tiny.png", tiny.toBuffer()
 
     # level 3 (gold)
     loadImageFromPath path
@@ -142,9 +157,9 @@ generate = (key, path) ->
         resize image, 30, 30
       ]
     .then ([large, small, tiny]) ->
-      fs.writeFileSync "../fam-assets/stickers/#{key}_3_large.png", large.toBuffer()
-      fs.writeFileSync "../fam-assets/stickers/#{key}_3_small.png", small.toBuffer()
-      fs.writeFileSync "../fam-assets/stickers/#{key}_3_tiny.png", tiny.toBuffer()
+      fs.writeFileSync "../fam-assets/stickers/#{dir}/#{key}_3_large.png", large.toBuffer()
+      fs.writeFileSync "../fam-assets/stickers/#{dir}/#{key}_3_small.png", small.toBuffer()
+      fs.writeFileSync "../fam-assets/stickers/#{dir}/#{key}_3_tiny.png", tiny.toBuffer()
   ]
   #
   #

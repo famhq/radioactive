@@ -33,6 +33,7 @@ defaultGroup = (group) ->
     # TODO: index on this when migrating to scylla
     # need to grab group by gameKey and language
     gameKeys: []
+    currency: null
     language: 'en'
 
     clanIds: []
@@ -235,6 +236,7 @@ class GroupModel
       'mode'
       'language'
       'gameKeys'
+      'currency'
       'type'
       'userIds'
       'userCount'
@@ -262,6 +264,7 @@ class GroupModel
       'mode'
       'language'
       'gameKeys'
+      'currency'
       'type'
       'userIds'
       'userCount'

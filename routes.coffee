@@ -29,7 +29,7 @@ GroupRecordTypeCtrl = require './controllers/group_record_type'
 GameRecordTypeCtrl = require './controllers/game_record_type'
 GroupRoleCtrl = require './controllers/group_role'
 GroupPageCtrl = require './controllers/group_page'
-GroupUserXpTransactionCtrl = require './controllers/group_user_xp_transaction'
+EarnActionCtrl = require './controllers/earn_action'
 LfgCtrl = require './controllers/lfg'
 PollCtrl = require './controllers/poll'
 ProductCtrl = require './controllers/product'
@@ -196,10 +196,10 @@ module.exports = router
 .on 'groupUsers.getOnlineCountByGroupId',
   authed GroupUserCtrl.getOnlineCountByGroupId
 
-.on 'groupUserXpTransactions.getAllByGroupId',
-  authed GroupUserXpTransactionCtrl.getAllByGroupId
-.on 'groupUserXpTransactions.incrementByGroupIdAndActionKey',
-  authed GroupUserXpTransactionCtrl.incrementByGroupIdAndActionKey
+.on 'earnActions.getAllByGroupId',
+  authed EarnActionCtrl.getAllByGroupId
+.on 'earnActions.incrementByGroupIdAndAction',
+  authed EarnActionCtrl.incrementByGroupIdAndAction
 
 .on 'groupPages.getAllByGroupId',
   authed GroupPageCtrl.getAllByGroupId
@@ -238,6 +238,7 @@ module.exports = router
 
 
 .on 'userItems.getAll', authed UserItemCtrl.getAll
+.on 'userItems.getByItemKey', authed UserItemCtrl.getByItemKey
 .on 'userItems.getAllByUserId', authed UserItemCtrl.getAllByUserId
 # .on 'userItems.upgradeByItemKey', authed UserItemCtrl.upgradeByItemKey
 .on 'userItems.consumeByItemKey', authed UserItemCtrl.consumeByItemKey

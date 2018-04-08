@@ -6,21 +6,42 @@ config = require '../../config'
 GROUPS = config.GROUPS
 
 DEFAULT_STICKER_ODDS = [
-  {type: 'sticker', rarity: 'common', odds: 0.8}
-  {type: 'sticker', rarity: 'rare', odds: 0.13}
-  {type: 'sticker', rarity: 'epic', odds: 0.05}
-  {type: 'sticker', rarity: 'legendary', odds: 0.02}
+  {type: 'sticker', rarity: 'common', odds: 0.8, tier: 'premium'}
+  {type: 'sticker', rarity: 'rare', odds: 0.13, tier: 'premium'}
+  {type: 'sticker', rarity: 'epic', odds: 0.05, tier: 'premium'}
+  {type: 'sticker', rarity: 'legendary', odds: 0.02, tier: 'premium'}
+]
+DEFAULT_BASE_ODDS = [
+  {type: 'sticker', rarity: 'common', odds: 0.8, tier: 'base'}
+  {type: 'sticker', rarity: 'rare', odds: 0.13, tier: 'base'}
+  {type: 'sticker', rarity: 'epic', odds: 0.05, tier: 'base'}
+  {type: 'sticker', rarity: 'legendary', odds: 0.02, tier: 'base'}
 ]
 
 items =
-  nan: {name: 'NickAtNyte', groupId: GROUPS.NICKATNYTE.ID, rarity: 'starter', type: 'sticker'}
-  nan_gg: {name: 'GG', groupId: GROUPS.NICKATNYTE.ID, rarity: 'common', type: 'sticker'}
-  # nan_nyte: {name: 'Nyte', groupId: GROUPS.NICKATNYTE.ID, rarity: 'rare', type: 'sticker'}
-  nan_gfuel: {name: 'G FUEL', groupId: GROUPS.NICKATNYTE.ID, rarity: 'rare', type: 'sticker'}
-  nan_get_rekt: {name: 'Get rekt', groupId: GROUPS.NICKATNYTE.ID, rarity: 'epic', type: 'sticker'}
-  nan_wow: {name: 'Wow', groupId: GROUPS.NICKATNYTE.ID, rarity: 'legendary', type: 'sticker'}
+  nan_currency: {name: 'Nyte Bucks', groupId: GROUPS.NICKATNYTE.ID, rarity: 'common', type: 'currency'}
+
+  nan_gg: {name: 'GG', groupId: GROUPS.NICKATNYTE.ID, rarity: 'common', tier: 'base', type: 'sticker'}
+  nan_get_rekt: {name: 'Get rekt', groupId: GROUPS.NICKATNYTE.ID, rarity: 'common', tier: 'base', type: 'sticker'}
+  nan_geet: {name: 'Geet', groupId: GROUPS.NICKATNYTE.ID, rarity: 'common', tier: 'base', type: 'sticker'}
+  nan_gfuel: {name: 'G FUEL', groupId: GROUPS.NICKATNYTE.ID, rarity: 'rare', tier: 'base', type: 'sticker'}
+  nan: {name: 'NyteFish', groupId: GROUPS.NICKATNYTE.ID, rarity: 'rare', tier: 'base', type: 'sticker'}
+  nan_ice_fish: {name: 'Ice Fish', groupId: GROUPS.NICKATNYTE.ID, rarity: 'epic', tier: 'base', type: 'sticker'}
+  nan_wow: {name: 'Wow', groupId: GROUPS.NICKATNYTE.ID, rarity: 'legendary', tier: 'base', type: 'sticker'}
+
+  nan_cheezeit: {name: 'Cheezeit', groupId: GROUPS.NICKATNYTE.ID, rarity: 'common', tier: 'premium', type: 'sticker'}
+  nan_kiss: {name: 'Kiss', groupId: GROUPS.NICKATNYTE.ID, rarity: 'common', tier: 'premium', type: 'sticker'}
+  nan_shook: {name: 'Shook', groupId: GROUPS.NICKATNYTE.ID, rarity: 'common', tier: 'premium', type: 'sticker'}
+  nan_nuts: {name: 'Nuts', groupId: GROUPS.NICKATNYTE.ID, rarity: 'common', tier: 'premium', type: 'sticker'}
+  nan_nytewitch: {name: 'Nytewitch', groupId: GROUPS.NICKATNYTE.ID, rarity: 'rare', tier: 'premium', type: 'sticker'}
+  nan_ah: {name: 'Ah', groupId: GROUPS.NICKATNYTE.ID, rarity: 'rare', tier: 'premium', type: 'sticker'}
+  nan_terrify: {name: 'Terrify', groupId: GROUPS.NICKATNYTE.ID, rarity: 'epic', tier: 'premium', type: 'sticker'}
+  nan_unicorn: {name: 'Unicorn', groupId: GROUPS.NICKATNYTE.ID, rarity: 'legendary', tier: 'premium', type: 'sticker'}
+
+
+
   nan_chest: {
-    name: 'NickAtNyte Chest', groupId: GROUPS.NICKATNYTE.ID, rarity: 'common', type: 'chest'
+    name: 'NickAtNyte Premium Chest', groupId: GROUPS.NICKATNYTE.ID, rarity: 'epic', type: 'chest'
     data:
       keyRequired: 'nan_key'
       odds: DEFAULT_STICKER_ODDS
@@ -28,22 +49,22 @@ items =
       backKey: 'nan'
   }
   nan_key: {
-    name: 'NickAtNyte Key', groupId: GROUPS.NICKATNYTE.ID, rarity: 'common', type: 'key'
+    name: 'NickAtNyte Premium Key', groupId: GROUPS.NICKATNYTE.ID, rarity: 'epic', type: 'key'
     data:
       chestKey: 'nan_chest'
   }
-  nan_starter_chest: {
-    name: 'NickAtNyte Starter Chest', groupId: GROUPS.NICKATNYTE.ID, rarity: 'common', type: 'chest'
+  nan_base_chest: {
+    name: 'NickAtNyte Base Chest', groupId: GROUPS.NICKATNYTE.ID, rarity: 'common', type: 'chest'
     data:
-      keyRequired: 'nan_starter_key'
-      odds: [{type: 'sticker', rarity: 'starter', odds: 1}]
+      keyRequired: 'nan_base_key'
+      odds: DEFAULT_BASE_ODDS
       count: 1
       backKey: 'nan'
   }
-  nan_starter_key: {
-    name: 'NickAtNyte Starter Key', groupId: GROUPS.NICKATNYTE.ID, rarity: 'common', type: 'key'
+  nan_base_key: {
+    name: 'NickAtNyte Base Key', groupId: GROUPS.NICKATNYTE.ID, rarity: 'common', type: 'key'
     data:
-      chestKey: 'nan_starter_chest'
+      chestKey: 'nan_base_chest'
   }
 
 

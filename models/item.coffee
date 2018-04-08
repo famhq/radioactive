@@ -11,6 +11,8 @@ config = require '../config'
 # ALTER TABLE starfire."items_by_key" ADD type text;
 # ALTER TABLE starfire."items_by_groupId" ADD data text;
 # ALTER TABLE starfire."items_by_key" ADD data text;
+# ALTER TABLE starfire."items_by_groupId" ADD tier text;
+# ALTER TABLE starfire."items_by_key" ADD tier text;
 
 tables = [
   {
@@ -21,6 +23,7 @@ tables = [
       name: 'text'
       key: 'text'
       rarity: 'text'
+      tier: 'text' # free / premium
       type: 'text'
       data: 'text'
       circulationLimit: 'int'
@@ -36,6 +39,7 @@ tables = [
       name: 'text'
       key: 'text'
       rarity: 'text'
+      tier: 'text' # free / premium
       type: 'text'
       data: 'text'
       circulationLimit: 'int'
@@ -62,6 +66,7 @@ defaultItem = (item) ->
   item.data = JSON.stringify item.data
   _.defaults item, {
     type: 'sticker'
+    tier: 'free'
   }
 
 defaultItemOutput = (item) ->

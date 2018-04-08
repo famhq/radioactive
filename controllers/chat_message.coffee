@@ -13,7 +13,7 @@ ChatMessage = require '../models/chat_message'
 Conversation = require '../models/conversation'
 GroupAuditLog = require '../models/group_audit_log'
 GroupUser = require '../models/group_user'
-GroupUserXpTransaction = require '../models/group_user_xp_transaction'
+EarnAction = require '../models/earn_action'
 GroupUsersOnline = require '../models/group_users_online'
 Language = require '../models/language'
 CacheService = require '../services/cache'
@@ -321,16 +321,16 @@ class ChatMessageCtrl
           }
       .then ->
         if conversation.groupId
-          GroupUserXpTransaction.completeActionByGroupIdAndUserId(
+          EarnAction.completeActionByGroupIdAndUserId(
             conversation.groupId
             user.id
-            'dailyChatMessage'
+            'chatMessage'
           )
           .catch -> null
         else
           Promise.resolve null
-      .then (xpGained) ->
-        {xpGained}
+      .then (rewards) ->
+        {rewards}
       .tap =>
         userIds = conversation.userIds
         pickedConversation = _.pick conversation, [

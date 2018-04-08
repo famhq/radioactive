@@ -66,14 +66,21 @@ class ProductCtrl
       else
         router.throw status: 400, info: {isLocked: true}
 
+  _checkCurrency: (product, user) ->
+    if product.currency is 'fire' and user.fire < product.cost
+      router.throw {status: 400, info: 'not enough fire'}
+    else
+      UserItem.getByUserIdAndItemKey user.id, product.currency
+      .then (userItem) ->
+        console.log userItem, userItem.count
+
   buy: ({key, email}, {user}) =>
     Product.getByKey key
+    .tap (product) =>
+      @_checkCurrency product, user
     .then (product) =>
       unless product
         router.throw {status: 400, info: 'item not found'}
-
-      if user.fire < product.cost
-        router.throw {status: 400, info: 'not enough fire'}
 
       (if product.data.lockTime
         Product.getLockByProductAndUserId product, user.id
