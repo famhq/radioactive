@@ -69,10 +69,24 @@ class ProductCtrl
   _checkCurrency: (product, user) ->
     if product.currency is 'fire' and user.fire < product.cost
       router.throw {status: 400, info: 'not enough fire'}
-    else
+    else if product.currency isnt 'fire'
       UserItem.getByUserIdAndItemKey user.id, product.currency
       .then (userItem) ->
-        console.log userItem, userItem.count
+        if not userItem or userItem.count < product.cost
+          router.throw {status: 400, info: 'not enough currency'}
+
+  _deductCurrency: (product, user) ->
+    if product.currency is 'fire'
+      User.subtractFireById user.id, product.cost
+      .then (response) =>
+        # double-check that they had the fire to buy
+        # (for simulatenous purchases)
+        if product.cost isnt 0 and not response.replaced
+          router.throw {status: 400, info: 'not enough fire'}
+    else
+      UserItem.incrementByItemKeyAndUserId(
+        product.currency, user.id, -1 * product.cost
+      )
 
   buy: ({key, email}, {user}) =>
     Product.getByKey key
@@ -100,13 +114,8 @@ class ProductCtrl
           Product.setLockByProductAndUserId product, user.id
       else
         Promise.resolve null)
-      .then ->
-        User.subtractFireById user.id, product.cost
-      .then (response) =>
-        # double-check that they had the fire to buy
-        # (for simulatenous purchases)
-        if product.cost isnt 0 and not response.replaced
-          router.throw {status: 400, info: 'not enough fire'}
+      .then =>
+        @_deductCurrency product, user
 
         if product.cost
           GroupRecord.incrementByGroupIdAndRecordTypeKey(

@@ -35,6 +35,7 @@ class UserItemCtrl
 
   getByItemKey: ({itemKey}, {user}) ->
     UserItem.getByUserIdAndItemKey user.id, itemKey
+    .then EmbedService.embed {embed: defaultEmbed}
 
   # upgradeByItemKey: ({itemKey}, {user}) ->
   #   prefix = CacheService.LOCK_PREFIXES.UPGRADE_STICKER

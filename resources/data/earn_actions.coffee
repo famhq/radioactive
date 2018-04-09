@@ -16,9 +16,11 @@ actions =
     action: 'visit'
     data:
       rewards: [
-        {currencyAmount: 5, currencyType: 'item', currencyItemKey: 'nan_currency'}
+        {currencyAmount: 100, currencyType: 'item', currencyItemKey: 'nan_currency'}
         {currencyAmount: 5, currencyType: 'xp'}
       ]
+      button:
+        text: 'Claim'
     maxCount: 1
     ttl: ONE_DAY_SECONDS
   nan_daily_chat_message:
@@ -27,9 +29,14 @@ actions =
     action: 'chatMessage'
     data:
       rewards: [
-        {currencyAmount: 5, currencyType: 'item', currencyItemKey: 'nan_currency'}
+        {currencyAmount: 100, currencyType: 'item', currencyItemKey: 'nan_currency'}
         {currencyAmount: 5, currencyType: 'xp'}
       ]
+      button:
+        text: 'Go to chat'
+        route:
+          key: 'groupChat'
+          replacements: {groupId: 'nickatnyte'}
     maxCount: 1
     ttl: ONE_DAY_SECONDS
   nan_daily_video_view:
@@ -38,9 +45,14 @@ actions =
     action: 'videoView'
     data:
       rewards: [
-        {currencyAmount: 5, currencyType: 'item', currencyItemKey: 'nan_currency'}
+        {currencyAmount: 100, currencyType: 'item', currencyItemKey: 'nan_currency'}
         {currencyAmount: 5, currencyType: 'xp'}
       ]
+      button:
+        text: 'Go to videos'
+        route:
+          key: 'groupVideos'
+          replacements: {groupId: 'nickatnyte'}
     maxCount: 1
     ttl: ONE_DAY_SECONDS
   nan_rewarded_videos:
@@ -49,11 +61,12 @@ actions =
     action: 'watchAd'
     data:
       rewards: [
-        {currencyAmount: 1, currencyType: 'item', currencyItemKey: 'nan_currency'}
+        {currencyAmount: 50, currencyType: 'item', currencyItemKey: 'nan_currency'}
         {currencyAmount: 1, currencyType: 'xp'}
       ]
+      button:
+        text: 'Watch ad'
     maxCount: 3
     ttl: THREE_HOURS_SECONDS
 
 module.exports = _.map actions, (value, key) -> value
-console.log module.exports

@@ -75,16 +75,17 @@ class ItemService
   getItemsByGroupIdAndOdds: (groupId, {odds, count, itemKeys}) ->
     Item.getAllByGroupId groupId
     .then (items) ->
-      groupedItems = _.groupBy items, ({type, rarity}) -> "#{type}|#{rarity}"
+      groupedItems = _.groupBy items, ({type, tier, rarity}) ->
+        "#{type}|#{tier}|#{rarity}"
       if odds
-        odds = _.reduce odds, (obj, {type, rarity, odds}) ->
-          if groupedItems["#{type}|#{rarity}"]
-            obj["#{type}|#{rarity}"] = odds
+        odds = _.reduce odds, (obj, {type, tier, rarity, odds}) ->
+          if groupedItems["#{type}|#{tier}|#{rarity}"]
+            obj["#{type}|#{tier}|#{rarity}"] = odds
           obj
         , {}
         items = _.map _.range(count or 1), (i) ->
-          typeAndRarity = deck.pick odds
-          population = groupedItems[typeAndRarity]
+          typeTierAndRarity = deck.pick odds
+          population = groupedItems[typeTierAndRarity]
           _.sample population
       else
         items = _.map itemKeys, (itemKey) ->

@@ -72,6 +72,8 @@ defaultItem = (item) ->
 defaultItemOutput = (item) ->
   unless item?
     return null
+
+  item.tier ?= 'base'
   item.data = try
     JSON.parse item.data
   catch err

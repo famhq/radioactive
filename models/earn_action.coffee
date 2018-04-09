@@ -10,6 +10,9 @@ CacheService = require '../services/cache'
 GroupUser = require './group_user'
 UserItem = require './user_item'
 
+ONE_DAY_SECONDS = 3600 * 24
+THREE_HOURS_SECONDS = 3600 * 3
+
 defaultEarnTransaction = (earnTransaction) ->
   unless earnTransaction?
     return null
@@ -110,7 +113,6 @@ class EarnActionModel
       earnTransaction
 
   getAllTransactionsByUserIdAndGroupId: (userId, groupId) ->
-    console.log 'get', userId, groupId
     cknex().select '*'
     .from 'earn_transactions'
     .where 'userId', '=', userId
@@ -118,20 +120,27 @@ class EarnActionModel
     .run()
     .map defaultEarnTransactionOutput
 
-  getAllByGroupId: (groupId) ->
+  getAllByGroupId: (groupId) =>
     cknex().select '*'
     .from 'earn_actions'
     .where 'groupId', '=', groupId
     .run()
     .map defaultEarnActionOutput
+    .then (actions) =>
+      if _.isEmpty actions
+        @getStandardActionsByGroupId groupId
+      else
+        actions
 
-  getByGroupIdAndAction: (groupId, action) ->
+  getByGroupIdAndAction: (groupId, action) =>
     cknex().select '*'
     .from 'earn_actions'
     .where 'groupId', '=', groupId
     .andWhere 'action', '=', action
     .run {isSingle: true}
     .then defaultEarnActionOutput
+    .then (existingAction) =>
+      existingAction or _.find(@getStandardActionsByGroupId(groupId), {action})
 
   completeActionByGroupIdAndUserId: (groupId, userId, action) =>
     prefix = CacheService.PREFIXES.EARN_COMPLETE_TRANSACTION
@@ -151,10 +160,8 @@ class EarnActionModel
 
         ttl = if existingTransaction then null else action.ttl
         count = (existingTransaction?.count or 0) + 1
-        console.log action.data
         Promise.all [
           Promise.map action.data.rewards, (reward) ->
-            console.log 'reward', reward
             if reward.currencyType is 'xp'
               GroupUser.incrementXpByGroupIdAndUserId(
                 groupId, userId, reward.currencyAmount
@@ -171,5 +178,76 @@ class EarnActionModel
         .then ->
           action.data.rewards
     , {expireSeconds: 10, unlockWhenCompleted: true}
+
+  # for if custom ones aren't set for group
+  getStandardActionsByGroupId: (groupId) ->
+    [
+      {
+        key: "#{groupId}_daily_visit"
+        name: 'Daily visit'
+        groupId: groupId
+        action: 'visit'
+        data:
+          nameKey: 'earnXp.dailyVisit'
+          rewards: [
+            {currencyAmount: 5, currencyType: 'xp'}
+          ]
+          button:
+            textKey: 'earnXp.claim'
+        maxCount: 1
+        ttl: ONE_DAY_SECONDS
+      }
+      {
+        key: "#{groupId}_daily_chat_message"
+        name: 'Daily chat message'
+        groupId: groupId
+        action: 'chatMessage'
+        data:
+          nameKey: 'earnXp.dailyChatMessage'
+          rewards: [
+            {currencyAmount: 5, currencyType: 'xp'}
+          ]
+          button:
+            textKey: 'earnXp.dailyChatMessageButton'
+            route:
+              key: 'groupChat'
+              replacements: {groupId: 'groupId'}
+        maxCount: 1
+        ttl: ONE_DAY_SECONDS
+      }
+      {
+        key: "#{groupId}_daily_forum_comment"
+        name: 'Daily forum comment'
+        groupId: groupId
+        action: 'forumComment'
+        data:
+          nameKey: 'earnXp.dailyForumComment'
+          rewards: [
+            {currencyAmount: 5, currencyType: 'xp'}
+          ]
+          button:
+            textKey: 'earnXp.dailyVideoViewButton'
+            route:
+              key: 'groupVideos'
+              replacements: {groupId: 'groupId'}
+        maxCount: 1
+        ttl: ONE_DAY_SECONDS
+      }
+      {
+        key: "#{groupId}_rewarded_videos"
+        name: 'Watch ad'
+        groupId: groupId
+        action: 'watchAd'
+        data:
+          nameKey: 'earnXp.watchAd'
+          rewards: [
+            {currencyAmount: 1, currencyType: 'xp'}
+          ]
+          button:
+            textKey: 'earnXp.watchAd'
+        maxCount: 3
+        ttl: THREE_HOURS_SECONDS
+      }
+    ]
 
 module.exports = new EarnActionModel()

@@ -9,26 +9,26 @@ DEFAULT_FREE_PACK_DATA =
   lockTime: ONE_DAY_SECONDS
   count: 1
   odds: [
-    {type: 'sticker', rarity: 'common', odds: 0.8}
-    {type: 'sticker', rarity: 'rare', odds: 0.13}
-    {type: 'sticker', rarity: 'epic', odds: 0.05}
-    {type: 'sticker', rarity: 'legendary', odds: 0.02}
+    {type: 'sticker', rarity: 'common', tier: 'base', odds: 0.8}
+    {type: 'sticker', rarity: 'rare', tier: 'base', odds: 0.13}
+    {type: 'sticker', rarity: 'epic', tier: 'base', odds: 0.05}
+    {type: 'sticker', rarity: 'legendary', tier: 'base', odds: 0.02}
   ]
 DEFAULT_1_PACK_DATA =
   count: 1
   odds: [
-    {type: 'sticker', rarity: 'common', odds: 0.8}
-    {type: 'sticker', rarity: 'rare', odds: 0.13}
-    {type: 'sticker', rarity: 'epic', odds: 0.05}
-    {type: 'sticker', rarity: 'legendary', odds: 0.02}
+    {type: 'sticker', rarity: 'common', tier: 'base', odds: 0.8}
+    {type: 'sticker', rarity: 'rare', tier: 'base', odds: 0.13}
+    {type: 'sticker', rarity: 'epic', tier: 'base', odds: 0.05}
+    {type: 'sticker', rarity: 'legendary', tier: 'base', odds: 0.02}
   ]
 DEFAULT_3_PACK_DATA =
   count: 3
   odds: [
-    {type: 'sticker', rarity: 'common', odds: 0.8}
-    {type: 'sticker', rarity: 'rare', odds: 0.13}
-    {type: 'sticker', rarity: 'epic', odds: 0.05}
-    {type: 'sticker', rarity: 'legendary', odds: 0.02}
+    {type: 'sticker', rarity: 'common', tier: 'base', odds: 0.8}
+    {type: 'sticker', rarity: 'rare', tier: 'base', odds: 0.13}
+    {type: 'sticker', rarity: 'epic', tier: 'base', odds: 0.05}
+    {type: 'sticker', rarity: 'legendary', tier: 'base', odds: 0.02}
   ]
 
 products =
@@ -161,13 +161,13 @@ products =
       itemKeys: ['nan_base_key']
   }
   nan_base_chest: {
-    type: 'pack', groupId: GROUPS.NICKATNYTE.ID, name: 'Daily Pack', cost: 0, currency: 'fire'
+    type: 'pack', groupId: GROUPS.NICKATNYTE.ID, name: 'Daily Free Chests', cost: 0, currency: 'fire'
     data:
       backgroundImage: 'https://cdn.wtf/d/images/fam/packs/nan/nan_base_chest.png'
       backgroundColor: '#9C27B0'
       lockTime: ONE_DAY_SECONDS
       count: 2
-      itemKeys: ['nan_chest', 'nan_base_chest', 'nan_base_key']
+      itemKeys: ['nan_chest', 'nan_base_chest']
   }
 
   # TEAM QUESO

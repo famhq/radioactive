@@ -19,7 +19,7 @@ DEFAULT_BASE_ODDS = [
 ]
 
 items =
-  nan_currency: {name: 'Nyte Bucks', groupId: GROUPS.NICKATNYTE.ID, rarity: 'common', type: 'currency'}
+  nan_currency: {name: 'NyteBucks', groupId: GROUPS.NICKATNYTE.ID, rarity: 'common', type: 'currency'}
 
   nan_gg: {name: 'GG', groupId: GROUPS.NICKATNYTE.ID, rarity: 'common', tier: 'base', type: 'sticker'}
   nan_get_rekt: {name: 'Get rekt', groupId: GROUPS.NICKATNYTE.ID, rarity: 'common', tier: 'base', type: 'sticker'}
@@ -58,7 +58,7 @@ items =
     data:
       keyRequired: 'nan_base_key'
       odds: DEFAULT_BASE_ODDS
-      count: 1
+      count: 3
       backKey: 'nan'
   }
   nan_base_key: {
