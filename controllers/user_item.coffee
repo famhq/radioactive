@@ -37,28 +37,6 @@ class UserItemCtrl
     UserItem.getByUserIdAndItemKey user.id, itemKey
     .then EmbedService.embed {embed: defaultEmbed}
 
-  # upgradeByItemKey: ({itemKey}, {user}) ->
-  #   prefix = CacheService.LOCK_PREFIXES.UPGRADE_STICKER
-  #   key = "#{prefix}:#{user.id}:#{itemKey}"
-  #   CacheService.lock key, ->
-  #     UserItem.getByUserIdAndItemKey user.id, itemKey
-  #     .then (userItem) ->
-  #       currentLevel = userItem?.itemLevel or 1
-  #       itemLevel = _.find(config.ITEM_LEVEL_REQUIREMENTS, {
-  #         level: currentLevel + 1
-  #         })
-  #       console.log currentLevel,  userItem?.count, itemLevel?.countRequired
-  #       unless userItem?.count >= itemLevel?.countRequired
-  #         router.throw {status: 400, info: 'not enough stickers'}
-  #
-  #       # since level starts at 0 (not 1), we need to add 2 for level 2
-  #       inc = if not userItem.itemLevel then 2 else 1
-  #
-  #       Item.incrementCirculatingByKeyAndLevel itemKey, currentLevel + 1, 1
-  #
-  #       UserItem.incrementLevelByItemKeyAndUserId itemKey, user.id, inc
-  #   , {expireSeconds: TWO_MINUTES_SECONDS, unlockWhenCompleted: true}
-
   consumeByItemKey: ({itemKey, groupId}, {user}) ->
     prefix = CacheService.LOCK_PREFIXES.CONSUME_ITEM
     key = "#{prefix}:#{user.id}:#{itemKey}"
@@ -95,25 +73,6 @@ class UserItemCtrl
           key = "#{CacheService.PREFIXES.CHAT_USER}:#{user.id}:#{groupId}"
           CacheService.deleteByKey key
     , {expireSeconds: TWO_MINUTES_SECONDS, unlockWhenCompleted: true}
-
-
-  # _getOpenedtem: (item) ->
-  #   Item.getAllByGroupId item.groupId
-  #   .then (items) ->
-  #     if item.data.itemKeys
-  #       key = _.sample item.data.itemKeys
-  #       console.log 'key', key, items
-  #       return _.find items, {key}
-  #     else
-  #       groupedItems = _.groupBy items, ({type, rarity}) -> "#{type}|#{rarity}"
-  #       odds = _.reduce item.data.odds, (obj, {type, rarity, odds}) ->
-  #         if groupedItems["#{type}|#{rarity}"]
-  #           obj["#{type}|#{rarity}"] = odds
-  #         obj
-  #       , {}
-  #       typeAndRarity = deck.pick odds
-  #       population = groupedItems[typeAndRarity]
-  #       _.sample population
 
   openByItemKey: ({itemKey, groupId}, {user}) ->
     prefix = CacheService.LOCK_PREFIXES.OPEN_ITEM

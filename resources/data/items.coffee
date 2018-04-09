@@ -28,6 +28,12 @@ items =
   nan: {name: 'NyteFish', groupId: GROUPS.NICKATNYTE.ID, rarity: 'rare', tier: 'base', type: 'sticker'}
   nan_ice_fish: {name: 'Ice Fish', groupId: GROUPS.NICKATNYTE.ID, rarity: 'epic', tier: 'base', type: 'sticker'}
   nan_wow: {name: 'Wow', groupId: GROUPS.NICKATNYTE.ID, rarity: 'legendary', tier: 'base', type: 'sticker'}
+  nan_name_color_7_days: {
+    name: 'Name color for 7 days', groupId: GROUPS.NICKATNYTE.ID, rarity: 'common', tier: 'base', type: 'consumable'
+    data:
+      duration: 3600 * 24 * 7
+      upgradeType: 'nameColorBase'
+  }
 
   nan_cheezeit: {name: 'Cheezeit', groupId: GROUPS.NICKATNYTE.ID, rarity: 'common', tier: 'premium', type: 'sticker'}
   nan_kiss: {name: 'Kiss', groupId: GROUPS.NICKATNYTE.ID, rarity: 'common', tier: 'premium', type: 'sticker'}

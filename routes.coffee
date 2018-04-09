@@ -240,7 +240,6 @@ module.exports = router
 .on 'userItems.getAll', authed UserItemCtrl.getAll
 .on 'userItems.getByItemKey', authed UserItemCtrl.getByItemKey
 .on 'userItems.getAllByUserId', authed UserItemCtrl.getAllByUserId
-# .on 'userItems.upgradeByItemKey', authed UserItemCtrl.upgradeByItemKey
 .on 'userItems.consumeByItemKey', authed UserItemCtrl.consumeByItemKey
 .on 'userItems.openByItemKey', authed UserItemCtrl.openByItemKey
 

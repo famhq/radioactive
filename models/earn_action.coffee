@@ -211,7 +211,7 @@ class EarnActionModel
             textKey: 'earnXp.dailyChatMessageButton'
             route:
               key: 'groupChat'
-              replacements: {groupId: 'groupId'}
+              replacements: {groupId: groupId}
         maxCount: 1
         ttl: ONE_DAY_SECONDS
       }
@@ -226,10 +226,10 @@ class EarnActionModel
             {currencyAmount: 5, currencyType: 'xp'}
           ]
           button:
-            textKey: 'earnXp.dailyVideoViewButton'
+            textKey: 'profileInfo.autoRefreshVisitForum'
             route:
-              key: 'groupVideos'
-              replacements: {groupId: 'groupId'}
+              key: 'groupForum'
+              replacements: {groupId: groupId}
         maxCount: 1
         ttl: ONE_DAY_SECONDS
       }
