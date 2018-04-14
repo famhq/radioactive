@@ -5,6 +5,7 @@ AppInstallActionCtrl = require './controllers/app_install_action'
 AuthCtrl = require './controllers/auth'
 ChatMessageCtrl = require './controllers/chat_message'
 ClanCtrl = require './controllers/clan'
+ConnectionCtrl = require './controllers/connection'
 ConversationCtrl = require './controllers/conversation'
 ClanRecordTypeCtrl = require './controllers/clan_record_type'
 ClashRoyaleAPICtrl = require './controllers/clash_royale_api'
@@ -274,6 +275,11 @@ module.exports = router
 
 .on 'payments.verify', authed PaymentCtrl.verify
 .on 'payments.purchase', authed PaymentCtrl.purchase
+
+.on 'connections.upsert', authed ConnectionCtrl.upsert
+.on 'connections.getAll', authed ConnectionCtrl.getAll
+.on 'connections.giveUpgradesByGroupId',
+  authed ConnectionCtrl.giveUpgradesByGroupId
 
 .on 'conversations.create', authed ConversationCtrl.create
 .on 'conversations.updateById', authed ConversationCtrl.updateById

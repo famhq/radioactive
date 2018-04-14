@@ -12,6 +12,16 @@ config = require '../config'
 
 ONE_DAY_MS = 3600 * 24 * 1000
 
+###
+2.9% + 30c
+min purchase: $1
+-> 33c fee
+670 fire
+
+$5 -> 45c fee
+4550 fire
+###
+
 stripe = stripe(config.STRIPE_SECRET_KEY)
 
 fx.base = 'USD'

@@ -8,6 +8,7 @@ cknex = require '../services/cknex'
 TimeService = require '../services/time'
 CacheService = require '../services/cache'
 GroupUser = require './group_user'
+Group = require './group'
 UserItem = require './user_item'
 
 ONE_DAY_SECONDS = 3600 * 24
@@ -113,7 +114,8 @@ class EarnActionModel
       earnTransaction
 
   getAllTransactionsByUserIdAndGroupId: (userId, groupId) ->
-    cknex().select '*'
+    cknex().select 'userId', 'groupId', 'action', 'count'
+    .ttl 'count'
     .from 'earn_transactions'
     .where 'userId', '=', userId
     .andWhere 'groupId', '=', groupId
@@ -140,7 +142,12 @@ class EarnActionModel
     .run {isSingle: true}
     .then defaultEarnActionOutput
     .then (existingAction) =>
-      existingAction or _.find(@getStandardActionsByGroupId(groupId), {action})
+      if existingAction
+        existingAction
+      else
+        @getStandardActionsByGroupId(groupId)
+        .then (actions) ->
+          _.find(actions, {action})
 
   completeActionByGroupIdAndUserId: (groupId, userId, action) =>
     prefix = CacheService.PREFIXES.EARN_COMPLETE_TRANSACTION
@@ -158,7 +165,9 @@ class EarnActionModel
         if existingTransaction?.count >= action.maxCount
           throw new Error 'already claimed'
 
-        ttl = if existingTransaction then null else action.ttl
+        ttl = if existingTransaction \
+              then existingTransaction['ttl(count)']
+              else action.ttl
         count = (existingTransaction?.count or 0) + 1
         Promise.all [
           Promise.map action.data.rewards, (reward) ->
@@ -170,7 +179,6 @@ class EarnActionModel
               UserItem.incrementByItemKeyAndUserId(
                 reward.currencyItemKey, userId, reward.currencyAmount
               )
-
           @upsertTransaction(
             {userId, groupId, action: action.action, count}, {ttl}
           )
@@ -181,73 +189,83 @@ class EarnActionModel
 
   # for if custom ones aren't set for group
   getStandardActionsByGroupId: (groupId) ->
-    [
-      {
-        key: "#{groupId}_daily_visit"
-        name: 'Daily visit'
-        groupId: groupId
-        action: 'visit'
-        data:
-          nameKey: 'earnXp.dailyVisit'
-          rewards: [
-            {currencyAmount: 5, currencyType: 'xp'}
-          ]
-          button:
-            textKey: 'earnXp.claim'
-        maxCount: 1
-        ttl: ONE_DAY_SECONDS
-      }
-      {
-        key: "#{groupId}_daily_chat_message"
-        name: 'Daily chat message'
-        groupId: groupId
-        action: 'chatMessage'
-        data:
-          nameKey: 'earnXp.dailyChatMessage'
-          rewards: [
-            {currencyAmount: 5, currencyType: 'xp'}
-          ]
-          button:
-            textKey: 'earnXp.dailyChatMessageButton'
-            route:
-              key: 'groupChat'
-              replacements: {groupId: groupId}
-        maxCount: 1
-        ttl: ONE_DAY_SECONDS
-      }
-      {
-        key: "#{groupId}_daily_forum_comment"
-        name: 'Daily forum comment'
-        groupId: groupId
-        action: 'forumComment'
-        data:
-          nameKey: 'earnXp.dailyForumComment'
-          rewards: [
-            {currencyAmount: 5, currencyType: 'xp'}
-          ]
-          button:
-            textKey: 'profileInfo.autoRefreshVisitForum'
-            route:
-              key: 'groupForum'
-              replacements: {groupId: groupId}
-        maxCount: 1
-        ttl: ONE_DAY_SECONDS
-      }
-      {
-        key: "#{groupId}_rewarded_videos"
-        name: 'Watch ad'
-        groupId: groupId
-        action: 'watchAd'
-        data:
-          nameKey: 'earnXp.watchAd'
-          rewards: [
-            {currencyAmount: 1, currencyType: 'xp'}
-          ]
-          button:
-            textKey: 'earnXp.watchAd'
-        maxCount: 3
-        ttl: THREE_HOURS_SECONDS
-      }
-    ]
+    Group.getById groupId, {preferCache: true}
+    .then (group) ->
+      [
+        {
+          key: "#{groupId}_daily_visit"
+          name: 'Daily visit'
+          groupId: groupId
+          action: 'visit'
+          data:
+            nameKey: 'earnXp.dailyVisit'
+            rewards: _.filter [
+              if group.currency
+                {currencyAmount: 100, currencyType: 'item', currencyItemKey: group.currency.itemKey}
+              {currencyAmount: 5, currencyType: 'xp'}
+            ]
+            button:
+              textKey: 'earnXp.claim'
+          maxCount: 1
+          ttl: ONE_DAY_SECONDS
+        }
+        {
+          key: "#{groupId}_daily_chat_message"
+          name: 'Daily chat message'
+          groupId: groupId
+          action: 'chatMessage'
+          data:
+            nameKey: 'earnXp.dailyChatMessage'
+            rewards: _.filter [
+              if group.currency
+                {currencyAmount: 100, currencyType: 'item', currencyItemKey: group.currency.itemKey}
+              {currencyAmount: 5, currencyType: 'xp'}
+            ]
+            button:
+              textKey: 'earnXp.dailyChatMessageButton'
+              route:
+                key: 'groupChat'
+                replacements: {groupId: groupId}
+          maxCount: 1
+          ttl: ONE_DAY_SECONDS
+        }
+        {
+          key: "#{groupId}_daily_forum_comment"
+          name: 'Daily forum comment'
+          groupId: groupId
+          action: 'forumComment'
+          data:
+            nameKey: 'earnXp.dailyForumComment'
+            rewards: _.filter [
+              if group.currency
+                {currencyAmount: 100, currencyType: 'item', currencyItemKey: group.currency.itemKey}
+              {currencyAmount: 5, currencyType: 'xp'}
+            ]
+            button:
+              textKey: 'profileInfo.autoRefreshVisitForum'
+              route:
+                key: 'groupForum'
+                replacements: {groupId: groupId}
+          maxCount: 1
+          ttl: ONE_DAY_SECONDS
+        }
+        {
+          key: "#{groupId}_rewarded_videos"
+          name: 'Watch ad'
+          groupId: groupId
+          action: 'watchAd'
+          data:
+            nameKey: 'earnXp.watchAd'
+            rewards: _.filter [
+              if group.currency
+                {currencyAmount: 50, currencyType: 'item', currencyItemKey: group.currency.itemKey}
+              {currencyAmount: 1, currencyType: 'xp'}
+            ]
+            button:
+              textKey: 'earnXp.watchAd'
+          maxCount: 3
+          ttl: THREE_HOURS_SECONDS
+        }
+      ]
 
 module.exports = new EarnActionModel()

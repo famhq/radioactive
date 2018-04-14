@@ -20,7 +20,7 @@ defaultEmbed = [
   EmbedService.TYPES.THREAD_COMMENT.TIME
 ]
 
-MAX_LENGTH = 5000
+MAX_LENGTH = 10000
 TEN_MINUTES_SECONDS = 60 * 10
 MAX_COMMENT_DEPTH = 3
 
@@ -95,7 +95,7 @@ class ThreadCommentCtrl
     if isProfane or user.flags.isChatBanned
       router.throw status: 400, info: 'unable to post...'
 
-    if body?.length > MAX_LENGTH
+    if body?.length > MAX_LENGTH and not user?.flags?.isModerator
       router.throw status: 400, info: 'message is too long...'
 
     unless body

@@ -43,8 +43,6 @@ class CronService
             ClashRoyaleService.updateAutoRefreshPlayers()
 
     @addCron 'quarterMinute', '15 * * * * *', ->
-      Product.batchUpsert allProducts
-      Item.batchUpsert allItems
       EarnAction.batchUpsert allEarnActions
       CleanupService.clean()
       Thread.updateScores 'stale'

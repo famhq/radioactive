@@ -3,6 +3,7 @@ Promise = require 'bluebird'
 router = require 'exoid-router'
 
 ClashRoyaleService = require '../services/game_clash_royale'
+FortniteService = require '../services/game_fortnite'
 r = require '../services/rethinkdb'
 Player = require '../models/player'
 User = require '../models/user'
@@ -44,6 +45,11 @@ class HealthCtrl
       .timeout HEALTHCHECK_TIMEOUT
       .catch -> null
 
+      FortniteService.getPlayerDataByPlayerId 'ps4:starfireaustin', {
+        priority: 'high'
+        skipCache: true
+      }
+
       Player.getByPlayerIdAndGameKey AUSTIN_TAG, 'clash-royale'
       .timeout HEALTHCHECK_TIMEOUT
       .catch -> null
@@ -61,13 +67,14 @@ class HealthCtrl
       .catch -> null
     ]
     .then (responses) ->
-      [rethink, apiData, apiMatches, legacyApi,
+      [rethink, apiData, apiMatches, legacyApi, fortnitePlayer,
         player, groupUser, user, matches] = responses
       result =
         rethinkdb: Boolean rethink
         apiData: apiData?.tag is "##{AUSTIN_TAG}"
         apiMatches: Boolean apiMatches
         legacyApi: apiData?.tag is "##{AUSTIN_TAG}"
+        fortnitePlayer: Boolean fortnitePlayer
         scyllaPlayer: player?.id is AUSTIN_TAG
         scyllaMatches: _.isArray matches?.rows
         rethinkUser: user?.username is AUSTIN_USERNAME

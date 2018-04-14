@@ -6,6 +6,8 @@ moment = require 'moment'
 cknex = require '../services/cknex'
 config = require '../config'
 
+# ALTER TABLE starfire."user_upgrades_by_userId" ADD data text;
+
 tables = [
   {
     name: 'user_upgrades_by_userId'
@@ -15,6 +17,7 @@ tables = [
       groupId: 'uuid'
       itemKey: 'text'
       upgradeType: 'text'
+      data: 'text'
       expireTime: 'timestamp'
     primaryKey:
       partitionKey: ['userId']
@@ -26,11 +29,22 @@ defaultUserUpgrade = (upgrade) ->
   unless upgrade?
     return null
 
+  if upgrade.data
+    upgrade.data = JSON.stringify upgrade.data
+  else
+    upgrade.data = ''
+
   upgrade
 
 defaultUserUpgradeOutput = (upgrade) ->
   unless upgrade?
     return null
+
+  if upgrade.data
+    upgrade.data = try
+      JSON.parse upgrade.data
+    catch err
+      {}
 
   upgrade
 
@@ -53,6 +67,8 @@ class UserUpgradeModel
     .then defaultUserUpgradeOutput
 
   upsert: (userUpgrade, {ttl}) ->
+    userUpgrade = defaultUserUpgrade userUpgrade
+
     cknex().update 'user_upgrades_by_userId'
     .set _.omit userUpgrade, ['userId', 'groupId', 'itemKey']
     .where 'userId', '=', userUpgrade.userId

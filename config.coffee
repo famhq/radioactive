@@ -35,6 +35,9 @@ config =
     FERG:
       ID: '2a2c1d78-33e1-4d32-b483-83074935db2c'
       APP_KEY: ''
+    THE_VIEWAGE:
+      ID: '13673f46-fd1e-4768-8963-21cb4b2ee96e'
+      APP_KEY: 'theviewage'
     CLASH_ROYALE_EN:
       ID: '73ed4af0-a2f2-4371-a893-1360d3989708'
       APP_KEY: ''
@@ -108,6 +111,9 @@ config =
     epic: 30
     legendary: 80
   EMPTY_UUID: '00000000-0000-0000-0000-000000000000'
+
+  # also in fam
+  BASE_NAME_COLORS: ['#2196F3', '#8BC34A', '#FFC107', '#f44336', '#673AB7']
 
   IS_POSTGRES: env.IS_POSTGRES or false
 

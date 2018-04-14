@@ -37,7 +37,7 @@ class UserItemCtrl
     UserItem.getByUserIdAndItemKey user.id, itemKey
     .then EmbedService.embed {embed: defaultEmbed}
 
-  consumeByItemKey: ({itemKey, groupId}, {user}) ->
+  consumeByItemKey: ({itemKey, groupId, data}, {user}) ->
     prefix = CacheService.LOCK_PREFIXES.CONSUME_ITEM
     key = "#{prefix}:#{user.id}:#{itemKey}"
     CacheService.lock key, ->
@@ -49,6 +49,17 @@ class UserItemCtrl
       .then ([item, userItem, userUpgrade]) ->
         unless userItem?.count > 0
           router.throw {status: 400, info: 'not enough items'}
+
+        data = _.pick data, ['color']
+        if data?.color
+          isHex = data.color.match /^#(?:[0-9a-fA-F]{3}){1,2}$/
+          unless isHex
+            router.throw {status: 400, info: 'invalid hex'}
+
+          isBaseItem = item.data.upgradeType.indexOf('Base') isnt -1
+          if isBaseItem and
+              config.BASE_NAME_COLORS.indexOf(data.color) is -1
+            router.throw {status: 400, info: 'invalid color'}
 
         if userUpgrade?.expireTime
           baseExpireS = (userUpgrade.expireTime.getTime() - Date.now()) / 1000
@@ -65,7 +76,7 @@ class UserItemCtrl
         Promise.all [
           UserItem.incrementByItemKeyAndUserId itemKey, user.id, -1
           UserUpgrade.upsert {
-            groupId, itemKey, expireTime
+            groupId, itemKey, expireTime, data
             userId: user.id, upgradeType: item.data.upgradeType
           }, {ttl: baseExpireS + item.data.duration}
         ]

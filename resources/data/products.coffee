@@ -169,6 +169,30 @@ products =
       count: 2
       itemKeys: ['nan_chest', 'nan_base_chest']
   }
+  nan_name_color_base_7_days: {
+    name: 'Name color (7d)'
+    type: 'pack'
+    groupId: GROUPS.NICKATNYTE.ID
+    cost: 500
+    currency: 'nan_currency'
+    data:
+      backgroundImage: 'https://cdn.wtf/d/images/fam/packs/nan/nan_name_color_base_7_days.png'
+      backgroundColor: '#333'
+      count: 1
+      itemKeys: ['nan_name_color_base_7_days']
+  }
+  nan_name_color_premium_7_days: {
+    name: 'Name color (premium, 7d)'
+    type: 'pack'
+    groupId: GROUPS.NICKATNYTE.ID
+    cost: 200
+    currency: 'fire'
+    data:
+      backgroundImage: 'https://cdn.wtf/d/images/fam/packs/nan/nan_name_color_premium_7_days.png'
+      backgroundColor: '#eeeeee'
+      count: 1
+      itemKeys: ['nan_name_color_premium_7_days']
+  }
 
   # TEAM QUESO
   tq_key: {
@@ -287,13 +311,37 @@ products =
   cr_es_pack_free: {
     type: 'pack'
     groupId: GROUPS.CLASH_ROYALE_ES.ID
-    name: 'Free Clash Royale Sticker Pack (1)'
-    cost: 0
-    currency: 'fire'
+    name: 'Clash Royale Sticker Pack'
+    cost: 200
+    currency: 'cr_es_currency'
     data: _.defaults {
       backgroundImage: 'https://cdn.wtf/d/images/fam/packs/cr_es_free.png'
       backgroundColor: '#9C27B0'
-    }, DEFAULT_FREE_PACK_DATA
+    }, DEFAULT_3_PACK_DATA
+  }
+  cr_es_name_color_base_7_days: {
+    name: 'Nombre de color (7d)'
+    type: 'pack'
+    groupId: GROUPS.CLASH_ROYALE_ES.ID
+    cost: 500
+    currency: 'cr_es_currency'
+    data:
+      backgroundImage: 'https://cdn.wtf/d/images/fam/packs/cr/cr_name_color_base_7_days.png'
+      backgroundColor: '#333'
+      count: 1
+      itemKeys: ['cr_es_name_color_base_7_days']
+  }
+  cr_es_name_color_premium_7_days: {
+    name: 'Nombre de color (prima, 7d)'
+    type: 'pack'
+    groupId: GROUPS.CLASH_ROYALE_ES.ID
+    cost: 200
+    currency: 'fire'
+    data:
+      backgroundImage: 'https://cdn.wtf/d/images/fam/packs/cr/cr_name_color_premium_7_days.png'
+      backgroundColor: '#eeeeee'
+      count: 1
+      itemKeys: ['cr_es_name_color_premium_7_days']
   }
   # cr_es_pack1: {
   #   type: 'pack'

@@ -28,11 +28,17 @@ items =
   nan: {name: 'NyteFish', groupId: GROUPS.NICKATNYTE.ID, rarity: 'rare', tier: 'base', type: 'sticker'}
   nan_ice_fish: {name: 'Ice Fish', groupId: GROUPS.NICKATNYTE.ID, rarity: 'epic', tier: 'base', type: 'sticker'}
   nan_wow: {name: 'Wow', groupId: GROUPS.NICKATNYTE.ID, rarity: 'legendary', tier: 'base', type: 'sticker'}
-  nan_name_color_7_days: {
-    name: 'Name color for 7 days', groupId: GROUPS.NICKATNYTE.ID, rarity: 'common', tier: 'base', type: 'consumable'
+  nan_name_color_base_7_days: {
+    name: 'Name color (7d)', groupId: GROUPS.NICKATNYTE.ID, rarity: 'common', tier: 'base', type: 'consumable'
     data:
       duration: 3600 * 24 * 7
       upgradeType: 'nameColorBase'
+  }
+  nan_name_color_premium_7_days: {
+    name: 'Premium name color (7d)', groupId: GROUPS.NICKATNYTE.ID, rarity: 'epic', tier: 'premium', type: 'consumable'
+    data:
+      duration: 3600 * 24 * 7
+      upgradeType: 'nameColorPremium'
   }
 
   nan_cheezeit: {name: 'Cheezeit', groupId: GROUPS.NICKATNYTE.ID, rarity: 'common', tier: 'premium', type: 'sticker'}
@@ -203,6 +209,8 @@ items =
 
 
 
+  cr_es_currency: {name: 'Famonedas CR', groupId: GROUPS.CLASH_ROYALE_ES.ID, rarity: 'common', type: 'currency'}
+
   cr_es_starfire: {name: 'Starfire Logo', groupId: GROUPS.CLASH_ROYALE_ES.ID, rarity: 'common', type: 'sticker'}
   cr_es_angry: {name: 'CR Angry', groupId: GROUPS.CLASH_ROYALE_ES.ID, rarity: 'common', type: 'sticker'}
   cr_es_crying: {name: 'CR Crying', groupId: GROUPS.CLASH_ROYALE_ES.ID, rarity: 'common', type: 'sticker'}
@@ -211,6 +219,18 @@ items =
   cr_es_thumbs_up: {name: 'CR Thumbs Up', groupId: GROUPS.CLASH_ROYALE_ES.ID, rarity: 'common', type: 'sticker'}
   cr_es_thumb: {name: 'CR Thumb', groupId: GROUPS.CLASH_ROYALE_ES.ID, rarity: 'common', type: 'sticker'}
   cr_es_trophy: {name: 'CR Trophy', groupId: GROUPS.CLASH_ROYALE_ES.ID, rarity: 'common', type: 'sticker'}
+  cr_es_name_color_base_7_days: {
+    name: 'Nombre de color (7d)', groupId: GROUPS.CLASH_ROYALE_ES.ID, rarity: 'common', tier: 'base', type: 'consumable'
+    data:
+      duration: 3600 * 24 * 7
+      upgradeType: 'nameColorBase'
+  }
+  cr_es_name_color_premium_7_days: {
+    name: 'Prima nombre de color (7d)', groupId: GROUPS.CLASH_ROYALE_ES.ID, rarity: 'epic', tier: 'premium', type: 'consumable'
+    data:
+      duration: 3600 * 24 * 7
+      upgradeType: 'nameColorPremium'
+  }
   # cr_es_scratch: {
   #   name: 'CR scratch', groupId: GROUPS.CLASH_ROYALE_ES.ID, rarity: 'common', type: 'scratch'
   #   data:
@@ -253,7 +273,7 @@ items =
   cr_thumb: {name: 'CR Thumb', groupId: config.LEGACY_CLASH_ROYALE_ID, rarity: 'common', type: 'sticker'}
   cr_trophy: {name: 'CR Trophy', groupId: config.LEGACY_CLASH_ROYALE_ID, rarity: 'common', type: 'sticker'}
 
-module.exports = _.map items, (value, key) -> _.defaults {key}, value
+module.exports = _.map items, (value, key) -> _.defaults value, {key, tier: 'base'}
 
 # cr_barbarian: {name: 'CR Barbarian', groupId: GROUPS.CLASH_ROYALE_EN.ID, rarity: 'epic', type: 'sticker'}
 # cr_blue_king: {name: 'CR Blue King', groupId: GROUPS.CLASH_ROYALE_EN.ID, rarity: 'common', type: 'sticker'}

@@ -11,9 +11,9 @@ DEFAULT_REDLOCK_EXPIRE_SECONDS = 30
 ONE_HOUR_SECONDS = 3600
 
 PREFIXES =
-  CHAT_USER: 'chat:user21'
+  CHAT_USER: 'chat:user23'
   CHAT_USER_B_USERNAME: 'chat:user:byUsername'
-  CHAT_GROUP_USER: 'chat:group_user5'
+  CHAT_GROUP_USER: 'chat:group_user6'
   THREAD_USER: 'thread:user1'
   THREAD_CREATOR: 'thread:creator3'
   THREAD: 'thread:id:embedded2'
@@ -66,7 +66,7 @@ PREFIXES =
   CLASH_ROYALE_PLAYER_DECK_PLAYER_ID:
     'clash_royale_player_deck:player_id2'
   CLASH_ROYALE_API_GET_PLAYER_ID: 'clash_royale_api:get_tag'
-  GROUP_ID: 'group:id6'
+  GROUP_ID: 'group:id8'
   GROUP_KEY: 'group:key6'
   GROUP_GET_ALL: 'group:getAll17'
   GROUP_GET_ALL_CATEGORY: 'group:getAll:category9'

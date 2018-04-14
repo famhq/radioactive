@@ -108,7 +108,7 @@ class ThreadCtrl
       if isProfane or user.flags.isChatBanned
         router.throw status: 400, info: 'unable to post...'
 
-      if thread.data.body?.length > MAX_LENGTH
+      if thread.data.body?.length > MAX_LENGTH and not user?.flags?.isModerator
         router.throw status: 400, info: 'message is too long...'
 
       if not thread.data.body or not thread.data.title
