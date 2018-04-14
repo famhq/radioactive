@@ -9,7 +9,7 @@ PATH = 'https://api.twitch.tv/kraken'
 
 class TwitchService
   request: (path, {token}) ->
-    request "#{PATH}#{path}?client_id=#{config.CLIENT_ID}", {
+    request "#{PATH}#{path}?client_id=#{config.TWITCH.CLIENT_ID}", {
       json: true
       method: 'GET'
       headers:

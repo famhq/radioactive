@@ -8,11 +8,13 @@ TwitchService = require '../services/connection_twitch'
 CacheService = require '../services/cache'
 config = require '../config'
 
+# seems to be more than 31 days
+TWITCH_SUB_DAYS = 3600 * 24 * 35
+
 class ConnectionCtrl
   upsert: ({site, token, groupId}, {user}) =>
     Connection.upsert {site, token, userId: user.id}
     .then =>
-      console.log 'up', groupId
       if groupId
         @giveUpgradesByGroupId {groupId}, {user}
 
@@ -32,8 +34,10 @@ class ConnectionCtrl
           )
           .then (isSubscribed) ->
             if isSubscribed
-              ttl = (Date.now() - new Date(isSubscribed).getTime()) / 1000
-              ttl = Math.floor ttl
+              secondsSinceSub = (
+                Date.now() - new Date(isSubscribed).getTime()
+              ) / 1000
+              ttl = Math.floor TWITCH_SUB_DAYS - secondsSinceSub
               UserUpgrade.upsert {
                 userId: user.id
                 groupId: groupId

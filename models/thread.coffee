@@ -166,7 +166,7 @@ class ThreadModel
       .run()
 
       cknex().update 'threads_by_creatorId'
-      .set _.omit thread, ['creatorId', 'timeBucket', 'id']
+      .set _.omit thread, ['creatorId', 'id']
       .where 'creatorId', '=', thread.creatorId
       .andWhere 'id', '=', thread.id
       .run()
@@ -435,6 +435,16 @@ class ThreadModel
   deleteById: (id) =>
     @getById id
     .then @deleteByThread
+
+  getAllByCreatorId: (creatorId) ->
+    cknex().select '*'
+    .from 'threads_by_creatorId'
+    .where 'creatorId', '=', creatorId
+    .run()
+
+  deleteAllByCreatorId: (creatorId) =>
+    @getAllByCreatorId creatorId
+    .map @deleteByThread
 
   hasPermissionByIdAndUser: (id, user, {level} = {}) =>
     unless user

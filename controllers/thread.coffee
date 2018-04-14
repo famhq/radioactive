@@ -207,18 +207,22 @@ class ThreadCtrl
       groupId, category, language, sort, skip, maxTimeUuid, limit
     ].join(':')
 
-    CacheService.preferCache key, ->
-      Thread.getAll {
-        category, sort, language, groupId, skip, maxTimeUuid, limit
-      }
-      .map (thread) ->
-        EmbedService.embed {
-          userId: user.id
-          embed: if thread.data?.extras?.deckId \
-                 then defaultEmbed.concat playerDeckEmbed
-                 else defaultEmbed
-        }, thread
-      .map Thread.sanitize null
+    CacheService.preferCache key, ->\
+      Group.getById groupId, {preferCache: true}
+      .then ({gameKeys}) ->
+        Thread.getAll {
+          category, sort, language, groupId, skip, maxTimeUuid, limit
+        }
+        .map (thread) ->
+          EmbedService.embed {
+            userId: user.id
+            groupId
+            gameKeys
+            embed: if thread.data?.extras?.deckId \
+                   then defaultEmbed.concat playerDeckEmbed
+                   else defaultEmbed
+          }, thread
+        .map Thread.sanitize null
     , {
       expireSeconds: ONE_MINUTE_SECONDS
       category: CacheService.PREFIXES.THREADS_CATEGORY

@@ -5,6 +5,7 @@ User = require '../models/user'
 GroupUser = require '../models/group_user'
 ChatMessage = require '../models/chat_message'
 ThreadComment = require '../models/thread_comment'
+Thread = require '../models/thread'
 GroupAuditLog = require '../models/group_audit_log'
 Ban = require '../models/ban'
 Language = require '../models/language'
@@ -73,6 +74,7 @@ class BanCtrl
         Promise.all [
           ChatMessage.deleteAllByGroupIdAndUserId groupId, userId
           ThreadComment.deleteAllByCreatorId userId
+          Thread.deleteAllByCreatorId userId
         ]
 
   unbanByGroupIdAndUserId: ({userId, groupId}, {user}) ->
