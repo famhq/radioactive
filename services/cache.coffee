@@ -3,12 +3,14 @@ Promise = require 'bluebird'
 
 RedisService = require './redis'
 RedisPersistentService = require './redis_persistent'
+PubSub = require './pub_sub'
 config = require '../config'
 
 DEFAULT_CACHE_EXPIRE_SECONDS = 3600 * 24 * 30 # 30 days
 DEFAULT_LOCK_EXPIRE_SECONDS = 3600 * 24 * 40000 # 100+ years
-DEFAULT_REDLOCK_EXPIRE_SECONDS = 30
 ONE_HOUR_SECONDS = 3600
+ONE_MINUTE_SECONDS = 60
+PREFER_CACHE_PUB_SUB_TIMEOUT_MS = 30 * 1000
 
 PREFIXES =
   CHAT_USER: 'chat:user23'
@@ -16,10 +18,10 @@ PREFIXES =
   CHAT_GROUP_USER: 'chat:group_user6'
   THREAD_USER: 'thread:user1'
   THREAD_CREATOR: 'thread:creator3'
-  THREAD: 'thread:id:embedded2'
+  THREAD: 'thread:id:embedded3'
   THREAD_BY_ID: 'thread:id2'
   THREAD_DECK: 'thread:deck11'
-  THREAD_COMMENTS: 'thread:comments17'
+  THREAD_COMMENTS: 'thread:comments18'
   THREAD_COMMENT_COUNT: 'thread:comment_count1'
   THREADS_CATEGORY: 'threads5'
   CHAT_MESSAGE_DAILY_XP: 'chat_message:daily_xp'
@@ -92,7 +94,8 @@ PREFIXES =
   PLAYER_MIGRATE: 'player:migrate07'
   REFRESH_PLAYER_ID_LOCK: 'player:refresh_lock'
   FORTNITE_REFRESH_PLAYER_ID_LOCK: 'fortnite_player:refresh_lock1'
-  THREAD_COMMENTS_THREAD_ID: 'thread_comments:thread_id17'
+  THREAD_COMMENTS_THREAD_ID: 'thread_comments:thread_id18'
+  THREAD_COMMENTS_THREAD_ID_CATEGORY: 'thread_comments:thread_id:category'
   TRADE_SEND_ITEMS: 'trade:send_items5'
   TRADE_RECEIVE_ITEMS: 'trade:receive_items5'
   USER_BLOCKS: 'user_blocks:all'
@@ -236,36 +239,32 @@ class CacheService
     key = "#{PREFIXES.CURSOR}:#{cursor}"
     @set key, value, {expireSeconds: ONE_HOUR_SECONDS}
 
-  # for locking
-  runOnce: (key, fn, {expireSeconds, lockedFn} = {}) ->
+  lock: (key, fn, {expireSeconds, unlockWhenCompleted, throwOnLocked} = {}) =>
     key = config.REDIS.PREFIX + ':' + key
     expireSeconds ?= DEFAULT_LOCK_EXPIRE_SECONDS
-    # TODO: use redlock
-    setVal = '1'
-    RedisService.set key, setVal, 'NX', 'EX', expireSeconds
-    .then (value) ->
-      if value isnt null
-        fn()
-      else
-        lockedFn?()
-
-
-  lock: (key, fn, {expireSeconds, unlockWhenCompleted} = {}) =>
-    key = config.REDIS.PREFIX + ':' + key
-    expireSeconds ?= DEFAULT_REDLOCK_EXPIRE_SECONDS
     @redlock.lock key, expireSeconds * 1000
     .then (lock) ->
-      fn(lock)?.tap?(->
-        if unlockWhenCompleted
+      fnResult = fn(lock)
+      if not fnResult?.tap
+        return fnResult
+      else
+        fnResult.tap ->
+          if unlockWhenCompleted
+            lock.unlock()
+        .catch (err) ->
           lock.unlock()
-      ).catch? (err) ->
-        lock.unlock()
-        throw {fnError: err}
+          throw {fnError: err}
     .catch (err) ->
       if err.fnError
         throw err.fnError
+      else if throwOnLocked
+        throw {isLocked: true}
       # don't pass back other (redlock) errors
 
+  # run fn that returns promise and cache result
+  # if many request before result is ready, then all subscribe/wait for result
+  # if we want to reduce load / network on pubsub, we could have it be
+  # an option to use pubsub
   preferCache: (key, fn, {expireSeconds, ignoreNull, category} = {}) =>
     rawKey = key
     key = config.REDIS.PREFIX + ':' + key
@@ -276,7 +275,7 @@ class CacheService
       @tempSetAdd categoryKey, rawKey
 
     RedisService.get key
-    .then (value) ->
+    .then (value) =>
       if value?
         try
           return JSON.parse value
@@ -284,13 +283,33 @@ class CacheService
           console.log 'error parsing', key, value
           return null
 
-      fn().then (value) ->
-        if (value isnt null and value isnt undefined) or not ignoreNull
-          RedisService.set key, JSON.stringify value
-          .then ->
-            RedisService.expire key, expireSeconds
+      pubSubChannel = "#{key}:pubsub"
 
-        return value
+      @lock "#{key}:run_lock", ->
+        fn().then (value) ->
+          if (value isnt null and value isnt undefined) or not ignoreNull
+            RedisService.set key, JSON.stringify value
+            .then ->
+              RedisService.expire key, expireSeconds
+          PubSub.publish [pubSubChannel], value
+          return value
+      , {
+        unlockWhenCompleted: true, expireSeconds: ONE_MINUTE_SECONDS
+        throwOnLocked: true
+      }
+      .catch (err) ->
+        if err?.isLocked
+          new Promise (resolve) ->
+            subscription = PubSub.subscribe pubSubChannel, (value) ->
+              subscription?.unsubscribe?()
+              clearTimeout unsubscribeTimeout
+              resolve value
+            unsubscribeTimeout = setTimeout ->
+              subscription?.unsubscribe?()
+            , PREFER_CACHE_PUB_SUB_TIMEOUT_MS
+
+        else
+          throw err
 
   deleteByCategory: (category) =>
     categoryKey = 'category:' + category

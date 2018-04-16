@@ -98,7 +98,7 @@ class ThreadCtrl
 
     thread.category ?= 'general'
 
-    @checkIfBanned config.EMPTY_UUID, ip, user.id, router
+    @checkIfBanned groupId, ip, user.id, router
     .then =>
       isProfane = ProfanityService.isProfane(
         thread.data.title + thread.data.body
@@ -240,12 +240,6 @@ class ThreadCtrl
         threads
 
   getById: ({id, language}, {user}) ->
-    # legacy. rm in mid feb 2018
-    if id is '7a39b079-e6ce-11e7-9642-4b5962cd09d3' # cr-es
-      id = 'b3d49e6f-3193-417e-a584-beb082196a2c'
-    else if id is '90c06cb0-86ce-4ed6-9257-f36633db59c2' # bruno
-      id = 'fcb35890-f40e-11e7-9af5-920aa1303bef'
-
     key = CacheService.PREFIXES.THREAD + ':' + id
 
     CacheService.preferCache key, ->

@@ -337,7 +337,7 @@ class ClashRoyaleService
 
       .tap =>
         key = CacheService.PREFIXES.USER_DAILY_DATA_PUSH + ':' + id
-        CacheService.runOnce key, =>
+        CacheService.lock key, =>
           @sendDailyPush {playerId: id, isAuto}
           .catch (err) ->
             console.log 'push err', err

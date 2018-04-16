@@ -217,12 +217,14 @@ class ThreadCommentModel
       .from 'thread_comments_by_creatorId'
       .where 'creatorId', '=', threadComment.creatorId
       .andWhere 'timeBucket', '=', threadComment.timeBucket
+      .andWhere 'timeUuid', '=', threadComment.timeUuid
       .run()
 
       cknex().delete()
       .from 'thread_comments_counter_by_creatorId'
       .where 'creatorId', '=', threadComment.creatorId
       .andWhere 'timeBucket', '=', threadComment.timeBucket
+      .andWhere 'timeUuid', '=', threadComment.timeUuid
       .run()
     ]
 

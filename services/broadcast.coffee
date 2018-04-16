@@ -94,7 +94,7 @@ class BroadcastService
     if message.allowRebroadcast
       @start message, {isTestRun}
     else
-      CacheService.runOnce key, =>
+      CacheService.lock key, =>
         @start message, {isTestRun}
 
 module.exports = new BroadcastService()

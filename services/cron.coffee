@@ -11,6 +11,7 @@ FortniteService = require './game_fortnite'
 Thread = require '../models/thread'
 Item = require '../models/item'
 Product = require '../models/product'
+Iap = require '../models/iap'
 EarnAction = require '../models/earn_action'
 SpecialOffer = require '../models/special_offer'
 ClashRoyaleDeck = require '../models/clash_royale_deck'
@@ -21,6 +22,7 @@ Ban = require '../models/ban'
 NewsRoyaleService = require '../services/news_royale'
 allItems = require '../resources/data/items'
 allProducts = require '../resources/data/products'
+allIap = require '../resources/data/iap'
 allEarnActions = require '../resources/data/earn_actions'
 allSpecialOffers = require '../resources/data/special_offers'
 r = require './rethinkdb'
@@ -43,7 +45,7 @@ class CronService
             ClashRoyaleService.updateAutoRefreshPlayers()
 
     @addCron 'quarterMinute', '15 * * * * *', ->
-      EarnAction.batchUpsert allEarnActions
+      Iap.batchUpsert allIap
       CleanupService.clean()
       Thread.updateScores 'stale'
 
@@ -53,8 +55,10 @@ class CronService
 
     @addCron 'tenMin', '0 */10 * * * *', ->
       Product.batchUpsert allProducts
+      # Iap.batchUpsert allIap
       Item.batchUpsert allItems
       SpecialOffer.batchUpsert allSpecialOffers
+      EarnAction.batchUpsert allEarnActions
       Thread.updateScores 'time'
       VideoDiscoveryService.updateGroupVideos config.GROUPS.PLAY_HARD.ID
       VideoDiscoveryService.updateGroupVideos config.GROUPS.NICKATNYTE.ID
@@ -72,7 +76,7 @@ class CronService
     @crons.push new CronJob {
       cronTime: time
       onTick: ->
-        CacheService.runOnce(key, fn, {
+        CacheService.lock(key, fn, {
           # if server times get offset by >= 30 seconds, crons get run twice...
           # so this is not guaranteed to run just once
           expireSeconds: THIRTY_SECONDS

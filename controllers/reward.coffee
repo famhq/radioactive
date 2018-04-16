@@ -469,7 +469,7 @@ class RewardCtrl
   incrementAttemptsByNetworkAndOfferId: ({network, offerId}, {user}) ->
     prefix = CacheService.PREFIXES.REWARD_INCREMENT
     key = "#{prefix}:#{network}:#{offerId}:#{user.id}"
-    CacheService.runOnce key, ->
+    CacheService.lock key, ->
       RewardAttempt.incrementByNetworkAndOfferId network, offerId, 'attempts'
     , {expireSeconds: THREE_HOURS_S}
 

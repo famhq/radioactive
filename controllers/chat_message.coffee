@@ -461,31 +461,6 @@ class ChatMessageCtrl
           initialPostFn: (item) ->
             prepareFn item, {gameKeys: group?.gameKeys}
         }
-        .then (chatMessages) =>
-          # TODO: rm after 3/1/2018.
-          if not maxTimeUuid and _.isEmpty(chatMessages) and
-              conversation.data?.legacyId
-            @_migrateChatMessages conversation.data.legacyId, conversation.id
-          else
-            chatMessages
-
-  _migrateChatMessages: (legacyConversationId, newId) ->
-    # TODO: lock for a day
-    key = 'conversation:migrate_chat_messages6:' + newId
-    CacheService.runOnce key, ->
-      ChatMessage.getAllByConversationId(legacyConversationId, {limit: 1000})
-      .tap (chatMessages) ->
-        Promise.map chatMessages, (message) ->
-          # hacky https://github.com/datastax/nodejs-driver/pull/243
-          message = _.defaults {conversationId: newId}, message
-          delete message.get
-          delete message.values
-          delete message.keys
-          delete message.forEach
-          ChatMessage.upsert message, {isUpdate: true}
-        , {concurrency: 30}
-      .map prepareFn
-    , {expireSeconds: 3600 * 24}
 
 
   uploadImage: ({}, {user, file}) ->

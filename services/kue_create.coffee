@@ -21,7 +21,7 @@ JOB_TYPES =
   AUTO_REFRESH_PLAYER: 'radioactive:auto_refresh_player'
   PRODUCT_UNLOCKED: 'radioactive:product_unlocked'
 
-CacheService.runOnce CacheService.KEYS.KUE_WATCH_STUCK, ->
+CacheService.lock CacheService.KEYS.KUE_WATCH_STUCK, ->
   console.log 'watching stuck jobs'
   KueService.watchStuckJobs STUCK_JOB_INTERVAL_MS
 , {expireSeconds: KUE_LOCK_EXPIRE_SECONDS}

@@ -112,10 +112,9 @@ class ThreadCommentCtrl
           parentId: parentId
           parentType: parentType
       .then ->
-        prefix = CacheService.PREFIXES.THREAD_COMMENTS_THREAD_ID
+        prefix = CacheService.PREFIXES.THREAD_COMMENTS_THREAD_ID_CATEGORY
         Promise.all [
-          CacheService.deleteByKey "#{prefix}:#{threadId}:popular"
-          CacheService.deleteByKey "#{prefix}:#{threadId}:new"
+          CacheService.deleteByCategory "#{prefix}:#{threadId}"
           EarnAction.completeActionByGroupIdAndUserId(
             thread.groupId
             user.id
@@ -127,16 +126,12 @@ class ThreadCommentCtrl
           {rewards}
 
   getAllByThreadId: ({threadId, sort, skip, limit, groupId}, {user}) ->
-    # legacy. rm in mid feb 2018
-    if threadId is 'b3d49e6f-3193-417e-a584-beb082196a2c' # cr-es
-      threadId = '7a39b079-e6ce-11e7-9642-4b5962cd09d3'
-    else if threadId is 'fcb35890-f40e-11e7-9af5-920aa1303bef' # bruno
-      threadId = '90c06cb0-86ce-4ed6-9257-f36633db59c2'
-
     sort ?= 'popular'
     skip ?= 0
     prefix = CacheService.PREFIXES.THREAD_COMMENTS_THREAD_ID
-    key = "#{prefix}:#{threadId}:#{sort}"
+    categoryPrefix = CacheService.PREFIXES.THREAD_COMMENTS_THREAD_ID_CATEGORY
+    key = "#{prefix}:#{threadId}:#{sort}:#{skip}:#{limit}"
+    category = "#{categoryPrefix}:#{threadId}"
     CacheService.preferCache key, ->
       Group.getById groupId, {preferCache: true}
       .then ({gameKeys}) ->
@@ -144,7 +139,7 @@ class ThreadCommentCtrl
         .map EmbedService.embed {embed: defaultEmbed, groupId, gameKeys}
       .then (allComments) ->
         getCommentsTree allComments, threadId, {sort, skip, limit}
-    , {expireSeconds: TEN_MINUTES_SECONDS}
+    , {category, expireSeconds: TEN_MINUTES_SECONDS}
     .then (comments) ->
       comments = comments?.slice skip, skip + limit
       ThreadVote.getAllByCreatorIdAndParentTopId user.id, threadId
@@ -170,11 +165,8 @@ class ThreadCommentCtrl
 
       ThreadComment.deleteByThreadComment threadComment
       .tap ->
-        prefix = CacheService.PREFIXES.THREAD_COMMENTS_THREAD_ID
-        Promise.all [
-          CacheService.deleteByKey "#{prefix}:#{threadComment.threadId}:popular"
-          CacheService.deleteByKey "#{prefix}:#{threadComment.threadId}:new"
-        ]
+        prefix = CacheService.PREFIXES.THREAD_COMMENTS_THREAD_ID_CATEGORY
+        CacheService.deleteByCategory "#{prefix}:#{threadComment.threadId}"
 
   deleteAllByGroupIdAndUserId: ({groupId, userId, threadId}, {user}) ->
     permission = GroupUser.PERMISSIONS.DELETE_FORUM_COMMENT
@@ -186,10 +178,7 @@ class ThreadCommentCtrl
       ThreadComment.deleteAllByCreatorId userId
       .tap ->
         if threadId
-          prefix = CacheService.PREFIXES.THREAD_COMMENTS_THREAD_ID
-          Promise.all [
-            CacheService.deleteByKey "#{prefix}:#{threadId}:popular"
-            CacheService.deleteByKey "#{prefix}:#{threadId}:new"
-          ]
+          prefix = CacheService.PREFIXES.THREAD_COMMENTS_THREAD_ID_CATEGORY
+          CacheService.deleteByCategory "#{prefix}:#{threadId}"
 
 module.exports = new ThreadCommentCtrl()

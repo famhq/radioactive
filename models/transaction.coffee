@@ -1,55 +1,52 @@
 _ = require 'lodash'
 
-uuid = require 'node-uuid'
-
-r = require '../services/rethinkdb'
-
-TRANSACTION_ID_INDEX = 'transactionId'
+cknex = require '../services/cknex'
 
 defaultTransaction = (transaction) ->
   unless transaction?
     return null
 
   _.defaults transaction, {
-    id: uuid.v4()
-    userId: null
-    time: new Date()
-    amount: 0.00
-    # productId: null
+    id: cknex.getTimeUuid()
+    amountCents: 0
     isCompleted: false
     isFromPending: false
   }
 
-TRANSACTIONS_TABLE = 'transactions'
+defaultTransactionOutput: (transaction) ->
+  transaction.time = transaction.id.getDate()
+  transaction
 
+tables = [
+  {
+    name: 'transactions'
+    keyspace: 'starfire'
+    fields:
+      id: 'timeuuid'
+      amountCents: 'int'
+      isCompleted: 'boolean'
+      isFromPending: 'boolean'
+    primaryKey:
+      partitionKey: ['id']
+  }
+]
 class TransactionModel
-  RETHINK_TABLES: [
-    {
-      name: TRANSACTIONS_TABLE
-      indexes: [
-        {
-          name: TRANSACTION_ID_INDEX
-        }
-      ]
-    }
-  ]
+  SCYLLA_TABLES: tables
 
-  create: (transaction) ->
+  upsert: (transaction) ->
     transaction = defaultTransaction transaction
 
-    r.table TRANSACTIONS_TABLE
-    .insert transaction
+    cknex().update 'transactions'
+    .set _.omit transaction, ['id']
+    .where 'id', '=', transaction.id
     .run()
-    .then ->
-      transaction
 
-  getByTransactionId: (transactionId) ->
-    r.table TRANSACTIONS_TABLE
-    .getAll transactionId, {index: TRANSACTION_ID_INDEX}
-    .filter {isCompleted: true}
-    .nth 0
-    .default null
-    .run()
+  getById: (id) ->
+    cknex().select '*'
+    .from 'transactions'
+    .where 'groupId', '=', groupId
+    .run {isSingle: true}
+    .then defaultTransactionOutput
 
 
 
