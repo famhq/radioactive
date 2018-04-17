@@ -66,8 +66,13 @@ class GroupRoleCtrl
 
   updatePermissions: (params, {user}) ->
     {groupId, roleId, channelId, permissions} = params
-    GroupUser.hasPermissionByGroupIdAndUser groupId, user, [
+
+    isSettingAdminPermission = permissions.admin
+
+    GroupUser.hasPermissionByGroupIdAndUser groupId, user, _.filter [
       GroupUser.PERMISSIONS.MANAGE_ROLE
+      if isSettingAdminPermission
+        GroupUser.PERMISSIONS.ADMIN
     ]
     .then (hasPermission) ->
       unless hasPermission

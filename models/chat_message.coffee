@@ -182,7 +182,11 @@ class ChatMessageModel extends Stream
 
   getAllByConversationId: (conversationId, options = {}) =>
     {limit, isStreamed, emit, socket, route, initialPostFn, postFn,
-      minTime, maxTimeUuid, reverse} = options
+      minTimeUuid, maxTimeUuid, reverse} = options
+
+    minTime = if minTimeUuid \
+              then cknex.getTimeUuidFromString(minTimeUuid).getDate()
+              else undefined
 
     maxTime = if maxTimeUuid \
               then cknex.getTimeUuidFromString(maxTimeUuid).getDate()
@@ -192,11 +196,16 @@ class ChatMessageModel extends Stream
       'week', moment(minTime or maxTime)
     )
 
+    console.log 'go', minTimeUuid
+
     get = (timeBucket) ->
       q = cknex().select '*'
       .from 'chat_messages_by_conversationId'
       .where 'conversationId', '=', conversationId
       .andWhere 'timeBucket', '=', timeBucket
+
+      if minTimeUuid
+        q.andWhere 'timeUuid', '>=', minTimeUuid
 
       if maxTimeUuid
         q.andWhere 'timeUuid', '<', maxTimeUuid

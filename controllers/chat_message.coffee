@@ -420,7 +420,7 @@ class ChatMessageCtrl
     ChatMessage.getLastTimeByUserIdAndConversationId user.id, conversationId
 
   getAllByConversationId: (options, {user}, socketInfo) =>
-    {conversationId, maxTimeUuid, isStreamed} = options
+    {conversationId, minTimeUuid, maxTimeUuid, isStreamed} = options
     {emit, socket, route} = socketInfo
 
     Conversation.getById conversationId, {preferCache: true}
@@ -452,6 +452,7 @@ class ChatMessageCtrl
 
         ChatMessage.getAllByConversationId conversationId, {
           limit: limit
+          minTimeUuid: minTimeUuid
           maxTimeUuid: maxTimeUuid
           isStreamed: isStreamed
           emit: emit

@@ -8,30 +8,32 @@ CacheService = require '../services/cache'
 UNREAD_TTL = 3600 * 24 * 365 # 1y
 READ_TTL = 3600 * 24 * 7 # 1w
 
-defaultGroupNotification = (groupNotification) ->
-  unless groupNotification?
+defaultNotification = (notification) ->
+  unless notification?
     return null
 
-  if groupNotification.data
-    groupNotification.data = JSON.stringify groupNotification.data
+  if notification.data
+    notification.data = JSON.stringify notification.data
 
-  Object.assign {id: cknex.getTimeUuid(), isRead: false}, groupNotification
+  Object.assign {id: cknex.getTimeUuid(), isRead: false}, notification
 
-defaultGroupNotificationOutput = (groupNotification) ->
-  unless groupNotification?
+defaultNotificationOutput = (notification) ->
+  unless notification?
     return null
 
-  if groupNotification.data
-    groupNotification.data = try
-      JSON.parse groupNotification.data
+  if notification.data
+    notification.data = try
+      JSON.parse notification.data
     catch err
       {}
 
-  groupNotification
+  notification.time = notification.id.getDate()
+
+  notification
 
 ###
 notification when mentioned (@everyone seems pretty expensive...) FIXME: solution
-  - could have a separate table for group_notifications_by_roleId and merge
+  - could have a separate table for notifications_by_roleId and merge
     results. create new by_userId when the role one is read, and prefer user ones when merging
 
 notification when self mentioned in conversation: easy
@@ -41,7 +43,7 @@ trade notification i guess by groupId for now
 
 tables = [
   {
-    name: 'group_notifications_by_userId'
+    name: 'notifications_by_userId'
     keyspace: 'starfire'
     fields:
       id: 'timeuuid'
@@ -59,7 +61,7 @@ tables = [
     withClusteringOrderBy: [['groupId', 'desc'], ['id', 'desc']]
   }
   {
-    name: 'group_notifications_by_userId_and_uniqueId'
+    name: 'notifications_by_userId_and_uniqueId'
     keyspace: 'starfire'
     fields:
       id: 'timeuuid'
@@ -71,7 +73,7 @@ tables = [
       clusteringColumns: ['uniqueId']
   }
   {
-    name: 'group_notifications_by_roleId'
+    name: 'notifications_by_roleId'
     keyspace: 'starfire'
     fields:
       id: 'timeuuid'
@@ -90,29 +92,30 @@ tables = [
   }
 ]
 
-class GroupNotificationModel
+class NotificationModel
   SCYLLA_TABLES: tables
 
-  upsert: (groupNotification) =>
-    groupNotification = defaultGroupNotification groupNotification
+  upsert: (notification) =>
+    notification = defaultNotification notification
 
-    (if groupNotification.uniqueId
+    (if notification.uniqueId
       @getByUserIdAndUniqueId(
-        groupNotification.userId, groupNotification.uniqueId
+        notification.userId, notification.uniqueId
       )
       .tap (existingNotification) =>
         if existingNotification
-          @deleteByGroupNotification existingNotification
+          @deleteByNotification existingNotification
       .then ->
-        groupNotification
+        delete notification.time
+        notification
     else
-      groupNotification.uniqueId = uuid.v4()
-      Promise.resolve groupNotification
+      notification.uniqueId = uuid.v4()
+      Promise.resolve notification
     )
-    .then (groupNotification) ->
+    .then (notification) ->
       # FIXME: i think lodash or cassanknex is adding these, but can't find where...
-      setUser = _.omit groupNotification, ['userId', 'groupId', 'id']
-      setRole = _.omit groupNotification, ['roleId', 'id']
+      setUser = _.omit notification, ['userId', 'groupId', 'id']
+      setRole = _.omit notification, ['roleId', 'id']
       delete setUser.get
       delete setUser.values
       delete setUser.keys
@@ -122,94 +125,94 @@ class GroupNotificationModel
       delete setRole.keys
       delete setRole.forEach
 
-      if groupNotification.isRead
+      if notification.isRead
         ttl = READ_TTL
       else
         ttl = UNREAD_TTL
       Promise.all _.filter _.flatten [
-        if groupNotification.userId
+        if notification.userId
           [
-            cknex().update 'group_notifications_by_userId'
+            cknex().update 'notifications_by_userId'
             .set setUser
-            .where 'userId', '=', groupNotification.userId
-            .andWhere 'groupId', '=', groupNotification.groupId
-            .andWhere 'id', '=', groupNotification.id
+            .where 'userId', '=', notification.userId
+            .andWhere 'groupId', '=', notification.groupId
+            .andWhere 'id', '=', notification.id
             .usingTTL ttl
             .run()
 
-            cknex().update 'group_notifications_by_userId_and_uniqueId'
-            .set _.pick groupNotification, ['id' ,'groupId']
-            .where 'userId', '=', groupNotification.userId
-            .andWhere 'uniqueId', '=', groupNotification.uniqueId
+            cknex().update 'notifications_by_userId_and_uniqueId'
+            .set _.pick notification, ['id' ,'groupId']
+            .where 'userId', '=', notification.userId
+            .andWhere 'uniqueId', '=', notification.uniqueId
             .usingTTL ttl
             .run()
          ]
 
-        if groupNotification.roleId
-          cknex().update 'group_notifications_by_roleId'
+        if notification.roleId
+          cknex().update 'notifications_by_roleId'
           .set setRole
-          .where 'roleId', '=', groupNotification.roleId
-          .andWhere 'id', '=', groupNotification.id
+          .where 'roleId', '=', notification.roleId
+          .andWhere 'id', '=', notification.id
           .usingTTL ttl
           .run()
       ]
       .then ->
-        groupNotification
+        notification
 
   getAllByUserId: (userId) ->
     cknex().select '*'
-    .from 'group_notifications_by_userId'
+    .from 'notifications_by_userId'
     .where 'userId', '=', userId
     .run()
-    .map defaultGroupNotificationOutput
+    .map defaultNotificationOutput
 
   getByUserIdAndUniqueId: (userId, uniqueId) ->
     cknex().select '*'
-    .from 'group_notifications_by_userId_and_uniqueId'
+    .from 'notifications_by_userId_and_uniqueId'
     .where 'userId', '=', userId
     .andWhere 'uniqueId', '=', uniqueId
     .run {isSingle: true}
-    .then defaultGroupNotificationOutput
+    .then defaultNotificationOutput
 
   getAllByUserIdAndGroupId: (userId, groupId) ->
     cknex().select '*'
-    .from 'group_notifications_by_userId'
+    .from 'notifications_by_userId'
     .where 'userId', '=', userId
     .andWhere 'groupId', '=', groupId
     .run()
-    .map defaultGroupNotificationOutput
+    .map defaultNotificationOutput
 
   getAllByRoleId: (roleId) ->
     cknex().select '*'
-    .from 'group_notifications_by_roleId'
+    .from 'notifications_by_roleId'
     .where 'roleId', '=', roleId
     .run()
-    .map defaultGroupNotificationOutput
+    .map defaultNotificationOutput
 
-  deleteByGroupNotification: (groupNotification) ->
+  deleteByNotification: (notification) ->
     Promise.all _.filter _.flatten [
-      if groupNotification.userId
+      if notification.userId
         [
           cknex().delete()
-          .from 'group_notifications_by_userId'
-          .where 'userId', '=', groupNotification.userId
-          .andWhere 'groupId', '=', groupNotification.groupId
-          .andWhere 'id', '=', groupNotification.id
+          .from 'notifications_by_userId'
+          .where 'userId', '=', notification.userId
+          .andWhere 'groupId', '=', notification.groupId
+          .andWhere 'id', '=', notification.id
           .run()
 
           cknex().delete()
-          .from 'group_notifications_by_userId_and_uniqueId'
-          .where 'userId', '=', groupNotification.userId
-          .andWhere 'uniqueId', '=', groupNotification.uniqueId
+          .from 'notifications_by_userId_and_uniqueId'
+          .where 'userId', '=', notification.userId
+          .andWhere 'uniqueId', '=', notification.uniqueId
           .run()
        ]
 
-      if groupNotification.roleId
+      if notification.roleId
         cknex().delete()
-        .from 'group_notifications_by_roleId'
-        .where 'roleId', '=', groupNotification.roleId
-        .andWhere 'id', '=', groupNotification.id
+        .from 'notifications_by_roleId'
+        .where 'roleId', '=', notification.roleId
+        .andWhere 'id', '=', notification.id
         .run()
     ]
 
-module.exports = new GroupNotificationModel()
+module.exports = new NotificationModel()

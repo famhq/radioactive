@@ -67,13 +67,10 @@ config =
   # also in fam
   DEFAULT_PERMISSIONS:
     readMessage: true
-    manageChannel: false
-    managePage: false
     sendMessage: true
     sendLink: true
     sendImage: true
     sendAddon: true
-    bypassSlowMode: false
   DEFAULT_NOTIFICATIONS:
     chatMessage: true
     chatMention: true

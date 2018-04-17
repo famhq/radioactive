@@ -18,6 +18,7 @@ EventCtrl = require './controllers/event'
 FortniteWeaponCtrl = require './controllers/fortnite_weapon'
 ItemCtrl = require './controllers/item'
 BanCtrl = require './controllers/ban'
+NotificationCtrl = require './controllers/notification'
 NpsCtrl = require './controllers/nps'
 PaymentCtrl = require './controllers/payment'
 PushTokenCtrl = require './controllers/push_token'
@@ -310,6 +311,8 @@ module.exports = router
   authed ClashRoyaleMatchCtrl.getAllByUserId
 .on 'clashRoyaleMatches.getAllByPlayerId',
   authed ClashRoyaleMatchCtrl.getAllByPlayerId
+
+.on 'notifications.getAll', authed NotificationCtrl.getAll
 
 .on 'nps.create', authed NpsCtrl.create
 

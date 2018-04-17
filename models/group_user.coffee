@@ -111,6 +111,7 @@ tables = [
 ]
 
 PERMISSIONS =
+  ADMIN: 'admin'
   MANAGE_CHANNEL: 'manageChannel'
   MANAGE_PAGE: 'managePage'
   READ_MESSAGE: 'readMessage'

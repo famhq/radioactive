@@ -19,9 +19,9 @@ class ScyllaSetupService
         if config.ENV is config.ENVS.DEV
           createTables = _.map _.filter(tables, ({name}) ->
             name in [
-              'group_notifications_by_roleId'
-              'group_notifications_by_userId'
-              'group_notifications_by_userId_and_uniqueId'
+              'notifications_by_roleId'
+              'notifications_by_userId'
+              'notifications_by_userId_and_uniqueId'
               # 'iap_by_platform'
               # 'transactions'
               # 'connections_by_userId'

@@ -10,7 +10,7 @@ randomSeed = require 'random-seed'
 config = require '../config'
 EmbedService = require './embed'
 User = require '../models/user'
-GroupNotification = require '../models/group_notification'
+Notification = require '../models/notification'
 PushToken = require '../models/push_token'
 PushTopic = require '../models/push_topic'
 Event = require '../models/event'
@@ -296,13 +296,13 @@ class PushNotificationService
         replacements: message.textObj.replacements
       }
 
-    notificationData = {path: message.path}
+    notificationData = {path: message.data.path}
     if conversation
       notificationData.conversationId = conversation.id
       if conversation.type is 'pm'
         uniqueId = "pm-#{conversation.id}"
 
-    GroupNotification.upsert {
+    Notification.upsert {
       userId: user.id
       groupId: groupId or config.EMPTY_UUID
       uniqueId: uniqueId

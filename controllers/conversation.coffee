@@ -4,7 +4,7 @@ Promise = require 'bluebird'
 
 User = require '../models/user'
 Conversation = require '../models/conversation'
-GroupNotification = require '../models/group_notification'
+Notification = require '../models/notification'
 Group = require '../models/group'
 GroupAuditLog = require '../models/group_audit_log'
 GroupUser = require '../models/group_user'
@@ -101,7 +101,7 @@ class ConversationCtrl
 
       Conversation.getAllByGroupId groupId
 
-      GroupNotification.getAllByUserIdAndGroupId user.id, groupId
+      Notification.getAllByUserIdAndGroupId user.id, groupId
     ]
     .then ([meGroupUser, conversations, notifications]) ->
       conversations = _.filter conversations, (conversation) ->
@@ -120,12 +120,12 @@ class ConversationCtrl
         _.defaults {notificationCount}, conversation
 
   markReadById: ({id, groupId}, {user}) ->
-    GroupNotification.getAllByUserIdAndGroupId user.id, groupId
+    Notification.getAllByUserIdAndGroupId user.id, groupId
     .then (notifications) ->
       conversationNotifications = _.filter notifications, ({data, isRead}) ->
         data?.conversationId is id and not isRead
       Promise.map conversationNotifications, (notification) ->
-        GroupNotification.upsert Object.assign notification, {isRead: true}
+        Notification.upsert Object.assign notification, {isRead: true}
 
 
   getById: ({id}, {user}) ->
