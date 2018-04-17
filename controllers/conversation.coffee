@@ -1,8 +1,10 @@
 _ = require 'lodash'
 router = require 'exoid-router'
+Promise = require 'bluebird'
 
 User = require '../models/user'
 Conversation = require '../models/conversation'
+GroupNotification = require '../models/group_notification'
 Group = require '../models/group'
 GroupAuditLog = require '../models/group_audit_log'
 GroupUser = require '../models/group_user'
@@ -98,15 +100,33 @@ class ConversationCtrl
       .then EmbedService.embed {embed: [EmbedService.TYPES.GROUP_USER.ROLES]}
 
       Conversation.getAllByGroupId groupId
+
+      GroupNotification.getAllByUserIdAndGroupId user.id, groupId
     ]
-    .then ([meGroupUser, conversations]) ->
+    .then ([meGroupUser, conversations, notifications]) ->
       conversations = _.filter conversations, (conversation) ->
         GroupUser.hasPermission {
           meGroupUser
           permissions: [GroupUser.PERMISSIONS.READ_MESSAGE]
           channelId: conversation.id
         }
-      _.map conversations, Conversation.sanitize null
+
+      # TODO: more efficient solution?
+      _.map conversations, (conversation) ->
+        conversation = Conversation.sanitize null, conversation
+        notificationCount = _.filter(notifications, ({data, isRead}) ->
+          data?.conversationId is conversation.id and not isRead
+        )?.length or 0
+        _.defaults {notificationCount}, conversation
+
+  markReadById: ({id, groupId}, {user}) ->
+    GroupNotification.getAllByUserIdAndGroupId user.id, groupId
+    .then (notifications) ->
+      conversationNotifications = _.filter notifications, ({data, isRead}) ->
+        data?.conversationId is id and not isRead
+      Promise.map conversationNotifications, (notification) ->
+        GroupNotification.upsert Object.assign notification, {isRead: true}
+
 
   getById: ({id}, {user}) ->
     Conversation.getById id

@@ -28,6 +28,7 @@ defaultConversationOutput = (conversation) ->
     {}
 
   conversation.userIds = _.map conversation.userIds, (userId) -> "#{userId}"
+  conversation.id = "#{conversation.id}"
   if conversation.userId
     conversation.userId = "#{conversation.userId}"
   if conversation.groupId

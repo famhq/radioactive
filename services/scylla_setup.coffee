@@ -9,7 +9,7 @@ config = require '../config'
 
 class ScyllaSetupService
   setup: (tables) =>
-    CacheService.lock 'scylla_setup1', =>
+    CacheService.lock 'scylla_setup8', =>
       Promise.all [
         @createKeyspaceIfNotExists 'starfire'
         @createKeyspaceIfNotExists 'clash_royale'
@@ -19,8 +19,11 @@ class ScyllaSetupService
         if config.ENV is config.ENVS.DEV
           createTables = _.map _.filter(tables, ({name}) ->
             name in [
-              'iap_by_platform'
-              'transactions'
+              'group_notifications_by_roleId'
+              'group_notifications_by_userId'
+              'group_notifications_by_userId_and_uniqueId'
+              # 'iap_by_platform'
+              # 'transactions'
               # 'connections_by_userId'
               # 'earn_transactions'
               # 'earn_actions'
@@ -84,10 +87,13 @@ class ScyllaSetupService
       q.primary table.primaryKey.partitionKey
 
     if table.withClusteringOrderBy
-      q.withClusteringOrderBy(
-        table.withClusteringOrderBy[0]
-        table.withClusteringOrderBy[1]
-      )
+      unless _.isArray table.withClusteringOrderBy[0]
+        table.withClusteringOrderBy = [table.withClusteringOrderBy]
+      _.map table.withClusteringOrderBy, (orderBy) ->
+        q.withClusteringOrderBy(
+          orderBy[0]
+          orderBy[1]
+        )
     q.run()
 
 module.exports = new ScyllaSetupService()

@@ -10,7 +10,7 @@ randomSeed = require 'random-seed'
 config = require '../config'
 EmbedService = require './embed'
 User = require '../models/user'
-Notification = require '../models/notification'
+GroupNotification = require '../models/group_notification'
 PushToken = require '../models/push_token'
 PushTopic = require '../models/push_topic'
 Event = require '../models/event'
@@ -200,10 +200,12 @@ class PushNotificationService
       Promise.all [
         @sendToUserIds mentionUserIds, mentionMessage, {
           skipMe, fromUserId: meUser.id, groupId: conversation.groupId
+          conversation: conversation
         }
 
         @sendToUserIds userIds, message, {
           skipMe, fromUserId: meUser.id, groupId: conversation.groupId
+          conversation: conversation
         }
 
         # TODO: have users subscribe to conversation
@@ -259,7 +261,8 @@ class PushNotificationService
   sendToEvent: (event, message, {skipMe, fromUserId, eventId} = {}) =>
     @sendToUserIds event.userIds, message, {skipMe, fromUserId, eventId}
 
-  sendToUserIds: (userIds, message, {skipMe, fromUserId, groupId} = {}) ->
+  sendToUserIds: (userIds, message, options = {}) ->
+    {skipMe, fromUserId, groupId, conversation} = options
     Promise.each userIds, (userId) =>
       unless userId is fromUserId
         user = User.getById userId, {preferCache: true}
@@ -267,9 +270,9 @@ class PushNotificationService
           user = user.then EmbedService.embed {embed: defaultUserEmbed, groupId}
         user
         .then (user) =>
-          @send user, message, {fromUserId}
+          @send user, message, {fromUserId, groupId, conversation}
 
-  send: (user, message, {fromUserId} = {}) =>
+  send: (user, message, {fromUserId, groupId, conversation} = {}) =>
     unless message and (
       message.title or message.text or message.titleObj or message.textObj
     )
@@ -293,14 +296,21 @@ class PushNotificationService
         replacements: message.textObj.replacements
       }
 
-    # if [@TYPES.NEWS, @TYPES.NEW_PROMOTION].indexOf(message.type) is -1
-    #   Notification.create {
-    #     title: message.title
-    #     text: message.text
-    #     data: message.data
-    #     type: message.type
-    #     userId: user.id
-    #   }
+    notificationData = {path: message.path}
+    if conversation
+      notificationData.conversationId = conversation.id
+      if conversation.type is 'pm'
+        uniqueId = "pm-#{conversation.id}"
+
+    GroupNotification.upsert {
+      userId: user.id
+      groupId: groupId or config.EMPTY_UUID
+      uniqueId: uniqueId
+      fromId: fromUserId
+      title: message.title
+      text: message.text
+      data: notificationData
+    }
 
     if user.groupUserSettings
       settings = _.defaults(
@@ -309,7 +319,7 @@ class PushNotificationService
       if not settings?[message.type]
         return Promise.resolve null
 
-    if false and config.ENV is config.ENVS.DEV and not message.forceDevSend
+    if config.ENV is config.ENVS.DEV and not message.forceDevSend
       console.log 'send notification', user.id, message
       return Promise.resolve()
 

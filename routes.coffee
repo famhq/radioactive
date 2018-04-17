@@ -283,6 +283,7 @@ module.exports = router
 
 .on 'conversations.create', authed ConversationCtrl.create
 .on 'conversations.updateById', authed ConversationCtrl.updateById
+.on 'conversations.markReadById', authed ConversationCtrl.markReadById
 .on 'conversations.getAll', authed ConversationCtrl.getAll
 .on 'conversations.getAllByGroupId', authed ConversationCtrl.getAllByGroupId
 .on 'conversations.getById', authed ConversationCtrl.getById
