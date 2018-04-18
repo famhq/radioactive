@@ -99,11 +99,12 @@ class ItemService
     itemKeys = _.map items, 'key'
     Item.batchIncrementCirculatingByItemKeys itemKeys
 
-    xpEarned = _.sumBy items, ({rarity}) ->
-      config.RARITY_XP[rarity]
-    GroupUser.incrementXpByGroupIdAndUserId(
-      groupId, userId, xpEarned
-    )
+    # TODO: re-enable when cheating is fixed
+    # xpEarned = _.sumBy items, ({rarity}) ->
+    #   config.RARITY_XP[rarity]
+    # GroupUser.incrementXpByGroupIdAndUserId(
+    #   groupId, userId, xpEarned
+    # )
 
     UserItem.batchIncrementByItemKeysAndUserId itemKeys, userId
 

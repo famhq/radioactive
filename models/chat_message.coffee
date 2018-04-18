@@ -196,8 +196,6 @@ class ChatMessageModel extends Stream
       'week', moment(minTime or maxTime)
     )
 
-    console.log 'go', minTimeUuid
-
     get = (timeBucket) ->
       q = cknex().select '*'
       .from 'chat_messages_by_conversationId'

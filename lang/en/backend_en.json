@@ -17,5 +17,6 @@
   "audit.updateRole": "updated role permissions for {role}",
   "audit.updateRoleChannel": "updated role permissions for {role} in {channel}",
   "audit.addChannel": "added the channel: {channel}",
-  "audit.updateChannel": "updated the channel: {channel}"
+  "audit.updateChannel": "updated the channel: {channel}",
+  "audit.giveXp": "gave {xp}xp to {name}"
 }

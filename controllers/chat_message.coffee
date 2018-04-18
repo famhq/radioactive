@@ -12,6 +12,7 @@ Group = require '../models/group'
 ChatMessage = require '../models/chat_message'
 Conversation = require '../models/conversation'
 GroupAuditLog = require '../models/group_audit_log'
+GroupRole = require '../models/group_role'
 GroupUser = require '../models/group_user'
 EarnAction = require '../models/earn_action'
 GroupUsersOnline = require '../models/group_users_online'
@@ -133,27 +134,29 @@ class ChatMessageCtrl
           unless hasSticker
             router.throw status: 401, info: 'sticker not found'
 
-  _sendPushNotificationsToMentions: (options) ->
-    {pushBody, conversation, user, mentionUsernames} = options
-    if conversation.groupId
-      path = {
-        key: 'groupChatConversation'
-        params:
-          groupId: conversation.groupId
-          conversationId: conversation.id
-      }
-    else
-      path = {
-        key: 'conversation'
-        params:
-          id: conversation.id
-      }
-
-  _sendPushNotifications: (conversation, user, body, isImage) ->
-    mentionUsernames = _.map _.uniq(body.match /\@[a-zA-Z0-9_-]+/g), (find) ->
+  _getMentions: (conversation, body) ->
+    mentions = _.map _.uniq(body.match /\@[a-zA-Z0-9_-]+/g), (find) ->
       find.replace('@', '').toLowerCase()
-    mentionUsernames = _.take mentionUsernames, 5 # so people don't abuse
+    mentions = _.take mentions, 5 # so people don't abuse
+    hasMentions = not _.isEmpty mentions
 
+    (if hasMentions and conversation.groupId
+      GroupRole.getAllByGroupId conversation.groupId, {preferCache: true}
+    else
+      Promise.resolve(null)
+    )
+    .then (roles) ->
+      # TODO: match roles
+      _.reduce mentions, (obj, mention) ->
+        if _.find roles, {name: mention}
+          obj.roleMentions.push mention
+        else
+          obj.userMentions.push mention
+        obj
+      , {roleMentions: [], userMentions: []}
+
+  _sendPushNotifications: (options = {}) ->
+    {conversation, user, body, userMentions, roleMentions, isImage} = options
     pushBody = if isImage then '[image]' else body
 
     Promise.all [
@@ -163,7 +166,7 @@ class ChatMessageCtrl
         Promise.resolve null
       )
 
-      Promise.map mentionUsernames, (username) ->
+      Promise.map userMentions, (username) ->
         User.getByUsername username, {preferCache: true}
         .then (user) ->
           user?.id
@@ -176,6 +179,7 @@ class ChatMessageCtrl
           meUser: user
           text: pushBody
           mentionUserIds: mentionUserIds
+          mentionRoles: roleMentions
         }).catch -> null
 
   _createCards: (body, isImage, chatMessageId) =>
@@ -341,7 +345,12 @@ class ChatMessageCtrl
           isRead: false
         }), {userId: user.id}
 
-        @_sendPushNotifications conversation, user, body, isImage
+        @_getMentions conversation, body
+        .then ({userMentions, roleMentions}) =>
+          console.log 'mentions', userMentions, 'role', roleMentions
+          @_sendPushNotifications {
+            conversation, user, body, userMentions, roleMentions, isImage
+          }
         null # don't block
 
   deleteById: ({id}, {user}) ->

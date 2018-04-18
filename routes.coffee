@@ -129,8 +129,7 @@ module.exports = router
 .on 'chatMessages.unsubscribeByConversationId',
   authed ChatMessageCtrl.unsubscribeByConversationId
 
-.on 'pushTokens.create', authed PushTokenCtrl.create
-.on 'pushTokens.updateByToken', authed PushTokenCtrl.updateByToken
+.on 'pushTokens.upsert', authed PushTokenCtrl.upsert
 .on 'pushTokens.subscribeToTopic', authed PushTokenCtrl.subscribeToTopic
 
 .on 'dynamicImage.getMeByImageKey',
@@ -188,6 +187,8 @@ module.exports = router
   authed GroupUserCtrl.addRoleByGroupIdAndUserId
 .on 'groupUsers.removeRoleByGroupIdAndUserId',
   authed GroupUserCtrl.removeRoleByGroupIdAndUserId
+.on 'groupUsers.addXpByGroupIdAndUserId',
+  authed GroupUserCtrl.addXpByGroupIdAndUserId
 .on 'groupUsers.getByGroupIdAndUserId',
   authed GroupUserCtrl.getByGroupIdAndUserId
 .on 'groupUsers.getTopByGroupId', authed GroupUserCtrl.getTopByGroupId

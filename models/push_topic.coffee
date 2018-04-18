@@ -96,6 +96,14 @@ class PushTopic
     .run()
     .map defaultPushTopicOutput
 
+  getAllByUserIdAndToken: (userId, token) ->
+    cknex().select '*'
+    .from 'push_topics_by_userId'
+    .where 'userId', '=', userId
+    .andWhere 'token', '=', token
+    .run()
+    .map defaultPushTopicOutput
+
   deleteByPushTopic: (pushTopic) ->
     cknex().delete()
     .from 'push_topics_by_userId'
@@ -112,13 +120,6 @@ class PushTopic
     .from 'push_topics_by_userId'
     .where 'userId', '=', pushToken.userId
     .andWhere 'token', '=', pushToken.token
-    .run()
-
-  deleteByUserIdAndToken: (userId, token) ->
-    cknex().delete()
-    .from 'push_topics_by_userId'
-    .where 'userId', '=', pushTopic.userId
-    .andWhere 'token', '=', pushTopic.token
     .run()
 
 module.exports = new PushTopic()

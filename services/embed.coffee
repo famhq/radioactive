@@ -447,12 +447,6 @@ embedFn = _.curry (props, object) ->
         .map embedFn {embed: [TYPES.USER.IS_ONLINE]}
         .map User.sanitizePublic null
 
-      when TYPES.GROUP.ME_GROUP_USER
-        embedded.meGroupUser = GroupUser.getByGroupIdAndUserId(
-          embedded.id, user.id
-        )
-        .then embedFn {embed: [TYPES.GROUP_USER.ROLES]}
-
       when TYPES.GROUP.CLAN
         if not _.isEmpty embedded.clanIds
           embedded.clan = Clan.getByClanIdAndGameKey(

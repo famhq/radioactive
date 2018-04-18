@@ -135,15 +135,17 @@ class GroupCtrl
 
       Group.removeUser groupId, userId
 
-  joinById: ({id}, {user, appKey}) ->
-    groupId = id
+  joinById: ({id, key}, {user}) ->
     userId = user.id
 
-    unless groupId
+    unless id or key
       router.throw {status: 404, info: 'Group not found'}
 
-    Group.getById groupId
-    .then (group) ->
+    (if id
+      Group.getById id
+    else
+      Group.getByKey key
+    ).then (group) ->
       unless group
         router.throw {status: 404, info: 'Group not found'}
 
@@ -152,30 +154,26 @@ class GroupCtrl
 
       name = User.getDisplayName user
 
-      if group.type isnt 'public'
-        PushNotificationService.sendToGroupTopic(group, {
-          titleObj:
-            key: 'newGroupMember.title'
-          textObj:
-            key: 'newGroupMember.text'
-            replacements: {name}
-          type: PushNotificationService.TYPES.GROUP
-          url: "https://#{config.CLIENT_HOST}"
-          path:
-            key: 'groupChat'
-            params:
-              id: group.id
-              gameKey: config.DEFAULT_GAME_KEY
-        }, {skipMe: true, meUserId: user.id}).catch -> null
+      # if group.type isnt 'public'
+      #   PushNotificationService.sendToGroupTopic(group, {
+      #     titleObj:
+      #       key: 'newGroupMember.title'
+      #     textObj:
+      #       key: 'newGroupMember.text'
+      #       replacements: {name}
+      #     type: PushNotificationService.TYPES.GROUP
+      #     url: "https://#{config.CLIENT_HOST}"
+      #     path:
+      #       key: 'groupChat'
+      #       params:
+      #         id: group.id
+      #         gameKey: config.DEFAULT_GAME_KEY
+      #   }, {skipMe: true, meUserId: user.id}).catch -> null
 
-      Group.addUser groupId, userId
+      Group.addUser group.id, userId
       .then ->
-        # TODO sub to group topics
-        # PushNotificationService.subscribeToGroupTopics {userId, groupId, appKey}
-        PushNotificationService.subscribeToPushTopic {
-          userId: user.id
-          groupId
-          appKey
+        PushNotificationService.subscribeToGroupTopics {
+          userId, groupId: group.id
         }
 
         prefix = CacheService.PREFIXES.GROUP_GET_ALL_CATEGORY
@@ -272,19 +270,38 @@ class GroupCtrl
             me: user
           }
 
-  getById: ({id}, {user}) ->
+  _setupGroup: (group, {autoJoin, user, appKey}) =>
+    EmbedService.embed {embed: defaultEmbed, user}, group
+    .then (group) =>
+      getGroupUser = ->
+        GroupUser.getByGroupIdAndUserId group.id, user.id
+        .then EmbedService.embed {embed: [EmbedService.TYPES.GROUP_USER.ROLES]}
+
+      getGroupUser()
+      .then (groupUser) =>
+        if groupUser.userId
+          groupUser
+        else
+          @joinById {id: group.id}, {user, appKey}
+          .then getGroupUser
+      .then (groupUser) ->
+        group.meGroupUser = groupUser
+        group
+    .then Group.sanitize null
+
+  getById: ({id, autoJoin}, {user, appKey}) =>
     Group.getById id
-    .then EmbedService.embed {embed: defaultEmbed, user}
-    .then Group.sanitize null
+    .then (group) =>
+      @_setupGroup group, {autoJoin, user, appKey}
 
-  getByKey: ({key}, {user}) ->
+  getByKey: ({key, autoJoin}, {user, appKey}) =>
     Group.getByKey key
-    .then EmbedService.embed {embed: defaultEmbed, user}
-    .then Group.sanitize null
+    .then (group) =>
+      @_setupGroup group, {autoJoin, user, appKey}
 
-  getByGameKeyAndLanguage: ({gameKey, language}, {user}) ->
+  getByGameKeyAndLanguage: ({gameKey, language}, {autoJoin, user, appKey}) =>
     Group.getByGameKeyAndLanguage gameKey, language, {preferCache: true}
-    .then EmbedService.embed {embed: defaultEmbed, user}
-    .then Group.sanitize null
+    .then (group) =>
+      @_setupGroup group, {autoJoin, user, appKey}
 
 module.exports = new GroupCtrl()

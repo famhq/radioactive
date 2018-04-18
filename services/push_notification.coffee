@@ -16,6 +16,7 @@ PushTopic = require '../models/push_topic'
 Event = require '../models/event'
 Group = require '../models/group'
 GroupUser = require '../models/group_user'
+GroupRole = require '../models/group_role'
 Language = require '../models/language'
 UserBlock = require '../models/user_block'
 StatsService = require './stats'
@@ -140,7 +141,8 @@ class PushNotificationService
           resolve true
 
   sendToConversation: (conversation, options = {}) =>
-    {skipMe, meUser, text, mentionUserIds} = options
+    {skipMe, meUser, text, mentionUserIds, mentionRoles} = options
+    console.log 'send roles', mentionRoles
     mentionUserIds ?= []
     (if conversation.groupId
       Group.getById "#{conversation.groupId}"
@@ -198,6 +200,11 @@ class PushNotificationService
       mentionMessage = _.defaults {type: @TYPES.CHAT_MENTION}, message
 
       Promise.all [
+        @sendToRoles mentionRoles, mentionMessage, {
+          fromUserId: meUser.id, groupId: conversation.groupId
+          conversation: conversation
+        }
+
         @sendToUserIds mentionUserIds, mentionMessage, {
           skipMe, fromUserId: meUser.id, groupId: conversation.groupId
           conversation: conversation
@@ -260,6 +267,12 @@ class PushNotificationService
 
   sendToEvent: (event, message, {skipMe, fromUserId, eventId} = {}) =>
     @sendToUserIds event.userIds, message, {skipMe, fromUserId, eventId}
+
+  sendToRoles: (roles, message, {groupId} = {}) ->
+    Promise.map roles, (role) =>
+      pushTopic = {groupId, sourceType: 'role', sourceId: role}
+      console.log 'send pushtopic', pushTopic
+      @sendToPushTopic pushTopic, message
 
   sendToUserIds: (userIds, message, options = {}) ->
     {skipMe, fromUserId, groupId, conversation} = options
@@ -392,7 +405,7 @@ class PushNotificationService
     else
       Promise.resolve()
 
-  migratePushTopicsByUserId: (userId, {appKey, token, deviceId}) ->
+  subscribeToAllUserTopics: ({userId, appKey, token, deviceId}) ->
     isMainApp = appKey is config.GROUPS.MAIN.APP_KEY
     appGroupId = _.find(config.GROUPS, {APP_KEY: appKey})?.ID
 
@@ -442,40 +455,87 @@ class PushNotificationService
                 deviceId: pushToken.deviceId
               }, newTopic
 
+  _getBestTokens: ({pushTokens, appKey, groupId}) ->
+    groupAppKey = _.find(config.GROUPS, {ID: groupId})?.APP_KEY
 
+    deviceIds = _.groupBy pushTokens, 'deviceId'
+    bestTokens = _.mapValues deviceIds, (tokens, deviceId) ->
+      # check if one for appKey (app currently being used) exists
+      appKeyToken = _.find tokens, {appKey, errorCount: 0}
+      if appKey and appKeyToken
+        return appKeyToken
 
+      # check for group app
+      groupAppKeyToken = _.find tokens, {appKey: groupAppKey, errorCount: 0}
+      if groupAppKeyToken
+        return groupAppKeyToken
+
+      # main fam app
+      mainAppKeyToken = _.find tokens, {
+        appKey: config.GROUPS.MAIN.APP_KEY, errorCount: 0
+      }
+      if mainAppKeyToken
+        return mainAppKeyToken
+
+      noErrorToken = _.find tokens, {errorCount: 0}
+      if noErrorToken
+        return noErrorToken
+
+      return tokens[0]
+
+  # go through all pushTokens a user has and subscribe them to the topic.
+  # max 1 subscription per device,
+  # prefer the app they're currently using (appKey, then the group appKey)
   subscribeToPushTopic: (topic) =>
     {userId, groupId, appKey, sourceType, sourceId} = topic
-    isMainApp = appKey is config.GROUPS.MAIN.APP_KEY
-    groupAppKey = _.find(config.GROUPS, {ID: groupId})?.APP_KEY
-    isGroupApp = appKey is groupAppKey
 
     Promise.all [
       PushToken.getAllByUserId userId
       PushTopic.getAllByUserId userId
     ]
     .then ([pushTokens, topics]) =>
-      if isMainApp
-        existingTopics = _.filter topics, {groupId}
-        isSubscribedToGroupApp = _.find existingTopics, {
-          groupId
-          appKey: groupAppKey
-        }
-        if isSubscribedToGroupApp
-          return null
+      # still store push topics if a token isn't set, that way when one does get
+      # set, the user will subscribe to correct topics
+      if _.isEmpty pushTokens
+        pushTokens = [{userId, appKey, deviceId: 'none', token: 'none'}]
 
-      appKeyPushTokens = _.filter pushTokens, {appKey}
-      Promise.map appKeyPushTokens, (pushToken) =>
-        @subscribeToTopicByToken pushToken.token, topic
-        .then ->
-          PushTopic.upsert _.defaults {
-            token: pushToken.token
-            deviceId: pushToken.deviceId
-          }, topic
+      bestTokens = @_getBestTokens {pushTokens, appKey, groupId}
+
+      Promise.all _.map bestTokens, (token) =>
+        upsertTopic = _.defaults {
+          token: token.token
+          deviceId: token.deviceId
+        }, topic
+        Promise.all _.filter [
+          PushTopic.upsert upsertTopic
+          unless token.token is 'none'
+            @subscribeToTopicByToken token.token, upsertTopic
+        ]
+
+  subscribeToGroupTopics: ({userId, groupId, appKey}) =>
+    Promise.all [
+      @subscribeToPushTopic {
+        userId
+        groupId
+        appKey
+      }
+      @subscribeToPushTopic {
+        userId
+        groupId
+        appKey
+        sourceType: 'role'
+        sourceId: 'everyone'
+      }
+    ]
+    # 'everyone'
 
   subscribeToTopicByToken: (token, topic) =>
     if typeof topic is 'object'
       topic = @getTopicStrFromPushTopic topic
+
+    if (config.ENV isnt config.ENVS.PROD or config.IS_STAGING)
+      return Promise.resolve null
+
     base = 'https://iid.googleapis.com/iid/v1'
     request "#{base}/#{token}/rel/topics/#{topic}", {
       json: true
@@ -485,7 +545,7 @@ class PushNotificationService
       body: {}
     }
     .catch (err) ->
-      console.log 'sub topic err'
+      console.log 'sub topic err', "#{base}/#{token}/rel/topics/#{topic}"
 
   unsubscribeToTopicByPushTopic: (pushTopic) =>
     topic = @getTopicStrFromPushTopic pushTopic
@@ -498,40 +558,7 @@ class PushNotificationService
       body: {}
     }
     .catch (err) ->
-      console.log 'sub topic err'
-
-  subscribeToAllTopicsByUser: (user, {appKey, deviceId, language} = {}) =>
-    appGroupId = _.find(config.GROUPS, {APP_KEY: appKey})?.ID
-
-    Promise.all [
-      @subscribeToPushTopic {
-        appKey
-        deviceId
-        groupId: config.EMPTY_UUID
-        userId: user.id
-        sourceType: 'language'
-        sourceId: (language or user.language)
-      }
-
-      # shouldn't force people back into all group topics
-      # if appKey is config.GROUPS.MAIN.APP_KEY
-      #   GroupUser.getAllByUserId user.id
-      #   .map ({groupId}) =>
-      #     @subscribeToPushTopic {
-      #       appKey
-      #       deviceId
-      #       groupId
-      #       userId: user.id
-      #     }
-      # else if appGroupId
-      if appGroupId
-        @subscribeToPushTopic {
-          appKey
-          deviceId
-          groupId: appGroupId
-          userId: user.id
-        }
-    ]
+      console.log 'sub topic err', "#{base}/#{pushTopic.token}/rel/topics/#{topic}"
 
   getTopicStrFromPushTopic: ({groupId, sourceType, sourceId}) ->
     sourceType ?= 'all'

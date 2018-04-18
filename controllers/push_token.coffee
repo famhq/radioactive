@@ -5,76 +5,46 @@ router = require 'exoid-router'
 request = require 'request-promise'
 
 PushToken = require '../models/push_token'
+PushTopic = require '../models/push_topic'
 User = require '../models/user'
 PushNotificationService = require '../services/push_notification'
 schemas = require '../schemas'
 config = require '../config'
 
 class PushTokensCtrl
-  create: ({token, sourceType, language, deviceId}, {user, appKey}) ->
-    userId = user.id
-    valid = Joi.validate {userId, token, sourceType},
-      userId: schemas.user.id.optional()
-      token: schemas.pushToken.token
-      sourceType: Joi.string().optional().valid [
-        'android', 'ios', 'ios-fcm', 'web', 'web-fcm'
-      ]
-    , {presence: 'required'}
-
-    if valid.error
-      router.throw
-        status: 400
-        info: valid.error.message
-
-    Promise.all [
-      User.updateById userId, {
-        hasPushToken: true
-      }
-
-      PushToken.upsert {
-        userId: userId
-        token: token
-        sourceType: sourceType
-        appKey: appKey
-        deviceId: deviceId
-      }
-      .then ->
-        PushNotificationService.subscribeToAllTopicsByUser user, {
-          language
-          appKey
-          deviceId
-        }
-    ]
-
-
-  updateByToken: ({token, language, deviceId}, {user, appKey}) ->
+  upsert: ({token, sourceType, language, deviceId}, {user, appKey}) =>
     userId = user.id
 
     Promise.all [
       User.updateById userId, {
         hasPushToken: true
       }
+      # get any token obj associated with this token
       PushToken.getAllByToken token
-      .then (pushTokens) ->
+      .then (pushTokens) =>
+        # delete the token
         _.map pushTokens, PushToken.deleteByPushToken
+        # delete any pushTopics
+        _.map pushTokens, (pushToken) =>
+          PushTopic.getAllByUserIdAndToken pushToken.userId, pushToken.token
+          .map (pushTopic) =>
+            Promise.all [
+              PushTopic.deleteByPushTopic pushTopic
+              PushNotificationService.unsubscribeToTopicByPushTopic pushTopic
+            ]
+
         PushToken.upsert {
           token, deviceId, appKey
           userId: user.id
-          sourceType: pushTokens?[0]?.sourceType or 'android'
+          sourceType: sourceType or pushTokens?[0]?.sourceType or 'android'
         }
       .then ->
-        Promise.all [
-          PushNotificationService.subscribeToAllTopicsByUser user, {
-            language
-            appKey
-            deviceId
-          }
-          PushNotificationService.migratePushTopicsByUserId user.id, {
-            token
-            appKey
-            deviceId
-          }
-        ]
+        PushNotificationService.subscribeToAllUserTopics {
+          userId
+          token
+          appKey
+          deviceId
+        }
     ]
     .then ->
       null

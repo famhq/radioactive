@@ -11,6 +11,7 @@ Group = require '../models/group'
 Language = require '../models/language'
 EmbedService = require '../services/embed'
 CacheService = require '../services/cache'
+PushNotificationService = require '../services/push_notification'
 config = require '../config'
 
 FIVE_MINUTES_SECONDS = 60 * 5
@@ -51,6 +52,11 @@ class GroupUserCtrl
             }
           }
 
+        console.log 'add role'
+        PushNotificationService.subscribeToPushTopic {
+          userId, groupId, sourceType: 'role', sourceId: role.name
+        }
+
         GroupUser.addRoleIdByGroupUser {
           userId: userId
           groupId: groupId
@@ -83,10 +89,38 @@ class GroupUserCtrl
             }
           }
 
+        PushNotificationService.unsubscribeToTopicByPushTopic {
+          userId, groupId, sourceType: 'role', sourceId: role.name
+        }
+
         GroupUser.removeRoleIdByGroupUser {
           userId: userId
           groupId: groupId
         }, roleId
+
+  addXpByGroupIdAndUserId: ({groupId, userId, xp}, {user}) ->
+    GroupUser.hasPermissionByGroupIdAndUser groupId, user, [
+      GroupUser.PERMISSIONS.ADD_XP
+    ]
+    .then (hasPermission) ->
+      unless hasPermission
+        router.throw status: 400, info: 'no permission'
+
+      User.getById userId
+      .then (otherUser) ->
+        GroupAuditLog.upsert {
+          groupId
+          userId: user.id
+          actionText: Language.get 'audit.giveXp', {
+            replacements:
+              name: User.getDisplayName otherUser
+              xp: xp
+            language: user.language
+          }
+        }
+
+        unless isNaN xp
+          GroupUser.incrementXpByGroupIdAndUserId groupId, userId, xp
 
   getByGroupIdAndUserId: ({groupId, userId}, {user}) ->
     GroupUser.getByGroupIdAndUserId groupId, userId

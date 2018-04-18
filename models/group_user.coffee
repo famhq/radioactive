@@ -130,6 +130,7 @@ PERMISSIONS =
   BYPASS_SLOW_MODE: 'bypassSlowMode'
   READ_AUDIT_LOG: 'readAuditLog'
   MANAGE_INFO: 'manageInfo'
+  ADD_XP: 'addXp'
 
 class GroupUserModel
   SCYLLA_TABLES: tables
