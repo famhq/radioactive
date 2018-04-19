@@ -39,6 +39,10 @@ defaultIapOutput = (iap) ->
     return null
 
   iap.platform = "#{iap.platform}"
+  iap.data = try
+    JSON.parse iap.data
+  catch err
+    {}
 
   iap
 
@@ -49,14 +53,21 @@ class IapModel
     Promise.map iaps, (iap) =>
       @upsert iap
 
-  getAllByGroupId: (platform) ->
-    platform ?= config.EMPTY_UUID
-
+  getAllByPlatform: (platform) ->
     cknex().select '*'
     .from 'iap_by_platform'
     .where 'platform', '=', platform
     .run()
     .map defaultIapOutput
+
+  getByPlatformAndKey: (platform, key) ->
+    cknex().select '*'
+    .from 'iap_by_platform'
+    .where 'platform', '=', platform
+    .andWhere 'key', '=', key
+    .run {isSingle: true}
+    .then defaultIapOutput
+
 
   upsert: (iap) =>
     iap = defaultIap iap

@@ -6,8 +6,10 @@ stripe = require 'stripe'
 router = require 'exoid-router'
 
 User = require '../models/user'
+UserPrivateData = require '../models/user_private_data'
+GroupRecord = require '../models/group_record'
 Transaction = require '../models/transaction'
-Iap = require '../models/product'
+Iap = require '../models/iap'
 config = require '../config'
 
 ONE_DAY_MS = 3600 * 24 * 1000
@@ -18,67 +20,55 @@ fx.base = 'USD'
 # http://api.fixer.io/latest?base=USD
 fx.rates = require '../resources/data/exchange_rates.json'
 
-completeVerifiedPurchase = (user, {iapKey, revenueCents}) ->
-  Product.getByIapKey iapKey
-  .then (product) ->
-    revenueCents ?= product.price * 100
+completeVerifiedPurchase = (user, options) ->
+  {platform, groupId, iapKey, revenueCents, transactionId} = options
+  Iap.getByPlatformAndKey platform, iapKey
+  .then (iap) ->
+    console.log 'go iap', iap
+    fireAmount = iap.data.fireAmount
 
-    isOneTimePurchase = product.isOneTimePurchase
-    subsequentPurchaseGold = product.subsequentPurchaseGold
+    if isNaN fireAmount
+      console.log 'payment: NaN fireAmount'
+      return {}
+    else
+      GroupRecord.incrementByGroupIdAndRecordTypeKey(
+        groupId, 'fireEarned', fireAmount
+      )
 
-    inGameCurrency = product.type
-
-    if product[inGameCurrency]
-      {saleMultiplier, saleExpireTime} = Product.getSale product, user
-      isOnSale = Boolean saleMultiplier and
-        saleExpireTime.getTime() >= Date.now()
-      currencyAmount = product[inGameCurrency]
-      if isOnSale and saleMultiplier > 1
-        currencyAmount *= saleMultiplier
-
-      if isOneTimePurchase and user.flags?.oneTimePurchases?[iapKey]
-        currencyAmount = subsequentPurchaseGold
-
-      if isNaN currencyAmount
-        console.log 'payment: NaN currencyAmount'
-        return {}
-      else
-        userDiff = {
-          "#{inGameCurrency}": user[inGameCurrency] + currencyAmount
-          premiumExpireTime: new Date Date.now() + ONE_DAY_MS
-          flags:
-            isPayingUser: true
-        }
-
-        if isOneTimePurchase
-          userDiff.flags?.oneTimePurchases = {"#{iapKey}": true}
-
-        User.updateById user.id, userDiff
+      User.addFireById user.id, fireAmount
 
 class PaymentCtrl
-  purchase: (options) ->
-    {iapKey, stripeToken, transactionId}
+  purchase: (options, {user}) ->
+    {groupId, iapKey, stripeToken, transactionId, platform} = options
     transaction = {}
 
-    Product.getByIapKey iapKey
-    .then (product) ->
-      priceCents = product.priceCents
+    console.log 'ppp', platform, iapKey
+
+    Promise.all [
+      Iap.getByPlatformAndKey platform, iapKey
+      UserPrivateData.getByUserId user.id
+    ]
+    .then ([iap, userPrivateData]) ->
+      priceCents = iap.priceCents
 
       transaction =
         userId: user.id
         amountCents: priceCents
         iapKey: iapKey
-        transactionId: transactionId
+        id: transactionId
 
       (if stripeToken
         stripe.customers.create({
           source: stripeToken,
           description: user.id
         })
-      else if user.privateData.stripeCustomerId
-        Promise.resolve {id: user.privateData.stripeCustomerId}
-      )
-      .then (customer) ->
+      else if userPrivateData.data.stripeCustomerId
+        Promise.resolve {id: userPrivateData.data.stripeCustomerId}
+      else
+        router.throw
+          status: 400
+          info: 'No token'
+      ).then (customer) ->
         stripe.charges.create({
           amount: priceCents
           currency: 'usd'
@@ -88,36 +78,43 @@ class PaymentCtrl
           }
         })
         .then ->
-          User.updateSelf user.id, {
-            flags:
-              hasStripeId: true
-            privateData:
-              stripeCustomerId: customer.id
-          }
+          Promise.all [
+            User.updateById user.id, {
+              flags:
+                hasStripeId: true
+            }
+            UserPrivateData.upsert {
+              userId: user.id
+              data:
+                stripeCustomerId: customer.id
+            }
+          ]
       .then ->
         completeVerifiedPurchase user, {
+          groupId
           iapKey
-          transactionId: transactionId
+          platform
+          id: transactionId
           revenueCents: priceCents
         }
       .then ->
         transaction.isCompleted = true
-        Transaction.create transaction
+        Transaction.upsert transaction
         {iapKey}
 
       .catch (err) ->
         console.log err
-        Transaction.create transaction
-        throw new router.Error
+        Transaction.upsert transaction
+        router.throw
           status: 400
-          detail: 'Unable to verify payment'
+          info: 'Unable to verify payment'
 
-  verify: (options) ->
-    {platform, receipt, iapKey, packageName,
+  verify: (options, {user}) ->
+    {platform, groupId, receipt, iapKey, packageName,
       isFromPending, currency, price, priceMicros} = options
 
-    Product.getByIapKey iapKey
-    .then (product) ->
+    Iap.getByPlatformAndKey platform, iapKey
+    .then (iap) ->
       if priceMicros
         revenueLocal = parseInt(priceMicros) / 1000000
         console.log 'local (micro): ', revenueLocal, currency
@@ -136,7 +133,7 @@ class PaymentCtrl
       else
         revenueUsd = revenueLocal
 
-      revenueUsd or= product.priceCents / 100
+      revenueUsd or= iap.priceCents / 100
 
       console.log 'usd:', revenueUsd
       revenueCents = Math.floor(revenueUsd * 100)
@@ -168,7 +165,7 @@ class PaymentCtrl
       Promise.promisify(iap.verifyPayment) platform, payment
       .then ({iapKey, transactionId}) ->
         (if transactionId
-          Transaction.getByTransactionId transactionId
+          Transaction.getById transactionId
         else
           Promise.resolve null
         )
@@ -178,22 +175,23 @@ class PaymentCtrl
             {iapKey, revenueUsd, transactionId, alreadyGiven: true}
           else
             completeVerifiedPurchase user, {
+              groupId
               iapKey
               transactionId
               revenueCents
             }
             .then ->
               transaction.isCompleted = true
-              transaction.transactionId = transactionId
-              Transaction.create transaction
+              transaction.id = transactionId
+              Transaction.upsert transaction
               {iapKey, revenueUsd, transactionId}
 
       .catch (err) ->
         console.log err
-        Transaction.create transaction
-        throw new router.Error
+        Transaction.upsert transaction
+        router.throw
           status: 400
-          detail: 'Unable to verify payment'
+          info: 'Unable to verify payment'
 
 
 

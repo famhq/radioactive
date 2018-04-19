@@ -16,6 +16,7 @@ ClashRoyaleCardCtrl = require './controllers/clash_royale_card'
 DynamicImageCtrl = require './controllers/dynamic_image'
 EventCtrl = require './controllers/event'
 FortniteWeaponCtrl = require './controllers/fortnite_weapon'
+IapCtrl = require './controllers/iap'
 ItemCtrl = require './controllers/item'
 BanCtrl = require './controllers/ban'
 NotificationCtrl = require './controllers/notification'
@@ -316,6 +317,8 @@ module.exports = router
 .on 'notifications.getAll', authed NotificationCtrl.getAll
 
 .on 'nps.create', authed NpsCtrl.create
+
+.on 'iap.getAllByPlatform', authed IapCtrl.getAllByPlatform
 
 .on 'items.getAllByGroupId', authed ItemCtrl.getAllByGroupId
 

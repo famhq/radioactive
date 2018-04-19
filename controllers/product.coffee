@@ -117,7 +117,7 @@ class ProductCtrl
       .then =>
         @_deductCurrency product, user
 
-        if product.cost
+        if product.cost and product.currency is 'fire'
           GroupRecord.incrementByGroupIdAndRecordTypeKey(
             product.groupId, 'fireSpent', product.cost
           )

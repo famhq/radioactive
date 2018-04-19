@@ -19,15 +19,32 @@ defaultTransactionOutput: (transaction) ->
 
 tables = [
   {
-    name: 'transactions'
+    name: 'transactions_by_userId'
     keyspace: 'starfire'
     fields:
       id: 'timeuuid'
+      userId: 'uuid'
+      iapKey: 'text'
+      amountCents: 'int'
+      isCompleted: 'boolean'
+      isFromPending: 'boolean'
+    primaryKey:
+      partitionKey: ['userId']
+      clusteringColumns: ['id']
+  }
+  {
+    name: 'transactions_by_id'
+    keyspace: 'starfire'
+    fields:
+      id: 'timeuuid'
+      userId: 'uuid'
+      iapKey: 'text'
       amountCents: 'int'
       isCompleted: 'boolean'
       isFromPending: 'boolean'
     primaryKey:
       partitionKey: ['id']
+      clusteringColumns: null
   }
 ]
 class TransactionModel
@@ -36,15 +53,23 @@ class TransactionModel
   upsert: (transaction) ->
     transaction = defaultTransaction transaction
 
-    cknex().update 'transactions'
-    .set _.omit transaction, ['id']
-    .where 'id', '=', transaction.id
-    .run()
+    Promise.all [
+      cknex().update 'transactions_by_userId'
+      .set _.omit transaction, ['userId', 'id']
+      .where 'userId', '=', transaction.userId
+      .andWhere 'id', '=', transaction.id
+      .run()
+
+      cknex().update 'transactions_by_id'
+      .set _.omit transaction, ['id']
+      .where 'id', '=', transaction.id
+      .run()
+    ]
 
   getById: (id) ->
     cknex().select '*'
-    .from 'transactions'
-    .where 'groupId', '=', groupId
+    .from 'transactions_by_id'
+    .where 'id', '=', id
     .run {isSingle: true}
     .then defaultTransactionOutput
 

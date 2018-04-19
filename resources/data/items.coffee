@@ -24,10 +24,30 @@ items =
   nan_gg: {name: 'GG', groupId: GROUPS.NICKATNYTE.ID, rarity: 'common', tier: 'base', type: 'sticker'}
   nan_get_rekt: {name: 'Get rekt', groupId: GROUPS.NICKATNYTE.ID, rarity: 'common', tier: 'base', type: 'sticker'}
   nan_geet: {name: 'Geet', groupId: GROUPS.NICKATNYTE.ID, rarity: 'common', tier: 'base', type: 'sticker'}
+  nan_snipe1: {name: 'Snipe 1', groupId: GROUPS.NICKATNYTE.ID, rarity: 'common', tier: 'base', type: 'sticker'}
+  nan_snipe2: {name: 'Snipe 2', groupId: GROUPS.NICKATNYTE.ID, rarity: 'common', tier: 'base', type: 'sticker'}
+  nan_snipe3: {name: 'Snipe 3', groupId: GROUPS.NICKATNYTE.ID, rarity: 'common', tier: 'base', type: 'sticker'}
+  nan_snipe4: {name: 'Snipe 4', groupId: GROUPS.NICKATNYTE.ID, rarity: 'common', tier: 'base', type: 'sticker'}
   nan_gfuel: {name: 'G FUEL', groupId: GROUPS.NICKATNYTE.ID, rarity: 'rare', tier: 'base', type: 'sticker'}
   nan: {name: 'NyteFish', groupId: GROUPS.NICKATNYTE.ID, rarity: 'rare', tier: 'base', type: 'sticker'}
   nan_ice_fish: {name: 'Ice Fish', groupId: GROUPS.NICKATNYTE.ID, rarity: 'epic', tier: 'base', type: 'sticker'}
+  nan_g1: {name: 'G1', groupId: GROUPS.NICKATNYTE.ID, rarity: 'epic', tier: 'premium', type: 'sticker'}
+  nan_g2: {name: 'G2', groupId: GROUPS.NICKATNYTE.ID, rarity: 'legendary', tier: 'premium', type: 'sticker'}
   nan_wow: {name: 'Wow', groupId: GROUPS.NICKATNYTE.ID, rarity: 'legendary', tier: 'base', type: 'sticker'}
+
+  nan_cheezeit: {name: 'Cheezeit', groupId: GROUPS.NICKATNYTE.ID, rarity: 'common', tier: 'premium', type: 'sticker'}
+  nan_kiss: {name: 'Kiss', groupId: GROUPS.NICKATNYTE.ID, rarity: 'common', tier: 'premium', type: 'sticker'}
+  nan_shook: {name: 'Shook', groupId: GROUPS.NICKATNYTE.ID, rarity: 'common', tier: 'premium', type: 'sticker'}
+  nan_clue: {name: 'Clue', groupId: GROUPS.NICKATNYTE.ID, rarity: 'common', tier: 'premium', type: 'sticker'}
+  nan_nuts: {name: 'Nuts', groupId: GROUPS.NICKATNYTE.ID, rarity: 'common', tier: 'premium', type: 'sticker'}
+  nan_nytewitch: {name: 'Nytewitch', groupId: GROUPS.NICKATNYTE.ID, rarity: 'rare', tier: 'premium', type: 'sticker'}
+  nan_ah: {name: 'Ah', groupId: GROUPS.NICKATNYTE.ID, rarity: 'rare', tier: 'premium', type: 'sticker'}
+  nan_mat: {name: 'Mat', groupId: GROUPS.NICKATNYTE.ID, rarity: 'rare', tier: 'premium', type: 'sticker'}
+  nan_new: {name: 'New', groupId: GROUPS.NICKATNYTE.ID, rarity: 'epic', tier: 'premium', type: 'sticker'}
+  nan_terrify: {name: 'Terrify', groupId: GROUPS.NICKATNYTE.ID, rarity: 'epic', tier: 'premium', type: 'sticker'}
+  nan_unicorn: {name: 'Unicorn', groupId: GROUPS.NICKATNYTE.ID, rarity: 'legendary', tier: 'premium', type: 'sticker'}
+  nan_rip: {name: 'RIP', groupId: GROUPS.NICKATNYTE.ID, rarity: 'legendary', tier: 'premium', type: 'sticker'}
+
   nan_name_color_base_7_days: {
     name: 'Name color (7d)', groupId: GROUPS.NICKATNYTE.ID, rarity: 'common', tier: 'base', type: 'consumable'
     data:
@@ -40,17 +60,6 @@ items =
       duration: 3600 * 24 * 7
       upgradeType: 'nameColorPremium'
   }
-
-  nan_cheezeit: {name: 'Cheezeit', groupId: GROUPS.NICKATNYTE.ID, rarity: 'common', tier: 'premium', type: 'sticker'}
-  nan_kiss: {name: 'Kiss', groupId: GROUPS.NICKATNYTE.ID, rarity: 'common', tier: 'premium', type: 'sticker'}
-  nan_shook: {name: 'Shook', groupId: GROUPS.NICKATNYTE.ID, rarity: 'common', tier: 'premium', type: 'sticker'}
-  nan_nuts: {name: 'Nuts', groupId: GROUPS.NICKATNYTE.ID, rarity: 'common', tier: 'premium', type: 'sticker'}
-  nan_nytewitch: {name: 'Nytewitch', groupId: GROUPS.NICKATNYTE.ID, rarity: 'rare', tier: 'premium', type: 'sticker'}
-  nan_ah: {name: 'Ah', groupId: GROUPS.NICKATNYTE.ID, rarity: 'rare', tier: 'premium', type: 'sticker'}
-  nan_terrify: {name: 'Terrify', groupId: GROUPS.NICKATNYTE.ID, rarity: 'epic', tier: 'premium', type: 'sticker'}
-  nan_unicorn: {name: 'Unicorn', groupId: GROUPS.NICKATNYTE.ID, rarity: 'legendary', tier: 'premium', type: 'sticker'}
-
-
 
   nan_chest: {
     name: 'NickAtNyte Premium Chest', groupId: GROUPS.NICKATNYTE.ID, rarity: 'epic', type: 'chest'

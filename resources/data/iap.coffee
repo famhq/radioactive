@@ -7,15 +7,14 @@ iap =
   '690fire':
     platforms: ['ios', 'android']
     name: '690 Fire'
-    # The price in millionths of the currency base unit represented as a string.
-    priceCents: "#{0.99 * 1000000}"
+    priceCents: "#{0.99 * 100}"
     data:
       fireAmount: 690
 
   '4550fire':
     platforms: ['web']
     name: '4550 Fire'
-    priceCents: "#{4.99 * 1000000}"
+    priceCents: "#{4.99 * 100}"
     data:
       fireAmount: 4550
 
