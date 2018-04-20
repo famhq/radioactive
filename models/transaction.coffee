@@ -1,4 +1,5 @@
 _ = require 'lodash'
+uuid = require 'uuid'
 
 cknex = require '../services/cknex'
 
@@ -7,14 +8,15 @@ defaultTransaction = (transaction) ->
     return null
 
   _.defaults transaction, {
-    id: cknex.getTimeUuid()
+    id: uuid.v4()
+    time: new Date()
     amountCents: 0
     isCompleted: false
     isFromPending: false
   }
 
-defaultTransactionOutput: (transaction) ->
-  transaction.time = transaction.id.getDate()
+defaultTransactionOutput = (transaction) ->
+  # transaction.time = transaction.id.getDate()
   transaction
 
 tables = [
@@ -22,7 +24,8 @@ tables = [
     name: 'transactions_by_userId'
     keyspace: 'starfire'
     fields:
-      id: 'timeuuid'
+      id: 'text'
+      time: 'timestamp'
       userId: 'uuid'
       iapKey: 'text'
       amountCents: 'int'
@@ -36,7 +39,8 @@ tables = [
     name: 'transactions_by_id'
     keyspace: 'starfire'
     fields:
-      id: 'timeuuid'
+      id: 'text'
+      time: 'timestamp'
       userId: 'uuid'
       iapKey: 'text'
       amountCents: 'int'

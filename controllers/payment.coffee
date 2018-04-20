@@ -1,4 +1,4 @@
-iap = require 'iap'
+IAP = require 'iap'
 Promise = require 'bluebird'
 fx = require 'money'
 accounting = require 'accounting'
@@ -24,7 +24,6 @@ completeVerifiedPurchase = (user, options) ->
   {platform, groupId, iapKey, revenueCents, transactionId} = options
   Iap.getByPlatformAndKey platform, iapKey
   .then (iap) ->
-    console.log 'go iap', iap
     fireAmount = iap.data.fireAmount
 
     if isNaN fireAmount
@@ -41,8 +40,6 @@ class PaymentCtrl
   purchase: (options, {user}) ->
     {groupId, iapKey, stripeToken, transactionId, platform} = options
     transaction = {}
-
-    console.log 'ppp', platform, iapKey
 
     Promise.all [
       Iap.getByPlatformAndKey platform, iapKey
@@ -110,8 +107,10 @@ class PaymentCtrl
           info: 'Unable to verify payment'
 
   verify: (options, {user}) ->
-    {platform, groupId, receipt, iapKey, packageName,
+    {platform, groupId, receipt, productId, packageName,
       isFromPending, currency, price, priceMicros} = options
+
+    iapKey = productId.replace("#{packageName}.", '')
 
     Iap.getByPlatformAndKey platform, iapKey
     .then (iap) ->
@@ -143,27 +142,28 @@ class PaymentCtrl
         console.log "invalid revenue #{price}"
         revenueCents = 0
 
-      platform = if platform is 'android' \
-                 then 'google'
-                 else if platform is 'ios'
-                 then 'apple'
-                 else platform
+      verifyPlatform = if platform is 'android' \
+                       then 'google'
+                       else if platform is 'ios'
+                       then 'apple'
+                       else platform
 
-      platform = platform
       payment =
         receipt: receipt
-        iapKey: iapKey
+        productId: productId
         packageName: packageName
         keyObject: config.GOOGLE_PRIVATE_KEY_JSON
 
       transaction =
         userId: user.id
-        amount: revenueUsd
+        amountCents: revenueCents
         iapKey: iapKey
         isFromPending: isFromPending
 
-      Promise.promisify(iap.verifyPayment) platform, payment
-      .then ({iapKey, transactionId}) ->
+      Promise.promisify(IAP.verifyPayment) verifyPlatform, payment
+      .then ({productId, transactionId}) ->
+        iapKey = productId.replace "#{packageName}.", ''
+
         (if transactionId
           Transaction.getById transactionId
         else
@@ -172,10 +172,11 @@ class PaymentCtrl
         .then (existingTransaction) ->
           if existingTransaction
             console.log 'dupe txn'
-            {iapKey, revenueUsd, transactionId, alreadyGiven: true}
+            {productId, revenueUsd, transactionId, alreadyGiven: true}
           else
             completeVerifiedPurchase user, {
               groupId
+              platform
               iapKey
               transactionId
               revenueCents
@@ -184,7 +185,7 @@ class PaymentCtrl
               transaction.isCompleted = true
               transaction.id = transactionId
               Transaction.upsert transaction
-              {iapKey, revenueUsd, transactionId}
+              {productId, revenueUsd, transactionId}
 
       .catch (err) ->
         console.log err
