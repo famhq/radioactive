@@ -141,15 +141,15 @@ class PushNotificationService
           resolve true
 
   sendToConversation: (conversation, options = {}) =>
-    {skipMe, meUser, text, mentionUserIds, mentionRoles} = options
-    console.log 'send roles', mentionRoles
+    {skipMe, meUser, text, mentionUserIds, mentionRoles, chatMessage} = options
+
     mentionUserIds ?= []
     (if conversation.groupId
       Group.getById "#{conversation.groupId}"
+      .then (group) -> {group}
     else if conversation.eventId
       Event.getById conversation.eventId
-      .then (event) ->
-        {event}
+      .then (event) -> {event}
     else
       Promise.resolve {userIds: conversation.userIds}
     ).then ({group, event, userIds}) =>
@@ -163,6 +163,8 @@ class PushNotificationService
             groupId: group.key or group.id
             conversationId: conversation.id
             gameKey: config.DEFAULT_GAME_KEY
+          # qs:
+          #   minTimeUuid: chatMessage?.timeUuid
         }
       else if event
         path = {

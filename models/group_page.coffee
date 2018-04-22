@@ -53,6 +53,13 @@ class GroupPageModel
     .then ->
       groupPage
 
+  deleteByGroupIdAndKey: (groupId, key) ->
+    cknex().delete()
+    .from 'group_pages_by_groupId'
+    .where 'groupId', '=', groupId
+    .andWhere 'key', '=', key
+    .run()
+
   getAllByGroupId: (groupId) ->
     cknex().select '*'
     .from 'group_pages_by_groupId'

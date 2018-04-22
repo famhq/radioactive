@@ -156,7 +156,9 @@ class ChatMessageCtrl
       , {roleMentions: [], userMentions: []}
 
   _sendPushNotifications: (options = {}) ->
-    {conversation, user, body, userMentions, roleMentions, isImage} = options
+    {conversation, chatMessage, user, body, userMentions,
+      roleMentions, isImage} = options
+
     pushBody = if isImage then '[image]' else body
 
     Promise.all [
@@ -180,6 +182,7 @@ class ChatMessageCtrl
           text: pushBody
           mentionUserIds: mentionUserIds
           mentionRoles: roleMentions
+          chatMessage: chatMessage
         }).catch -> null
 
   _createCards: (body, isImage, chatMessageId) =>
@@ -318,13 +321,13 @@ class ChatMessageCtrl
               prepareFn: (item) ->
                 prepareFn item, {gameKeys: group?.gameKeys}
             }
-      .then ->
+      .tap ->
         if conversation.data?.isSlowMode
           ChatMessage.upsertSlowModeLog {
             userId: user.id, conversationId: conversation.id
           }
-      .then ->
-        if conversation.groupId
+      .tap  ->
+        (if conversation.groupId
           EarnAction.completeActionByGroupIdAndUserId(
             conversation.groupId
             user.id
@@ -333,9 +336,10 @@ class ChatMessageCtrl
           .catch -> null
         else
           Promise.resolve null
-      .then (rewards) ->
-        {rewards}
-      .tap =>
+        )
+        .then (rewards) ->
+          {rewards}
+      .then (chatMessage) =>
         userIds = conversation.userIds
         pickedConversation = _.pick conversation, [
           'userId', 'userIds', 'groupId', 'id'
@@ -347,9 +351,9 @@ class ChatMessageCtrl
 
         @_getMentions conversation, body
         .then ({userMentions, roleMentions}) =>
-          console.log 'mentions', userMentions, 'role', roleMentions
           @_sendPushNotifications {
             conversation, user, body, userMentions, roleMentions, isImage
+            chatMessage
           }
         null # don't block
 

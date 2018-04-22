@@ -204,6 +204,7 @@ class ChatMessageModel extends Stream
 
       if minTimeUuid
         q.andWhere 'timeUuid', '>=', minTimeUuid
+        q.orderBy 'timeUuid', 'ASC'
 
       if maxTimeUuid
         q.andWhere 'timeUuid', '<', maxTimeUuid
@@ -216,7 +217,9 @@ class ChatMessageModel extends Stream
       # if not enough results, check preivous time bucket. could do this more
       #  than once, but last 2 weeks of messages seems fine
       if limit and results.length < limit
-        get TimeService.getPreviousTimeByTimeScale 'week', moment(minTime)
+        get TimeService.getPreviousTimeByTimeScale(
+          'week', moment(minTime or maxTime)
+        )
         .then (olderMessages) ->
           _.filter (results or []).concat olderMessages
       else

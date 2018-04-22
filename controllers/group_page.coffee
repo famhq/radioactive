@@ -47,4 +47,14 @@ class GroupPageCtrl
   getByGroupIdAndKey: ({groupId, key}, {user}) ->
     GroupPage.getByGroupIdAndKey groupId, key
 
+  deleteByGroupIdAndKey: ({groupId, key}, {user}) ->
+    GroupUser.hasPermissionByGroupIdAndUser groupId, user, [
+      GroupUser.PERMISSIONS.MANAGE_PAGE
+    ]
+    .then (hasPermission) ->
+      unless hasPermission
+        router.throw status: 400, info: 'no permission'
+
+      GroupPage.deleteByGroupIdAndKey groupId, key
+
 module.exports = new GroupPageCtrl()
