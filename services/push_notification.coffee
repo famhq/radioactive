@@ -163,8 +163,8 @@ class PushNotificationService
             groupId: group.key or group.id
             conversationId: conversation.id
             gameKey: config.DEFAULT_GAME_KEY
-          # qs:
-          #   minTimeUuid: chatMessage?.timeUuid
+          qs:
+            minTimeUuid: chatMessage?.timeUuid
         }
       else if event
         path = {

@@ -31,7 +31,10 @@ class BanCtrl
 
       Ban.getAllByGroupIdAndDuration groupId, duration
       .map EmbedService.embed {
-        embed: [EmbedService.TYPES.BAN.USER]
+        embed: [
+          EmbedService.TYPES.BAN.USER
+          EmbedService.TYPES.BAN.BANNED_BY_USER
+        ]
         groupId: groupId
       }
 

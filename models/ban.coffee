@@ -137,6 +137,7 @@ class BanModel
     .from 'bans_by_duration_and_timeUuid'
     .where 'groupId', '=', groupId
     .andWhere 'duration', '=', duration
+    .limit 100
     .run()
     .map defaultBan
 

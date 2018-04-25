@@ -4,10 +4,13 @@ bcrypt = require 'bcrypt'
 Joi = require 'joi'
 Promise = require 'bluebird'
 geoip = require 'geoip-lite'
+jwt = require 'jsonwebtoken'
 
 Auth = require '../models/auth'
 User = require '../models/user'
+Connection = require '../models/connection'
 GroupCtrl = require './group'
+TwitchService = require '../services/connection_twitch'
 schemas = require '../schemas'
 config = require '../config'
 
@@ -81,6 +84,59 @@ class AuthCtrl
           User.updateById user.id, {username, password, email, isMember: true}
       .then ->
         Auth.fromUserId user.id
+
+  loginTwitchExtension: ({token, language}, {user, headers, connection}) ->
+    ip = headers['x-forwarded-for'] or
+          connection.remoteAddress
+    country = geoip.lookup(ip)?.country
+
+    secret = new Buffer config.TWITCH.SECRET_KEY, 'base64'
+    decoded = jwt.verify token, secret
+
+    unless decoded.user_id
+      router.throw status: 400, info: 'need permissions'
+
+    Connection.getBySiteAndSourceId 'twitch', decoded.user_id
+    .then (connection) ->
+      if connection
+        Auth.fromUserId connection.userId
+      else
+        Promise.all [
+          Connection.upsert {
+            site: 'twitch', token: '', userId: user.id
+            sourceId: decoded.user_id
+            # TODO: store channelId so we can use that token to grab info
+          }
+          User.updateById user.id, {isMember: true}
+        ]
+        .then ->
+          Auth.fromUserId user.id
+
+  loginTwitch: ({code, idToken}, {user, headers, connection}) ->
+    ip = headers['x-forwarded-for'] or
+          connection.remoteAddress
+    country = geoip.lookup(ip)?.country
+
+    decodedIdToken = jwt.decode idToken
+    sourceId = decodedIdToken.sub
+
+    TwitchService.getInfoFromCode code
+    .then (info) ->
+      Connection.getBySiteAndSourceId 'twitch', sourceId
+      .then (connection) ->
+        if connection
+          Auth.fromUserId connection.userId
+        else
+          Promise.all [
+            Connection.upsert {
+              site: 'twitch', token: info.access_token
+              userId: user.id, sourceId: sourceId
+              data: {refreshToken: info.refresh_token}
+            }
+            User.updateById user.id, {isMember: true}
+          ]
+          .then ->
+            Auth.fromUserId user.id
 
   loginUsername: ({username, password}) ->
     insecurePassword = password

@@ -1,5 +1,6 @@
 Promise = require 'bluebird'
 _ = require 'lodash'
+jwt = require 'jsonwebtoken'
 
 Group = require '../models/group'
 Connection = require '../models/connection'
@@ -13,7 +14,19 @@ TWITCH_SUB_DAYS = 3600 * 24 * 35
 
 class ConnectionCtrl
   upsert: ({site, token, groupId}, {user}) =>
-    Connection.upsert {site, token, userId: user.id}
+    null
+    # TODO: standard oauth2 via token instead of code
+
+  upsertByCode: ({site, code, groupId, idToken}, {user}) =>
+    decodedIdToken = jwt.decode idToken
+    sourceId = decodedIdToken.sub
+    TwitchService.getInfoFromCode code
+    .then (info) ->
+      Connection.upsert {
+        site, sourceId
+        userId: user.id, token: info.access_token
+        data: {refreshToken: info.refresh_token}
+      }
     .then =>
       if groupId
         @giveUpgradesByGroupId {groupId}, {user}
@@ -30,7 +43,7 @@ class ConnectionCtrl
       Promise.map connections, (connection) ->
         if connection.site is 'twitch' and group.twitchChannel
           TwitchService.getIsSubscribedToChannelId(
-            group.twitchChannel, connection.token
+            group.twitchChannel, connection
           )
           .then (isSubscribed) ->
             if isSubscribed

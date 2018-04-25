@@ -65,8 +65,8 @@ class NewsRoyaleService
               #   return
               markdown = turndown.turndown body
               markdownLines = markdown.split('\n')
-              title = markdownLines[2]
-              markdownLines = _.takeRight markdownLines, markdownLines.length - 5
+              title = markdownLines[3]
+              markdownLines = _.takeRight markdownLines, markdownLines.length - 7
               markdown = markdownLines.join('\n')
               thread = {
                 id: cknex.getTimeUuid(new Date(post.timestamp))

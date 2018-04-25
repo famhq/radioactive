@@ -91,6 +91,71 @@ items =
 
 
 
+
+
+  tv_currency: {name: 'ViewBucks', groupId: GROUPS.THE_VIEWAGE.ID, rarity: 'common', type: 'currency'}
+
+  tv: {name: '#TheViewage', groupId: GROUPS.THE_VIEWAGE.ID, rarity: 'common', tier: 'base', type: 'sticker'}
+  tv_ackha: {name: 'AckHa', groupId: GROUPS.THE_VIEWAGE.ID, rarity: 'common', tier: 'base', type: 'sticker'}
+  tv_been: {name: 'Been', groupId: GROUPS.THE_VIEWAGE.ID, rarity: 'common', tier: 'base', type: 'sticker'}
+  tv_explo: {name: 'Explo', groupId: GROUPS.THE_VIEWAGE.ID, rarity: 'common', tier: 'base', type: 'sticker'}
+  tv_disgust: {name: 'Disgust', groupId: GROUPS.THE_VIEWAGE.ID, rarity: 'rare', tier: 'base', type: 'sticker'}
+  tv_fb: {name: 'FB', groupId: GROUPS.THE_VIEWAGE.ID, rarity: 'rare', tier: 'base', type: 'sticker'}
+  tv_geeg: {name: 'GeeG', groupId: GROUPS.THE_VIEWAGE.ID, rarity: 'rare', tier: 'base', type: 'sticker'}
+  tv_dathwa: {name: 'Dathwa', groupId: GROUPS.THE_VIEWAGE.ID, rarity: 'legendary', tier: 'base', type: 'sticker'}
+
+  tv_rage: {name: 'Rage', groupId: GROUPS.THE_VIEWAGE.ID, rarity: 'common', tier: 'premium', type: 'sticker'}
+  tv_sit: {name: 'Sit', groupId: GROUPS.THE_VIEWAGE.ID, rarity: 'common', tier: 'premium', type: 'sticker'}
+  tv_yeet: {name: 'Yeet', groupId: GROUPS.THE_VIEWAGE.ID, rarity: 'common', tier: 'premium', type: 'sticker'}
+  tv_yg: {name: 'YG', groupId: GROUPS.THE_VIEWAGE.ID, rarity: 'common', tier: 'premium', type: 'sticker'}
+  tv_ppp: {name: 'PPP', groupId: GROUPS.THE_VIEWAGE.ID, rarity: 'rare', tier: 'premium', type: 'sticker'}
+  tv_booty: {name: 'Booty', groupId: GROUPS.THE_VIEWAGE.ID, rarity: 'rare', tier: 'premium', type: 'sticker'}
+  tv_pppp: {name: 'PPPP', groupId: GROUPS.THE_VIEWAGE.ID, rarity: 'epic', tier: 'premium', type: 'sticker'}
+  tv_gu: {name: 'Grow up', groupId: GROUPS.THE_VIEWAGE.ID, rarity: 'legendary', tier: 'premium', type: 'sticker'}
+
+  tv_name_color_base_7_days: {
+    name: 'Name color (7d)', groupId: GROUPS.THE_VIEWAGE.ID, rarity: 'common', tier: 'base', type: 'consumable'
+    data:
+      duration: 3600 * 24 * 7
+      upgradeType: 'nameColorBase'
+  }
+  tv_name_color_premium_7_days: {
+    name: 'Premium name color (7d)', groupId: GROUPS.THE_VIEWAGE.ID, rarity: 'epic', tier: 'premium', type: 'consumable'
+    data:
+      duration: 3600 * 24 * 7
+      upgradeType: 'nameColorPremium'
+  }
+
+  tv_chest: {
+    name: '#TheViewage Premium Chest', groupId: GROUPS.THE_VIEWAGE.ID, rarity: 'epic', type: 'chest'
+    data:
+      keyRequired: 'tv_key'
+      odds: DEFAULT_STICKER_ODDS
+      count: 3
+      backKey: 'tv'
+  }
+  tv_key: {
+    name: '#TheViewage Premium Key', groupId: GROUPS.THE_VIEWAGE.ID, rarity: 'epic', type: 'key'
+    data:
+      chestKey: 'tv_chest'
+  }
+  tv_base_chest: {
+    name: '#TheViewage Base Chest', groupId: GROUPS.THE_VIEWAGE.ID, rarity: 'common', type: 'chest'
+    data:
+      keyRequired: 'tv_base_key'
+      odds: DEFAULT_BASE_ODDS
+      count: 3
+      backKey: 'tv'
+  }
+  tv_base_key: {
+    name: '#TheViewage Base Key', groupId: GROUPS.THE_VIEWAGE.ID, rarity: 'common', type: 'key'
+    data:
+      chestKey: 'tv_base_chest'
+  }
+
+
+
+
   tq: {name: 'Team Queso', groupId: GROUPS.TEAM_QUESO.ID, rarity: 'starter', type: 'sticker'}
   tq_adrian_piedra: {name: 'TQ Adrian Piedra', groupId: GROUPS.TEAM_QUESO.ID, rarity: 'common', type: 'sticker'}
   tq_coltonw83: {name: 'TQ DiegoB', groupId: GROUPS.TEAM_QUESO.ID, rarity: 'common', type: 'sticker'}

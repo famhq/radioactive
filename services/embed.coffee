@@ -40,6 +40,7 @@ TYPES =
     MY_VOTE: 'addon:myVote'
   BAN:
     USER: 'ban:user'
+    BANNED_BY_USER: 'ban:bannedByUser'
   CLASH_ROYALE_CARD:
     STATS: 'clashRoyaleCard:stats'
     POPULAR_DECKS: 'clashRoyaleCard:popularDecks'
@@ -380,6 +381,12 @@ embedFn = _.curry (props, object) ->
           embed: profileDialogUserEmbed
           gameKeys: gameKeys or ['clash-royale']
           groupId: groupId
+        }
+        .then User.sanitizePublic null
+
+      when TYPES.BAN.BANNED_BY_USER
+        embedded.bannedByUser = User.getById embedded.bannedById, {
+          preferCache: true
         }
         .then User.sanitizePublic null
 

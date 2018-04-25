@@ -35,12 +35,27 @@ tables = [
     fields:
       site: 'text'
       userId: 'uuid'
+      sourceId: 'text'
       token: 'text'
       data: 'text'
       lastUpdateTime: 'timestamp'
     primaryKey:
       partitionKey: ['userId']
       clusteringColumns: ['site']
+  }
+  {
+    name: 'connections_by_site_and_sourceId'
+    keyspace: 'starfire'
+    fields:
+      site: 'text'
+      userId: 'uuid'
+      sourceId: 'text'
+      token: 'text'
+      data: 'text'
+      lastUpdateTime: 'timestamp'
+    primaryKey:
+      partitionKey: ['site', 'sourceId']
+      clusteringColumns: null
   }
 ]
 
@@ -49,11 +64,19 @@ class ConnectionModel
 
   upsert: (connection) ->
     connection = defaultConnection connection
-    cknex().update 'connections_by_userId'
-    .set _.omit connection, ['userId', 'site']
-    .where 'userId', '=', connection.userId
-    .andWhere 'site', '=', connection.site
-    .run()
+    Promise.all [
+      cknex().update 'connections_by_userId'
+      .set _.omit connection, ['userId', 'site']
+      .where 'userId', '=', connection.userId
+      .andWhere 'site', '=', connection.site
+      .run()
+
+      cknex().update 'connections_by_site_and_sourceId'
+      .set _.omit connection, ['site', 'sourceId']
+      .where 'site', '=', connection.site
+      .andWhere 'sourceId', '=', connection.sourceId
+      .run()
+    ]
 
   getAllByUserId: (userId) =>
     cknex().select '*'
@@ -62,11 +85,19 @@ class ConnectionModel
     .run()
     .map defaultConnectionOutput
 
-  getByUserIdAndSite: (userId, action) =>
+  getByUserIdAndSite: (userId, site) =>
     cknex().select '*'
     .from 'connections_by_userId'
     .where 'userId', '=', userId
     .andWhere 'site', '=', site
+    .run {isSingle: true}
+    .then defaultConnectionOutput
+
+  getBySiteAndSourceId: (site, sourceId) =>
+    cknex().select '*'
+    .from 'connections_by_site_and_sourceId'
+    .where 'site', '=', site
+    .andWhere 'sourceId', '=', sourceId
     .run {isSingle: true}
     .then defaultConnectionOutput
 

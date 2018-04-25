@@ -67,6 +67,8 @@ module.exports = router
 .on 'auth.join', AuthCtrl.join
 .on 'auth.login', AuthCtrl.login
 .on 'auth.loginUsername', AuthCtrl.loginUsername
+.on 'auth.loginTwitchExtension', AuthCtrl.loginTwitchExtension
+.on 'auth.loginTwitch', AuthCtrl.loginTwitch
 
 ###################
 # Authed Routes   #
@@ -280,6 +282,7 @@ module.exports = router
 .on 'payments.purchase', authed PaymentCtrl.purchase
 
 .on 'connections.upsert', authed ConnectionCtrl.upsert
+.on 'connections.upsertByCode', authed ConnectionCtrl.upsertByCode
 .on 'connections.getAll', authed ConnectionCtrl.getAll
 .on 'connections.giveUpgradesByGroupId',
   authed ConnectionCtrl.giveUpgradesByGroupId
