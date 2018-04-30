@@ -258,8 +258,8 @@ class PushNotificationService
 
     if (config.ENV isnt config.ENVS.PROD or config.IS_STAGING) and
         not forceDevSend
-      console.log 'send notification', pushTopic, JSON.stringify message
-      return Promise.resolve()
+      console.log 'send notification', pushTopic, topic, JSON.stringify message
+      # return Promise.resolve()
 
     @sendFcm topic, message
 
@@ -273,7 +273,6 @@ class PushNotificationService
   sendToRoles: (roles, message, {groupId} = {}) ->
     Promise.map roles, (role) =>
       pushTopic = {groupId, sourceType: 'role', sourceId: role}
-      console.log 'send pushtopic', pushTopic
       @sendToPushTopic pushTopic, message
 
   sendToUserIds: (userIds, message, options = {}) ->
@@ -535,8 +534,8 @@ class PushNotificationService
     if typeof topic is 'object'
       topic = @getTopicStrFromPushTopic topic
 
-    if (config.ENV isnt config.ENVS.PROD or config.IS_STAGING)
-      return Promise.resolve null
+    # if (config.ENV isnt config.ENVS.PROD or config.IS_STAGING)
+    #   return Promise.resolve null
 
     base = 'https://iid.googleapis.com/iid/v1'
     request "#{base}/#{token}/rel/topics/#{topic}", {
@@ -552,15 +551,18 @@ class PushNotificationService
   unsubscribeToTopicByPushTopic: (pushTopic) =>
     topic = @getTopicStrFromPushTopic pushTopic
     base = 'https://iid.googleapis.com/iid/v1'
-    request "#{base}/#{pushTopic.token}/rel/topics/#{topic}", {
-      json: true
-      method: 'DELETE'
-      headers:
-        'Authorization': "key=#{config.GOOGLE_API_KEY}"
-      body: {}
-    }
+
+    PushToken.getAllByUserId pushTopic.userId
+    .map (pushToken) ->
+      request "#{base}/#{pushToken.token}/rel/topics/#{topic}", {
+        json: true
+        method: 'DELETE'
+        headers:
+          'Authorization': "key=#{config.GOOGLE_API_KEY}"
+        body: {}
+      }
     .catch (err) ->
-      console.log 'sub topic err', "#{base}/#{pushTopic.token}/rel/topics/#{topic}"
+      console.log 'unsub topic err', "#{base}/token/rel/topics/#{topic}"
 
   getTopicStrFromPushTopic: ({groupId, sourceType, sourceId}) ->
     sourceType ?= 'all'

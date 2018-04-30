@@ -15,6 +15,21 @@ actions =
     groupId: GROUPS.NICKATNYTE.ID
     action: 'visit'
     data:
+      excludedPlatforms: ['twitch']
+      rewards: [
+        {currencyAmount: 100, currencyType: 'item', currencyItemKey: 'nan_currency'}
+        {currencyAmount: 5, currencyType: 'xp'}
+      ]
+      button:
+        text: 'Claim'
+    maxCount: 1
+    ttl: ONE_DAY_SECONDS
+  nan_daily_stream_visit:
+    name: 'Daily stream visit'
+    groupId: GROUPS.NICKATNYTE.ID
+    action: 'streamVisit'
+    data:
+      includedPlatforms: ['twitch']
       rewards: [
         {currencyAmount: 100, currencyType: 'item', currencyItemKey: 'nan_currency'}
         {currencyAmount: 5, currencyType: 'xp'}
@@ -28,6 +43,7 @@ actions =
     groupId: GROUPS.NICKATNYTE.ID
     action: 'chatMessage'
     data:
+      excludedPlatforms: ['twitch']
       rewards: [
         {currencyAmount: 100, currencyType: 'item', currencyItemKey: 'nan_currency'}
         {currencyAmount: 5, currencyType: 'xp'}
@@ -44,6 +60,7 @@ actions =
     groupId: GROUPS.NICKATNYTE.ID
     action: 'videoView'
     data:
+      excludedPlatforms: ['twitch']
       rewards: [
         {currencyAmount: 100, currencyType: 'item', currencyItemKey: 'nan_currency'}
         {currencyAmount: 5, currencyType: 'xp'}
@@ -60,6 +77,7 @@ actions =
     groupId: GROUPS.NICKATNYTE.ID
     action: 'watchAd'
     data:
+      excludedPlatforms: ['twitch']
       rewards: [
         {currencyAmount: 50, currencyType: 'item', currencyItemKey: 'nan_currency'}
         {currencyAmount: 1, currencyType: 'xp'}

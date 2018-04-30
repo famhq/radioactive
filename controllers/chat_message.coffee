@@ -228,7 +228,6 @@ class ChatMessageCtrl
       .catch -> null
     )
 
-  # TODO: clean up big-time
   create: ({body, conversationId, clientId}, {user, headers, connection}) =>
     userAgent = headers['user-agent']
     ip = headers['x-forwarded-for'] or

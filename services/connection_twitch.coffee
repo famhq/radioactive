@@ -70,7 +70,7 @@ class TwitchService
     @get '/user', connection
 
   getIsSubscribedToChannelId: (channelName, connection) =>
-    @getUserByToken token
+    @getUserByConnection connection
     .then (user) =>
       @get "/users/#{user.name}/subscriptions/#{channelName}", connection
       .then ({created_at}) -> created_at

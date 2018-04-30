@@ -9,7 +9,7 @@ config = require '../config'
 
 class ScyllaSetupService
   setup: (tables) =>
-    CacheService.lock 'scylla_setup5', =>
+    CacheService.lock 'scylla_setup6', =>
       Promise.all [
         @createKeyspaceIfNotExists 'starfire'
         @createKeyspaceIfNotExists 'clash_royale'
@@ -20,15 +20,15 @@ class ScyllaSetupService
           createTables = _.map _.filter(tables, ({name}) ->
             name in [
               # 'user_private_data'
-              # 'transactions_by_id'
-              # 'transactions_by_userId'
+              'transactions_by_id'
+              'transactions_by_userId'
               # 'notifications_by_roleId'
               # 'notifications_by_userId'
               # 'notifications_by_userId_and_uniqueId'
               # 'iap_by_platform'
               # 'transactions'
-              'connections_by_userId'
-              'connections_by_site_and_sourceId'
+              # 'connections_by_userId'
+              # 'connections_by_site_and_sourceId'
               # 'earn_transactions'
               # 'earn_actions'
               # 'polls_by_id'

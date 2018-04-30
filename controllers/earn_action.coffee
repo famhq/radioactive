@@ -6,7 +6,7 @@ TimeService = require '../services/time'
 EarnAction = require '../models/earn_action'
 config = require '../config'
 
-REEDEMABLE_ACTION_KEYS_FROM_CLIENT = ['visit', 'watchAd']
+REEDEMABLE_ACTION_KEYS_FROM_CLIENT = ['visit', 'watchAd', 'streamVisit']
 
 class EarnActionCtrl
   incrementByGroupIdAndAction: (options, {user}) ->
@@ -25,7 +25,7 @@ class EarnActionCtrl
       groupId, user.id, action
     )
 
-  getAllByGroupId: ({groupId}, {user}) ->
+  getAllByGroupId: ({groupId, platform}, {user}) ->
     Promise.all [
       EarnAction.getAllByGroupId groupId
       EarnAction.getAllTransactionsByUserIdAndGroupId(
@@ -33,6 +33,18 @@ class EarnActionCtrl
       )
     ]
     .then ([actions, transactions]) ->
+      if platform
+        actions = _.filter actions, (action) ->
+          if action.data.includedPlatforms and platform
+            isIncluded = action.data.includedPlatforms.indexOf(platform) isnt -1
+          else
+            isIncluded = true
+          if action.data.excludedPlatforms and platform
+            isExcluded = action.data.excludedPlatforms.indexOf(platform) isnt -1
+          else
+            isExcluded = false
+          isIncluded and not isExcluded
+
       _.map actions, (action) ->
         action.transaction = _.find transactions, {action: action.action}
         action
