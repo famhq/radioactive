@@ -87,4 +87,166 @@ actions =
     maxCount: 3
     ttl: THREE_HOURS_SECONDS
 
+
+
+
+
+  tv_daily_visit:
+    name: 'Daily visit'
+    groupId: GROUPS.THE_VIEWAGE.ID
+    action: 'visit'
+    data:
+      excludedPlatforms: ['twitch']
+      rewards: [
+        {currencyAmount: 100, currencyType: 'item', currencyItemKey: 'tv_currency'}
+        {currencyAmount: 5, currencyType: 'xp'}
+      ]
+      button:
+        text: 'Claim'
+    maxCount: 1
+    ttl: ONE_DAY_SECONDS
+  tv_daily_stream_visit:
+    name: 'Daily stream visit'
+    groupId: GROUPS.THE_VIEWAGE.ID
+    action: 'streamVisit'
+    data:
+      includedPlatforms: ['twitch']
+      rewards: [
+        {currencyAmount: 100, currencyType: 'item', currencyItemKey: 'tv_currency'}
+        {currencyAmount: 5, currencyType: 'xp'}
+      ]
+      button:
+        text: 'Claim'
+    maxCount: 1
+    ttl: ONE_DAY_SECONDS
+  tv_daily_chat_message:
+    name: 'Daily chat message'
+    groupId: GROUPS.THE_VIEWAGE.ID
+    action: 'chatMessage'
+    data:
+      excludedPlatforms: ['twitch']
+      rewards: [
+        {currencyAmount: 100, currencyType: 'item', currencyItemKey: 'tv_currency'}
+        {currencyAmount: 5, currencyType: 'xp'}
+      ]
+      button:
+        text: 'Go to chat'
+        route:
+          key: 'groupChat'
+          replacements: {groupId: 'nickatnyte'}
+    maxCount: 1
+    ttl: ONE_DAY_SECONDS
+  tv_daily_video_view:
+    name: 'Daily video view'
+    groupId: GROUPS.THE_VIEWAGE.ID
+    action: 'videoView'
+    data:
+      excludedPlatforms: ['twitch']
+      rewards: [
+        {currencyAmount: 100, currencyType: 'item', currencyItemKey: 'tv_currency'}
+        {currencyAmount: 5, currencyType: 'xp'}
+      ]
+      button:
+        text: 'Go to videos'
+        route:
+          key: 'groupVideos'
+          replacements: {groupId: 'nickatnyte'}
+    maxCount: 1
+    ttl: ONE_DAY_SECONDS
+  tv_rewarded_videos:
+    name: 'Watch ad'
+    groupId: GROUPS.THE_VIEWAGE.ID
+    action: 'watchAd'
+    data:
+      excludedPlatforms: ['twitch']
+      rewards: [
+        {currencyAmount: 50, currencyType: 'item', currencyItemKey: 'tv_currency'}
+        {currencyAmount: 1, currencyType: 'xp'}
+      ]
+      button:
+        text: 'Watch ad'
+    maxCount: 3
+    ttl: THREE_HOURS_SECONDS
+
+
+
+
+
+  ninja_daily_visit:
+    name: 'Daily visit'
+    groupId: GROUPS.NINJA.ID
+    action: 'visit'
+    data:
+      excludedPlatforms: ['twitch']
+      rewards: [
+        {currencyAmount: 100, currencyType: 'item', currencyItemKey: 'ninja_currency'}
+        {currencyAmount: 5, currencyType: 'xp'}
+      ]
+      button:
+        text: 'Claim'
+    maxCount: 1
+    ttl: ONE_DAY_SECONDS
+  ninja_daily_stream_visit:
+    name: 'Daily stream visit'
+    groupId: GROUPS.NINJA.ID
+    action: 'streamVisit'
+    data:
+      includedPlatforms: ['twitch']
+      rewards: [
+        {currencyAmount: 100, currencyType: 'item', currencyItemKey: 'ninja_currency'}
+        {currencyAmount: 5, currencyType: 'xp'}
+      ]
+      button:
+        text: 'Claim'
+    maxCount: 1
+    ttl: ONE_DAY_SECONDS
+  ninja_daily_chat_message:
+    name: 'Daily chat message'
+    groupId: GROUPS.NINJA.ID
+    action: 'chatMessage'
+    data:
+      excludedPlatforms: ['twitch']
+      rewards: [
+        {currencyAmount: 100, currencyType: 'item', currencyItemKey: 'ninja_currency'}
+        {currencyAmount: 5, currencyType: 'xp'}
+      ]
+      button:
+        text: 'Go to chat'
+        route:
+          key: 'groupChat'
+          replacements: {groupId: 'nickatnyte'}
+    maxCount: 1
+    ttl: ONE_DAY_SECONDS
+  ninja_daily_video_view:
+    name: 'Daily video view'
+    groupId: GROUPS.NINJA.ID
+    action: 'videoView'
+    data:
+      excludedPlatforms: ['twitch']
+      rewards: [
+        {currencyAmount: 100, currencyType: 'item', currencyItemKey: 'ninja_currency'}
+        {currencyAmount: 5, currencyType: 'xp'}
+      ]
+      button:
+        text: 'Go to videos'
+        route:
+          key: 'groupVideos'
+          replacements: {groupId: 'nickatnyte'}
+    maxCount: 1
+    ttl: ONE_DAY_SECONDS
+  ninja_rewarded_videos:
+    name: 'Watch ad'
+    groupId: GROUPS.NINJA.ID
+    action: 'watchAd'
+    data:
+      excludedPlatforms: ['twitch']
+      rewards: [
+        {currencyAmount: 50, currencyType: 'item', currencyItemKey: 'ninja_currency'}
+        {currencyAmount: 1, currencyType: 'xp'}
+      ]
+      button:
+        text: 'Watch ad'
+    maxCount: 3
+    ttl: THREE_HOURS_SECONDS
+
 module.exports = _.map actions, (value, key) -> value

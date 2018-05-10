@@ -219,7 +219,7 @@ class PushNotificationService
 
         # TODO: have users subscribe to conversation
         # and send to subs of conversation
-        if group?.type and group.type isnt 'public'
+        if group?.type and group.type isnt 'public' and not group.key
           @sendToGroupTopic group, message
         else
           Promise.resolve null

@@ -93,7 +93,7 @@ items =
 
 
 
-  tv_currency: {name: 'ViewBucks', groupId: GROUPS.THE_VIEWAGE.ID, rarity: 'common', type: 'currency'}
+  tv_currency: {name: 'Positivity', groupId: GROUPS.THE_VIEWAGE.ID, rarity: 'common', type: 'currency'}
 
   tv: {name: '#TheViewage', groupId: GROUPS.THE_VIEWAGE.ID, rarity: 'common', tier: 'base', type: 'sticker'}
   tv_ackha: {name: 'AckHa', groupId: GROUPS.THE_VIEWAGE.ID, rarity: 'common', tier: 'base', type: 'sticker'}
@@ -156,72 +156,102 @@ items =
 
 
 
-  tq: {name: 'Team Queso', groupId: GROUPS.TEAM_QUESO.ID, rarity: 'starter', type: 'sticker'}
-  tq_adrian_piedra: {name: 'TQ Adrian Piedra', groupId: GROUPS.TEAM_QUESO.ID, rarity: 'common', type: 'sticker'}
-  tq_coltonw83: {name: 'TQ DiegoB', groupId: GROUPS.TEAM_QUESO.ID, rarity: 'common', type: 'sticker'}
-  tq_diegob: {name: 'TQ Coltonw83', groupId: GROUPS.TEAM_QUESO.ID, rarity: 'common', type: 'sticker'}
-  tq_chest: {
-    name: 'Team Queso Chest', groupId: GROUPS.TEAM_QUESO.ID, rarity: 'common', type: 'chest'
-    data:
-      keyRequired: 'tq_key'
-      odds: DEFAULT_STICKER_ODDS
-      count: 3
-      backKey: 'tq'
-  }
-  tq_key: {
-    name: 'Team Queso Key', groupId: GROUPS.TEAM_QUESO.ID, rarity: 'common', type: 'key'
-    data:
-      chestKey: 'tq_chest'
-  }
-  tq_starter_chest: {
-    name: 'Team Queso Starter Chest', groupId: GROUPS.TEAM_QUESO.ID, rarity: 'common', type: 'chest'
-    data:
-      keyRequired: 'tq_starter_key'
-      odds: [{type: 'sticker', rarity: 'starter', odds: 1}]
-      count: 1
-      backKey: 'tq'
-  }
-  tq_starter_key: {
-    name: 'Team Queso Starter Key', groupId: GROUPS.TEAM_QUESO.ID, rarity: 'common', type: 'key'
-    data:
-      chestKey: 'tq_starter_chest'
-  }
+  # tq: {name: 'Team Queso', groupId: GROUPS.TEAM_QUESO.ID, rarity: 'starter', type: 'sticker'}
+  # tq_adrian_piedra: {name: 'TQ Adrian Piedra', groupId: GROUPS.TEAM_QUESO.ID, rarity: 'common', type: 'sticker'}
+  # tq_coltonw83: {name: 'TQ DiegoB', groupId: GROUPS.TEAM_QUESO.ID, rarity: 'common', type: 'sticker'}
+  # tq_diegob: {name: 'TQ Coltonw83', groupId: GROUPS.TEAM_QUESO.ID, rarity: 'common', type: 'sticker'}
+  # tq_chest: {
+  #   name: 'Team Queso Chest', groupId: GROUPS.TEAM_QUESO.ID, rarity: 'common', type: 'chest'
+  #   data:
+  #     keyRequired: 'tq_key'
+  #     odds: DEFAULT_STICKER_ODDS
+  #     count: 3
+  #     backKey: 'tq'
+  # }
+  # tq_key: {
+  #   name: 'Team Queso Key', groupId: GROUPS.TEAM_QUESO.ID, rarity: 'common', type: 'key'
+  #   data:
+  #     chestKey: 'tq_chest'
+  # }
+  # tq_starter_chest: {
+  #   name: 'Team Queso Starter Chest', groupId: GROUPS.TEAM_QUESO.ID, rarity: 'common', type: 'chest'
+  #   data:
+  #     keyRequired: 'tq_starter_key'
+  #     odds: [{type: 'sticker', rarity: 'starter', odds: 1}]
+  #     count: 1
+  #     backKey: 'tq'
+  # }
+  # tq_starter_key: {
+  #   name: 'Team Queso Starter Key', groupId: GROUPS.TEAM_QUESO.ID, rarity: 'common', type: 'key'
+  #   data:
+  #     chestKey: 'tq_starter_chest'
+  # }
 
 
 
 
 
-  ninja: {name: 'Ninja', groupId: GROUPS.NINJA.ID, rarity: 'starter', type: 'sticker'}
-  ninja_hype: {name: 'Ninja Hype', groupId: GROUPS.NINJA.ID, rarity: 'common', type: 'sticker'}
-  ninja_blast: {name: 'Ninja Blast', groupId: GROUPS.NINJA.ID, rarity: 'rare', type: 'sticker'}
-  ninja_pon: {name: 'Ninja Pon', groupId: GROUPS.NINJA.ID, rarity: 'epic', type: 'sticker'}
-  ninja_creep: {name: 'Ninja Creep', groupId: GROUPS.NINJA.ID, rarity: 'legendary', type: 'sticker'}
-  ninja_chest: {
-    name: 'Ninja Chest', groupId: GROUPS.NINJA.ID, rarity: 'common', type: 'chest'
-    data:
-      keyRequired: 'ninja_key'
-      odds: DEFAULT_STICKER_ODDS
-      count: 3
-      backKey: 'ninja'
-  }
-  ninja_key: {
-    name: 'Ninja Key', groupId: GROUPS.NINJA.ID, rarity: 'common', type: 'key'
-    data:
-      chestKey: 'ninja_chest'
-  }
-  ninja_starter_chest: {
-    name: 'Ninja Starter Chest', groupId: GROUPS.NINJA.ID, rarity: 'common', type: 'chest'
-    data:
-      keyRequired: 'ninja_starter_key'
-      odds: [{type: 'sticker', rarity: 'starter', odds: 1}]
-      count: 1
-      backKey: 'ninja'
-  }
-  ninja_starter_key: {
-    name: 'Ninja Starter Key', groupId: GROUPS.NINJA.ID, rarity: 'common', type: 'key'
-    data:
-      chestKey: 'ninja_starter_chest'
-  }
+  # ninja_currency: {name: 'Stars', groupId: GROUPS.NINJA.ID, rarity: 'common', tier: 'base', type: 'currency'}
+  #
+  # ninja: {name: 'Ninja', groupId: GROUPS.NINJA.ID, rarity: 'starter', tier: 'base', type: 'sticker'}
+  # ninja_aim: {name: 'Ninja Aim', groupId: GROUPS.NINJA.ID, rarity: 'common', tier: 'base', type: 'sticker'}
+  # ninja_hype: {name: 'Ninja Hype', groupId: GROUPS.NINJA.ID, rarity: 'common', tier: 'base', type: 'sticker'}
+  # ninja_pon: {name: 'Ninja Pon', groupId: GROUPS.NINJA.ID, rarity: 'epic', tier: 'base', type: 'sticker'}
+  # ninja_creep: {name: 'Ninja Creep', groupId: GROUPS.NINJA.ID, rarity: 'legendary', tier: 'base', type: 'sticker'}
+  # ninja_blast1: {name: 'Ninja Blast 1', groupId: GROUPS.NINJA.ID, rarity: 'common', tier: 'base', type: 'sticker'}
+  # ninja_blast2: {name: 'Ninja Blast 2', groupId: GROUPS.NINJA.ID, rarity: 'common', tier: 'base', type: 'sticker'}
+  # ninja_blast3: {name: 'Ninja Blast 3', groupId: GROUPS.NINJA.ID, rarity: 'common', tier: 'base', type: 'sticker'}
+  # ninja_pon: {name: 'Ninja Pon', groupId: GROUPS.NINJA.ID, rarity: 'common', tier: 'base', type: 'sticker'}
+  #
+  # ninja_amazing: {name: 'Ninja Amazing', groupId: GROUPS.NINJA.ID, rarity: 'common', tier: 'premium', type: 'sticker'}
+  # ninja_aww: {name: 'Ninja Aww', groupId: GROUPS.NINJA.ID, rarity: 'common', tier: 'premium', type: 'sticker'}
+  # ninja_clap: {name: 'Ninja Clap', groupId: GROUPS.NINJA.ID, rarity: 'common', tier: 'premium', type: 'sticker'}
+  # ninja_cry: {name: 'Ninja Cry', groupId: GROUPS.NINJA.ID, rarity: 'common', tier: 'premium', type: 'sticker'}
+  # ninja_disco: {name: 'Ninja Disco', groupId: GROUPS.NINJA.ID, rarity: 'common', tier: 'premium', type: 'sticker'}
+  # ninja_h: {name: 'Ninja H', groupId: GROUPS.NINJA.ID, rarity: 'common', tier: 'premium', type: 'sticker'}
+  # ninja_iq: {name: 'Ninja IQ', groupId: GROUPS.NINJA.ID, rarity: 'common', tier: 'premium', type: 'sticker'}
+  # ninja_s: {name: 'Ninja S', groupId: GROUPS.NINJA.ID, rarity: 'common', tier: 'premium', type: 'sticker'}
+  # ninja_shrug: {name: 'Ninja Shrug', groupId: GROUPS.NINJA.ID, rarity: 'common', tier: 'premium', type: 'sticker'}
+  # ninja_wifey: {name: 'Ninja Wifey', groupId: GROUPS.NINJA.ID, rarity: 'common', tier: 'premium', type: 'sticker'}
+  #
+  # ninja_name_color_base_7_days: {
+  #   name: 'Name color (7d)', groupId: GROUPS.NINJA.ID, rarity: 'common', tier: 'base', type: 'consumable'
+  #   data:
+  #     duration: 3600 * 24 * 7
+  #     upgradeType: 'nameColorBase'
+  # }
+  # ninja_name_color_premium_7_days: {
+  #   name: 'Premium name color (7d)', groupId: GROUPS.NINJA.ID, rarity: 'epic', tier: 'premium', type: 'consumable'
+  #   data:
+  #     duration: 3600 * 24 * 7
+  #     upgradeType: 'nameColorPremium'
+  # }
+  # ninja_chest: {
+  #   name: 'Ninja Chest', groupId: GROUPS.NINJA.ID, rarity: 'epic', type: 'chest'
+  #   data:
+  #     keyRequired: 'ninja_key'
+  #     odds: DEFAULT_STICKER_ODDS
+  #     count: 3
+  #     backKey: 'ninja'
+  # }
+  # ninja_key: {
+  #   name: 'Ninja Key', groupId: GROUPS.NINJA.ID, rarity: 'epic', type: 'key'
+  #   data:
+  #     chestKey: 'ninja_chest'
+  # }
+  # ninja_base_chest: {
+  #   name: 'Ninja Starter Chest', groupId: GROUPS.NINJA.ID, rarity: 'common', type: 'chest'
+  #   data:
+  #     keyRequired: 'ninja_base_key'
+  #     odds: DEFAULT_BASE_ODDS
+  #     count: 3
+  #     backKey: 'ninja'
+  # }
+  # ninja_base_key: {
+  #   name: 'Ninja Starter Key', groupId: GROUPS.NINJA.ID, rarity: 'common', type: 'key'
+  #   data:
+  #     chestKey: 'ninja_base_chest'
+  # }
 
 
 

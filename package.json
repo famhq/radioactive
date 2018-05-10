@@ -31,7 +31,6 @@
     "stopwords-es": "^0.3.0",
     "tabletojson": "^0.4.0",
     "traceur": "0.0.111",
-    "twit": "^2.2.9",
     "wordcloud": "^1.0.6",
     "x-ray": "^2.3.2",
     "xmlrpc": "^1.3.2"
@@ -98,6 +97,7 @@
     "sshpk": "^1.7.0",
     "stripe": "^4.12.0",
     "turndown": "^4.0.1",
+    "twit": "^2.2.9",
     "universal-analytics": "^0.4.13",
     "uuid-by-string": "^0.5.2",
     "vdom-to-html": "git://github.com/claydotio/vdom-to-html.git",

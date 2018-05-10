@@ -47,6 +47,7 @@ CHANNEL_IDS =
   "#{config.GROUPS.FERG.ID}": 'UCVYe9OwcrGrlRmlX8cSWgvg'
   "#{config.GROUPS.TEAM_QUESO.ID}": 'UCfmUGIBVMlnjGoIm4RY00UA'
   "#{config.GROUPS.NINJA.ID}": 'UCAW-NpUFkMyCNrvRSSGIvDQ'
+  "#{config.GROUPS.THE_VIEWAGE.ID}": 'UCrIC5wIRQm2cSWuO0ZTVaOw'
 
 class VideoDisoveryService
   updateGroupVideos: (groupId) ->

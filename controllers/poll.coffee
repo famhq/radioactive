@@ -22,24 +22,23 @@ class PollCtrl
     .then EmbedService.embed {embed: defaultEmbed, user}
 
   resetById: ({id}, {user}) ->
-    # FIXME: switch back to this once 0.0.2 is released
-    # Promise.all [
-    #   Poll.getById id, {preferCache: true}
-    #   PollVote.getCountByPollId id
-    # ]
-    # .then ([poll, pollVoteCount]) ->
-    #   pollVoteCount ?= 0
-    #
-    #   Promise.all [
-    #     Poll.deleteByPoll poll
-    #     Poll.upsert {
-    #       groupId: poll.groupId
-    #       data:
-    #         heatMapMax: parseInt(pollVoteCount / 15) or 1
-    #     }
-    #   ]
-    PollVote.getAllByPollId id
-    .map PollVote.deleteByPollVote
+    Promise.all [
+      Poll.getById id, {preferCache: true}
+      PollVote.getCountByPollId id
+    ]
+    .then ([poll, pollVoteCount]) ->
+      pollVoteCount ?= 0
+
+      Promise.all [
+        Poll.deleteByPoll poll
+        Poll.upsert {
+          groupId: poll.groupId
+          data:
+            heatMapMax: parseInt(pollVoteCount / 15) or 1
+        }
+      ]
+    # PollVote.getAllByPollId id
+    # .map PollVote.deleteByPollVote
 
   getAllByGroupId: ({groupId}, {user}, {emit, socket, route}) ->
     Poll.getAllByGroupId groupId, {

@@ -224,30 +224,104 @@ products =
 
   # NINJA
   ninja_key: {
-    name: 'Ninja Key', type: 'pack', groupId: GROUPS.NINJA.ID, cost: 200, currency: 'fire'
+    name: 'Ninja Premium Key', type: 'pack', groupId: GROUPS.NINJA.ID, cost: 200, currency: 'fire'
     data:
-      backgroundImage: 'https://cdn.wtf/d/images/fam/packs/ninja_key.png'
+      backgroundImage: 'https://cdn.wtf/d/images/fam/packs/ninja/ninja_key.png'
       backgroundColor: '#2196F3'
       count: 1
       itemKeys: ['ninja_key']
   }
-  ninja_chest: {
-    type: 'pack', groupId: GROUPS.NINJA.ID, name: 'Ninja Chest', cost: 0, currency: 'fire'
+  ninja_base_key: {
+    name: 'Ninja Base Key', type: 'pack', groupId: GROUPS.NINJA.ID, cost: 200, currency: 'ninja_currency'
     data:
-      backgroundImage: 'https://cdn.wtf/d/images/fam/packs/ninja_chest.png'
+      backgroundImage: 'https://cdn.wtf/d/images/fam/packs/ninja/ninja_base_key.png'
+      backgroundColor: '#F44336'
+      count: 1
+      itemKeys: ['ninja_base_key']
+  }
+  ninja_base_chest: {
+    type: 'pack', groupId: GROUPS.NINJA.ID, name: 'Daily Free Chests', cost: 0, currency: 'fire'
+    data:
+      backgroundImage: 'https://cdn.wtf/d/images/fam/packs/ninja/ninja_base_chest.png'
       backgroundColor: '#9C27B0'
       lockTime: ONE_DAY_SECONDS
-      count: 1
-      itemKeys: ['ninja_chest']
-  }
-  ninja_starter_chest: {
-    type: 'pack', groupId: GROUPS.NINJA.ID, name: 'Ninja Starter Pack', cost: 0, currency: 'fire'
-    data:
-      backgroundImage: 'https://cdn.wtf/d/images/fam/packs/ninja_starter_chest.png'
-      backgroundColor: '#F44336'
-      lockTime: 'infinity'
       count: 2
-      itemKeys: ['ninja_starter_chest', 'ninja_starter_key']
+      itemKeys: ['ninja_chest', 'ninja_base_chest']
+  }
+  ninja_name_color_base_7_days: {
+    name: 'Name color (7d)'
+    type: 'pack'
+    groupId: GROUPS.NINJA.ID
+    cost: 500
+    currency: 'ninja_currency'
+    data:
+      backgroundImage: 'https://cdn.wtf/d/images/fam/packs/ninja/ninja_name_color_base_7_days.png'
+      backgroundColor: '#333'
+      count: 1
+      itemKeys: ['ninja_name_color_base_7_days']
+  }
+  ninja_name_color_premium_7_days: {
+    name: 'Name color (premium, 7d)'
+    type: 'pack'
+    groupId: GROUPS.NINJA.ID
+    cost: 200
+    currency: 'fire'
+    data:
+      backgroundImage: 'https://cdn.wtf/d/images/fam/packs/ninja/ninja_name_color_premium_7_days.png'
+      backgroundColor: '#eeeeee'
+      count: 1
+      itemKeys: ['ninja_name_color_premium_7_days']
+  }
+
+  # THE VIEWAGE
+  tv_key: {
+    name: '#TheViewage Premium Key', type: 'pack', groupId: GROUPS.THE_VIEWAGE.ID, cost: 200, currency: 'fire'
+    data:
+      backgroundImage: 'https://cdn.wtf/d/images/fam/packs/tv/tv_key.png'
+      backgroundColor: '#2196F3'
+      count: 1
+      itemKeys: ['tv_key']
+  }
+  tv_base_key: {
+    name: '#TheViewage Base Key', type: 'pack', groupId: GROUPS.THE_VIEWAGE.ID, cost: 200, currency: 'tv_currency'
+    data:
+      backgroundImage: 'https://cdn.wtf/d/images/fam/packs/tv/tv_base_key.png'
+      backgroundColor: '#F44336'
+      count: 1
+      itemKeys: ['tv_base_key']
+  }
+  tv_base_chest: {
+    type: 'pack', groupId: GROUPS.THE_VIEWAGE.ID, name: 'Daily Free Chests', cost: 0, currency: 'fire'
+    data:
+      backgroundImage: 'https://cdn.wtf/d/images/fam/packs/tv/tv_base_chest.png'
+      backgroundColor: '#9C27B0'
+      lockTime: ONE_DAY_SECONDS
+      count: 2
+      itemKeys: ['tv_chest', 'tv_base_chest']
+  }
+  tv_name_color_base_7_days: {
+    name: 'Name color (7d)'
+    type: 'pack'
+    groupId: GROUPS.THE_VIEWAGE.ID
+    cost: 500
+    currency: 'tv_currency'
+    data:
+      backgroundImage: 'https://cdn.wtf/d/images/fam/packs/tv/tv_name_color_base_7_days.png'
+      backgroundColor: '#333'
+      count: 1
+      itemKeys: ['tv_name_color_base_7_days']
+  }
+  tv_name_color_premium_7_days: {
+    name: 'Name color (premium, 7d)'
+    type: 'pack'
+    groupId: GROUPS.THE_VIEWAGE.ID
+    cost: 200
+    currency: 'fire'
+    data:
+      backgroundImage: 'https://cdn.wtf/d/images/fam/packs/tv/tv_name_color_premium_7_days.png'
+      backgroundColor: '#eeeeee'
+      count: 1
+      itemKeys: ['tv_name_color_premium_7_days']
   }
 
   # CLASH ROYALE ENGLISH

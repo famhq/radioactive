@@ -38,6 +38,7 @@ PollCtrl = require './controllers/poll'
 ProductCtrl = require './controllers/product'
 RewardCtrl = require './controllers/reward'
 SpecialOfferCtrl = require './controllers/special_offer'
+SocialMediaCtrl = require './controllers/social_media'
 StarCtrl = require './controllers/star'
 ThreadCtrl = require './controllers/thread'
 ThreadCommentCtrl = require './controllers/thread_comment'
@@ -232,6 +233,9 @@ module.exports = router
 .on 'groupRoles.updatePermissions', authed GroupRoleCtrl.updatePermissions
 .on 'groupRoles.deleteByGroupIdAndRoleId',
   authed GroupRoleCtrl.deleteByGroupIdAndRoleId
+
+.on 'socialMedia.getLastTweetByGroupId',
+  authed SocialMediaCtrl.getLastTweetByGroupId
 
 .on 'trade.getById', authed TradeCtrl.getById
 .on 'trade.create', authed TradeCtrl.create
