@@ -42,8 +42,8 @@ class ConnectionCtrl
     .then ([group, connections]) ->
       Promise.map connections, (connection) ->
         if connection.site is 'twitch' and group.twitchChannel
-          TwitchService.getIsSubscribedToChannelId(
-            group.twitchChannel, connection
+          TwitchService.getIsSubscribedToChannelName(
+            group.twitch.username, connection
           )
           .then (isSubscribed) ->
             if isSubscribed

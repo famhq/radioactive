@@ -292,16 +292,25 @@ class GroupCtrl
   getById: ({id, autoJoin}, {user, appKey}) =>
     Group.getById id
     .then (group) =>
+      unless group
+        console.log 'missing group id', id
+        return
       @_setupGroup group, {autoJoin, user, appKey}
 
   getByKey: ({key, autoJoin}, {user, appKey}) =>
     Group.getByKey key
     .then (group) =>
+      unless group
+        console.log 'missing group key', key
+        return
       @_setupGroup group, {autoJoin, user, appKey}
 
   getByGameKeyAndLanguage: ({gameKey, language}, {autoJoin, user, appKey}) =>
     Group.getByGameKeyAndLanguage gameKey, language, {preferCache: true}
     .then (group) =>
+      unless group
+        console.log 'missing group gameKey', gameKey, language
+        return
       @_setupGroup group, {autoJoin, user, appKey}
 
 module.exports = new GroupCtrl()

@@ -119,6 +119,30 @@ actions =
         text: 'Claim'
     maxCount: 1
     ttl: ONE_DAY_SECONDS
+  tv_daily_retweet:
+    name: 'Daily retweet'
+    groupId: GROUPS.THE_VIEWAGE.ID
+    action: 'streamRetweet'
+    data:
+      includedPlatforms: ['twitch']
+      rewards: [
+        {currencyAmount: 100, currencyType: 'item', currencyItemKey: 'tv_currency'}
+        {currencyAmount: 5, currencyType: 'xp'}
+      ]
+    maxCount: 1
+    ttl: ONE_DAY_SECONDS
+  tv_twitch_follow:
+    name: 'Follow on Twitch'
+    groupId: GROUPS.THE_VIEWAGE.ID
+    action: 'twitchFollow'
+    data:
+      includedPlatforms: ['twitch']
+      rewards: [
+        {currencyAmount: 100, currencyType: 'item', currencyItemKey: 'tv_currency'}
+        {currencyAmount: 5, currencyType: 'xp'}
+      ]
+    maxCount: 1
+    ttl: ONE_DAY_SECONDS
   tv_daily_chat_message:
     name: 'Daily chat message'
     groupId: GROUPS.THE_VIEWAGE.ID

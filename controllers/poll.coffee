@@ -49,7 +49,7 @@ class PollCtrl
     }
     .then (polls) ->
       if _.isEmpty polls
-        Poll.upsert {groupId}
+        Poll.upsert {groupId, data: {}}
         .then (poll) -> [poll]
       else
         polls
@@ -63,6 +63,11 @@ class PollCtrl
       route: route
     }
     # .map EmbedService.embed {embed: defaultEmbed, user}
+
+  setWinningValueById: ({id, value}, {user}, {emit, socket, route}) ->
+    PollVote.getAllByPollIdAndValue id, JSON.stringify(value)
+    .then (winningVotes) ->
+      console.log winningVotes
 
   voteById: ({id, value}, {user}) ->
     Promise.all [

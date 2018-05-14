@@ -10,17 +10,32 @@ LEGACY_PATH = 'https://api.twitch.tv/kraken'
 PATH = 'https://api.twitch.tv/helix'
 
 class TwitchService
-  get: (path, connection) =>
+  get: (path, connection, {isLegacy, qs} = {}) =>
     {token, refresh_token} = connection
-    get = (accessToken) ->
-      request "#{LEGACY_PATH}#{path}", {
-        json: true
-        method: 'GET'
-        qs:
-          client_id: config.TWITCH.CLIENT_ID
-        headers:
-          'Authorization': "OAuth #{accessToken}"
-      }
+
+    if isLegacy
+      get = (accessToken) ->
+        request "#{LEGACY_PATH}#{path}", {
+          json: true
+          method: 'GET'
+          qs:
+            _.defaults {client_id: config.TWITCH.CLIENT_ID}, qs
+          headers:
+            'Authorization': "OAuth #{accessToken}"
+        }
+    else
+      get = (accessToken) ->
+        request "#{PATH}#{path}", {
+          json: true
+          method: 'GET'
+          qs:
+            _.defaults {client_id: config.TWITCH.CLIENT_ID}, qs
+          headers:
+            'Client-ID': 'hrucpw1vzi5ocggczj1mmcdh8hxq7m'
+            'Authorization': if accessToken \
+                             then "OAuth #{accessToken}"
+                             else "Bearer #{config.TWITCH.CLIENT_ID}"
+        }
 
     get token
     .catch (err) =>
@@ -67,12 +82,25 @@ class TwitchService
 
 
   getUserByConnection: (connection) =>
-    @get '/user', connection
+    @get '/user', connection, {isLegacy: true}
 
-  getIsSubscribedToChannelId: (channelName, connection) =>
+  getIsFollowingChannelId: (channelId, connection) =>
+    @get(
+      '/users/follows'
+      connection
+      , {
+        qs: {from_id: connection.sourceId, to_id: channelId}
+      }
+    )
+
+  getIsSubscribedToChannelName: (channelName, connection) =>
     @getUserByConnection connection
     .then (user) =>
-      @get "/users/#{user.name}/subscriptions/#{channelName}", connection
+      @get(
+        "/users/#{user.name}/subscriptions/#{channelName}"
+        connection
+        {isLegacy: true}
+      )
       .then ({created_at}) -> created_at
     .catch ->
       false

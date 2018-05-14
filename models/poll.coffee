@@ -49,7 +49,22 @@ class PollModel extends Stream
           id: 'uuid'
           groupId: 'uuid'
           name: 'text'
-          data: 'text'
+          data: 'text' # betAmount, betCurrency
+                       # should typically be 100 currency
+        primaryKey:
+          partitionKey: ['id']
+          clusteringColumns: null
+      }
+      # if the value is 100% correct, they get share of the pot
+      # pot is everything others bet combined
+
+      # if no one gets it, pot continues to next round
+      {
+        name: 'polls_wager_counter'
+        keyspace: 'starfire'
+        fields:
+          id: 'uuid'
+          pot: 'counter'
         primaryKey:
           partitionKey: ['id']
           clusteringColumns: null

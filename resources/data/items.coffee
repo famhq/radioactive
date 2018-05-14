@@ -95,7 +95,7 @@ items =
 
   tv_currency: {name: 'Positivity', groupId: GROUPS.THE_VIEWAGE.ID, rarity: 'common', type: 'currency'}
 
-  tv: {name: '#TheViewage', groupId: GROUPS.THE_VIEWAGE.ID, rarity: 'common', tier: 'base', type: 'sticker'}
+  # tv: {name: '#TheViewage', groupId: GROUPS.THE_VIEWAGE.ID, rarity: 'common', tier: 'base', type: 'sticker'}
   tv_ackha: {name: 'AckHa', groupId: GROUPS.THE_VIEWAGE.ID, rarity: 'common', tier: 'base', type: 'sticker'}
   tv_been: {name: 'Been', groupId: GROUPS.THE_VIEWAGE.ID, rarity: 'common', tier: 'base', type: 'sticker'}
   tv_explo: {name: 'Explo', groupId: GROUPS.THE_VIEWAGE.ID, rarity: 'common', tier: 'base', type: 'sticker'}

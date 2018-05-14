@@ -236,6 +236,7 @@ module.exports = router
 
 .on 'socialMedia.getLastTweetByGroupId',
   authed SocialMediaCtrl.getLastTweetByGroupId
+.on 'socialMedia.logAction', authed SocialMediaCtrl.logAction
 
 .on 'trade.getById', authed TradeCtrl.getById
 .on 'trade.create', authed TradeCtrl.create

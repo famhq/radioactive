@@ -531,6 +531,9 @@ class PushNotificationService
     # 'everyone'
 
   subscribeToTopicByToken: (token, topic) =>
+    if token is 'none'
+      return Promise.resolve null
+
     if typeof topic is 'object'
       topic = @getTopicStrFromPushTopic topic
 

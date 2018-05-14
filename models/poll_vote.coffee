@@ -12,6 +12,7 @@ defaultPollVote = (pollVote) ->
   unless pollVote?
     return null
 
+  pollVote.data = JSON.stringify pollVote.data
   pollVote.value = JSON.stringify pollVote.value
 
   _.defaults pollVote, {
@@ -25,6 +26,10 @@ defaultPollVoteOutput = (pollVote) ->
   pollVote.id = "#{pollVote.id}"
   pollVote.userId = "#{pollVote.userId}"
   pollVote.pollId = "#{pollVote.pollId}"
+  pollVote.data = try
+    JSON.parse pollVote.data
+  catch err
+    ''
   pollVote.value = try
     JSON.parse pollVote.value
   catch err
@@ -39,6 +44,7 @@ tables = [
       id: 'timeuuid'
       userId: 'uuid'
       pollId: 'uuid'
+      data: 'text'
       value: 'text'
     primaryKey:
       # a little uneven since some users will vote a lot, but small data overall
@@ -52,10 +58,24 @@ tables = [
       id: 'timeuuid'
       userId: 'uuid'
       pollId: 'uuid'
+      data: 'text'
       value: 'text'
     primaryKey:
       partitionKey: ['pollId']
       clusteringColumns: ['userId']
+  }
+  {
+    name: 'poll_votes_by_pollId_and_value'
+    keyspace: 'starfire'
+    fields:
+      id: 'timeuuid'
+      userId: 'uuid'
+      pollId: 'uuid'
+      data: 'text' # betAmount, betCurrency
+      value: 'text'
+    primaryKey:
+      partitionKey: ['pollId']
+      clusteringColumns: ['value', 'userId']
   }
 ]
 
@@ -89,6 +109,14 @@ class PollVoteModel extends Stream
       .andWhere 'pollId', '=', pollVote.pollId
       .usingTTL ONE_DAY_SECONDS
       .run()
+
+      cknex().update 'poll_votes_by_pollId_and_value'
+      .set _.omit pollVote, ['userId', 'pollId', 'value']
+      .where 'userId', '=', pollVote.userId
+      .andWhere 'pollId', '=', pollVote.pollId
+      .andWhere 'value', '=', pollVote.value
+      .usingTTL ONE_DAY_SECONDS
+      .run()
     ]
     .then =>
       pollVote = defaultPollVoteOutput pollVote
@@ -105,6 +133,13 @@ class PollVoteModel extends Stream
     .andWhere 'userId', '=', userId
     .run {isSingle: true}
     .then defaultPollVoteOutput
+
+  getAllByPollIdAndValue: (pollId, value) ->
+    cknex().select '*'
+    .from 'poll_votes_by_value'
+    .where 'pollId', '=', pollId
+    .andWhere 'value', '=', value
+    .map defaultPollVoteOutput
 
   getCountByPollId: (pollId) =>
     cknex().select()
