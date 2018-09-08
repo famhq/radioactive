@@ -37,13 +37,13 @@ class HealthCtrl
       .timeout HEALTHCHECK_TIMEOUT
       .catch -> null
 
-      ClashRoyaleService.getPlayerDataByPlayerId AUSTIN_TAG, {
-        priority: 'high'
-        skipCache: true
-        isLegacy: true
-      }
-      .timeout HEALTHCHECK_TIMEOUT
-      .catch -> null
+      # ClashRoyaleService.getPlayerDataByPlayerId AUSTIN_TAG, {
+      #   priority: 'high'
+      #   skipCache: true
+      #   isLegacy: true
+      # }
+      # .timeout HEALTHCHECK_TIMEOUT
+      # .catch -> null
 
       FortniteService.getPlayerDataByPlayerId 'ps4:starfireaustin', {
         priority: 'high'
@@ -67,13 +67,13 @@ class HealthCtrl
       .catch -> null
     ]
     .then (responses) ->
-      [rethink, apiData, apiMatches, legacyApi, fortnitePlayer,
+      [rethink, apiData, apiMatches, fortnitePlayer,
         player, groupUser, user, matches] = responses
       result =
         rethinkdb: Boolean rethink
         apiData: apiData?.tag is "##{AUSTIN_TAG}"
         apiMatches: Boolean apiMatches
-        legacyApi: apiData?.tag is "##{AUSTIN_TAG}"
+        # legacyApi: apiData?.tag is "##{AUSTIN_TAG}"
         fortnitePlayer: Boolean fortnitePlayer
         scyllaPlayer: player?.id is AUSTIN_TAG
         scyllaMatches: _.isArray matches?.rows

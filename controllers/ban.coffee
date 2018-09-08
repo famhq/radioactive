@@ -69,6 +69,9 @@ class BanCtrl
           }
         }
 
+        if user.username in ['ponkat', 'jaimejosuee']
+          User.updateById userId, {flags: {isChatBanned: true}}
+
         Ban.upsert ban, {
           ttl: if duration is '24h' then 3600 * 24 else undefined
         }
@@ -99,6 +102,9 @@ class BanCtrl
             language: user.language
           }
         }
+
+      if user.username in ['ponkat', 'jaimejosuee']
+        User.updateById userId, {flags: {isChatBanned: false}}
 
       Ban.deleteAllByGroupIdAndUserId groupId, userId
 

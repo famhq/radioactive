@@ -34,7 +34,6 @@ cassanknexInstance = cassanknex
 
 ready = new Promise (resolve, reject) ->
   cassanknexInstance.on 'ready', (err, res) ->
-    console.log 'cassandra', err, res
     if err
       reject err
     else

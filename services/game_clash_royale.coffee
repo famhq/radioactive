@@ -296,7 +296,7 @@ class ClashRoyaleService
           ]
 
       .catch (err) ->
-        console.log 'caught updatePlayerId'#, err
+        console.log 'caught updatePlayerId', err
         throw err
     .then ->
       true # notify auto_refresher of success
@@ -385,7 +385,7 @@ class ClashRoyaleService
               job: {playerId}
               type: KueCreateService.JOB_TYPES.AUTO_REFRESH_PLAYER
               ttlMs: AUTO_REFRESH_PLAYER_TIMEOUT_MS
-              priority: 'high'
+              priority: 'normal'
               waitForCompletion: true
             }
             .catch (err) ->
@@ -541,6 +541,7 @@ class ClashRoyaleService
       # console.log 'realAPIreq', Date.now() - start
       response
     .catch (err) =>
+      console.log 'api err', err
       if err.statusCode is 404
         @setInvalidTag type, tag
         .then ->

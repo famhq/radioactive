@@ -49,7 +49,6 @@ UserBlockCtrl = require './controllers/user_block'
 UserFollowerCtrl = require './controllers/user_follower'
 UserItemCtrl = require './controllers/user_item'
 VideoCtrl = require './controllers/video'
-StreamService = require './services/stream'
 
 authed = (handler) ->
   unless handler?

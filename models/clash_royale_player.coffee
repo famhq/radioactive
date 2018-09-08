@@ -171,7 +171,7 @@ class ClashRoyalePlayerModel
     cknex('clash_royale').select '*'
     .where 'bucket', '=', minReversedPlayerId.substr(0, 1)
     .andWhere 'reversedPlayerId', '>', minReversedPlayerId
-    .limit 1000 # TODO: var
+    .limit 200 # TODO: var
     .from 'auto_refresh_playerIds'
     .run()
 
