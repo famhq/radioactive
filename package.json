@@ -66,7 +66,7 @@
     "ioredis": "^2.5.0",
     "joi": "^6.10.0",
     "jsonwebtoken": "^5.4.1",
-    "knex": "^0.13.0",
+    "knex": "^2.4.0",
     "knex-schema": "git://github.com/claydotio/knex-schema.git",
     "kue": "^0.11.5",
     "librsvg": "^0.7.0",
